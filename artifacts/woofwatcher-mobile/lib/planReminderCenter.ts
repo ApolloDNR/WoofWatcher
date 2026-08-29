@@ -1,4 +1,7 @@
-import type { CareReminderItem, CareReminderUrgency } from "@workspace/care-domain";
+import type {
+  CareReminderItem,
+  CareReminderUrgency,
+} from "@workspace/care-domain";
 
 import {
   resolveCanonicalDestination,
@@ -6,6 +9,7 @@ import {
 } from "./navigationOwnership.ts";
 
 export const PLAN_REMINDER_LIMIT = 50;
+export const PLAN_REMINDER_CENTER_FOCUS_TARGET = "reminder-center";
 
 export type PlanReminderSectionKey = "today" | "tomorrow" | "later" | "no-date";
 
@@ -160,9 +164,41 @@ export function resolvePlanReminderFocus(
   params: Readonly<Record<string, unknown>> | undefined,
   items: readonly CareReminderItem[],
 ): string | undefined {
-  const destination = resolvePlanReminderDestination(params);
+  const destination = resolveCurrentPlansDestination(params);
   const item = destination.params?.item;
-  return item && items.some((candidate) => candidate.id === item) ? item : undefined;
+  return item && items.some((candidate) => candidate.id === item)
+    ? item
+    : undefined;
+}
+
+function resolveCurrentPlansDestination(
+  params: Readonly<Record<string, unknown>> | undefined,
+): CanonicalDestination {
+  const incoming: Record<string, string | string[]> = {};
+  for (const key of ["section", "item"] as const) {
+    if (!params || !Object.prototype.hasOwnProperty.call(params, key)) continue;
+    const value = params[key];
+    incoming[key] =
+      typeof value === "string" || (key === "section" && Array.isArray(value))
+        ? (value as string | string[])
+        : [];
+  }
+  return resolveCanonicalDestination({
+    pathname: "/calendar",
+    params: incoming,
+  });
+}
+
+export function resolvePlanReminderFocusTarget(
+  params: Readonly<Record<string, unknown>> | undefined,
+  items: readonly CareReminderItem[],
+): string | undefined {
+  const destination = resolveCurrentPlansDestination(params);
+  const item = destination.params?.item;
+  if (item && items.some((candidate) => candidate.id === item)) return item;
+  return destination.params?.section === "reminders"
+    ? PLAN_REMINDER_CENTER_FOCUS_TARGET
+    : undefined;
 }
 
 export function buildPlanReminderFocusRequestKey(
@@ -205,16 +241,19 @@ export function buildPlanReminderFocusRequestKey(
 export function resolvePlanReminderDestination(
   params: Readonly<Record<string, unknown>> | undefined,
 ): CanonicalDestination {
-  const ownItem = params && Object.prototype.hasOwnProperty.call(params, "item")
-    ? params.item
-    : undefined;
+  const ownItem =
+    params && Object.prototype.hasOwnProperty.call(params, "item")
+      ? params.item
+      : undefined;
   return resolveCanonicalDestination({
     pathname: "/reminders",
     params: typeof ownItem === "string" ? { item: ownItem } : undefined,
   });
 }
 
-export function getPlanReminderAction(item: CareReminderItem): PlanReminderAction {
+export function getPlanReminderAction(
+  item: CareReminderItem,
+): PlanReminderAction {
   if (item.kind === "routine") {
     return item.sourceId
       ? { kind: "edit-routine", routineId: item.sourceId }
@@ -245,7 +284,8 @@ export function getReminderFocusScrollY(
   rowLayoutY: number,
   routeTopPadding: number,
 ): number {
-  if (!Number.isFinite(rowLayoutY) || !Number.isFinite(routeTopPadding)) return 0;
+  if (!Number.isFinite(rowLayoutY) || !Number.isFinite(routeTopPadding))
+    return 0;
   return Math.max(0, rowLayoutY - Math.max(0, routeTopPadding));
 }
 
@@ -309,15 +349,11 @@ export function coordinatePlanReminderFocus(
       {
         ...effects,
         measureItemInScrollContent: (itemId, onMeasured) =>
-          effects.measureItemInScrollContent(
-            itemId,
-            onMeasured,
-            () => {
-              if (tracker.active.current === attempt) {
-                tracker.active.current = null;
-              }
-            },
-          ),
+          effects.measureItemInScrollContent(itemId, onMeasured, () => {
+            if (tracker.active.current === attempt) {
+              tracker.active.current = null;
+            }
+          }),
         scrollTo: (scrollY) => {
           if (tracker.active.current !== attempt) return;
           try {
@@ -404,7 +440,8 @@ export function createPlanReminderFocusLifecycle(
   };
 
   const scheduleRetry = (state: PlanReminderFocusLifecycleState) => {
-    if (current !== state || state.terminal !== "active" || state.pending) return;
+    if (current !== state || state.terminal !== "active" || state.pending)
+      return;
     if (state.attempts >= PLAN_REMINDER_FOCUS_MAX_ATTEMPTS) {
       exhaust(state);
       return;
@@ -414,7 +451,11 @@ export function createPlanReminderFocusLifecycle(
     state.pending = pending;
     try {
       const handle = scheduler.request(() => {
-        if (current !== state || state.pending !== pending || state.terminal !== "active") {
+        if (
+          current !== state ||
+          state.pending !== pending ||
+          state.terminal !== "active"
+        ) {
           return;
         }
         state.pending = null;
@@ -486,7 +527,8 @@ export function createPlanReminderFocusLifecycle(
         },
       );
     } catch (error) {
-      if (state.attemptIdentity === attemptIdentity) state.attemptIdentity = null;
+      if (state.attemptIdentity === attemptIdentity)
+        state.attemptIdentity = null;
       invalidateCurrent(state);
       throw error;
     }

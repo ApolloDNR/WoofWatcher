@@ -65,11 +65,8 @@ test("Home welcome copy reserves the dismiss control's full touch width", () => 
     /paddingRight:\s*MIN_MOBILE_TOUCH_TARGET/,
   );
 
-  const welcomeAt = HOME_SOURCE.indexOf("<View style={[s.welcomeCard");
-  const welcomeEnd = HOME_SOURCE.indexOf("</Reanimated.View>", welcomeAt);
-  const welcome = HOME_SOURCE.slice(welcomeAt, welcomeEnd);
-  assert.match(welcome, /<Text style=\{\[s\.welcomeKicker,/);
-  assert.match(welcome, /<Text style=\{\[s\.welcomeTitle,/);
+  assert.match(HOME_SOURCE, /<Text\s+style=\{\[\s*s\.welcomeKicker,/);
+  assert.match(HOME_SOURCE, /<Text\s+style=\{\[\s*s\.welcomeTitle,/);
 });
 
 test("Home header siblings use separated frames without overlapping hit slop", () => {

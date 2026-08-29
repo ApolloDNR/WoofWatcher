@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -58,9 +58,9 @@ import {
   type SupportRunbookStatus,
 } from "@/lib/supportRunbook";
 import type { AttachmentReviewRow } from "@/lib/attachmentManifest";
+import { preparePrivacyCareExportWithDeviceInventory } from "@/lib/privacyCareDataExport";
 import {
   PrivacyExportDismissedError,
-  preparePrivacyCareExportWithDeviceInventory,
   runPrivacyCareDataExport,
   runPrivacyLocalDataReset,
 } from "@/lib/privacyLocalDataActions";
@@ -92,14 +92,19 @@ function statusIcon(status: SafetyStatusLike): keyof typeof Ionicons.glyphMap {
   return "lock-closed";
 }
 
-function statusColor(status: SafetyStatusLike, colors: ReturnType<typeof useColors>): string {
+function statusColor(
+  status: SafetyStatusLike,
+  colors: ReturnType<typeof useColors>,
+): string {
   if (status === "ready") return colors.sage;
   if (status === "limited") return colors.amber;
   if (status === "manual_required") return colors.copper;
   return colors.rose;
 }
 
-function attachmentIcon(kind: AttachmentReviewRow["kind"]): keyof typeof Ionicons.glyphMap {
+function attachmentIcon(
+  kind: AttachmentReviewRow["kind"],
+): keyof typeof Ionicons.glyphMap {
   if (kind === "care-log-proof") return "camera-outline";
   if (kind === "record-document") return "document-text-outline";
   if (kind === "adventure-memory") return "map-outline";
@@ -107,7 +112,10 @@ function attachmentIcon(kind: AttachmentReviewRow["kind"]): keyof typeof Ionicon
   return "phone-portrait-outline";
 }
 
-function attachmentStatusColor(status: AttachmentReviewRow["status"], colors: ReturnType<typeof useColors>): string {
+function attachmentStatusColor(
+  status: AttachmentReviewRow["status"],
+  colors: ReturnType<typeof useColors>,
+): string {
   if (status === "synced") return colors.sage;
   if (status === "upload-ready") return colors.amber;
   if (status === "provider-required") return colors.copper;
@@ -119,7 +127,10 @@ export interface PrivacyDataScreenProps {
   onOpenLegal: (document: "privacy" | "terms") => void;
 }
 
-export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataScreenProps) {
+export default function PrivacyDataScreen({
+  onBack,
+  onOpenLegal,
+}: PrivacyDataScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -139,7 +150,9 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   const privacyExportInFlightRef = useRef(false);
   const [privacyExportBusy, setPrivacyExportBusy] = useState(false);
   const [launchEditorOpen, setLaunchEditorOpen] = useState(false);
-  const [launchDraft, setLaunchDraft] = useState<LaunchSupportProfile>(state.launchSupportProfile);
+  const [launchDraft, setLaunchDraft] = useState<LaunchSupportProfile>(
+    state.launchSupportProfile,
+  );
   const [eraseStep, setEraseStep] = useState<EraseStepToken | null>(null);
   const [eraseActivationEpoch, setEraseActivationEpoch] = useState(0);
   const eraseConfirmationLatchRef = useRef(
@@ -172,16 +185,28 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
     () =>
       deriveAccountSafetyPlan({
         state,
-        aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
-        storageProviderConfigured: Boolean(state.launchProviderProfile.storageProviderConfigured),
-        storageProviderEvidence: state.launchProviderProfile.storageProviderEvidence,
-        accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
-        paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),
+        aiProviderConfigured: Boolean(
+          launchProviderSetupPlan.providerInput.aiProviderConfigured,
+        ),
+        storageProviderConfigured: Boolean(
+          state.launchProviderProfile.storageProviderConfigured,
+        ),
+        storageProviderEvidence:
+          state.launchProviderProfile.storageProviderEvidence,
+        accountDeletionEnabled: Boolean(
+          launchProviderSetupPlan.providerInput.accountDeletionEnabled,
+        ),
+        paymentsEnabled: Boolean(
+          launchProviderSetupPlan.providerInput.paymentsEnabled,
+        ),
       }),
     [launchProviderSetupPlan.providerInput, state],
   );
 
-  const bundle = useMemo(() => buildPrivacyExportBundle(state, context), [state, context]);
+  const bundle = useMemo(
+    () => buildPrivacyExportBundle(state, context),
+    [state, context],
+  );
   const supportPlan = useMemo(
     () => deriveSupportRunbookPlan(state.launchSupportProfile),
     [state.launchSupportProfile],
@@ -224,12 +249,12 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   });
 
   const launchProfileProviderApproved =
-    state.launchSupportProfile.providerStatus === "provider-approved" && supportPlan.launchReady;
-  const launchProfileStatus =
-    launchProfileProviderApproved
-      ? "Provider-approved packet"
-      : state.launchSupportProfile.providerStatus === "owner-reviewed" ||
-          state.launchSupportProfile.providerStatus === "provider-approved"
+    state.launchSupportProfile.providerStatus === "provider-approved" &&
+    supportPlan.launchReady;
+  const launchProfileStatus = launchProfileProviderApproved
+    ? "Provider-approved packet"
+    : state.launchSupportProfile.providerStatus === "owner-reviewed" ||
+        state.launchSupportProfile.providerStatus === "provider-approved"
       ? "Owner-reviewed local packet"
       : "Local draft";
 
@@ -246,14 +271,17 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
     setLaunchEditorOpen(true);
   };
 
-  const saveLaunchSupportProfile = (providerStatus: LaunchSupportProfile["providerStatus"]) => {
+  const saveLaunchSupportProfile = (
+    providerStatus: LaunchSupportProfile["providerStatus"],
+  ) => {
     if (careMutationsBlocked) {
       notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
       return;
     }
     const requestedSupportPlan = deriveSupportRunbookPlan(launchDraft);
     const savedProviderStatus =
-      providerStatus === "provider-approved" && !requestedSupportPlan.launchReady
+      providerStatus === "provider-approved" &&
+      !requestedSupportPlan.launchReady
         ? "owner-reviewed"
         : providerStatus;
     const updated = updateCareDoc((doc) => ({
@@ -265,7 +293,8 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
         termsUrl: launchDraft.termsUrl.trim(),
         providerStatus: savedProviderStatus,
         ownerReviewedAt:
-          savedProviderStatus === "owner-reviewed" || savedProviderStatus === "provider-approved"
+          savedProviderStatus === "owner-reviewed" ||
+          savedProviderStatus === "provider-approved"
             ? new Date().toISOString()
             : doc.launchSupportProfile.ownerReviewedAt,
       },
@@ -305,15 +334,15 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
           captured,
           fileSystem.listOwnedFiles,
         ),
-      share: (payload) =>
-        shareTextPayload(payload, { notifyOnFailure: false }),
+      share: (payload) => shareTextPayload(payload, { notifyOnFailure: false }),
     });
     void operation
       .catch((error: unknown) => {
         if (
           error instanceof PrivacyExportDismissedError ||
           !privacyScreenMountedRef.current
-        ) return;
+        )
+          return;
         notifyDialog(
           "Export not shared",
           "WoofWatcher could not share the care export. Your local data was not changed. Try again.",
@@ -348,7 +377,9 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
 
   const openSupportLegalProofMission = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push("/care-twin-qa?qaSurface=support-legal-readiness-proof" as never);
+    router.push(
+      "/care-twin-qa?qaSurface=support-legal-readiness-proof" as never,
+    );
   };
 
   const openLegalDocuments = () => {
@@ -451,19 +482,29 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
         showsVerticalScrollIndicator={false}
         // 16 matches the tab screens' shared side gutter (Home/Log/Records
         // all use 16), so modal routes stop sitting 4px narrower.
-        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 16, paddingBottom: bottomPadding }}
+        contentContainerStyle={{
+          paddingTop: topPadding,
+          paddingHorizontal: 16,
+          paddingBottom: bottomPadding,
+        }}
       >
         <LinearGradient
-          colors={colors.isDark
-            ? [colors.brandNavy, colors.shellNavy]
-            : [colors.midnight, colors.primary]}
+          colors={
+            colors.isDark
+              ? [colors.brandNavy, colors.shellNavy]
+              : [colors.midnight, colors.primary]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.hero}
         >
           <View style={s.heroTop}>
             <View style={s.heroIcon}>
-              <Ionicons name="shield-checkmark-outline" size={22} color="#FFFFFF" />
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={22}
+                color="#FFFFFF"
+              />
             </View>
             <Pressable
               onPress={onBack}
@@ -474,7 +515,9 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
               <Ionicons name="close" size={24} color="rgba(255,255,255,0.82)" />
             </Pressable>
           </View>
-          <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>Privacy & Safety</Text>
+          <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>
+            Privacy & Safety
+          </Text>
           <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
             {privacyTruthCopy.hero}
           </Text>
@@ -485,14 +528,35 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
             title="Export summary"
             accessory={<BoardPill label="Local bundle" tone={colors.sage} />}
           />
-          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            style={[
+              s.queueSummary,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {privacyTruthCopy.exportLimitation}
           </Text>
           <View style={s.statsGrid}>
-            <StatCard label="Logs" value={String(bundle.counts.entries)} colors={colors} />
-            <StatCard label="Records" value={String(bundle.counts.records)} colors={colors} />
-            <StatCard label="Reports" value={String(bundle.counts.reportArtifacts)} colors={colors} />
-            <StatCard label="File refs" value={String(bundle.counts.localAttachments)} colors={colors} />
+            <StatCard
+              label="Logs"
+              value={String(bundle.counts.entries)}
+              colors={colors}
+            />
+            <StatCard
+              label="Records"
+              value={String(bundle.counts.records)}
+              colors={colors}
+            />
+            <StatCard
+              label="Reports"
+              value={String(bundle.counts.reportArtifacts)}
+              colors={colors}
+            />
+            <StatCard
+              label="File refs"
+              value={String(bundle.counts.localAttachments)}
+              colors={colors}
+            />
           </View>
         </BoardCard>
 
@@ -500,19 +564,45 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
           <BoardCard enter={1} style={s.privacyBoard}>
             <BoardSectionHeader
               title="Attachment queue"
-              accessory={<BoardPill label={`${bundle.storage.attachmentQueue.total} files`} tone={colors.copper} />}
+              accessory={
+                <BoardPill
+                  label={`${bundle.storage.attachmentQueue.total} files`}
+                  tone={colors.copper}
+                />
+              }
             />
-            <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              style={[
+                s.queueSummary,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
               {bundle.storage.attachmentSummary}
             </Text>
             <View style={s.queueStack}>
               {bundle.storage.attachmentReviewRows.length > 0 ? (
                 bundle.storage.attachmentReviewRows.map((row) => (
-                  <AttachmentQueueRow key={row.kind} row={row} colors={colors} />
+                  <AttachmentQueueRow
+                    key={row.kind}
+                    row={row}
+                    colors={colors}
+                  />
                 ))
               ) : (
-                <Text style={[s.emptyQueue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  No proof photos, record uploads, memories, reports, or QA screenshots are waiting for storage.
+                <Text
+                  style={[
+                    s.emptyQueue,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  No proof photos, record uploads, memories, reports, or QA
+                  screenshots are waiting for storage.
                 </Text>
               )}
             </View>
@@ -532,12 +622,31 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
               s.primaryBtn,
               {
                 backgroundColor: colors.primary,
-                opacity: localDataOperationBusy || privacyExportBusy ? 0.55 : pressed ? 0.85 : 1,
+                opacity:
+                  localDataOperationBusy || privacyExportBusy
+                    ? 0.55
+                    : pressed
+                      ? 0.85
+                      : 1,
               },
             ]}
           >
-            <Ionicons name="download-outline" size={18} color={colors.primaryForeground} />
-            <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Export care data</Text>
+            <Ionicons
+              name="download-outline"
+              size={18}
+              color={colors.primaryForeground}
+            />
+            <Text
+              style={[
+                s.primaryText,
+                {
+                  color: colors.primaryForeground,
+                  fontFamily: "Inter_700Bold",
+                },
+              ]}
+            >
+              Export care data
+            </Text>
           </Pressable>
           {/* The provider-account deletion request is owner tooling. It stays
               distinct from the device reset because neither operation proves
@@ -547,10 +656,24 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
               onPress={shareDeletionRequest}
               accessibilityRole="button"
               accessibilityLabel="Prepare account deletion request"
-              style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 }]}
+              style={({ pressed }) => [
+                s.secondaryBtn,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  opacity: pressed ? 0.75 : 1,
+                },
+              ]}
             >
               <Ionicons name="trash-outline" size={17} color={colors.rose} />
-              <Text style={[s.secondaryText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Deletion request</Text>
+              <Text
+                style={[
+                  s.secondaryText,
+                  { color: colors.rose, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                Deletion request
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -560,7 +683,12 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
             title="Your data, your rules"
             accessory={<BoardPill label="On this device" tone={colors.sage} />}
           />
-          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            style={[
+              s.queueSummary,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {privacyTruthCopy.rules}
           </Text>
           <Pressable
@@ -569,19 +697,43 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
             accessibilityLabel="Open privacy policy and terms of service"
             style={({ pressed }) => [
               s.legalRow,
-              { borderColor: colors.border, backgroundColor: pressed ? colors.secondary : colors.background },
+              {
+                borderColor: colors.border,
+                backgroundColor: pressed ? colors.secondary : colors.background,
+              },
             ]}
           >
-            <Ionicons name="document-text-outline" size={18} color={colors.forest} />
+            <Ionicons
+              name="document-text-outline"
+              size={18}
+              color={colors.forest}
+            />
             <View style={{ flex: 1 }}>
-              <Text style={[s.legalRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.legalRowTitle,
+                  { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                ]}
+              >
                 Privacy policy & terms
               </Text>
-              <Text style={[s.legalRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.legalRowSub,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 Plain-language rules for your household's data
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+            <Ionicons
+              name="chevron-forward"
+              size={15}
+              color={colors.mutedForeground}
+            />
           </Pressable>
           <Pressable
             onPress={confirmEraseAllLocalData}
@@ -593,131 +745,308 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
               s.legalRow,
               {
                 borderColor: colors.rose + "55",
-                backgroundColor: pressed ? colors.rose + "14" : colors.background,
+                backgroundColor: pressed
+                  ? colors.rose + "14"
+                  : colors.background,
                 opacity: localDataOperationBusy ? 0.55 : 1,
               },
             ]}
           >
             <Ionicons name="trash-bin-outline" size={18} color={colors.rose} />
             <View style={{ flex: 1 }}>
-              <Text style={[s.legalRowTitle, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.legalRowTitle,
+                  { color: colors.rose, fontFamily: "Inter_700Bold" },
+                ]}
+              >
                 Delete all data on this device
               </Text>
-              <Text style={[s.legalRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.legalRowSub,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 Permanent. Resets WoofWatcher to a fresh household.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+            <Ionicons
+              name="chevron-forward"
+              size={15}
+              color={colors.mutedForeground}
+            />
           </Pressable>
         </BoardCard>
 
         {ownerOps ? (
           <>
-        <BoardCard enter={3} style={s.privacyBoard}>
-          <BoardSectionHeader
-            title="Support runbook"
-            accessory={<BoardPill label="Launch gate" tone={colors.amber} />}
-          />
-          <Text style={[s.supportVerdict, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-            {supportPlan.verdictLabel}
-          </Text>
-          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {supportPlan.summary}
-          </Text>
-          <View style={[s.launchProfilePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.launchProfileEyebrow, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                Launch support profile
+            <BoardCard enter={3} style={s.privacyBoard}>
+              <BoardSectionHeader
+                title="Support runbook"
+                accessory={
+                  <BoardPill label="Launch gate" tone={colors.amber} />
+                }
+              />
+              <Text
+                style={[
+                  s.supportVerdict,
+                  {
+                    color: colors.foreground,
+                    fontFamily: "Inter_800ExtraBold",
+                  },
+                ]}
+              >
+                {supportPlan.verdictLabel}
               </Text>
-              <Text style={[s.launchProfileStatus, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                {launchProfileStatus}
+              <Text
+                style={[
+                  s.queueSummary,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                {supportPlan.summary}
               </Text>
-              <Text style={[s.launchProfileDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                {supportPlan.supportEmail ?? "No support inbox yet"} / {supportPlan.privacyPolicyUrl ? "Policy links staged" : "Policy links needed"}
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Edit WoofWatcher launch support profile"
-              onPress={openLaunchProfileEditor}
-              style={({ pressed }) => [
-                s.profileEditBtn,
-                { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
-              ]}
-            >
-              <Ionicons name="create-outline" size={15} color={colors.foreground} />
-              <Text style={[s.profileEditText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>Edit</Text>
-            </Pressable>
-          </View>
-          <View style={s.sectionStack}>
-            {supportPlan.sections.map((section) => (
-              <SafetyRow key={section.title} section={section} colors={colors} />
-            ))}
-          </View>
-          <View style={[s.supportBlockers, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "33" }]}>
-            {supportPlan.launchBlockers.slice(0, 4).map((blocker) => (
-              <Text key={blocker} style={[s.supportBlockerText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                - {blocker}
-              </Text>
-            ))}
-          </View>
-          <View style={s.supportActionRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Open support legal readiness proof mission"
-              onPress={openSupportLegalProofMission}
-              style={({ pressed }) => [
-                s.supportProofBtn,
-                { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.76 : 1 },
-              ]}
-            >
-              <Ionicons name="shield-checkmark-outline" size={16} color={colors.foreground} />
-              <Text style={[s.supportProofText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                Proof mission
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Share WoofWatcher support runbook"
-              onPress={shareSupportRunbook}
-              style={({ pressed }) => [
-                s.supportShareBtn,
-                { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
-              ]}
-            >
-              <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
-              <Text style={[s.supportShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share support runbook</Text>
-            </Pressable>
-          </View>
-        </BoardCard>
+              <View
+                style={[
+                  s.launchProfilePanel,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      s.launchProfileEyebrow,
+                      {
+                        color: colors.copper,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
+                    ]}
+                  >
+                    Launch support profile
+                  </Text>
+                  <Text
+                    style={[
+                      s.launchProfileStatus,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
+                    ]}
+                  >
+                    {launchProfileStatus}
+                  </Text>
+                  <Text
+                    style={[
+                      s.launchProfileDetail,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {supportPlan.supportEmail ?? "No support inbox yet"} /{" "}
+                    {supportPlan.privacyPolicyUrl
+                      ? "Policy links staged"
+                      : "Policy links needed"}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit WoofWatcher launch support profile"
+                  onPress={openLaunchProfileEditor}
+                  style={({ pressed }) => [
+                    s.profileEditBtn,
+                    {
+                      borderColor: colors.border,
+                      backgroundColor: colors.card,
+                      opacity: pressed ? 0.72 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="create-outline"
+                    size={15}
+                    color={colors.foreground}
+                  />
+                  <Text
+                    style={[
+                      s.profileEditText,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
+                    ]}
+                  >
+                    Edit
+                  </Text>
+                </Pressable>
+              </View>
+              <View style={s.sectionStack}>
+                {supportPlan.sections.map((section) => (
+                  <SafetyRow
+                    key={section.title}
+                    section={section}
+                    colors={colors}
+                  />
+                ))}
+              </View>
+              <View
+                style={[
+                  s.supportBlockers,
+                  {
+                    backgroundColor: colors.amber + "12",
+                    borderColor: colors.amber + "33",
+                  },
+                ]}
+              >
+                {supportPlan.launchBlockers.slice(0, 4).map((blocker) => (
+                  <Text
+                    key={blocker}
+                    style={[
+                      s.supportBlockerText,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    - {blocker}
+                  </Text>
+                ))}
+              </View>
+              <View style={s.supportActionRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open support legal readiness proof mission"
+                  onPress={openSupportLegalProofMission}
+                  style={({ pressed }) => [
+                    s.supportProofBtn,
+                    {
+                      borderColor: colors.border,
+                      backgroundColor: colors.card,
+                      opacity: pressed ? 0.76 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={16}
+                    color={colors.foreground}
+                  />
+                  <Text
+                    style={[
+                      s.supportProofText,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
+                    ]}
+                  >
+                    Proof mission
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share WoofWatcher support runbook"
+                  onPress={shareSupportRunbook}
+                  style={({ pressed }) => [
+                    s.supportShareBtn,
+                    {
+                      backgroundColor: colors.midnight,
+                      opacity: pressed ? 0.84 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="share-social-outline"
+                    size={16}
+                    color="#FFFFFF"
+                  />
+                  <Text
+                    style={[
+                      s.supportShareText,
+                      { fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
+                    Share support runbook
+                  </Text>
+                </Pressable>
+              </View>
+            </BoardCard>
 
-        <BoardCard enter={4} style={s.privacyBoard}>
-          <BoardSectionHeader
-            title="Launch safety gates"
-            accessory={<BoardPill label={`${sections.length} gates`} tone={colors.primary} />}
-          />
-          <View style={s.sectionStack}>
-            {sections.map((section) => (
-              <SafetyRow key={section.title} section={section} colors={colors} />
-            ))}
-          </View>
-        </BoardCard>
+            <BoardCard enter={4} style={s.privacyBoard}>
+              <BoardSectionHeader
+                title="Launch safety gates"
+                accessory={
+                  <BoardPill
+                    label={`${sections.length} gates`}
+                    tone={colors.primary}
+                  />
+                }
+              />
+              <View style={s.sectionStack}>
+                {sections.map((section) => (
+                  <SafetyRow
+                    key={section.title}
+                    section={section}
+                    colors={colors}
+                  />
+                ))}
+              </View>
+            </BoardCard>
 
-        <BoardCard enter={5} style={[s.noticeBoard, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
-          <View style={s.noticeContent}>
-            <Ionicons name="alert-circle-outline" size={17} color={colors.amber} />
-            <View style={{ flex: 1 }}>
-              <Text style={[s.noticeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                Before public launch
-              </Text>
-              {plan.launchBlockers.map((blocker) => (
-                <Text key={blocker} style={[s.noticeLine, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                  - {blocker}
-                </Text>
-              ))}
-            </View>
-          </View>
-        </BoardCard>
+            <BoardCard
+              enter={5}
+              style={[
+                s.noticeBoard,
+                {
+                  backgroundColor: colors.amber + "14",
+                  borderColor: colors.amber + "45",
+                },
+              ]}
+            >
+              <View style={s.noticeContent}>
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={17}
+                  color={colors.amber}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      s.noticeTitle,
+                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    Before public launch
+                  </Text>
+                  {plan.launchBlockers.map((blocker) => (
+                    <Text
+                      key={blocker}
+                      style={[
+                        s.noticeLine,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      - {blocker}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            </BoardCard>
           </>
         ) : null}
       </ScrollView>
@@ -758,8 +1087,7 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                       style={[
                         s.confirmIcon,
                         {
-                          backgroundColor:
-                            colors.rose + "14",
+                          backgroundColor: colors.rose + "14",
                         },
                       ]}
                     >
@@ -769,14 +1097,22 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                         color={colors.rose}
                       />
                     </View>
-                    <Text style={[s.confirmTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                    <Text
+                      style={[
+                        s.confirmTitle,
+                        { color: colors.foreground, fontFamily: DISPLAY },
+                      ]}
+                    >
                       {eraseSteps[eraseStep.stage].title}
                     </Text>
                   </View>
                   <Text
                     style={[
                       s.confirmMessage,
-                      { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
                     ]}
                   >
                     {eraseSteps[eraseStep.stage].message}
@@ -785,96 +1121,144 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 <View
                   style={[
                     s.confirmActions,
-                    privacyConfirmationLayout.stackActions && s.confirmActionsStacked,
+                    privacyConfirmationLayout.stackActions &&
+                      s.confirmActionsStacked,
                   ]}
                 >
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={eraseSteps[eraseStep.stage].cancelLabel}
-                      accessibilityState={{ disabled: localDataOperationBusy }}
-                      disabled={localDataOperationBusy}
-                      onPress={cancelEraseFlow}
-                      style={({ pressed }) => [
-                        s.confirmCancelBtn,
-                        privacyConfirmationLayout.stackActions && s.confirmActionStacked,
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={eraseSteps[eraseStep.stage].cancelLabel}
+                    accessibilityState={{ disabled: localDataOperationBusy }}
+                    disabled={localDataOperationBusy}
+                    onPress={cancelEraseFlow}
+                    style={({ pressed }) => [
+                      s.confirmCancelBtn,
+                      privacyConfirmationLayout.stackActions &&
+                        s.confirmActionStacked,
+                      {
+                        borderColor: colors.border,
+                        backgroundColor: colors.background,
+                        opacity: localDataOperationBusy
+                          ? 0.55
+                          : pressed
+                            ? 0.72
+                            : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.confirmCancelText,
                         {
-                          borderColor: colors.border,
-                          backgroundColor: colors.background,
-                          opacity: localDataOperationBusy
-                            ? 0.55
+                          color: colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {eraseSteps[eraseStep.stage].cancelLabel}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      eraseSteps[eraseStep.stage].confirmLabel
+                    }
+                    accessibilityState={{
+                      disabled:
+                        localDataOperationBusy || eraseTransitionBlocked,
+                    }}
+                    disabled={localDataOperationBusy || eraseTransitionBlocked}
+                    onPress={advanceEraseFlow}
+                    style={({ pressed }) => [
+                      s.confirmPrimaryBtn,
+                      privacyConfirmationLayout.stackActions &&
+                        s.confirmActionStacked,
+                      {
+                        backgroundColor: colors.rose,
+                        opacity:
+                          localDataOperationBusy || eraseTransitionBlocked
+                            ? 0.6
                             : pressed
-                              ? 0.72
+                              ? 0.84
                               : 1,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          s.confirmCancelText,
-                          { color: colors.foreground, fontFamily: "Inter_800ExtraBold" },
-                        ]}
-                      >
-                        {eraseSteps[eraseStep.stage].cancelLabel}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={eraseSteps[eraseStep.stage].confirmLabel}
-                      accessibilityState={{
-                        disabled:
-                          localDataOperationBusy || eraseTransitionBlocked,
-                      }}
-                      disabled={localDataOperationBusy || eraseTransitionBlocked}
-                      onPress={advanceEraseFlow}
-                      style={({ pressed }) => [
-                        s.confirmPrimaryBtn,
-                        privacyConfirmationLayout.stackActions && s.confirmActionStacked,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.confirmPrimaryText,
                         {
-                          backgroundColor: colors.rose,
-                          opacity: localDataOperationBusy || eraseTransitionBlocked ? 0.6 : pressed ? 0.84 : 1,
+                          color: colors.brandNavy,
+                          fontFamily: "Inter_800ExtraBold",
                         },
                       ]}
                     >
-                      <Text
-                        style={[
-                          s.confirmPrimaryText,
-                          { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" },
-                        ]}
-                      >
-                        {eraseSteps[eraseStep.stage].confirmLabel}
-                      </Text>
-                    </Pressable>
+                      {eraseSteps[eraseStep.stage].confirmLabel}
+                    </Text>
+                  </Pressable>
                 </View>
               </>
             ) : null}
           </ModalSheetPressable>
         </ModalBackdropPressable>
       </Modal>
-      <Modal visible={launchEditorOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setLaunchEditorOpen(false)}>
-        <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setLaunchEditorOpen(false)}>
+      <Modal
+        visible={launchEditorOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setLaunchEditorOpen(false)}
+      >
+        <ModalBackdropPressable
+          style={s.modalBackdrop}
+          onPress={() => setLaunchEditorOpen(false)}
+        >
           <ModalSheetPressable
             visible={launchEditorOpen}
             onRequestClose={() => setLaunchEditorOpen(false)}
             closeAccessibilityLabel="Close launch support profile editor"
-            style={[s.launchModal, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+            style={[
+              s.launchModal,
+              {
+                backgroundColor: colors.card,
+                paddingBottom: modalSheetBottomPadding,
+              },
+            ]}
           >
             <View style={s.modalHandle} />
             <View style={s.modalHeader}>
               <View>
-                <Text style={[s.modalEyebrow, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                <Text
+                  style={[
+                    s.modalEyebrow,
+                    { color: colors.copper, fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
                   Launch profile
                 </Text>
-                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Support readiness</Text>
+                <Text
+                  accessibilityRole="header"
+                  style={[
+                    s.modalTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
+                  Support readiness
+                </Text>
               </View>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.modalScroll}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={s.modalScroll}
+            >
               <ProfileInput
                 label="Support email"
                 value={launchDraft.supportEmail}
                 placeholder="help@woofwatcher.app"
                 colors={colors}
                 keyboardType="email-address"
-                onChangeText={(value) => updateLaunchDraft("supportEmail", value)}
+                onChangeText={(value) =>
+                  updateLaunchDraft("supportEmail", value)
+                }
               />
               <ProfileInput
                 label="Privacy policy URL"
@@ -882,7 +1266,9 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 placeholder="https://woofwatcher.app/privacy"
                 colors={colors}
                 keyboardType="url"
-                onChangeText={(value) => updateLaunchDraft("privacyPolicyUrl", value)}
+                onChangeText={(value) =>
+                  updateLaunchDraft("privacyPolicyUrl", value)
+                }
               />
               <ProfileInput
                 label="Terms URL"
@@ -897,31 +1283,59 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                   label="Refund and subscription policy approved"
                   value={launchDraft.refundPolicyApproved}
                   colors={colors}
-                  onPress={() => updateLaunchDraft("refundPolicyApproved", !launchDraft.refundPolicyApproved)}
+                  onPress={() =>
+                    updateLaunchDraft(
+                      "refundPolicyApproved",
+                      !launchDraft.refundPolicyApproved,
+                    )
+                  }
                 />
                 <PolicyToggle
                   label="Veterinary boundary approved"
                   value={launchDraft.veterinaryBoundaryApproved}
                   colors={colors}
-                  onPress={() => updateLaunchDraft("veterinaryBoundaryApproved", !launchDraft.veterinaryBoundaryApproved)}
+                  onPress={() =>
+                    updateLaunchDraft(
+                      "veterinaryBoundaryApproved",
+                      !launchDraft.veterinaryBoundaryApproved,
+                    )
+                  }
                 />
                 <PolicyToggle
                   label="Deletion escalation approved"
                   value={launchDraft.accountDeletionEscalationApproved}
                   colors={colors}
                   onPress={() =>
-                    updateLaunchDraft("accountDeletionEscalationApproved", !launchDraft.accountDeletionEscalationApproved)
+                    updateLaunchDraft(
+                      "accountDeletionEscalationApproved",
+                      !launchDraft.accountDeletionEscalationApproved,
+                    )
                   }
                 />
                 <PolicyToggle
                   label="Incident response owner approved"
                   value={launchDraft.incidentResponseApproved}
                   colors={colors}
-                  onPress={() => updateLaunchDraft("incidentResponseApproved", !launchDraft.incidentResponseApproved)}
+                  onPress={() =>
+                    updateLaunchDraft(
+                      "incidentResponseApproved",
+                      !launchDraft.incidentResponseApproved,
+                    )
+                  }
                 />
               </View>
-              <Text style={[s.modalBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                This is a local owner checklist. It does not claim legal, store, or provider approval until those approvals are actually complete.
+              <Text
+                style={[
+                  s.modalBoundary,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                This is a local owner checklist. It does not claim legal, store,
+                or provider approval until those approvals are actually
+                complete.
               </Text>
             </ScrollView>
             <View style={s.modalActions}>
@@ -931,10 +1345,22 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 onPress={() => saveLaunchSupportProfile("local-draft")}
                 style={({ pressed }) => [
                   s.modalSecondaryBtn,
-                  { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    opacity: pressed ? 0.72 : 1,
+                  },
                 ]}
               >
-                <Text style={[s.modalSecondaryText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                <Text
+                  style={[
+                    s.modalSecondaryText,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
+                  ]}
+                >
                   Save draft
                 </Text>
               </Pressable>
@@ -944,10 +1370,23 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 onPress={() => saveLaunchSupportProfile("owner-reviewed")}
                 style={({ pressed }) => [
                   s.modalPrimaryBtn,
-                  { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: pressed ? 0.84 : 1,
+                  },
                 ]}
               >
-                <Text style={[s.modalPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Owner-reviewed</Text>
+                <Text
+                  style={[
+                    s.modalPrimaryText,
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
+                  ]}
+                >
+                  Owner-reviewed
+                </Text>
               </Pressable>
             </View>
           </ModalSheetPressable>
@@ -967,9 +1406,28 @@ function StatCard({
   colors: ReturnType<typeof useColors>;
 }) {
   return (
-    <View style={[s.statTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
-      <Text style={[s.statValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{value}</Text>
-      <Text style={[s.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{label}</Text>
+    <View
+      style={[
+        s.statTile,
+        { backgroundColor: colors.background, borderColor: colors.border },
+      ]}
+    >
+      <Text
+        style={[
+          s.statValue,
+          { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+        ]}
+      >
+        {value}
+      </Text>
+      <Text
+        style={[
+          s.statLabel,
+          { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+        ]}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
@@ -983,17 +1441,44 @@ function SafetyRow({
 }) {
   const tone = statusColor(section.status, colors);
   return (
-    <View style={[s.safetyRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+    <View
+      style={[
+        s.safetyRow,
+        { backgroundColor: colors.background, borderColor: colors.border },
+      ]}
+    >
       <View style={[s.safetyIcon, { backgroundColor: tone + "16" }]}>
         <Ionicons name={statusIcon(section.status)} size={18} color={tone} />
       </View>
       <View style={{ flex: 1 }}>
         <View style={s.safetyTop}>
-          <Text style={[s.safetyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{section.title}</Text>
-          <Text style={[s.statusPill, { color: tone, fontFamily: "Inter_700Bold" }]}>{section.status.replace("_", " ")}</Text>
+          <Text
+            style={[
+              s.safetyTitle,
+              { color: colors.foreground, fontFamily: "Inter_700Bold" },
+            ]}
+          >
+            {section.title}
+          </Text>
+          <Text
+            style={[s.statusPill, { color: tone, fontFamily: "Inter_700Bold" }]}
+          >
+            {section.status.replace("_", " ")}
+          </Text>
         </View>
-        <Text style={[s.safetyDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{section.detail}</Text>
-        <Text style={[s.safetyAction, { color: tone, fontFamily: "Inter_700Bold" }]}>{section.action}</Text>
+        <Text
+          style={[
+            s.safetyDetail,
+            { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+          ]}
+        >
+          {section.detail}
+        </Text>
+        <Text
+          style={[s.safetyAction, { color: tone, fontFamily: "Inter_700Bold" }]}
+        >
+          {section.action}
+        </Text>
       </View>
     </View>
   );
@@ -1008,27 +1493,63 @@ function AttachmentQueueRow({
 }) {
   const tone = attachmentStatusColor(row.status, colors);
   return (
-    <View style={[s.queueRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+    <View
+      style={[
+        s.queueRow,
+        { backgroundColor: colors.background, borderColor: colors.border },
+      ]}
+    >
       <View style={[s.queueIcon, { backgroundColor: tone + "16" }]}>
         <Ionicons name={attachmentIcon(row.kind)} size={17} color={tone} />
       </View>
       <View style={{ flex: 1 }}>
         <View style={s.queueTop}>
-          <Text style={[s.queueTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{row.label}</Text>
-          <Text style={[s.queueCount, { color: tone, fontFamily: "Inter_700Bold" }]}>
+          <Text
+            style={[
+              s.queueTitle,
+              { color: colors.foreground, fontFamily: "Inter_700Bold" },
+            ]}
+          >
+            {row.label}
+          </Text>
+          <Text
+            style={[s.queueCount, { color: tone, fontFamily: "Inter_700Bold" }]}
+          >
             {row.count} {row.count === 1 ? "file" : "files"}
           </Text>
         </View>
-        <Text style={[s.queueStatus, { color: tone, fontFamily: "Inter_700Bold" }]}>{row.statusLabel}</Text>
-        <Text style={[s.queueDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+        <Text
+          style={[s.queueStatus, { color: tone, fontFamily: "Inter_700Bold" }]}
+        >
+          {row.statusLabel}
+        </Text>
+        <Text
+          style={[
+            s.queueDetail,
+            { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+          ]}
+        >
           {row.detail}
         </Text>
         {row.sampleFileNames.length > 0 ? (
-          <Text numberOfLines={1} style={[s.queueFiles, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          <Text
+            numberOfLines={1}
+            style={[
+              s.queueFiles,
+              {
+                color: colors.mutedForeground,
+                fontFamily: "Inter_600SemiBold",
+              },
+            ]}
+          >
             {row.sampleFileNames.join(", ")}
           </Text>
         ) : null}
-        <Text style={[s.queueAction, { color: tone, fontFamily: "Inter_700Bold" }]}>{row.actionLabel}</Text>
+        <Text
+          style={[s.queueAction, { color: tone, fontFamily: "Inter_700Bold" }]}
+        >
+          {row.actionLabel}
+        </Text>
       </View>
     </View>
   );
@@ -1051,7 +1572,12 @@ function ProfileInput({
 }) {
   return (
     <View style={s.profileInputGroup}>
-      <Text style={[s.profileInputLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
+      <Text
+        style={[
+          s.profileInputLabel,
+          { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" },
+        ]}
+      >
         {label}
       </Text>
       <TextInput
@@ -1103,26 +1629,52 @@ function PolicyToggle({
         },
       ]}
     >
-      <View style={[s.policyCheck, { backgroundColor: value ? colors.sage : colors.card, borderColor: value ? colors.sage : colors.border }]}>
+      <View
+        style={[
+          s.policyCheck,
+          {
+            backgroundColor: value ? colors.sage : colors.card,
+            borderColor: value ? colors.sage : colors.border,
+          },
+        ]}
+      >
         <Ionicons
           name={value ? "checkmark" : "ellipse-outline"}
           size={15}
-          color={value
-            ? colors.isDark
-              ? colors.brandNavy
-              : colors.destructiveForeground
-            : colors.mutedForeground}
+          color={
+            value
+              ? colors.isDark
+                ? colors.brandNavy
+                : colors.destructiveForeground
+              : colors.mutedForeground
+          }
         />
       </View>
-      <Text style={[s.policyLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+      <Text
+        style={[
+          s.policyLabel,
+          { color: colors.foreground, fontFamily: "Inter_700Bold" },
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  hero: { borderRadius: 26, padding: 22, minHeight: 230, justifyContent: "space-between" },
-  heroTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  hero: {
+    borderRadius: 26,
+    padding: 22,
+    minHeight: 230,
+    justifyContent: "space-between",
+  },
+  heroTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   heroCloseButton: {
     width: MIN_MOBILE_TOUCH_TARGET,
     height: MIN_MOBILE_TOUCH_TARGET,
@@ -1138,17 +1690,50 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.16)",
   },
   heroTitle: { color: "#FFFFFF", fontSize: 33, letterSpacing: 0 },
-  heroSub: { color: "rgba(255,255,255,0.84)", fontSize: 15, lineHeight: 22, marginTop: 10 },
+  heroSub: {
+    color: "rgba(255,255,255,0.84)",
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 10,
+  },
   privacyBoard: { marginTop: 14 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  statTile: { flexBasis: "45%", flexGrow: 1, borderRadius: 16, borderWidth: 1, padding: 15 },
+  statTile: {
+    flexBasis: "45%",
+    flexGrow: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 15,
+  },
   statValue: { fontSize: 24 },
-  statLabel: { fontSize: 11.5, marginTop: 3, textTransform: "uppercase", letterSpacing: 0.6 },
+  statLabel: {
+    fontSize: 11.5,
+    marginTop: 3,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
   queueSummary: { fontSize: 12.5, lineHeight: 18, marginBottom: 10 },
   queueStack: { gap: 10 },
-  queueRow: { flexDirection: "row", gap: 12, borderRadius: 18, borderWidth: 1, padding: 14 },
-  queueIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  queueTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  queueRow: {
+    flexDirection: "row",
+    gap: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+  },
+  queueIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  queueTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   queueTitle: { flex: 1, fontSize: 14.5 },
   queueCount: { fontSize: 11.5, textTransform: "uppercase" },
   queueStatus: { fontSize: 11.5, marginTop: 4, textTransform: "uppercase" },
@@ -1156,10 +1741,33 @@ const s = StyleSheet.create({
   queueFiles: { fontSize: 11.5, marginTop: 6 },
   queueAction: { fontSize: 12, marginTop: 8 },
   emptyQueue: { fontSize: 12.5, lineHeight: 18 },
-  actionRow: { flexDirection: "row", gap: 10, marginTop: 14 },
-  primaryBtn: { flex: 1.2, height: 52, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  actionRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 },
+  primaryBtn: {
+    flex: 1.2,
+    minWidth: 160,
+    minHeight: 52,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 17,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
   primaryText: { color: "#FFFFFF", fontSize: 14 },
-  secondaryBtn: { flex: 1, height: 52, borderRadius: 17, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  secondaryBtn: {
+    flex: 1,
+    minWidth: 150,
+    minHeight: 52,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 17,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
   secondaryText: { fontSize: 13.5 },
   legalRow: {
     minHeight: 52,
@@ -1185,7 +1793,11 @@ const s = StyleSheet.create({
     gap: 12,
     marginBottom: 12,
   },
-  launchProfileEyebrow: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.6 },
+  launchProfileEyebrow: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
   launchProfileStatus: { fontSize: 14.5, marginTop: 4 },
   launchProfileDetail: { fontSize: 12, lineHeight: 17, marginTop: 4 },
   profileEditBtn: {
@@ -1229,9 +1841,26 @@ const s = StyleSheet.create({
     gap: 8,
   },
   supportShareText: { color: "#FFFFFF", fontSize: 13 },
-  safetyRow: { flexDirection: "row", gap: 12, borderRadius: 18, borderWidth: 1, padding: 14 },
-  safetyIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  safetyTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  safetyRow: {
+    flexDirection: "row",
+    gap: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+  },
+  safetyIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  safetyTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   safetyTitle: { flex: 1, fontSize: 14.5 },
   statusPill: { fontSize: 10.5, textTransform: "uppercase" },
   safetyDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 5 },
@@ -1302,21 +1931,69 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(120, 132, 146, 0.35)",
     marginBottom: 16,
   },
-  modalHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
-  modalEyebrow: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.6 },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modalEyebrow: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
   modalTitle: { fontSize: 26, letterSpacing: 0 },
   modalScroll: { paddingTop: 16, paddingBottom: 14 },
   profileInputGroup: { marginBottom: 12 },
-  profileInputLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 7 },
-  profileInput: { minHeight: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 13.5 },
+  profileInputLabel: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginBottom: 7,
+  },
+  profileInput: {
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 13.5,
+  },
   policyStack: { gap: 9, marginTop: 2 },
-  policyToggle: { minHeight: 50, borderRadius: 15, borderWidth: 1, padding: 12, flexDirection: "row", alignItems: "center", gap: 10 },
-  policyCheck: { width: 25, height: 25, borderRadius: 9, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  policyToggle: {
+    minHeight: 50,
+    borderRadius: 15,
+    borderWidth: 1,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  policyCheck: {
+    width: 25,
+    height: 25,
+    borderRadius: 9,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   policyLabel: { flex: 1, fontSize: 13, lineHeight: 18 },
   modalBoundary: { fontSize: 12.5, lineHeight: 18, marginTop: 14 },
   modalActions: { flexDirection: "row", gap: 10, paddingTop: 8 },
-  modalSecondaryBtn: { flex: 1, minHeight: 50, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  modalSecondaryBtn: {
+    flex: 1,
+    minHeight: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   modalSecondaryText: { fontSize: 13 },
-  modalPrimaryBtn: { flex: 1.2, minHeight: 50, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  modalPrimaryBtn: {
+    flex: 1.2,
+    minHeight: 50,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   modalPrimaryText: { color: "#FFFFFF", fontSize: 13 },
 });

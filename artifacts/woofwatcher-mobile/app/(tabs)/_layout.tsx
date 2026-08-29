@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   Tabs,
   useGlobalSearchParams,
@@ -6,7 +6,13 @@ import {
   useRouter,
 } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -20,7 +26,11 @@ import {
 } from "@/lib/mobileLayout";
 import { resolveHealthSectionRoute } from "@/lib/healthSectionRouting";
 import { resolveMoreSectionRoute } from "@/lib/moreSectionRouting";
-import { resolvePlanReminderDestination } from "@/lib/planReminderCenter";
+import {
+  PLAN_REMINDER_CENTER_FOCUS_TARGET,
+  resolvePlanReminderDestination,
+  resolvePlanReminderFocusTarget,
+} from "@/lib/planReminderCenter";
 import {
   handleUniversalTabPress,
   UNIVERSAL_COMPATIBILITY_TABS,
@@ -86,6 +96,12 @@ export default function TabLayout() {
     pathname === "/calendar"
       ? resolvePlanReminderDestination(params).params?.item
       : undefined;
+  const activePlansSection =
+    pathname === "/calendar" &&
+    resolvePlanReminderFocusTarget(params, []) ===
+      PLAN_REMINDER_CENTER_FOCUS_TARGET
+      ? "reminders"
+      : undefined;
   const activeHealthSection =
     pathname === "/health"
       ? resolveHealthSectionRoute(params).section
@@ -103,6 +119,7 @@ export default function TabLayout() {
     <Tabs
       backBehavior="history"
       screenOptions={{
+        freezeOnBlur: true,
         headerShown: false,
         tabBarActiveTintColor: colors.forest,
         tabBarInactiveTintColor: colors.mutedForeground,
@@ -172,6 +189,7 @@ export default function TabLayout() {
                           focused: navigation.isFocused(),
                           pathname,
                           plansItem: activePlansItem,
+                          plansSection: activePlansSection,
                           healthSection: activeHealthSection,
                           moreSection: activeMoreSection,
                         },

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useMemo, useState } from "react";
@@ -36,6 +36,7 @@ import { PressScale } from "@/components/motion/GameFeel";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { useRouteMotionActive } from "@/hooks/useActiveCurrentTime";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
   CARE_READ_ONLY_MESSAGE,
@@ -51,10 +52,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import {
-  DEFAULT_PET_PLACEHOLDER,
-  resolvePetName,
-} from "@/lib/petIdentity";
+import { DEFAULT_PET_PLACEHOLDER, resolvePetName } from "@/lib/petIdentity";
 import {
   deriveCareStorageRecoveryAction,
   deriveCareStorageUnavailableDashboard,
@@ -82,7 +80,13 @@ type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 function Kicker({ label, style }: { label: string; style?: object }) {
   const colors = useColors();
   return (
-    <Text style={[s.kicker, { color: colors.sage, fontFamily: "Inter_700Bold" }, style]}>
+    <Text
+      style={[
+        s.kicker,
+        { color: colors.sage, fontFamily: "Inter_700Bold" },
+        style,
+      ]}
+    >
       {label}
     </Text>
   );
@@ -95,17 +99,22 @@ function Kicker({ label, style }: { label: string; style?: object }) {
  */
 function useBreath() {
   const reduced = useReducedMotion();
+  const routeMotionActive = useRouteMotionActive();
   const breath = useSharedValue(0);
   useEffect(() => {
-    if (reduced) return;
+    cancelAnimation(breath);
+    breath.value = 0;
+    if (reduced || !routeMotionActive) return;
     breath.value = withRepeat(
       withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
     return () => cancelAnimation(breath);
-  }, [breath, reduced]);
-  return useAnimatedStyle(() => ({ transform: [{ scale: 1 + breath.value * 0.012 }] }));
+  }, [breath, reduced, routeMotionActive]);
+  return useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + breath.value * 0.012 }],
+  }));
 }
 
 /**
@@ -138,13 +147,21 @@ function FactRow({
   const content = (
     <>
       <View style={s.factLabelWrap}>
-        <Text style={[s.factLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          style={[
+            s.factLabel,
+            { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+          ]}
+        >
           {label}
         </Text>
         {detail ? (
           <Text
             numberOfLines={1}
-            style={[s.factDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+            style={[
+              s.factDetail,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
           >
             {detail}
           </Text>
@@ -163,7 +180,11 @@ function FactRow({
         {value}
       </Text>
       {onPress ? (
-        <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+        <Ionicons
+          name="chevron-forward"
+          size={15}
+          color={colors.mutedForeground}
+        />
       ) : null}
     </>
   );
@@ -213,7 +234,11 @@ function HeroChip({
       accessibilityLabel={accessibilityLabel}
       hitSlop={MOBILE_INLINE_HIT_SLOP}
       onPress={onPress}
-      style={({ pressed }) => [s.heroChip, style, { opacity: pressed ? 0.7 : 1 }]}
+      style={({ pressed }) => [
+        s.heroChip,
+        style,
+        { opacity: pressed ? 0.7 : 1 },
+      ]}
     >
       <Ionicons name={icon} size={20} color="#FBF6E7" />
     </Pressable>
@@ -322,7 +347,9 @@ export default function DogProfileScreen({
   const openProfileEdit = () => {
     setPName(profile.name === "My Dog" ? "" : profile.name);
     setPBreed(profile.breed);
-    setPWeight(profile.weight.current > 0 ? String(profile.weight.current) : "");
+    setPWeight(
+      profile.weight.current > 0 ? String(profile.weight.current) : "",
+    );
     setPWeightError(null);
     setPWeightUnit((profile.weight.unit as "lb" | "kg") || "lb");
     setPFocus(profile.careFocus ?? "");
@@ -409,7 +436,8 @@ export default function DogProfileScreen({
     },
     {
       label: "Weight",
-      value: weightCurrent > 0 ? `${weightCurrent} ${weightUnit}` : "Not on file",
+      value:
+        weightCurrent > 0 ? `${weightCurrent} ${weightUnit}` : "Not on file",
       empty: weightCurrent <= 0,
       detail:
         weightCurrent > 0 && weightGoal
@@ -513,7 +541,10 @@ export default function DogProfileScreen({
             <Text
               style={[
                 s.recoveryMessage,
-                { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
               ]}
             >
               {profileStorageDashboard?.message ??
@@ -526,14 +557,24 @@ export default function DogProfileScreen({
                 onPress={runStorageRecovery}
                 style={({ pressed }) => [
                   s.recoveryAction,
-                  { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: pressed ? 0.84 : 1,
+                  },
                 ]}
               >
-                <Ionicons name="refresh-outline" size={17} color={colors.primaryForeground} />
+                <Ionicons
+                  name="refresh-outline"
+                  size={17}
+                  color={colors.primaryForeground}
+                />
                 <Text
                   style={[
                     s.recoveryActionText,
-                    { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_700Bold",
+                    },
                   ]}
                 >
                   {recoveryActionLabel}
@@ -555,7 +596,15 @@ export default function DogProfileScreen({
       >
         {/* Full-bleed park hero: scene, floating back + edit chips, and the
             name over a soft scrim. The portrait straddles its lower edge. */}
-        <View style={[s.hero, { height: insets.top + HERO_CONTENT_HEIGHT, backgroundColor: colors.secondary }]}>
+        <View
+          style={[
+            s.hero,
+            {
+              height: insets.top + HERO_CONTENT_HEIGHT,
+              backgroundColor: colors.secondary,
+            },
+          ]}
+        >
           {/* Explicit 100% size: RN-web renders an absolute-fill Image at its
               natural size without it, showing a zoomed corner of the band. */}
           <Image
@@ -588,12 +637,24 @@ export default function DogProfileScreen({
             pointerEvents="none"
           />
           <View style={[s.heroBar, { paddingTop: heroTopPadding }]}>
-            <HeroChip icon="chevron-back" accessibilityLabel="Back" onPress={goBack} />
+            <HeroChip
+              icon="chevron-back"
+              accessibilityLabel="Back"
+              onPress={goBack}
+            />
             <View style={s.heroTitleWrap} pointerEvents="none">
               {/* sageSoft is a dark surface token in dark mode (#233C2E) and is
                   illegible on the night hero, so use the bright cream token there;
                   both scrim-safe over the dark top gradient. */}
-              <Text style={[s.heroKicker, { color: colors.isDark ? colors.cream : colors.sageSoft, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.heroKicker,
+                  {
+                    color: colors.isDark ? colors.cream : colors.sageSoft,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
                 PROFILE
               </Text>
               <Text
@@ -620,7 +681,14 @@ export default function DogProfileScreen({
           onPress={openAvatarStudio}
           scaleTo={0.95}
           containerStyle={s.avatarLayout}
-          style={[s.avatarRing, { backgroundColor: colors.card, borderColor: colors.gold, shadowColor: colors.navy }]}
+          style={[
+            s.avatarRing,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.gold,
+              shadowColor: colors.brandNavy,
+            },
+          ]}
         >
           <Animated.Image
             source={getAvatarSource(status.mood)}
@@ -652,7 +720,9 @@ export default function DogProfileScreen({
           <BoardSectionHeader
             title={`About ${petName}`}
             accessory={
-              <View style={[s.heartChip, { backgroundColor: colors.rose + "1C" }]}>
+              <View
+                style={[s.heartChip, { backgroundColor: colors.rose + "1C" }]}
+              >
                 <Ionicons name="heart" size={15} color={colors.rose} />
               </View>
             }
@@ -660,7 +730,9 @@ export default function DogProfileScreen({
           <PressScale
             accessibilityRole="button"
             accessibilityLabel={
-              about ? `About ${petName}: ${about}` : `Add a few words about ${petName}`
+              about
+                ? `About ${petName}: ${about}`
+                : `Add a few words about ${petName}`
             }
             accessibilityHint="Opens the profile editor to edit the About text."
             onPress={openProfileEdit}
@@ -668,18 +740,36 @@ export default function DogProfileScreen({
             style={s.aboutBody}
           >
             {about ? (
-              <Text style={[s.aboutText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.aboutText,
+                  { color: colors.foreground, fontFamily: "Inter_500Medium" },
+                ]}
+              >
                 {about}
               </Text>
             ) : (
               <View style={[s.aboutEmpty, { borderColor: colors.border }]}>
-                <Text style={[s.aboutEmptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Add a few words about {petName} — their story, personality, and the little
-                  things that make them yours.
+                <Text
+                  style={[
+                    s.aboutEmptyText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  Add a few words about {petName} — their story, personality,
+                  and the little things that make them yours.
                 </Text>
                 <View style={s.aboutAddRow}>
                   <Ionicons name="add" size={15} color={colors.sage} />
-                  <Text style={[s.aboutAddText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.aboutAddText,
+                      { color: colors.sage, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     Add about
                   </Text>
                 </View>
@@ -719,176 +809,417 @@ export default function DogProfileScreen({
                 bounces={false}
                 style={s.profileFormScroll}
               >
-              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: SERIF }]}>Dog Profile</Text>
-              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Keep the details caregivers need in one clear place.</Text>
+                <View
+                  style={[s.modalHandle, { backgroundColor: colors.border }]}
+                />
+                <Text
+                  accessibilityRole="header"
+                  style={[
+                    s.sheetTitle,
+                    { color: colors.foreground, fontFamily: SERIF },
+                  ]}
+                >
+                  Dog Profile
+                </Text>
+                <Text
+                  style={[
+                    s.sheetSubtitle,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  Keep the details caregivers need in one clear place.
+                </Text>
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
-              <TextInput
-                accessibilityLabel="Dog name"
-                value={pName}
-                onChangeText={setPName}
-                placeholder="e.g. Luna"
-                placeholderTextColor={colors.mutedForeground}
-                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
+                <Text
+                  style={[
+                    s.profFieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  NAME
+                </Text>
+                <TextInput
+                  accessibilityLabel="Dog name"
+                  value={pName}
+                  onChangeText={setPName}
+                  placeholder="e.g. Luna"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    s.profField,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>BREED</Text>
-              <TextInput
-                accessibilityLabel="Dog breed"
-                value={pBreed}
-                onChangeText={setPBreed}
-                placeholder="e.g. Golden Retriever mix"
-                placeholderTextColor={colors.mutedForeground}
-                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
+                <Text
+                  style={[
+                    s.profFieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  BREED
+                </Text>
+                <TextInput
+                  accessibilityLabel="Dog breed"
+                  value={pBreed}
+                  onChangeText={setPBreed}
+                  placeholder="e.g. Golden Retriever mix"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    s.profField,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
 
-              <View style={s.profWeightRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>WEIGHT</Text>
-                  <TextInput
-                    accessibilityLabel="Current weight"
-                    value={pWeight}
-                    onChangeText={(value) => {
-                      setPWeight(value);
-                      setPWeightError(null);
-                    }}
-                    placeholder="0.0"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="decimal-pad"
-                    style={[
-                      s.profField,
-                      {
-                        backgroundColor: colors.background,
-                        color: pWeightError ? colors.rose : colors.foreground,
-                        borderWidth: pWeightError ? 1 : 0,
-                        borderColor: pWeightError ? colors.rose : "transparent",
-                        fontFamily: "Inter_500Medium",
-                      },
-                    ]}
-                  />
-                  {pWeightError ? (
-                    <Text aria-live="polite" style={[s.fieldError, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
-                      {pWeightError}
+                <View style={s.profWeightRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.profFieldLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      WEIGHT
                     </Text>
-                  ) : null}
-                </View>
-                <View>
-                  <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>UNIT</Text>
-                  <View style={s.unitRow}>
-                    {(["lb", "kg"] as const).map((u) => (
-                      <Pressable
-                        key={u}
-                        accessibilityRole="radio"
-                        accessibilityLabel={`Weight unit ${u}`}
-                        accessibilityState={{ selected: pWeightUnit === u }}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          setPWeightUnit(u);
-                        }}
+                    <TextInput
+                      accessibilityLabel="Current weight"
+                      value={pWeight}
+                      onChangeText={(value) => {
+                        setPWeight(value);
+                        setPWeightError(null);
+                      }}
+                      placeholder="0.0"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="decimal-pad"
+                      style={[
+                        s.profField,
+                        {
+                          backgroundColor: colors.background,
+                          color: pWeightError ? colors.rose : colors.foreground,
+                          borderWidth: pWeightError ? 1 : 0,
+                          borderColor: pWeightError
+                            ? colors.rose
+                            : "transparent",
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    />
+                    {pWeightError ? (
+                      <Text
+                        aria-live="polite"
                         style={[
-                          s.unitPill,
+                          s.fieldError,
                           {
-                            backgroundColor: pWeightUnit === u ? colors.primary : colors.background,
-                            borderColor: pWeightUnit === u ? colors.primary : colors.border,
+                            color: colors.rose,
+                            fontFamily: "Inter_600SemiBold",
                           },
                         ]}
                       >
-                        <Text style={[s.unitText, { color: pWeightUnit === u ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{u}</Text>
-                      </Pressable>
-                    ))}
+                        {pWeightError}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View>
+                    <Text
+                      style={[
+                        s.profFieldLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      UNIT
+                    </Text>
+                    <View style={s.unitRow}>
+                      {(["lb", "kg"] as const).map((u) => (
+                        <Pressable
+                          key={u}
+                          accessibilityRole="radio"
+                          accessibilityLabel={`Weight unit ${u}`}
+                          accessibilityState={{ selected: pWeightUnit === u }}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setPWeightUnit(u);
+                          }}
+                          style={[
+                            s.unitPill,
+                            {
+                              backgroundColor:
+                                pWeightUnit === u
+                                  ? colors.primary
+                                  : colors.background,
+                              borderColor:
+                                pWeightUnit === u
+                                  ? colors.primary
+                                  : colors.border,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.unitText,
+                              {
+                                color:
+                                  pWeightUnit === u
+                                    ? colors.primaryForeground
+                                    : colors.foreground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {u}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>CARE FOCUS (OPTIONAL)</Text>
-              <TextInput
-                accessibilityLabel="Care focus"
-                value={pFocus}
-                onChangeText={setPFocus}
-                placeholder="e.g. Maintain healthy weight, ease anxiety"
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                style={[s.profField, s.profFieldMultiline, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-              />
+                <Text
+                  style={[
+                    s.profFieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  CARE FOCUS (OPTIONAL)
+                </Text>
+                <TextInput
+                  accessibilityLabel="Care focus"
+                  value={pFocus}
+                  onChangeText={setPFocus}
+                  placeholder="e.g. Maintain healthy weight, ease anxiety"
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  style={[
+                    s.profField,
+                    s.profFieldMultiline,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                />
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>BACKGROUND / ABOUT</Text>
-              <TextInput
-                accessibilityLabel="Dog background and about"
-                value={pBackground}
-                onChangeText={setPBackground}
-                placeholder="Personality, history, and helpful caregiver context"
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                style={[s.profField, s.profFieldMultiline, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-              />
+                <Text
+                  style={[
+                    s.profFieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  BACKGROUND / ABOUT
+                </Text>
+                <TextInput
+                  accessibilityLabel="Dog background and about"
+                  value={pBackground}
+                  onChangeText={setPBackground}
+                  placeholder="Personality, history, and helpful caregiver context"
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  style={[
+                    s.profField,
+                    s.profFieldMultiline,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                />
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>MICROCHIP NUMBER</Text>
-              <TextInput
-                accessibilityLabel="Microchip number"
-                value={pMicrochip}
-                onChangeText={setPMicrochip}
-                placeholder="985112..."
-                placeholderTextColor={colors.mutedForeground}
-                autoCapitalize="none"
-                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
+                <Text
+                  style={[
+                    s.profFieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  MICROCHIP NUMBER
+                </Text>
+                <TextInput
+                  accessibilityLabel="Microchip number"
+                  value={pMicrochip}
+                  onChangeText={setPMicrochip}
+                  placeholder="985112..."
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="none"
+                  style={[
+                    s.profField,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>PRIMARY VET</Text>
-              <TextInput
-                accessibilityLabel="Primary veterinarian"
-                value={pPrimaryVet}
-                onChangeText={setPPrimaryVet}
-                placeholder="Clinic or veterinarian"
-                placeholderTextColor={colors.mutedForeground}
-                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
+                <Text
+                  style={[
+                    s.profFieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  PRIMARY VET
+                </Text>
+                <TextInput
+                  accessibilityLabel="Primary veterinarian"
+                  value={pPrimaryVet}
+                  onChangeText={setPPrimaryVet}
+                  placeholder="Clinic or veterinarian"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    s.profField,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>EMERGENCY CONTACT</Text>
-              <TextInput
-                accessibilityLabel="Emergency contact"
-                value={pEmergencyContact}
-                onChangeText={setPEmergencyContact}
-                placeholder="Name and phone"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="phone-pad"
-                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
+                <Text
+                  style={[
+                    s.profFieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  EMERGENCY CONTACT
+                </Text>
+                <TextInput
+                  accessibilityLabel="Emergency contact"
+                  value={pEmergencyContact}
+                  onChangeText={setPEmergencyContact}
+                  placeholder="Name and phone"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="phone-pad"
+                  style={[
+                    s.profField,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
 
-              <View style={s.profWeightRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INSURANCE</Text>
-                  <TextInput
-                    accessibilityLabel="Insurance provider"
-                    value={pInsuranceProvider}
-                    onChangeText={setPInsuranceProvider}
-                    placeholder="Provider"
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-                  />
+                <View style={s.profWeightRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.profFieldLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      INSURANCE
+                    </Text>
+                    <TextInput
+                      accessibilityLabel="Insurance provider"
+                      value={pInsuranceProvider}
+                      onChangeText={setPInsuranceProvider}
+                      placeholder="Provider"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[
+                        s.profField,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.foreground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.profFieldLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      POLICY
+                    </Text>
+                    <TextInput
+                      accessibilityLabel="Insurance policy number"
+                      value={pInsurancePolicy}
+                      onChangeText={setPInsurancePolicy}
+                      placeholder="Policy #"
+                      placeholderTextColor={colors.mutedForeground}
+                      autoCapitalize="characters"
+                      style={[
+                        s.profField,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.foreground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    />
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>POLICY</Text>
-                  <TextInput
-                    accessibilityLabel="Insurance policy number"
-                    value={pInsurancePolicy}
-                    onChangeText={setPInsurancePolicy}
-                    placeholder="Policy #"
-                    placeholderTextColor={colors.mutedForeground}
-                    autoCapitalize="characters"
-                    style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-              </View>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Save dog profile"
-                onPress={saveProfile}
-                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save profile</Text>
-              </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Save dog profile"
+                  onPress={saveProfile}
+                  style={({ pressed }) => [
+                    s.profSaveBtn,
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.profSaveBtnText,
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
+                    Save profile
+                  </Text>
+                </Pressable>
               </ScrollView>
             </ModalSheetPressable>
           </KeyboardAvoidingView>

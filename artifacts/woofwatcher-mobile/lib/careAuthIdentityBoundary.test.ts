@@ -126,6 +126,23 @@ test("a same-session household switch revokes permits and render-origin callback
   );
 });
 
+test("render-origin permits stay referentially stable until the identity changes", () => {
+  const boundary = createCareAuthIdentityBoundary();
+  boundary.observe(signedIn("user-a", "session-a", "household-a"));
+
+  const first = boundary.captureMutationOrigin();
+  const second = boundary.captureMutationOrigin();
+  assert.ok(first);
+  assert.equal(second, first);
+
+  boundary.observe(signedIn("user-a", "session-a", "household-b"));
+  const nextHousehold = boundary.captureMutationOrigin();
+  assert.ok(nextHousehold);
+  assert.notEqual(nextHousehold, first);
+  assert.equal(boundary.canInvoke(first!), false);
+  assert.equal(boundary.canInvoke(nextHousehold!), true);
+});
+
 test("opaque delimiter characters cannot collide across identity or household scopes", () => {
   const first = createCareAuthIdentityBoundary();
   const a = first.observe(signedIn("a:b", "c", "d:e"));

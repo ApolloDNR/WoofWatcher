@@ -10,13 +10,15 @@ show_usage() {
 usage: ./script/build_and_run.sh [mode]
 
 Modes:
-  start, run        Start the Expo development server
+  start, run        Start the clean consumer preview
   --ios, ios        Start Expo and open iOS
   --android, android
                     Start Expo and open Android
   --web, web        Start Expo for web
   --dev-client, dev-client
                     Start Expo in development-client mode
+  --internal, internal
+                    Start Expo with owner and QA tooling visible
   --tunnel, tunnel  Start Expo using tunnel transport
   --export-web, export-web
                     Export the local web build
@@ -41,23 +43,31 @@ run_expo() {
   exec "${PNPM_CMD[@]}" exec expo "$@"
 }
 
+run_consumer_expo() {
+  export EXPO_PUBLIC_CONSUMER_PREVIEW=1
+  run_expo "$@"
+}
+
 resolve_pnpm_cmd
 
 case "$MODE" in
   start|run)
-    run_expo start
+    run_consumer_expo start
     ;;
   --ios|ios)
-    run_expo start --ios
+    run_consumer_expo start --ios
     ;;
   --android|android)
-    run_expo start --android
+    run_consumer_expo start --android
     ;;
   --web|web)
-    run_expo start --web
+    run_consumer_expo start --web
     ;;
   --dev-client|dev-client)
     run_expo start --dev-client
+    ;;
+  --internal|internal)
+    run_expo start
     ;;
   --tunnel|tunnel)
     run_expo start --tunnel

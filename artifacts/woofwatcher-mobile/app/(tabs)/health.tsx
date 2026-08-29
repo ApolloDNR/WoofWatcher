@@ -1,7 +1,27 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Redirect, type Href, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { ImageBackground, type LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import {
+  Redirect,
+  type Href,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from "react";
+import {
+  ImageBackground,
+  type LayoutChangeEvent,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveBileVomitEvidence30,
@@ -33,7 +53,11 @@ import { useCare } from "@/context/CareContext";
 import { useActiveCurrentTime } from "@/hooks/useActiveCurrentTime";
 import { useColors } from "@/hooks/useColors";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { canonicalPlansReminderCenterRoute } from "@/lib/canonicalRouteBuilders";
+import {
+  CARE_TWIN_ROOM_VARIANT_ASSETS,
+  getCareTwinSpriteAsset,
+} from "@/lib/careTwinAssets";
 import {
   buildHealthReviewPacketShareText,
   deriveHealthMetricEvidence,
@@ -60,7 +84,8 @@ import {
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-const HEALTH_WATCH_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.healthWatch.source;
+const HEALTH_WATCH_STAGE_ROOM =
+  CARE_TWIN_ROOM_VARIANT_ASSETS.healthWatch.source;
 const HEALTH_WATCH_STAGE_SPRITE = getCareTwinSpriteAsset("health-watch");
 const HEALTH_WATCH_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["health-watch"];
 
@@ -89,7 +114,12 @@ function HealthHeaderAction({
         },
       ]}
     >
-      <Text style={[s.healthHeaderActionText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+      <Text
+        style={[
+          s.healthHeaderActionText,
+          { color: colors.mutedForeground, fontFamily: "Inter_700Bold" },
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -166,29 +196,54 @@ function HealthSummaryRow({
       accessibilityHint={accessibilityHint}
       onPress={onPress}
       scaleTo={0.97}
-      style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+      style={[
+        s.summaryRow,
+        { backgroundColor: colors.background, borderColor: colors.border },
+      ]}
     >
       <View style={[s.summaryRowIcon, { backgroundColor: colors.sageSoft }]}>
         <PixelIcon name={icon} size={22} />
       </View>
       <View style={s.summaryRowText}>
-        <Text numberOfLines={2} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
+        <Text
+          numberOfLines={2}
+          style={[
+            s.summaryRowLabel,
+            { color: colors.ink, fontFamily: "Inter_700Bold" },
+          ]}
+        >
           {label}
         </Text>
         {detail ? (
           // 2 lines: the empty-state instructions ("Add a vet visit record to
           // the vault") are squeezed by the right-aligned value and clipped
           // the destination word off on one line. Short details stay 1 line.
-          <Text numberOfLines={2} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            numberOfLines={2}
+            style={[
+              s.summaryRowDetail,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {detail}
           </Text>
         ) : null}
       </View>
       {accessory}
-      <Text numberOfLines={2} style={[s.summaryRowValue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+      <Text
+        numberOfLines={2}
+        style={[
+          s.summaryRowValue,
+          { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+        ]}
+      >
         {value}
       </Text>
-      <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+      <Ionicons
+        name="chevron-forward"
+        size={14}
+        color={colors.mutedForeground}
+      />
     </PressScale>
   );
 }
@@ -298,10 +353,7 @@ function HealthCoreScreen({
     }
     pendingMedicationScrollRef.current = true;
     const frame = requestAnimationFrame(() => {
-      if (
-        pendingMedicationScrollRef.current &&
-        scrollToMedicationAnchor()
-      ) {
+      if (pendingMedicationScrollRef.current && scrollToMedicationAnchor()) {
         pendingMedicationScrollRef.current = false;
       }
     });
@@ -400,7 +452,9 @@ function HealthCoreScreen({
     [sharedEntries, state.profile, state.goals, now],
   );
   const weightOnFile = weightTrend.currentWeight > 0;
-  const weightValue = weightOnFile ? `${weightTrend.currentWeight} ${weightTrend.unit}` : "Not on file";
+  const weightValue = weightOnFile
+    ? `${weightTrend.currentWeight} ${weightTrend.unit}`
+    : "Not on file";
   const weightDetail = !weightOnFile
     ? "Log a weigh-in to start the trend"
     : weightTrend.totalWeighIns >= 2 && weightTrend.changeFromPrevious !== 0
@@ -414,13 +468,25 @@ function HealthCoreScreen({
   const sparkRange = Math.max(0.1, sparkMax - sparkMin);
 
   const medicationAdherence = useMemo(
-    () => deriveMedicationAdherence({ entries: sharedEntries, routines: state.routines, now }),
+    () =>
+      deriveMedicationAdherence({
+        entries: sharedEntries,
+        routines: state.routines,
+        now,
+      }),
     [sharedEntries, state.routines, now],
   );
 
-  const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
-  const vaccineSection = recordVault.sections.find((section) => section.kind === "vaccine");
-  const vetSection = recordVault.sections.find((section) => section.kind === "vet");
+  const recordVault = useMemo(
+    () => summarizeRecordVault(state.records),
+    [state.records],
+  );
+  const vaccineSection = recordVault.sections.find(
+    (section) => section.kind === "vaccine",
+  );
+  const vetSection = recordVault.sections.find(
+    (section) => section.kind === "vet",
+  );
   const vaccineCount = vaccineSection?.count ?? 0;
   const expiredVaccineCount = useMemo(
     () =>
@@ -437,16 +503,25 @@ function HealthCoreScreen({
     if (!vetRecords.length) return null;
     const dated = vetRecords
       .map((record) => ({ record, status: getRecordDueStatus(record, now) }))
-      .filter((item) => Boolean(item.status.date) && (item.status.daysUntil ?? 1) <= 0)
+      .filter(
+        (item) =>
+          Boolean(item.status.date) && (item.status.daysUntil ?? 1) <= 0,
+      )
       .sort((a, b) => (b.status.daysUntil ?? 0) - (a.status.daysUntil ?? 0));
     if (dated[0]) {
-      return { value: dated[0].status.date ?? dated[0].record.due ?? "", detail: dated[0].record.title };
+      return {
+        value: dated[0].status.date ?? dated[0].record.due ?? "",
+        detail: dated[0].record.title,
+      };
     }
     const first = vetRecords[0];
     if (recordDueNeedsCorrection(first)) {
       return { value: "Needs correction", detail: first.title };
     }
-    return { value: first.due?.trim() || first.title, detail: first.due?.trim() ? first.title : "Visit record on file" };
+    return {
+      value: first.due?.trim() || first.title,
+      detail: first.due?.trim() ? first.title : "Visit record on file",
+    };
   }, [vetSection, now]);
 
   const sensitivitiesOnFile = (state.dietProfile.sensitivities ?? "").trim();
@@ -464,6 +539,7 @@ function HealthCoreScreen({
       }).length;
       return {
         label: bucket.label.slice(0, 1),
+        fullLabel: bucket.label,
         count,
       };
     });
@@ -492,12 +568,19 @@ function HealthCoreScreen({
         ),
       ).length;
       const watchSignals = dayEntries.filter((entry) =>
-        ["vomit", "symptom", "incident"].includes(normalizeCareEventType(entry.type, entry.details)),
+        ["vomit", "symptom", "incident"].includes(
+          normalizeCareEventType(entry.type, entry.details),
+        ),
       ).length;
       // Days with zero logs stay neutral: no data should never render as a
       // full green "all good" bar.
       const hasData = dayEntries.length > 0;
-      const value = hasData ? Math.max(0.18, Math.min(1, 0.34 + careLogs * 0.1 - watchSignals * 0.18)) : 0;
+      const value = hasData
+        ? Math.max(
+            0.18,
+            Math.min(1, 0.34 + careLogs * 0.1 - watchSignals * 0.18),
+          )
+        : 0;
 
       return {
         label: bucket.label.slice(0, 1),
@@ -506,7 +589,9 @@ function HealthCoreScreen({
         tone: !hasData
           ? colors.muted
           : watchSignals
-            ? (watchSignals > 1 ? colors.rose : colors.amber)
+            ? watchSignals > 1
+              ? colors.rose
+              : colors.amber
             : colors.sage,
       };
     });
@@ -634,7 +719,10 @@ function HealthCoreScreen({
     healthCounts: healthWindowWatch.counts,
     signals: healthWindowWatch.signals,
   });
-  const metricTone = (tone: (typeof metricEvidence)[keyof typeof metricEvidence]["tone"], positive: string) =>
+  const metricTone = (
+    tone: (typeof metricEvidence)[keyof typeof metricEvidence]["tone"],
+    positive: string,
+  ) =>
     tone === "review"
       ? colors.rose
       : tone === "watch"
@@ -738,10 +826,11 @@ function HealthCoreScreen({
   const visibleHealthStatusControls = buildVisibleHealthStatusControls(
     displayHealthRows,
     {
-      openLogDetail: ({ pathname, params }) => router.push({
-        pathname,
-        params: { ...params, intent: String(Date.now()) },
-      }),
+      openLogDetail: ({ pathname, params }) =>
+        router.push({
+          pathname,
+          params: { ...params, intent: String(Date.now()) },
+        }),
     },
   );
 
@@ -786,7 +875,12 @@ function HealthCoreScreen({
           style={s.routeHeaderCompact}
         />
 
-        <View style={[s.tabRail, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            s.tabRail,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
           {[
             { key: "health" as const, label: "Health" },
             { key: "bile" as const, label: "Bile Watch" },
@@ -816,7 +910,9 @@ function HealthCoreScreen({
                     s.tabText,
                     {
                       color: active ? colors.primaryForeground : colors.navy,
-                      fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
+                      fontFamily: active
+                        ? "Inter_700Bold"
+                        : "Inter_600SemiBold",
                     },
                   ]}
                 >
@@ -830,40 +926,104 @@ function HealthCoreScreen({
         {isBileTab ? (
           <BoardCard style={s.bileCard} enter={0}>
             <View style={s.sectionTop}>
-              <BoardSectionHeader title="7-day bile log" style={s.boardSectionTop} />
-              <BoardPill label={bileStatus} icon="water-outline" tone={bileTone} />
+              <BoardSectionHeader
+                title="7-day bile log"
+                style={s.boardSectionTop}
+              />
+              <BoardPill
+                label={bileStatus}
+                icon="water-outline"
+                tone={bileTone}
+              />
             </View>
 
-            <View style={[s.bilePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View style={[s.bileMedallion, { backgroundColor: bileTone + "16", borderColor: bileTone + "55" }]}>
+            <View
+              style={[
+                s.bilePanel,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  s.bileMedallion,
+                  {
+                    backgroundColor: bileTone + "16",
+                    borderColor: bileTone + "55",
+                  },
+                ]}
+              >
                 <PixelIcon name="bile" size={34} />
-                <Text style={[s.bileMedallionText, { color: bileTone, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.bileMedallionText,
+                    { color: bileTone, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   {bileStatus}
                 </Text>
               </View>
               <View style={s.bileTrendArea}>
-                <Text style={[s.bileTrendTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                <Text
+                  style={[
+                    s.bileTrendTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
                   Recent timing
                 </Text>
-                <Text style={[s.bileTrendCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.bileTrendCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   Seven calendar days of owner-entered yellow bile observations.
                 </Text>
-                <View style={s.bileBars}>
+                <View
+                  accessible
+                  accessibilityRole="image"
+                  accessibilityLabel={`Seven-day bile observations. ${bileTrend
+                    .map(
+                      (day) =>
+                        `${day.fullLabel}: ${day.count} observation${day.count === 1 ? "" : "s"}`,
+                    )
+                    .join(". ")}.`}
+                  style={s.bileBars}
+                >
                   {bileTrend.map((day, index) => {
                     const active = day.count > 0;
                     return (
-                      <View key={`${day.label}-${index}`} style={s.bileBarColumn}>
+                      <View
+                        key={`${day.label}-${index}`}
+                        style={s.bileBarColumn}
+                      >
                         <View
                           style={[
                             s.bileBar,
                             {
-                              height: active ? Math.min(34, 14 + day.count * 8) : 8,
+                              height: active
+                                ? Math.min(34, 14 + day.count * 8)
+                                : 8,
                               backgroundColor: active ? bileTone : colors.muted,
                               borderColor: active ? bileTone : colors.border,
                             },
                           ]}
                         />
-                        <Text style={[s.bileBarLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.bileBarLabel,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
                           {day.label}
                         </Text>
                       </View>
@@ -877,21 +1037,33 @@ function HealthCoreScreen({
               <BoardMetricTile
                 icon="bile"
                 label="Last yellow bile event · 30 days"
-                value={bileEntries[0]?.occurredAt ? formatDateTime(bileEntries[0].occurredAt) : "No data"}
+                value={
+                  bileEntries[0]?.occurredAt
+                    ? formatDateTime(bileEntries[0].occurredAt)
+                    : "No data"
+                }
                 tone={bileTone}
                 style={s.metricHalf}
               />
               <BoardMetricTile
                 icon="bile"
                 label="Yellow bile · 30 days"
-                value={bileEntries.length ? `${bileEntries.length} observation${bileEntries.length === 1 ? "" : "s"}` : "No data"}
+                value={
+                  bileEntries.length
+                    ? `${bileEntries.length} observation${bileEntries.length === 1 ? "" : "s"}`
+                    : "No data"
+                }
                 tone={bileTone}
                 style={s.metricHalf}
               />
               <BoardMetricTile
                 icon="vomit"
                 label="Vomiting · 30 days"
-                value={bileObservationCount30 ? `${bileObservationCount30} observation${bileObservationCount30 === 1 ? "" : "s"}` : "No data"}
+                value={
+                  bileObservationCount30
+                    ? `${bileObservationCount30} observation${bileObservationCount30 === 1 ? "" : "s"}`
+                    : "No data"
+                }
                 tone={bileTone}
                 style={s.metricHalf}
               />
@@ -916,17 +1088,37 @@ function HealthCoreScreen({
             <View style={s.healthStageShade} />
             <View style={s.healthStageTop}>
               <View style={s.healthStageBubble}>
-                <Text style={[s.healthStageBubbleTitle, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
+                <Text
+                  style={[
+                    s.healthStageBubbleTitle,
+                    { color: colors.brandNavy, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
                   {heroBubbleTitle}
                 </Text>
-                <Text style={[s.healthStageBubbleCopy, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.healthStageBubbleCopy,
+                    { color: colors.brandNavy, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   {heroBubbleCopy}
                 </Text>
                 <View style={s.healthStageBubbleTail} />
               </View>
-              <View style={[s.healthStageChip, { backgroundColor: colors.card, borderColor: heroStatusTone }]}>
+              <View
+                style={[
+                  s.healthStageChip,
+                  { backgroundColor: colors.card, borderColor: heroStatusTone },
+                ]}
+              >
                 <PixelIcon name="health" size={16} />
-                <Text style={[s.healthStageChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.healthStageChipText,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   {heroStatusMedallionLabel}
                 </Text>
               </View>
@@ -943,31 +1135,100 @@ function HealthCoreScreen({
             </View>
           </ImageBackground>
 
-          <View style={[s.healthHeroPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View
+            style={[
+              s.healthHeroPanel,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             <BoardSectionHeader
               title={snapshotTitle}
               style={s.healthSnapshotHeader}
             />
             <View style={s.healthHeroStatusRow}>
-              <View style={[s.healthScoreToken, { backgroundColor: heroStatusTone + "14", borderColor: heroStatusTone + "66" }]}>
-                <Text style={[s.healthScoreValue, { color: heroStatusTone, fontFamily: DISPLAY }]}>
+              <View
+                style={[
+                  s.healthScoreToken,
+                  {
+                    backgroundColor: heroStatusTone + "14",
+                    borderColor: heroStatusTone + "66",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.healthScoreValue,
+                    { color: heroStatusTone, fontFamily: DISPLAY },
+                  ]}
+                >
                   {isBileTab ? <>{heroLoggedDays7}/7</> : <>{loggedDays7}/7</>}
                 </Text>
-                <Text style={[s.healthScoreLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.healthScoreLabel,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   {heroLoggedDaysLabel}
                 </Text>
               </View>
 
               <View style={s.healthHeroCopyStack}>
-                <Text style={[s.heroLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{heroStatusKicker}</Text>
-                <Text style={[s.heroTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{heroPanelTitle}</Text>
-                <Text style={[s.heroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.heroLabel,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  {heroStatusKicker}
+                </Text>
+                <Text
+                  style={[
+                    s.heroTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
+                  {heroPanelTitle}
+                </Text>
+                <Text
+                  style={[
+                    s.heroCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   {heroPanelCopy}
                 </Text>
-                <View style={[s.statusScoreTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                  <View style={[s.statusScoreFill, { width: `${heroLogCoveragePercent}%`, backgroundColor: heroStatusTone }]} />
+                <View
+                  style={[
+                    s.statusScoreTrack,
+                    {
+                      backgroundColor: colors.muted,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.statusScoreFill,
+                      {
+                        width: `${heroLogCoveragePercent}%`,
+                        backgroundColor: heroStatusTone,
+                      },
+                    ]}
+                  />
                 </View>
-                <Text style={[s.statusSupportCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                <Text
+                  style={[
+                    s.statusSupportCopy,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
                   {heroStatusSupportCopy}
                 </Text>
               </View>
@@ -975,29 +1236,68 @@ function HealthCoreScreen({
 
             {activeTab === "health" ? (
               <>
-                <View style={[s.healthRhythmPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View
+                  style={[
+                    s.healthRhythmPanel,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
                   <View style={s.healthRhythmHeader}>
-                    <Text style={[s.healthRhythmTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    <Text
+                      style={[
+                        s.healthRhythmTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
                       7-day rhythm
                     </Text>
-                    <Text style={[s.healthRhythmMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    <Text
+                      style={[
+                        s.healthRhythmMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
                       Owner log signal
                     </Text>
                   </View>
                   <View style={s.healthRhythmBars}>
                     {healthRhythm.map((day, index) => (
-                      <View key={`${day.label}-${index}`} style={s.healthRhythmColumn}>
+                      <View
+                        key={`${day.label}-${index}`}
+                        style={s.healthRhythmColumn}
+                      >
                         <View
                           style={[
                             s.healthRhythmBar,
                             {
-                              height: day.hasData ? 8 + Math.round(day.value * 22) : 8,
+                              height: day.hasData
+                                ? 8 + Math.round(day.value * 22)
+                                : 8,
                               backgroundColor: day.tone,
-                              borderColor: day.hasData ? day.tone : colors.border,
+                              borderColor: day.hasData
+                                ? day.tone
+                                : colors.border,
                             },
                           ]}
                         />
-                        <Text style={[s.healthRhythmLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.healthRhythmLabel,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
                           {day.label}
                         </Text>
                       </View>
@@ -1021,25 +1321,80 @@ function HealthCoreScreen({
                         },
                       ]}
                     >
-                      <View style={[s.statusIcon, { backgroundColor: row.tone + "16" }]}>
+                      <View
+                        style={[
+                          s.statusIcon,
+                          { backgroundColor: row.tone + "16" },
+                        ]}
+                      >
                         <PixelIcon name={row.icon} size={24} />
                       </View>
                       <View style={s.healthSignalCopy}>
                         <View style={s.healthSignalTitleLine}>
-                          <Text style={[s.healthSignalTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          <Text
+                            style={[
+                              s.healthSignalTitle,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
+                          >
                             {row.label}
                           </Text>
-                          <Text style={[s.healthSignalStatus, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{row.status}</Text>
+                          <Text
+                            style={[
+                              s.healthSignalStatus,
+                              {
+                                color: colors.foreground,
+                                fontFamily: DISPLAY_SEMI,
+                              },
+                            ]}
+                          >
+                            {row.status}
+                          </Text>
                         </View>
-                        <Text style={[s.healthSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        <Text
+                          style={[
+                            s.healthSignalDetail,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
                           {row.detail}
                         </Text>
                       </View>
-                      <View style={[s.healthSignalActionPill, { backgroundColor: row.tone + "10", borderColor: row.tone + "44" }]}>
-                        <Text style={[s.healthSignalAction, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      <View
+                        style={[
+                          s.healthSignalActionPill,
+                          {
+                            backgroundColor: row.tone + "10",
+                            borderColor: row.tone + "44",
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.healthSignalAction,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
                           Log
                         </Text>
-                        <Text style={[s.healthSignalActionArrow, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                        <Text
+                          style={[
+                            s.healthSignalActionArrow,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
                           {">"}
                         </Text>
                       </View>
@@ -1053,14 +1408,29 @@ function HealthCoreScreen({
           <View style={s.healthActionRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={isBileTab ? "Log vomiting details" : "Log a health note"}
-              onPress={() => openHealthStatusRoute(isBileTab ? "symptom" : "note")}
+              accessibilityLabel={
+                isBileTab ? "Log vomiting details" : "Log a health note"
+              }
+              onPress={() =>
+                openHealthStatusRoute(isBileTab ? "symptom" : "note")
+              }
               style={({ pressed }) => [
                 s.heroActionPrimary,
-                { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.82 : 1,
+                },
               ]}
             >
-              <Text style={[s.heroActionPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.heroActionPrimaryText,
+                  {
+                    color: colors.primaryForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
                 {isBileTab ? "Log vomiting" : "Log health note"}
               </Text>
             </Pressable>
@@ -1068,17 +1438,27 @@ function HealthCoreScreen({
               accessibilityRole="button"
               accessibilityLabel="Open health records"
               onPress={() =>
-                router.push({ pathname: "/health", params: { section: "records" } })
+                router.push({
+                  pathname: "/health",
+                  params: { section: "records" },
+                })
               }
               style={({ pressed }) => [
                 s.heroActionSecondary,
                 {
-                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  backgroundColor: pressed
+                    ? colors.secondary
+                    : colors.background,
                   borderColor: colors.border,
                 },
               ]}
             >
-              <Text style={[s.heroActionSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.heroActionSecondaryText,
+                  { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                ]}
+              >
                 Records
               </Text>
             </Pressable>
@@ -1119,37 +1499,96 @@ function HealthCoreScreen({
                   accessibilityRole="button"
                   accessibilityLabel={`Next reminder: ${nextReminder.label}. ${nextReminder.detail} Opens Plans.`}
                   accessibilityHint="Opens the reminder center on the Plans tab."
-                  onPress={() => router.push("/calendar")}
+                  onPress={() =>
+                    router.push(canonicalPlansReminderCenterRoute())
+                  }
                   scaleTo={0.97}
-                  style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[
+                    s.summaryRow,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
-                  <View style={[s.summaryRowIcon, { backgroundColor: colors.sageSoft }]}>
-                    <PixelIcon name={REMINDER_KIND_ICON[nextReminder.kind] ?? "clock"} size={22} />
+                  <View
+                    style={[
+                      s.summaryRowIcon,
+                      { backgroundColor: colors.sageSoft },
+                    ]}
+                  >
+                    <PixelIcon
+                      name={REMINDER_KIND_ICON[nextReminder.kind] ?? "clock"}
+                      size={22}
+                    />
                   </View>
                   <View style={s.summaryRowText}>
-                    <Text numberOfLines={1} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.summaryRowLabel,
+                        { color: colors.ink, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
                       {nextReminder.label}
                     </Text>
-                    <Text numberOfLines={2} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        s.summaryRowDetail,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
                       {nextReminder.detail}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={colors.mutedForeground}
+                  />
                 </PressScale>
               ) : (
-                <View style={[s.summaryEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[s.summaryEmptyTitle, { color: colors.ink, fontFamily: DISPLAY_SEMI }]}>
+                <View
+                  style={[
+                    s.summaryEmpty,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.summaryEmptyTitle,
+                      { color: colors.ink, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     No reminders set
                   </Text>
-                  <Text style={[s.summaryEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Medication schedules, routines, and record renewals surface here once they exist.
+                  <Text
+                    style={[
+                      s.summaryEmptyCopy,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    Medication schedules, routines, and record renewals surface
+                    here once they exist.
                   </Text>
                   <BoardActionButton
                     label="Add in Plans"
                     icon="add"
                     variant="soft"
                     accessibilityLabel="Add a reminder from the Plans tab"
-                    onPress={() => router.push("/calendar")}
+                    onPress={() =>
+                      router.push(canonicalPlansReminderCenterRoute())
+                    }
                     style={s.summaryEmptyAction}
                   />
                 </View>
@@ -1166,7 +1605,10 @@ function HealthCoreScreen({
                   detail={weightDetail}
                   accessory={
                     weightTrend.items.length >= 2 ? (
-                      <View style={s.summarySpark} accessibilityLabel={`Weight trend across ${weightTrend.totalWeighIns} logged weigh-ins`}>
+                      <View
+                        style={s.summarySpark}
+                        accessibilityLabel={`Weight trend across ${weightTrend.totalWeighIns} logged weigh-ins`}
+                      >
                         {weightTrend.items.map((item, index) => (
                           <View
                             key={`${item.id}-${index}`}
@@ -1174,7 +1616,12 @@ function HealthCoreScreen({
                               s.summarySparkBar,
                               {
                                 backgroundColor: colors.sage,
-                                height: 6 + Math.round(((item.weight - sparkMin) / sparkRange) * 12),
+                                height:
+                                  6 +
+                                  Math.round(
+                                    ((item.weight - sparkMin) / sparkRange) *
+                                      12,
+                                  ),
                               },
                             ]}
                           />
@@ -1183,7 +1630,10 @@ function HealthCoreScreen({
                     ) : undefined
                   }
                   onPress={() =>
-                    router.push({ pathname: "/health", params: { section: "trends" } })
+                    router.push({
+                      pathname: "/health",
+                      params: { section: "trends" },
+                    })
                   }
                   accessibilityLabel={`Weight. ${weightValue}. ${weightDetail}. Opens Health Trends.`}
                 />
@@ -1191,16 +1641,25 @@ function HealthCoreScreen({
                   icon="note"
                   label="Last vet visit"
                   value={lastVetVisit ? lastVetVisit.value : "None on file"}
-                  detail={lastVetVisit ? lastVetVisit.detail : "Add a vet visit record to the vault"}
+                  detail={
+                    lastVetVisit
+                      ? lastVetVisit.detail
+                      : "Add a vet visit record to the vault"
+                  }
                   onPress={() =>
-                    router.push({ pathname: "/health", params: { section: "records" } })
+                    router.push({
+                      pathname: "/health",
+                      params: { section: "records" },
+                    })
                   }
                   accessibilityLabel={`Last vet visit. ${lastVetVisit ? `${lastVetVisit.detail}, ${lastVetVisit.value}` : "None on file"}. Opens Records.`}
                 />
                 <HealthSummaryRow
                   icon="medication"
                   label="Vaccinations"
-                  value={vaccineCount > 0 ? `${vaccineCount} filed` : "None filed"}
+                  value={
+                    vaccineCount > 0 ? `${vaccineCount} filed` : "None filed"
+                  }
                   detail={
                     expiredVaccineCount > 0
                       ? `${expiredVaccineCount} expired - worth review`
@@ -1209,7 +1668,10 @@ function HealthCoreScreen({
                         : "Add vaccine records to the vault"
                   }
                   onPress={() =>
-                    router.push({ pathname: "/health", params: { section: "records" } })
+                    router.push({
+                      pathname: "/health",
+                      params: { section: "records" },
+                    })
                   }
                   accessibilityLabel={`Vaccinations. ${vaccineCount > 0 ? `${vaccineCount} filed` : "None filed"}${expiredVaccineCount > 0 ? `, ${expiredVaccineCount} expired` : ""}. Opens Records.`}
                 />
@@ -1217,16 +1679,26 @@ function HealthCoreScreen({
                   icon="meal"
                   label="Sensitivities"
                   value={sensitivitiesOnFile || "Not on file"}
-                  detail={sensitivitiesOnFile ? "Owner notes, not a diagnosis" : "Add in the diet profile"}
+                  detail={
+                    sensitivitiesOnFile
+                      ? "Owner notes, not a diagnosis"
+                      : "Add in the diet profile"
+                  }
                   onPress={() =>
-                    router.push({ pathname: "/health", params: { section: "diet" } })
+                    router.push({
+                      pathname: "/health",
+                      params: { section: "diet" },
+                    })
                   }
                   accessibilityLabel={`Sensitivities. ${sensitivitiesOnFile || "Not on file"}. Opens the diet profile in Health.`}
                 />
               </View>
             </BoardCard>
 
-            <View collapsable={false} onLayout={registerSectionAnchor("medications")} />
+            <View
+              collapsable={false}
+              onLayout={registerSectionAnchor("medications")}
+            />
             <BoardCard style={s.summaryCard} enter={3}>
               <BoardSectionHeader
                 title="Medications"
@@ -1250,12 +1722,34 @@ function HealthCoreScreen({
                 }
               />
               {medicationAdherence.total === 0 ? (
-                <View style={[s.summaryEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[s.summaryEmptyTitle, { color: colors.ink, fontFamily: DISPLAY_SEMI }]}>
+                <View
+                  style={[
+                    s.summaryEmpty,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.summaryEmptyTitle,
+                      { color: colors.ink, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     No medications on file
                   </Text>
-                  <Text style={[s.summaryEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Medication routines added in Plans show their schedule and next dose here.
+                  <Text
+                    style={[
+                      s.summaryEmptyCopy,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    Medication routines added in Plans show their schedule and
+                    next dose here.
                   </Text>
                   <BoardActionButton
                     label="Add medication routine"
@@ -1291,32 +1785,82 @@ function HealthCoreScreen({
                         accessibilityRole="button"
                         accessibilityLabel={`${item.label}. ${item.dose}, ${item.time}. ${medStatusLabel}. Opens medications in Health.`}
                         onPress={() =>
-                          router.push({ pathname: "/health", params: { section: "medications" } })
+                          router.push({
+                            pathname: "/health",
+                            params: { section: "medications" },
+                          })
                         }
                         scaleTo={0.97}
-                        style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                        style={[
+                          s.summaryRow,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                          },
+                        ]}
                       >
-                        <View style={[s.summaryRowIcon, { backgroundColor: colors.sageSoft }]}>
+                        <View
+                          style={[
+                            s.summaryRowIcon,
+                            { backgroundColor: colors.sageSoft },
+                          ]}
+                        >
                           <PixelIcon name="medication" size={22} />
                         </View>
                         <View style={s.summaryRowText}>
-                          <Text numberOfLines={1} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
+                          <Text
+                            numberOfLines={2}
+                            style={[
+                              s.summaryRowLabel,
+                              {
+                                color: colors.ink,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
                             {item.label}
                           </Text>
-                          <Text numberOfLines={1} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          <Text
+                            numberOfLines={2}
+                            style={[
+                              s.summaryRowDetail,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
                             {item.dose} - {item.time}
                           </Text>
                         </View>
-                        <Text style={[s.summaryRowStatus, { color: medTone, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.summaryRowStatus,
+                            { color: medTone, fontFamily: "Inter_700Bold" },
+                          ]}
+                        >
                           {medStatusLabel}
                         </Text>
-                        <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                        <Ionicons
+                          name="chevron-forward"
+                          size={14}
+                          color={colors.mutedForeground}
+                        />
                       </PressScale>
                     );
                   })}
                   {medicationAdherence.next ? (
-                    <Text style={[s.summaryFootnote, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      Next: {medicationAdherence.next.label} at {medicationAdherence.next.time}
+                    <Text
+                      style={[
+                        s.summaryFootnote,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      Next: {medicationAdherence.next.label} at{" "}
+                      {medicationAdherence.next.time}
                     </Text>
                   ) : null}
                 </View>
@@ -1328,8 +1872,16 @@ function HealthCoreScreen({
         <BoardCard style={s.sectionCard}>
           <View style={s.reviewPacketTop}>
             <View style={s.reviewPacketTitleStack}>
-              <BoardSectionHeader title="Review packet" style={s.boardSectionTop} />
-              <Text style={[s.reviewPacketStatus, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+              <BoardSectionHeader
+                title="Review packet"
+                style={s.boardSectionTop}
+              />
+              <Text
+                style={[
+                  s.reviewPacketStatus,
+                  { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                ]}
+              >
                 {healthReviewPacket.statusLabel}
               </Text>
             </View>
@@ -1346,40 +1898,108 @@ function HealthCoreScreen({
             />
           </View>
 
-          <Text style={[s.reviewPacketSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            style={[
+              s.reviewPacketSummary,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {healthReviewPacket.summary}
           </Text>
 
           <View style={s.reviewPromptStack}>
             {healthReviewPacket.prompts.slice(0, 2).map((prompt) => (
-              <View key={prompt} style={[s.reviewPromptRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={[s.reviewPromptBullet, { backgroundColor: colors.sage + "22", borderColor: colors.sage + "55" }]}>
+              <View
+                key={prompt}
+                style={[
+                  s.reviewPromptRow,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    s.reviewPromptBullet,
+                    {
+                      backgroundColor: colors.sage + "22",
+                      borderColor: colors.sage + "55",
+                    },
+                  ]}
+                >
                   <PixelIcon name="health" size={15} />
                 </View>
-                <Text style={[s.reviewPromptText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                <Text
+                  style={[
+                    s.reviewPromptText,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
                   {prompt}
                 </Text>
               </View>
             ))}
           </View>
 
-          <View style={[s.reviewChecklistPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-            <Text style={[s.reviewChecklistTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+          <View
+            style={[
+              s.reviewChecklistPanel,
+              { backgroundColor: colors.secondary, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                s.reviewChecklistTitle,
+                { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+              ]}
+            >
               Vet-share checklist
             </Text>
             {healthReviewPacket.vetShareChecklist.slice(0, 3).map((item) => (
               <View key={item} style={s.reviewChecklistRow}>
-                <Text style={[s.reviewChecklistMark, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>+</Text>
-                <Text style={[s.reviewChecklistText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.reviewChecklistMark,
+                    { color: colors.copper, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  +
+                </Text>
+                <Text
+                  style={[
+                    s.reviewChecklistText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   {item}
                 </Text>
               </View>
             ))}
           </View>
 
-          <View style={[s.reviewPacketBoundary, { backgroundColor: colors.background, borderColor: colors.sage + "55" }]}>
+          <View
+            style={[
+              s.reviewPacketBoundary,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.sage + "55",
+              },
+            ]}
+          >
             <PixelIcon name="health" size={20} />
-            <Text style={[s.reviewPacketBoundaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            <Text
+              style={[
+                s.reviewPacketBoundaryText,
+                { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+              ]}
+            >
               {healthReviewPacket.boundary}
             </Text>
           </View>
@@ -1396,7 +2016,12 @@ function HealthCoreScreen({
               },
             ]}
           >
-            <Text style={[s.reviewPacketShareText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+            <Text
+              style={[
+                s.reviewPacketShareText,
+                { color: colors.foreground, fontFamily: "Inter_800ExtraBold" },
+              ]}
+            >
               Share review
             </Text>
           </Pressable>
@@ -1405,29 +2030,51 @@ function HealthCoreScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={healthReviewPacket.primaryAction.label}
-              onPress={() => openHealthReviewAction(healthReviewPacket.primaryAction)}
+              onPress={() =>
+                openHealthReviewAction(healthReviewPacket.primaryAction)
+              }
               style={({ pressed }) => [
                 s.reviewPacketPrimary,
-                { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.82 : 1,
+                },
               ]}
             >
-              <Text style={[s.reviewPacketPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.reviewPacketPrimaryText,
+                  {
+                    color: colors.primaryForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
                 {healthReviewPacket.primaryAction.label}
               </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Draft vet questions"
-              onPress={() => openHealthReviewAction(healthReviewPacket.secondaryAction)}
+              onPress={() =>
+                openHealthReviewAction(healthReviewPacket.secondaryAction)
+              }
               style={({ pressed }) => [
                 s.reviewPacketSecondary,
                 {
-                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  backgroundColor: pressed
+                    ? colors.secondary
+                    : colors.background,
                   borderColor: colors.border,
                 },
               ]}
             >
-              <Text style={[s.reviewPacketSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.reviewPacketSecondaryText,
+                  { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                ]}
+              >
                 Draft vet questions
               </Text>
             </Pressable>
@@ -1447,24 +2094,55 @@ function HealthCoreScreen({
               ) : undefined
             }
           />
-          <View style={[s.reviewPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Text style={[s.reviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+          <View
+            style={[
+              s.reviewPanel,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              accessibilityRole="header"
+              style={[
+                s.reviewTitle,
+                { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+              ]}
+            >
               {!hasHealthSignalData
                 ? "More observations needed"
                 : healthWatch.status === "good"
                   ? "No active Health Watch signals"
                   : "Next best review step"}
             </Text>
-            <Text style={[s.reviewCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              style={[
+                s.reviewCopy,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
               {reviewCopy}
             </Text>
           </View>
           {healthWatch.patterns.slice(0, 4).map((pattern) => {
-            const goodPatternHasNoData = pattern.status === "good" && !hasHealthSignalData;
+            const goodPatternHasNoData =
+              pattern.status === "good" && !hasHealthSignalData;
             return (
-              <View key={pattern.kind} style={[s.patternRow, { borderTopColor: colors.border }]}>
+              <View
+                key={pattern.kind}
+                style={[s.patternRow, { borderTopColor: colors.border }]}
+              >
                 <View style={s.patternTitleRow}>
-                  <Text style={[s.patternTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.patternTitle,
+                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {pattern.status === "good"
                       ? goodPatternHasNoData
                         ? "Health Watch needs logs"
@@ -1492,12 +2170,28 @@ function HealthCoreScreen({
                     }
                   />
                 </View>
-                <Text style={[s.patternCopy, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                <Text
+                  style={[
+                    s.patternCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                >
                   {goodPatternHasNoData
                     ? "No Health Watch observations are logged in the current window."
                     : pattern.evidence}
                 </Text>
-                <Text style={[s.patternStep, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                <Text
+                  style={[
+                    s.patternStep,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
                   {pattern.nextStep}
                 </Text>
               </View>
@@ -1505,9 +2199,26 @@ function HealthCoreScreen({
           })}
         </BoardCard>
 
-        <View style={[s.boundaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[s.boundaryLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>CARE BOUNDARY</Text>
-          <Text style={[s.boundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+        <View
+          style={[
+            s.boundaryCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text
+            style={[
+              s.boundaryLabel,
+              { color: colors.foreground, fontFamily: "Inter_700Bold" },
+            ]}
+          >
+            CARE BOUNDARY
+          </Text>
+          <Text
+            style={[
+              s.boundary,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {healthWatch.vetBoundary} Not veterinary advice.
           </Text>
         </View>
@@ -1752,7 +2463,12 @@ const s = StyleSheet.create({
   heroText: { flex: 1, minWidth: 0 },
   heroLabel: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
   heroTitle: { color: "#FFF9EF", fontSize: 24, lineHeight: 27, marginTop: 1 },
-  heroCopy: { color: "rgba(255,249,239,0.72)", fontSize: 12.5, lineHeight: 18, marginTop: 5 },
+  heroCopy: {
+    color: "rgba(255,249,239,0.72)",
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 5,
+  },
   scoreBadge: {
     width: 62,
     minHeight: 62,
@@ -1766,25 +2482,31 @@ const s = StyleSheet.create({
   scoreLabel: { fontSize: 9, letterSpacing: 0.5, marginTop: 1 },
   healthActionRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginTop: 10,
   },
   heroActionPrimary: {
     flex: 1,
+    minWidth: 180,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   heroActionPrimaryText: { color: "#FFFFFF", fontSize: 13 },
   heroActionSecondary: {
-    minWidth: 92,
+    flexGrow: 1,
+    minWidth: 100,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   heroActionSecondaryText: { color: "#FFF9EF", fontSize: 13 },
 
@@ -1898,7 +2620,13 @@ const s = StyleSheet.create({
     lineHeight: 15,
     marginTop: 3,
   },
-  sectionTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 2 },
+  sectionTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 2,
+  },
   boardSectionTop: { flex: 1, marginBottom: 0 },
   healthHeaderAction: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -2200,6 +2928,10 @@ const s = StyleSheet.create({
     padding: 12,
     marginTop: 14,
   },
-  boundaryLabel: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
+  boundaryLabel: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
   boundary: { fontSize: 12, lineHeight: 18, marginTop: 5 },
 });

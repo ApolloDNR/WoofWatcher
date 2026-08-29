@@ -311,7 +311,7 @@ test("search and sticky-note actions expose roles, names, touch size, and presse
     const button = pressableForLabel(prompt, label);
     assert.match(button, /accessibilityRole="button"/);
     assert.match(button, /style=\{\(\{ pressed \}\) =>/);
-    assert.match(button, new RegExp(`>${visibleText}<`));
+    assert.match(button, new RegExp(`>\\s*${visibleText}\\s*<`));
   }
 });
 

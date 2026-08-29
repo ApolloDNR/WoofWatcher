@@ -1,11 +1,18 @@
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   type ImageSourcePropType,
   type LayoutChangeEvent,
@@ -16,6 +23,7 @@ import Animated, {
   FadeOut,
   cancelAnimation,
   interpolate,
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -29,6 +37,7 @@ import Animated, {
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useColors } from "@/hooks/useColors";
+import { useRouteMotionActive } from "@/hooks/useActiveCurrentTime";
 import {
   getCareTwinLayerReadiness,
   getCareTwinRoomLayer,
@@ -205,10 +214,7 @@ const FOCUS_SPOTS: Record<
   window: { left: "30%", top: "8%", width: "42%", height: "32%" },
 };
 
-const SPRITE_STAGE_ZONES: Record<
-  AvatarRoomZone,
-  SpriteStageZone
-> = {
+const SPRITE_STAGE_ZONES: Record<AvatarRoomZone, SpriteStageZone> = {
   rug: { left: "17%", top: "23%", width: 248, height: 248 },
   door: { left: "7%", top: "23%", width: 246, height: 246 },
   bowl: { left: "34%", top: "32%", width: 224, height: 224 },
@@ -316,6 +322,9 @@ const CARE_EVENT_WINDOW_MS = 8000;
 // behavior change reads as a beat instead of a hard sprite cut.
 const POSE_SETTLE_OUT_MS = 70;
 const POSE_SETTLE_IN_MS = 110;
+const REACTION_HOLD_MS = 1250;
+const REACTION_EXIT_MS = 260;
+const REDUCED_REACTION_HOLD_MS = 1500;
 
 /**
  * The settled shape of a care-event plan: same zone, copy, and care cues
@@ -355,7 +364,9 @@ export function LivingPhoenixRoom({
   transparentScene = false,
 }: Props) {
   const colors = useColors();
+  const { fontScale } = useWindowDimensions();
   const reduced = useReducedMotion();
+  const routeMotionActive = useRouteMotionActive();
   const theme = MOOD_THEME[mood];
   const scenePlan = useMemo(() => deriveCareTwinScene(motion), [motion]);
 
@@ -378,25 +389,42 @@ export function LivingPhoenixRoom({
   const careEventSignatureRef = useRef(careEventSignature);
   const careEventTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (careEventSignature === careEventSignatureRef.current) return;
-    careEventSignatureRef.current = careEventSignature;
-    if (careEventTimer.current) clearTimeout(careEventTimer.current);
+    // A retained, blurred Home route must not consume a new care event or let
+    // an already-visible event expire offscreen. The active effect cleanup
+    // cancels its window; focus starts the pending window again.
+    if (!routeMotionActive) return;
+    const signatureChanged =
+      careEventSignature !== careEventSignatureRef.current;
+    if (signatureChanged) {
+      careEventSignatureRef.current = careEventSignature;
+    }
+    if (careEventTimer.current) {
+      clearTimeout(careEventTimer.current);
+      careEventTimer.current = null;
+    }
     if (!careEventSignature) {
       setCareEventSettled(true);
       return;
     }
-    setCareEventSettled(false);
-    careEventTimer.current = setTimeout(
-      () => setCareEventSettled(true),
-      CARE_EVENT_WINDOW_MS,
-    );
-  }, [careEventSignature]);
-  useEffect(
-    () => () => {
-      if (careEventTimer.current) clearTimeout(careEventTimer.current);
-    },
-    [],
-  );
+    if (signatureChanged) {
+      setCareEventSettled(false);
+    } else if (careEventSettled) {
+      return;
+    }
+    let cancelled = false;
+    careEventTimer.current = setTimeout(() => {
+      if (cancelled) return;
+      careEventTimer.current = null;
+      setCareEventSettled(true);
+    }, CARE_EVENT_WINDOW_MS);
+    return () => {
+      cancelled = true;
+      if (careEventTimer.current) {
+        clearTimeout(careEventTimer.current);
+        careEventTimer.current = null;
+      }
+    };
+  }, [careEventSettled, careEventSignature, routeMotionActive]);
   const careEventActive = Boolean(careEventSignature) && !careEventSettled;
   const plan = useMemo(
     () =>
@@ -409,12 +437,18 @@ export function LivingPhoenixRoom({
   const choreography = useMemo(() => deriveCareTwinChoreography(plan), [plan]);
   const isStudio = presentation === "studio";
   const compactChrome = chromeDensity === "compact";
+  const compactLargeText = compactChrome && fontScale >= 1.5;
   const sceneSource = STATE_SCENES[mood];
   const fallbackAvatarSource = PHOENIX_FALLBACK_AVATARS[mood];
   const lines = useMemo(() => speechLines(speech), [speech]);
   const hudAccent = HUD_TONE_COLOR[plan.hudTone] ?? theme.accent;
   const [activeReaction, setActiveReaction] =
     useState<PhoenixRoomReaction | null>(reaction ?? null);
+  const clearActiveReaction = useCallback((reactionId: number) => {
+    setActiveReaction((current) =>
+      current?.id === reactionId ? null : current,
+    );
+  }, []);
   const [ambientSpriteAction, setAmbientSpriteAction] =
     useState<CareTwinSpriteAction | null>(null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -450,7 +484,7 @@ export function LivingPhoenixRoom({
       clearTimeout(stagePoseTimer.current);
       stagePoseTimer.current = null;
     }
-    if (reduced) {
+    if (reduced || !routeMotionActive) {
       cancelAnimation(stagePoseOpacity);
       stagePoseOpacity.value = 1;
       if (
@@ -490,7 +524,14 @@ export function LivingPhoenixRoom({
         stagePoseTimer.current = null;
       }
     };
-  }, [displayedStagePose, reduced, stagePoseOpacity, stageReactionKey, stageSpriteAction]);
+  }, [
+    displayedStagePose,
+    reduced,
+    routeMotionActive,
+    stagePoseOpacity,
+    stageReactionKey,
+    stageSpriteAction,
+  ]);
   const stagePoseAction = displayedStagePose.action;
   const stagePoseFadeStyle = useAnimatedStyle(() => ({
     opacity: stagePoseOpacity.value,
@@ -529,8 +570,7 @@ export function LivingPhoenixRoom({
       : spriteZone;
   const spriteAsset = useMemo(
     () =>
-      avatarRoomRuntime?.spriteAsset ??
-      getCareTwinSpriteAsset(stagePoseAction),
+      avatarRoomRuntime?.spriteAsset ?? getCareTwinSpriteAsset(stagePoseAction),
     [avatarRoomRuntime?.spriteAsset, stagePoseAction],
   );
   const roomLayer = useMemo(
@@ -661,15 +701,13 @@ export function LivingPhoenixRoom({
   const reactionProgress = useSharedValue(0);
 
   useEffect(() => {
-    if (!reduced) return;
-    cancelAnimation(reactionProgress);
+    if (!reduced && routeMotionActive) return;
     cancelAnimation(tap);
-    reactionProgress.value = activeReaction ? 1 : 0;
     tap.value = 0;
-  }, [activeReaction, reactionProgress, reduced, tap]);
+  }, [reduced, routeMotionActive, tap]);
 
   useEffect(() => {
-    if (reduced) {
+    if (reduced || !routeMotionActive) {
       cancelAnimation(zoneX);
       cancelAnimation(zoneY);
       cancelAnimation(zoneScale);
@@ -681,14 +719,26 @@ export function LivingPhoenixRoom({
     zoneX.value = withSpring(zone.x, { damping: 17, stiffness: 72 });
     zoneY.value = withSpring(zone.y, { damping: 17, stiffness: 72 });
     zoneScale.value = withSpring(zone.scale, { damping: 17, stiffness: 82 });
-  }, [plan.zone, reduced, zone.x, zone.y, zone.scale, zoneScale, zoneX, zoneY]);
+  }, [
+    plan.zone,
+    reduced,
+    routeMotionActive,
+    zone.x,
+    zone.y,
+    zone.scale,
+    zoneScale,
+    zoneX,
+    zoneY,
+  ]);
 
   useEffect(() => {
+    cancelAnimation(breath);
+    cancelAnimation(walkCycle);
     breath.value = 0;
     walkCycle.value = 0;
     // Reduce Motion: hold a calm, still pose instead of the perpetual
     // breathing / walk-cycle loops.
-    if (reduced) return;
+    if (reduced || !routeMotionActive) return;
     breath.value = withRepeat(
       withTiming(1, {
         duration: plan.paceMs,
@@ -706,45 +756,97 @@ export function LivingPhoenixRoom({
       -1,
       false,
     );
-  }, [breath, plan.animation, plan.paceMs, walkCycle, reduced]);
+  }, [
+    breath,
+    plan.animation,
+    plan.paceMs,
+    reduced,
+    routeMotionActive,
+    walkCycle,
+  ]);
 
   useEffect(() => {
+    cancelAnimation(shimmer);
     shimmer.value = 0;
     // Reduce Motion: no ambient light shimmer loop.
-    if (reduced) return;
+    if (reduced || !routeMotionActive) return;
     shimmer.value = withRepeat(
       withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
-  }, [shimmer, reduced]);
+  }, [routeMotionActive, shimmer, reduced]);
 
   useEffect(() => {
-    if (!reaction) return;
+    if (!routeMotionActive || !reaction) return;
     // The host never nulls the reaction prop, so replay only genuinely new
     // reactions — otherwise a scene-phase change re-runs this effect and
-    // resurrects a stale banner (and re-freezes the roaming twin).
+    // resurrects a stale banner (and re-freezes the roaming twin). Waiting for
+    // focus also leaves a reaction created on another tab genuinely new.
     if (reaction.id === lastReactionIdRef.current) return;
     lastReactionIdRef.current = reaction.id;
     if (reactionTimer.current) clearTimeout(reactionTimer.current);
     if (ambientTimer.current) clearTimeout(ambientTimer.current);
     setAmbientSpriteAction(null);
     setActiveReaction(reaction);
-    reactionProgress.value = 0;
-    reactionProgress.value = reduced
-      ? 1
-      : withSequence(
-          withSpring(1, { damping: 9, stiffness: 120 }),
-          withDelay(1250, withTiming(0, { duration: 260 })),
-        );
-    reactionTimer.current = setTimeout(
-      () => setActiveReaction(null),
-      choreography.reactionDurationMs,
-    );
+  }, [reaction, routeMotionActive]);
+
+  // The banner owns its whole lifecycle: normal motion unmounts only after
+  // the visible fade reaches zero, so a choreography timeout can never cut it
+  // off mid-transition. Reduce Motion keeps the message static for the same
+  // readable beat and then clears it without animating. The id check prevents
+  // a cancelled older animation from dismissing a newer reaction.
+  useEffect(() => {
+    if (reactionTimer.current) {
+      clearTimeout(reactionTimer.current);
+      reactionTimer.current = null;
+    }
+    cancelAnimation(reactionProgress);
+
+    if (!activeReaction) {
+      reactionProgress.value = 0;
+      return;
+    }
+
+    const reactionId = activeReaction.id;
+    if (!routeMotionActive) {
+      reactionProgress.value = 0;
+      return;
+    }
+
+    if (reduced) {
+      reactionProgress.value = 1;
+      reactionTimer.current = setTimeout(
+        () => clearActiveReaction(reactionId),
+        REDUCED_REACTION_HOLD_MS,
+      );
+    } else {
+      reactionProgress.value = 0;
+      reactionProgress.value = withSequence(
+        withSpring(1, { damping: 9, stiffness: 120 }),
+        withDelay(
+          REACTION_HOLD_MS,
+          withTiming(0, { duration: REACTION_EXIT_MS }, (finished) => {
+            if (finished) runOnJS(clearActiveReaction)(reactionId);
+          }),
+        ),
+      );
+    }
+
     return () => {
-      if (reactionTimer.current) clearTimeout(reactionTimer.current);
+      cancelAnimation(reactionProgress);
+      if (reactionTimer.current) {
+        clearTimeout(reactionTimer.current);
+        reactionTimer.current = null;
+      }
     };
-  }, [choreography.reactionDurationMs, reaction, reactionProgress, reduced]);
+  }, [
+    activeReaction,
+    clearActiveReaction,
+    reactionProgress,
+    reduced,
+    routeMotionActive,
+  ]);
 
   // Petting is affection-only feedback - hearts, a wag, a soft buzz. It never
   // touches care stats: every number in WoofWatcher stays earned by real care.
@@ -770,14 +872,6 @@ export function LivingPhoenixRoom({
       label,
       spriteAction: "tail-wag",
     });
-    reactionProgress.value = 0;
-    reactionProgress.value = reduced
-      ? 1
-      : withSequence(
-          withSpring(1, { damping: 9, stiffness: 120 }),
-          withDelay(1250, withTiming(0, { duration: 260 })),
-        );
-    reactionTimer.current = setTimeout(() => setActiveReaction(null), 1900);
   };
 
   useEffect(() => {
@@ -789,7 +883,7 @@ export function LivingPhoenixRoom({
     // flip-flopping against idle strips every scheduler tick.
     if (careEventActive) return;
     // Reduce Motion: no periodic ambient pose changes - hold the idle pose.
-    if (reduced) return;
+    if (reduced || !routeMotionActive) return;
 
     const shortestCadence = choreography.ambientCadenceMs ?? 2600;
     const id = setInterval(
@@ -823,6 +917,7 @@ export function LivingPhoenixRoom({
     plan.scenePhase,
     plan.spriteAction,
     reduced,
+    routeMotionActive,
   ]);
 
   const isWalking = plan.animation === "walk";
@@ -936,19 +1031,16 @@ export function LivingPhoenixRoom({
     stageBreathScale,
   ]);
 
-  const spriteShadowStyle = useAnimatedStyle(
-    () => {
-      const pulse = stepAmbient(breath.value);
-      return {
-        opacity: 0.28 + pulse * motionRecipe.shadowOpacityPulse,
-        transform: [
-          { scaleX: 1.16 + pulse * motionRecipe.shadowScalePulse },
-          { scaleY: 1 - pulse * 0.05 },
-        ],
-      };
-    },
-    [motionRecipe.shadowOpacityPulse, motionRecipe.shadowScalePulse],
-  );
+  const spriteShadowStyle = useAnimatedStyle(() => {
+    const pulse = stepAmbient(breath.value);
+    return {
+      opacity: 0.28 + pulse * motionRecipe.shadowOpacityPulse,
+      transform: [
+        { scaleX: 1.16 + pulse * motionRecipe.shadowScalePulse },
+        { scaleY: 1 - pulse * 0.05 },
+      ],
+    };
+  }, [motionRecipe.shadowOpacityPulse, motionRecipe.shadowScalePulse]);
 
   const dogFocusGlow = useAnimatedStyle(() => {
     const glow = stepAmbient(breath.value);
@@ -1009,11 +1101,7 @@ export function LivingPhoenixRoom({
         {
           scale: reduced
             ? 1
-            : interpolate(
-                reactionProgress.value,
-                [0, 0.35, 1],
-                [0.8, 1.15, 1],
-              ),
+            : interpolate(reactionProgress.value, [0, 0.35, 1], [0.8, 1.15, 1]),
         },
       ],
     }),
@@ -1047,10 +1135,7 @@ export function LivingPhoenixRoom({
       onPress={handlePress}
       onLongPress={onLongPress}
       onLayout={handleStageLayout}
-      style={[
-        styles.root,
-        transparentScene ? styles.rootTransparent : null,
-      ]}
+      style={[styles.root, transparentScene ? styles.rootTransparent : null]}
     >
       {transparentScene ? null : (
         <>
@@ -1100,6 +1185,7 @@ export function LivingPhoenixRoom({
           overrideKey={activeReaction?.id ?? null}
           avatarConfig={avatarConfig}
           glowColor={theme.glow}
+          motionActive={routeMotionActive}
           petName={petName}
           onPet={triggerPetReaction}
         />
@@ -1131,14 +1217,14 @@ export function LivingPhoenixRoom({
         <Animated.View
           pointerEvents="none"
           style={[
-              styles.spriteRig,
-              {
-                left: activeSpriteZone.left,
-                top: activeSpriteZone.top,
-                width: activeSpriteZone.width,
-                height: activeSpriteZone.height,
-              },
-              spriteRigStyle,
+            styles.spriteRig,
+            {
+              left: activeSpriteZone.left,
+              top: activeSpriteZone.top,
+              width: activeSpriteZone.width,
+              height: activeSpriteZone.height,
+            },
+            spriteRigStyle,
           ]}
           testID="care-twin-layered-sprite-rig"
         >
@@ -1179,6 +1265,7 @@ export function LivingPhoenixRoom({
                   ? "care-twin-template-sprite-player"
                   : "care-twin-sprite-player"
               }
+              playing={routeMotionActive}
               track={activeSpriteTrack}
               width={activeSpriteZone.width}
             />
@@ -1207,14 +1294,14 @@ export function LivingPhoenixRoom({
         <Animated.View
           pointerEvents="none"
           style={[
-              styles.spriteRig,
-              {
-                left: activeSpriteZone.left,
-                top: activeSpriteZone.top,
-                width: activeSpriteZone.width,
-                height: activeSpriteZone.height,
-              },
-              spriteRigStyle,
+            styles.spriteRig,
+            {
+              left: activeSpriteZone.left,
+              top: activeSpriteZone.top,
+              width: activeSpriteZone.width,
+              height: activeSpriteZone.height,
+            },
+            spriteRigStyle,
           ]}
           testID="care-twin-fallback-avatar-rig"
         >
@@ -1379,6 +1466,7 @@ export function LivingPhoenixRoom({
           style={[
             styles.speechBubble,
             compactChrome ? styles.speechBubbleCompact : null,
+            compactLargeText ? styles.speechBubbleCompactLargeText : null,
             {
               backgroundColor: "rgba(255,249,239,0.94)",
               borderColor: OVERLAY_INK,
@@ -1464,8 +1552,8 @@ export function LivingPhoenixRoom({
 
       {plan.showSleep ? (
         <Animated.View
-          entering={FadeIn}
-          exiting={FadeOut}
+          entering={reduced ? undefined : FadeIn}
+          exiting={reduced ? undefined : FadeOut}
           pointerEvents="none"
           style={[styles.sleepBubble, shimmerStyle]}
         >
@@ -1473,7 +1561,7 @@ export function LivingPhoenixRoom({
         </Animated.View>
       ) : null}
 
-      {activeReaction ? (
+      {activeReaction && !compactLargeText ? (
         <Animated.View
           pointerEvents="none"
           style={[
@@ -1521,9 +1609,7 @@ export function LivingPhoenixRoom({
           ]}
         >
           <View style={styles.dockColumn}>
-            <Text
-              style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}
-            >
+            <Text style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}>
               Presence
             </Text>
             <Text
@@ -1537,9 +1623,7 @@ export function LivingPhoenixRoom({
             style={[styles.dockDivider, { backgroundColor: colors.border }]}
           />
           <View style={styles.dockColumn}>
-            <Text
-              style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}
-            >
+            <Text style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}>
               Care cue
             </Text>
             <Text
@@ -1553,9 +1637,7 @@ export function LivingPhoenixRoom({
             style={[styles.dockDivider, { backgroundColor: colors.border }]}
           />
           <View style={styles.energyDock}>
-            <Text
-              style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}
-            >
+            <Text style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}>
               Energy
             </Text>
             <View style={styles.energyBlocks}>
@@ -1625,12 +1707,21 @@ interface RoamingTwinRigProps {
   overrideKey: number | null;
   avatarConfig?: PetAvatarConfig;
   glowColor: string;
+  motionActive: boolean;
   petName?: string;
   onPet?: () => void;
 }
 
 /** One floating heart of the petting burst: rises, blooms, and fades. */
-function PetHeart({ dx, delayMs, size }: { dx: number; delayMs: number; size: number }) {
+function PetHeart({
+  dx,
+  delayMs,
+  size,
+}: {
+  dx: number;
+  delayMs: number;
+  size: number;
+}) {
   const reduced = useReducedMotion();
   const progress = useSharedValue(0);
   useEffect(() => {
@@ -1695,6 +1786,7 @@ function RoamingTwinRig({
   overrideKey,
   avatarConfig,
   glowColor,
+  motionActive,
   petName,
   onPet,
 }: RoamingTwinRigProps) {
@@ -1703,7 +1795,7 @@ function RoamingTwinRig({
   const [facing, setFacing] = useState<RoamFacing>("left");
   const [petBurstId, setPetBurstId] = useState<number | null>(null);
   const petBurstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const paused = Boolean(overrideAction);
+  const paused = Boolean(overrideAction) || !motionActive;
   // Reduce Motion: freeze the roam - the twin holds its anchor instead of
   // walking the room (and the walk-bob below stays settled).
   const reduced = useReducedMotion();
@@ -1803,7 +1895,17 @@ function RoamingTwinRig({
       setLegIndex((index) => (index + 1) % plan.legs.length);
     }, leg.durationMs);
     return () => clearTimeout(timer);
-  }, [depth, legIndex, paused, plan, reduced, stageHeight, stageWidth, xPx, yPx]);
+  }, [
+    depth,
+    legIndex,
+    paused,
+    plan,
+    reduced,
+    stageHeight,
+    stageWidth,
+    xPx,
+    yPx,
+  ]);
 
   useEffect(() => {
     if (reduced) {
@@ -1834,9 +1936,7 @@ function RoamingTwinRig({
   });
   const runtime = useMemo(
     () =>
-      avatarConfig
-        ? deriveAvatarRoomRuntime(avatarConfig, activeAction)
-        : null,
+      avatarConfig ? deriveAvatarRoomRuntime(avatarConfig, activeAction) : null,
     [activeAction, avatarConfig],
   );
   const spriteAsset =
@@ -1916,6 +2016,7 @@ function RoamingTwinRig({
             }
             asset={spriteAsset}
             height={ROAM_RIG_SIZE}
+            playing={motionActive}
             testID="care-twin-roaming-sprite-player"
             track={spriteTrack}
             width={ROAM_RIG_SIZE}
@@ -2193,6 +2294,11 @@ const styles = StyleSheet.create({
     maxWidth: "42%",
     paddingHorizontal: 9,
     paddingVertical: 7,
+  },
+  speechBubbleCompactLargeText: {
+    top: 16,
+    left: 12,
+    maxWidth: "52%",
   },
   speechText: {
     fontFamily: "Fredoka_700Bold",

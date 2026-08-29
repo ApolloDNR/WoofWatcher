@@ -5,12 +5,16 @@ import {
 } from "./navigationOwnership.ts";
 
 export type CanonicalHealthRoute = `/health?section=${HealthSection}`;
-export type CanonicalMoreRoute = `/more?section=${Exclude<MoreSection, "root">}`;
+export type CanonicalMoreRoute =
+  `/more?section=${Exclude<MoreSection, "root">}`;
+export type CanonicalPlansReminderCenterRoute = "/calendar?section=reminders";
 
 export const canonicalHomeRoute = (): "/" => "/";
 export const canonicalLogRoute = (): "/log" => "/log";
 export const canonicalFastLogRoute = (): "/fastlog" => "/fastlog";
 export const canonicalPlansRoute = (): "/calendar" => "/calendar";
+export const canonicalPlansReminderCenterRoute =
+  (): CanonicalPlansReminderCenterRoute => "/calendar?section=reminders";
 
 export function replaceWithCanonicalHome(router: {
   replace(route: ReturnType<typeof canonicalHomeRoute>): void;
@@ -38,7 +42,9 @@ const OWNERSHIP_PATHS = new Set([
   "/privacy",
 ]);
 
-export function canonicalHealthRoute(section: HealthSection): CanonicalHealthRoute {
+export function canonicalHealthRoute(
+  section: HealthSection,
+): CanonicalHealthRoute {
   return `/health?section=${section}`;
 }
 
@@ -56,15 +62,17 @@ export function canonicalizeOwnedRoute(route: string): string {
   const params: Record<string, string | string[]> = {};
   for (const [key, value] of new URLSearchParams(query)) {
     const existing = params[key];
-    params[key] = existing === undefined
-      ? value
-      : Array.isArray(existing)
-        ? [...existing, value]
-        : [existing, value];
+    params[key] =
+      existing === undefined
+        ? value
+        : Array.isArray(existing)
+          ? [...existing, value]
+          : [existing, value];
   }
 
   const destination = resolveCanonicalDestination({ pathname, params });
-  const canonicalOwnerNeedsSerialization = pathname === "/health" || pathname === "/more";
+  const canonicalOwnerNeedsSerialization =
+    pathname === "/calendar" || pathname === "/health" || pathname === "/more";
   if (!destination.replace && !canonicalOwnerNeedsSerialization) return route;
   const destinationQuery = destination.params
     ? new URLSearchParams({ ...destination.params }).toString()

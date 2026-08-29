@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useWoofAuth } from "@/lib/auth";
@@ -97,7 +97,10 @@ export interface WoofGuideScreenProps {
   onBack: () => void;
 }
 
-export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps) {
+export default function WoofGuideScreen({
+  prompt,
+  onBack,
+}: WoofGuideScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -112,8 +115,12 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [reviewAction, setReviewAction] = useState<WoofGuideActionCard | null>(null);
-  const [handledPromptParam, setHandledPromptParam] = useState<string | null>(null);
+  const [reviewAction, setReviewAction] = useState<WoofGuideActionCard | null>(
+    null,
+  );
+  const [handledPromptParam, setHandledPromptParam] = useState<string | null>(
+    null,
+  );
   const composerBottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -134,12 +141,15 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
   });
   const name = resolvePetName(state.profile.name);
 
-  const quickQuestions = useMemo(() => [
-    `Why does ${name} vomit yellow bile?`,
-    `How much should ${name} eat?`,
-    "Tips for food anxiety in dogs",
-    "How to help a nervous eater",
-  ], [name]);
+  const quickQuestions = useMemo(
+    () => [
+      `Why does ${name} vomit yellow bile?`,
+      `How much should ${name} eat?`,
+      "Tips for food anxiety in dogs",
+      "How to help a nervous eater",
+    ],
+    [name],
+  );
 
   const actionCards = useMemo(() => deriveWoofGuideActions(state), [state]);
   const ownerDraftCount = actionCards.filter((action) => action.draft).length;
@@ -175,66 +185,88 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
     },
   ];
 
-  const sendMessage = useCallback(async (text: string) => {
-    // Hard stop while no assistant provider is configured: the honest gated
-    // UI replaces the ask affordances, and nothing may be posted anywhere.
-    if (!ASSISTANT_GATE.enabled) return;
-    const q = text.trim();
-    if (!q || loading) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const sendMessage = useCallback(
+    async (text: string) => {
+      // Hard stop while no assistant provider is configured: the honest gated
+      // UI replaces the ask affordances, and nothing may be posted anywhere.
+      if (!ASSISTANT_GATE.enabled) return;
+      const q = text.trim();
+      if (!q || loading) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const userMsg: Message = { id: `u_${Date.now()}`, role: "user", content: q };
-    setMessages((prev) => [userMsg, ...prev]);
-    setInput("");
-    setLoading(true);
+      const userMsg: Message = {
+        id: `u_${Date.now()}`,
+        role: "user",
+        content: q,
+      };
+      setMessages((prev) => [userMsg, ...prev]);
+      setInput("");
+      setLoading(true);
 
-    try {
-      const token = await getToken();
-      const context = buildWoofGuideAssistantContext(state);
-      const res = await fetch(`${BASE_URL}/api/care-helper`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ question: q, context }),
-      });
-      const data = await res.json();
-      const answer = data.answer || "No response received.";
-      setMessages((prev) => [{ id: `a_${Date.now()}`, role: "assistant", content: answer }, ...prev]);
-    } catch {
-      // Only reachable when a provider is configured (gate enabled), so a
-      // retry suggestion is truthful here.
-      setMessages((prev) => [
-        { id: `err_${Date.now()}`, role: "assistant", content: "WoofGuide couldn't reach the assistant service. Your logs are safe on this device - check your connection and try again." },
-        ...prev,
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }, [loading, state, getToken]);
+      try {
+        const token = await getToken();
+        const context = buildWoofGuideAssistantContext(state);
+        const res = await fetch(`${BASE_URL}/api/care-helper`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ question: q, context }),
+        });
+        const data = await res.json();
+        const answer = data.answer || "No response received.";
+        setMessages((prev) => [
+          { id: `a_${Date.now()}`, role: "assistant", content: answer },
+          ...prev,
+        ]);
+      } catch {
+        // Only reachable when a provider is configured (gate enabled), so a
+        // retry suggestion is truthful here.
+        setMessages((prev) => [
+          {
+            id: `err_${Date.now()}`,
+            role: "assistant",
+            content:
+              "WoofGuide couldn't reach the assistant service. Your logs are safe on this device - check your connection and try again.",
+          },
+          ...prev,
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading, state, getToken],
+  );
 
-  const runAction = useCallback((action: WoofGuideActionCard) => {
-    Haptics.selectionAsync();
-    if (action.draft) {
-      setReviewAction(action);
-      return;
-    }
-    if (action.route) {
-      router.push(action.route);
-      return;
-    }
-    if (action.prompt && ASSISTANT_GATE.enabled) {
-      void sendMessage(action.prompt);
-    }
-  }, [router, sendMessage]);
+  const runAction = useCallback(
+    (action: WoofGuideActionCard) => {
+      Haptics.selectionAsync();
+      if (action.draft) {
+        setReviewAction(action);
+        return;
+      }
+      if (action.route) {
+        router.push(action.route);
+        return;
+      }
+      if (action.prompt && ASSISTANT_GATE.enabled) {
+        void sendMessage(action.prompt);
+      }
+    },
+    [router, sendMessage],
+  );
 
   // Health Watch's "Draft vet questions" funnel lands here with
   // prompt=health-review. Open the existing deterministic owner-reviewed
   // vet-note draft immediately so the funnel ends somewhere that works
   // even while the live assistant is gated off.
   useEffect(() => {
-    if (promptParam !== "health-review" || handledPromptParam === "health-review") return;
+    if (
+      promptParam !== "health-review" ||
+      handledPromptParam === "health-review"
+    )
+      return;
     setHandledPromptParam("health-review");
     setReviewAction(deriveWoofGuideVetNoteAction(state));
   }, [promptParam, handledPromptParam, state]);
@@ -255,7 +287,11 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setMessages((prev) => [
-        { id: `draft_${Date.now()}`, role: "assistant", content: `${draft.title}\n\nAdded reviewed log draft to the household timeline.` },
+        {
+          id: `draft_${Date.now()}`,
+          role: "assistant",
+          content: `${draft.title}\n\nAdded reviewed log draft to the household timeline.`,
+        },
         ...prev,
       ]);
       setReviewAction(null);
@@ -280,7 +316,11 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setMessages((prev) => [
-        { id: `draft_${Date.now()}`, role: "assistant", content: `${draft.title}\n\nReminder added to Calendar for review.` },
+        {
+          id: `draft_${Date.now()}`,
+          role: "assistant",
+          content: `${draft.title}\n\nReminder added to Calendar for review.`,
+        },
         ...prev,
       ]);
       setReviewAction(null);
@@ -321,14 +361,18 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
             back
             onBack={onBack}
             title="WoofGuide"
-            subtitle="Care-aware guidance and owner-reviewed drafts."
+            subtitle="Guidance grounded in your saved care logs."
           />
         </View>
         <FlatList
           data={messages}
           inverted={messages.length > 0}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, paddingTop: loading ? 8 : 12 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingBottom: 12,
+            paddingTop: loading ? 8 : 12,
+          }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             loading ? (
@@ -337,10 +381,23 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                 accessibilityLiveRegion="polite"
                 accessibilityLabel="WoofGuide is thinking"
                 accessibilityState={{ busy: true }}
-                style={[s.typingBubble, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[
+                  s.typingBubble,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
               >
                 <ActivityIndicator size="small" color={colors.copper} />
-                <Text style={[s.typingText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Thinking...</Text>
+                <Text
+                  style={[
+                    s.typingText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                >
+                  Thinking...
+                </Text>
               </View>
             ) : null
           }
@@ -351,28 +408,66 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                   <ImageBackground
                     source={WOOFGUIDE_STAGE_ROOM}
                     resizeMode="cover"
-                    imageStyle={[stageImageFill, s.guideStageImage, pixelImageStyle]}
+                    imageStyle={[
+                      stageImageFill,
+                      s.guideStageImage,
+                      pixelImageStyle,
+                    ]}
                     style={s.guideStage}
                     testID="woofguide-pixel-guidance-stage"
                   >
                     <View style={s.guideStageShade} />
                     <View style={s.guideStageTop}>
                       <View style={s.guideBubble}>
-                        <Text style={[s.guideKicker, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
-                          WoofGuide Console
+                        <Text
+                          style={[
+                            s.guideKicker,
+                            {
+                              color: colors.brandNavy,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
+                        >
+                          WoofGuide
                         </Text>
                         <Text
                           numberOfLines={3}
-                          style={[s.guideSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                          style={[
+                            s.guideSpeech,
+                            {
+                              color: colors.brandNavy,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
                         >
                           {guideSpeech}
                         </Text>
                         <View style={s.guideBubbleTail} />
                       </View>
-                      <View style={[s.guideReviewChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
-                        <Ionicons name="checkmark-done-circle-outline" size={15} color={colors.amber} />
-                        <Text style={[s.guideReviewChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
-                          Owner review
+                      <View
+                        style={[
+                          s.guideReviewChip,
+                          {
+                            backgroundColor: colors.brandNavy + "E8",
+                            borderColor: colors.ivory + "55",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="checkmark-done-circle-outline"
+                          size={15}
+                          color={colors.amber}
+                        />
+                        <Text
+                          style={[
+                            s.guideReviewChipText,
+                            {
+                              color: colors.ivory,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          Saved-log guidance
                         </Text>
                       </View>
                     </View>
@@ -393,17 +488,44 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                       the floor so the dog read as levitating at wall height.
                       Now the scene breathes and the dog sits in the lamplit
                       floor pool. */}
-                  <View style={[s.guideDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.border }]}>
-                    <View style={[s.guideHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
+                  <View
+                    style={[
+                      s.guideDock,
+                      {
+                        backgroundColor: colors.ivory + "F4",
+                        borderTopColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        s.guideHud,
+                        {
+                          backgroundColor: colors.brandNavy + "DF",
+                          borderColor: colors.ivory + "44",
+                        },
+                      ]}
+                    >
                       {guideHud.map((metric) => (
                         <View key={metric.label} style={s.guideHudCell}>
-                          <Text style={[s.guideHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                          <Text
+                            style={[
+                              s.guideHudLabel,
+                              { color: colors.ivory, fontFamily: DISPLAY_SEMI },
+                            ]}
+                          >
                             {metric.label}
                           </Text>
                           <Text
                             numberOfLines={1}
                             adjustsFontSizeToFit
-                            style={[s.guideHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                            style={[
+                              s.guideHudValue,
+                              {
+                                color: colors.ivory,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
                           >
                             {metric.value}
                           </Text>
@@ -415,7 +537,10 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                                   s.guideSignalBar,
                                   {
                                     height: 5 + bar * 2,
-                                    backgroundColor: bar < guideSignal ? metric.tone : colors.ivory + "2F",
+                                    backgroundColor:
+                                      bar < guideSignal
+                                        ? metric.tone
+                                        : colors.ivory + "2F",
                                   },
                                 ]}
                               />
@@ -426,51 +551,103 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                     </View>
 
                     <View style={s.guideStageFooter}>
-                      <View style={[s.guideBoundaryCard, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
-                        <Text style={[s.guideBoundaryLabel, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
-                          Not veterinary advice
+                      <View
+                        style={[
+                          s.guideBoundaryCard,
+                          {
+                            backgroundColor: colors.ivory + "E8",
+                            borderColor: colors.ivory + "AA",
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.guideBoundaryLabel,
+                            {
+                              color: colors.brandNavy,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          Uses saved care logs
                         </Text>
                         <Text
                           numberOfLines={1}
-                          style={[s.guideBoundaryValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                          style={[
+                            s.guideBoundaryValue,
+                            {
+                              color: colors.brandNavy,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
                         >
-                          Drafts stay owner-reviewed
+                          Not veterinary advice
                         </Text>
                       </View>
                       {ASSISTANT_GATE.enabled ? (
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel="Ask first WoofGuide quick question from guidance console"
+                          accessibilityLabel="Ask the first WoofGuide quick question"
                           onPress={() => {
                             void sendMessage(quickQuestions[0]);
                           }}
                           style={({ pressed }) => [
                             s.guideStageAction,
-                            { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+                            {
+                              backgroundColor: colors.primary,
+                              opacity: pressed ? 0.82 : 1,
+                            },
                           ]}
                         >
-                          <Text style={[s.guideStageActionText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
+                          <Text
+                            style={[
+                              s.guideStageActionText,
+                              {
+                                color: colors.primaryForeground,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
+                          >
                             Ask WoofGuide
                           </Text>
-                          <Ionicons name="arrow-forward" size={15} color={colors.primaryForeground} />
+                          <Ionicons
+                            name="arrow-forward"
+                            size={15}
+                            color={colors.primaryForeground}
+                          />
                         </Pressable>
                       ) : (
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel="Open Health Watch from guidance console"
+                          accessibilityLabel="Open Health Watch"
                           onPress={() => {
                             Haptics.selectionAsync();
                             router.push("/health");
                           }}
                           style={({ pressed }) => [
                             s.guideStageAction,
-                            { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+                            {
+                              backgroundColor: colors.primary,
+                              opacity: pressed ? 0.82 : 1,
+                            },
                           ]}
                         >
-                          <Text style={[s.guideStageActionText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
+                          <Text
+                            style={[
+                              s.guideStageActionText,
+                              {
+                                color: colors.primaryForeground,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
+                          >
                             Health Watch
                           </Text>
-                          <Ionicons name="arrow-forward" size={15} color={colors.primaryForeground} />
+                          <Ionicons
+                            name="arrow-forward"
+                            size={15}
+                            color={colors.primaryForeground}
+                          />
                         </Pressable>
                       )}
                     </View>
@@ -478,25 +655,58 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                 </BoardCard>
                 <BoardCard enter={1} style={s.guideIntroCard}>
                   <View style={s.guideIntroRow}>
-                    <View style={[s.guideIntroIcon, { backgroundColor: colors.sage + "18", borderColor: colors.sage + "44" }]}>
-                      <Ionicons name="chatbubbles-outline" size={21} color={colors.brandNavy} />
+                    <View
+                      style={[
+                        s.guideIntroIcon,
+                        {
+                          backgroundColor: colors.sage + "18",
+                          borderColor: colors.sage + "44",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="chatbubbles-outline"
+                        size={21}
+                        color={colors.brandNavy}
+                      />
                     </View>
                     <View style={s.guideIntroText}>
-                      <Text style={[s.guideIntroKicker, { color: colors.primary, fontFamily: "Inter_800ExtraBold" }]}>
+                      <Text
+                        style={[
+                          s.guideIntroKicker,
+                          {
+                            color: colors.primary,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
                         WoofGuide
                       </Text>
                       <Text
                         numberOfLines={1}
                         adjustsFontSizeToFit
-                        style={[s.guideIntroTitle, { color: colors.foreground, fontFamily: "Fredoka_700Bold" }]}
+                        style={[
+                          s.guideIntroTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Fredoka_700Bold",
+                          },
+                        ]}
                       >
-                        Owner-reviewed guidance
+                        Guidance from saved care
                       </Text>
                       <Text
                         numberOfLines={2}
-                        style={[s.guideIntroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        style={[
+                          s.guideIntroCopy,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
                       >
-                        Uses {name}'s logs for owner-reviewed, non-diagnostic next steps.
+                        Organizes {name}'s logs into practical, non-diagnostic
+                        next steps.
                       </Text>
                     </View>
                   </View>
@@ -505,7 +715,9 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                   <BoardCard style={s.quickQuestionBoard}>
                     <BoardSectionHeader
                       title="Quick questions"
-                      accessory={<BoardPill label="Tap to ask" tone={colors.sage} />}
+                      accessory={
+                        <BoardPill label="Tap to ask" tone={colors.sage} />
+                      }
                     />
                     <View style={s.quickQuestionGrid}>
                       {quickQuestions.map((q) => (
@@ -514,9 +726,26 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                           onPress={() => sendMessage(q)}
                           accessibilityRole="button"
                           accessibilityLabel={`Ask WoofGuide: ${q}`}
-                          style={({pressed}) => [s.quickChip, { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+                          style={({ pressed }) => [
+                            s.quickChip,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: colors.border,
+                              opacity: pressed ? 0.7 : 1,
+                            },
+                          ]}
                         >
-                          <Text style={[s.quickText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{q}</Text>
+                          <Text
+                            style={[
+                              s.quickText,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {q}
+                          </Text>
                         </Pressable>
                       ))}
                     </View>
@@ -524,17 +753,22 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                 ) : (
                   <BoardCard style={s.quickQuestionBoard}>
                     <BoardSectionHeader
-                      title="Assistant"
-                      accessory={<BoardPill label={ASSISTANT_GATE.statusLabel} tone={colors.amber} />}
+                      title="Care shortcuts"
+                      accessory={
+                        <BoardPill label="Available now" tone={colors.sage} />
+                      }
                     />
-                    <Text style={[s.gateHeadline, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                      {ASSISTANT_GATE.headline}
-                    </Text>
-                    <Text style={[s.gatePrivacyNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {ASSISTANT_GATE.privacyNote}
-                    </Text>
-                    <Text style={[s.gateWorksLabel, { color: colors.primary, fontFamily: "Inter_800ExtraBold" }]}>
-                      What works today
+                    <Text
+                      style={[
+                        s.gatePrivacyNote,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      Open the part of WoofWatcher that can help with your saved
+                      care right now.
                     </Text>
                     <View style={s.gateLinkList}>
                       {WOOFGUIDE_ASSISTANT_FALLBACK_LINKS.map((link) => (
@@ -548,17 +782,54 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                           accessibilityLabel={`${link.label}. ${link.detail}`}
                           style={({ pressed }) => [
                             s.gateLinkRow,
-                            { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: colors.border,
+                              opacity: pressed ? 0.7 : 1,
+                            },
                           ]}
                         >
-                          <View style={[s.actionIcon, { backgroundColor: colors.primary + "16" }]}>
-                            <Ionicons name={ACTION_ICON[link.icon]} size={17} color={colors.primary} />
+                          <View
+                            style={[
+                              s.actionIcon,
+                              { backgroundColor: colors.primary + "16" },
+                            ]}
+                          >
+                            <Ionicons
+                              name={ACTION_ICON[link.icon]}
+                              size={17}
+                              color={colors.primary}
+                            />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={[s.actionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{link.label}</Text>
-                            <Text style={[s.actionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{link.detail}</Text>
+                            <Text
+                              style={[
+                                s.actionLabel,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              {link.label}
+                            </Text>
+                            <Text
+                              style={[
+                                s.actionDetail,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_400Regular",
+                                },
+                              ]}
+                            >
+                              {link.detail}
+                            </Text>
                           </View>
-                          <Ionicons name="chevron-forward" size={17} color={colors.primary} />
+                          <Ionicons
+                            name="chevron-forward"
+                            size={17}
+                            color={colors.primary}
+                          />
                         </Pressable>
                       ))}
                     </View>
@@ -567,7 +838,9 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                 <BoardCard enter={2} style={s.actionBoard}>
                   <BoardSectionHeader
                     title="Suggested actions"
-                    accessory={<BoardPill label="Owner reviewed" tone={colors.amber} />}
+                    accessory={
+                      <BoardPill label="From saved logs" tone={colors.sage} />
+                    }
                   />
                   <View style={s.guideActionList}>
                     {actionCards.map((action) => {
@@ -582,29 +855,76 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                           key={action.id}
                           onPress={() => runAction(action)}
                           accessibilityRole="button"
-                          accessibilityLabel={`Review WoofGuide action: ${action.label}. ${action.detail}${action.draft ? ". Owner review required." : ""}`}
+                          accessibilityLabel={`Open WoofGuide action: ${action.label}. ${action.detail}${action.draft ? ". Review before saving." : ""}`}
                           style={({ pressed }) => [
                             s.actionRow,
                             {
                               backgroundColor: colors.background,
-                              borderColor: action.urgency === "normal" ? colors.border : tone + "66",
+                              borderColor:
+                                action.urgency === "normal"
+                                  ? colors.border
+                                  : tone + "66",
                               opacity: pressed ? 0.75 : 1,
                             },
                           ]}
                         >
-                          <View style={[s.actionIcon, { backgroundColor: tone + "16" }]}>
-                            <Ionicons name={ACTION_ICON[action.icon]} size={17} color={tone} />
+                          <View
+                            style={[
+                              s.actionIcon,
+                              { backgroundColor: tone + "16" },
+                            ]}
+                          >
+                            <Ionicons
+                              name={ACTION_ICON[action.icon]}
+                              size={17}
+                              color={tone}
+                            />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={[s.actionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{action.label}</Text>
-                            <Text style={[s.actionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{action.detail}</Text>
+                            <Text
+                              style={[
+                                s.actionLabel,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              {action.label}
+                            </Text>
+                            <Text
+                              style={[
+                                s.actionDetail,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_400Regular",
+                                },
+                              ]}
+                            >
+                              {action.detail}
+                            </Text>
                             {action.draft ? (
-                              <Text style={[s.actionDraftLabel, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                                Owner review required
+                              <Text
+                                style={[
+                                  s.actionDraftLabel,
+                                  { color: tone, fontFamily: "Inter_700Bold" },
+                                ]}
+                              >
+                                Review before saving
                               </Text>
                             ) : null}
                           </View>
-                          <Ionicons name={action.draft ? "create-outline" : action.route ? "chevron-forward" : "arrow-up"} size={17} color={tone} />
+                          <Ionicons
+                            name={
+                              action.draft
+                                ? "create-outline"
+                                : action.route
+                                  ? "chevron-forward"
+                                  : "arrow-up"
+                            }
+                            size={17}
+                            color={tone}
+                          />
                         </Pressable>
                       );
                     })}
@@ -614,13 +934,32 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
             ) : null
           }
           renderItem={({ item }) => (
-            <View style={[
-              s.bubble,
-              item.role === "user"
-                ? [s.userBubble, { backgroundColor: colors.copperBright }]
-                : [s.assistantBubble, { backgroundColor: colors.card, borderColor: colors.border }],
-            ]}>
-              <Text style={[s.bubbleText, { color: item.role === "user" ? colors.brandNavy : colors.foreground, fontFamily: "Inter_400Regular" }]}>
+            <View
+              style={[
+                s.bubble,
+                item.role === "user"
+                  ? [s.userBubble, { backgroundColor: colors.copperBright }]
+                  : [
+                      s.assistantBubble,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ],
+              ]}
+            >
+              <Text
+                style={[
+                  s.bubbleText,
+                  {
+                    color:
+                      item.role === "user"
+                        ? colors.brandNavy
+                        : colors.foreground,
+                    fontFamily: "Inter_400Regular",
+                  },
+                ]}
+              >
                 {item.content}
               </Text>
             </View>
@@ -628,14 +967,31 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
         {ASSISTANT_GATE.enabled ? (
-          <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: composerBottomPadding, backgroundColor: colors.background }]}>
+          <View
+            style={[
+              s.inputArea,
+              {
+                borderTopColor: colors.border,
+                paddingBottom: composerBottomPadding,
+                backgroundColor: colors.background,
+              },
+            ]}
+          >
             <TextInput
               value={input}
               onChangeText={setInput}
               accessibilityLabel={`Ask WoofGuide about ${name}`}
               placeholder={`Ask about ${name}...`}
               placeholderTextColor={colors.mutedForeground}
-              style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+              style={[
+                s.input,
+                {
+                  backgroundColor: colors.card,
+                  color: colors.foreground,
+                  borderColor: colors.border,
+                  fontFamily: "Inter_400Regular",
+                },
+              ]}
               multiline
               returnKeyType="send"
               onSubmitEditing={() => sendMessage(input)}
@@ -645,28 +1001,72 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
               onPress={() => sendMessage(input)}
               disabled={!input.trim() || loading}
               accessibilityRole="button"
-              accessibilityLabel={loading ? "WoofGuide is thinking" : "Send WoofGuide message"}
-              accessibilityState={{ disabled: !input.trim() || loading, busy: loading }}
+              accessibilityLabel={
+                loading ? "WoofGuide is thinking" : "Send WoofGuide message"
+              }
+              accessibilityState={{
+                disabled: !input.trim() || loading,
+                busy: loading,
+              }}
               style={({ pressed }) => [
                 s.sendBtn,
                 {
-                  backgroundColor: input.trim() && !loading ? colors.primary : colors.card,
+                  backgroundColor:
+                    input.trim() && !loading ? colors.primary : colors.card,
                   borderColor: colors.border,
                   opacity: input.trim() && !loading && pressed ? 0.82 : 1,
                 },
               ]}
             >
-              {loading
-                ? <ActivityIndicator size="small" color={colors.primaryForeground} />
-                : <Ionicons name="arrow-up" size={20} color={input.trim() ? colors.primaryForeground : colors.mutedForeground} />
-              }
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primaryForeground}
+                />
+              ) : (
+                <Ionicons
+                  name="arrow-up"
+                  size={20}
+                  color={
+                    input.trim()
+                      ? colors.primaryForeground
+                      : colors.mutedForeground
+                  }
+                />
+              )}
             </Pressable>
           </View>
         ) : (
-          <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: composerBottomPadding, backgroundColor: colors.background }]}>
-            <View style={[s.gateComposerNotice, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="cloud-offline-outline" size={16} color={colors.mutedForeground} />
-              <Text style={[s.gateComposerText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <View
+            style={[
+              s.inputArea,
+              {
+                borderTopColor: colors.border,
+                paddingBottom: composerBottomPadding,
+                backgroundColor: colors.background,
+              },
+            ]}
+          >
+            <View
+              style={[
+                s.gateComposerNotice,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={16}
+                color={colors.mutedForeground}
+              />
+              <Text
+                style={[
+                  s.gateComposerText,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 {ASSISTANT_GATE.composerNote}
               </Text>
             </View>
@@ -676,18 +1076,36 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                 router.push("/health");
               }}
               accessibilityRole="button"
-              accessibilityLabel="Open Health Watch instead of the disabled assistant"
+              accessibilityLabel="Open Health Watch"
               style={({ pressed }) => [
                 s.gateComposerLink,
-                { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.82 : 1,
+                },
               ]}
             >
-              <Text style={[s.gateComposerLinkText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Health</Text>
+              <Text
+                style={[
+                  s.gateComposerLinkText,
+                  {
+                    color: colors.primaryForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
+                Health
+              </Text>
             </Pressable>
           </View>
         )}
       </KeyboardAvoidingView>
-      <Modal visible={reviewAction !== null} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setReviewAction(null)}>
+      <Modal
+        visible={reviewAction !== null}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setReviewAction(null)}
+      >
         <ModalBackdropPressable
           style={s.reviewBackdrop}
           onPress={() => setReviewAction(null)}
@@ -696,25 +1114,78 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
             visible={reviewAction !== null}
             onRequestClose={() => setReviewAction(null)}
             closeAccessibilityLabel="Close owner review"
-            style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border, paddingBottom: modalSheetBottomPadding }]}
+            style={[
+              s.reviewSheet,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                paddingBottom: modalSheetBottomPadding,
+              },
+            ]}
           >
             {reviewAction?.draft ? (
               <>
                 <View style={s.reviewHeader}>
-                  <View style={[s.reviewIcon, { backgroundColor: colors.primary + "16" }]}>
-                    <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+                  <View
+                    style={[
+                      s.reviewIcon,
+                      { backgroundColor: colors.primary + "16" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="sparkles-outline"
+                      size={18}
+                      color={colors.primary}
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.reviewEyebrow, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>OWNER REVIEW</Text>
-                    <Text style={[s.reviewTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.title}</Text>
+                    <Text
+                      style={[
+                        s.reviewEyebrow,
+                        { color: colors.primary, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      OWNER REVIEW
+                    </Text>
+                    <Text
+                      accessibilityRole="header"
+                      style={[
+                        s.reviewTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {reviewAction.draft.title}
+                    </Text>
                   </View>
                 </View>
-                <ScrollView style={s.reviewBodyWrap} showsVerticalScrollIndicator={false}>
-                  <Text style={[s.reviewBody, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
+                <ScrollView
+                  style={s.reviewBodyWrap}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text
+                    style={[
+                      s.reviewBody,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_400Regular",
+                      },
+                    ]}
+                  >
                     {reviewAction.draft.body}
                   </Text>
                   {reviewAction.draft.safety ? (
-                    <Text style={[s.reviewSafety, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    <Text
+                      style={[
+                        s.reviewSafety,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
                       {reviewAction.draft.safety}
                     </Text>
                   ) : null}
@@ -726,7 +1197,17 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                     accessibilityLabel="Cancel owner review"
                     style={[s.reviewCancel, { borderColor: colors.border }]}
                   >
-                    <Text style={[s.reviewCancelText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Cancel</Text>
+                    <Text
+                      style={[
+                        s.reviewCancelText,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
                   </Pressable>
                   <Pressable
                     onPress={applyDraft}
@@ -734,7 +1215,17 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                     accessibilityLabel="Apply reviewed WoofGuide draft"
                     style={[s.reviewApply, { backgroundColor: colors.primary }]}
                   >
-                    <Text style={[s.reviewApplyText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.cta}</Text>
+                    <Text
+                      style={[
+                        s.reviewApplyText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {reviewAction.draft.cta}
+                    </Text>
                   </Pressable>
                 </View>
               </>
@@ -862,7 +1353,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 12,
   },
-  guideBoundaryLabel: { fontSize: 9.2, lineHeight: 12, textTransform: "uppercase" },
+  guideBoundaryLabel: {
+    fontSize: 9.2,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
   guideBoundaryValue: { fontSize: 9.8, lineHeight: 13, marginTop: 4 },
   guideStageAction: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -885,50 +1380,178 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   guideIntroText: { flex: 1, minWidth: 0 },
-  guideIntroKicker: { fontSize: 10, lineHeight: 13, textTransform: "uppercase" },
+  guideIntroKicker: {
+    fontSize: 10,
+    lineHeight: 13,
+    textTransform: "uppercase",
+  },
   guideIntroTitle: { fontSize: 17, lineHeight: 20, marginTop: 1 },
   guideIntroCopy: { fontSize: 11.5, lineHeight: 16, marginTop: 3 },
   quickQuestionBoard: { alignSelf: "stretch", marginTop: 6 },
   quickQuestionGrid: { gap: 10 },
-  quickChip: { borderRadius: 14, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 14 },
+  quickChip: {
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    padding: 14,
+  },
   quickText: { fontSize: 14, lineHeight: 20 },
   gateHeadline: { fontSize: 14, lineHeight: 20 },
   gatePrivacyNote: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
-  gateWorksLabel: { fontSize: 10.5, lineHeight: 14, letterSpacing: 0.6, textTransform: "uppercase", marginTop: 14, marginBottom: 8 },
+  gateWorksLabel: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    marginTop: 14,
+    marginBottom: 8,
+  },
   gateLinkList: { gap: 10 },
-  gateLinkRow: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 13 },
-  gateComposerNotice: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 18, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 14, paddingVertical: 10 },
+  gateLinkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    borderRadius: 16,
+    borderWidth: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    padding: 13,
+  },
+  gateComposerNotice: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
   gateComposerText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
-  gateComposerLink: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
+  gateComposerLink: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
   gateComposerLinkText: { fontSize: 13 },
   actionBoard: { alignSelf: "stretch", marginTop: 8 },
   guideActionList: { gap: 10 },
-  actionRow: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 13 },
-  actionIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    borderRadius: 16,
+    borderWidth: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    padding: 13,
+  },
+  actionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   actionLabel: { fontSize: 14.5 },
   actionDetail: { fontSize: 12.5, lineHeight: 17, marginTop: 2 },
   actionDraftLabel: { fontSize: 11.5, marginTop: 5 },
-  bubble: { maxWidth: "86%", borderRadius: 20, padding: 14, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  bubble: {
+    maxWidth: "86%",
+    borderRadius: 20,
+    padding: 14,
+    shadowColor: "#2E5846",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
   userBubble: { alignSelf: "flex-end", borderBottomRightRadius: 6 },
-  assistantBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 6, borderWidth: 1 },
+  assistantBubble: {
+    alignSelf: "flex-start",
+    borderBottomLeftRadius: 6,
+    borderWidth: 1,
+  },
   bubbleText: { fontSize: 15, lineHeight: 22 },
-  typingBubble: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, borderWidth: 1, padding: 12, marginBottom: 8 },
+  typingBubble: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 8,
+  },
   typingText: { fontSize: 14 },
-  inputArea: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 16, paddingTop: 8, borderTopWidth: 1 },
-  input: { flex: 1, borderRadius: 18, borderWidth: 1, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10, fontSize: 15, maxHeight: 112, minHeight: 48 },
-  sendBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  reviewBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(10, 16, 24, 0.42)" },
-  reviewSheet: { borderTopLeftRadius: 26, borderTopRightRadius: 26, borderWidth: 1, padding: 18, maxHeight: "78%" },
+  inputArea: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    borderTopWidth: 1,
+  },
+  input: {
+    flex: 1,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 10,
+    fontSize: 15,
+    maxHeight: 112,
+    minHeight: 48,
+  },
+  sendBtn: {
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reviewBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(10, 16, 24, 0.42)",
+  },
+  reviewSheet: {
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    borderWidth: 1,
+    padding: 18,
+    maxHeight: "78%",
+  },
   reviewHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
-  reviewIcon: { width: 38, height: 38, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  reviewIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   reviewEyebrow: { fontSize: 10.5, letterSpacing: 0.7 },
   reviewTitle: { fontSize: 17, marginTop: 2 },
   reviewBodyWrap: { marginTop: 16 },
   reviewBody: { fontSize: 14, lineHeight: 21 },
   reviewSafety: { fontSize: 12, lineHeight: 17, marginTop: 14 },
   reviewActions: { flexDirection: "row", gap: 10, marginTop: 16 },
-  reviewCancel: { flex: 1, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", minHeight: MIN_MOBILE_TOUCH_TARGET },
+  reviewCancel: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+  },
   reviewCancelText: { fontSize: 14 },
-  reviewApply: { flex: 1.4, borderRadius: 16, alignItems: "center", justifyContent: "center", minHeight: MIN_MOBILE_TOUCH_TARGET },
+  reviewApply: {
+    flex: 1.4,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+  },
   reviewApplyText: { fontSize: 14 },
 });

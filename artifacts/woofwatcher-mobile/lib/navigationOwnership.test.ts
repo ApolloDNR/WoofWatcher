@@ -35,6 +35,42 @@ test("canonical primary routes keep one predictable owner and Fast Log stays Log
   }
 });
 
+test("Plans accepts only the explicit Reminder Center section and validated item IDs", () => {
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/calendar",
+      params: {
+        section: "reminders",
+        item: "routine:morning.1",
+        unexpected: "do-not-reflect",
+      },
+    }),
+    {
+      parent: "plans",
+      pathname: "/calendar",
+      params: { section: "reminders", item: "routine:morning.1" },
+      replace: false,
+    },
+  );
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/calendar",
+      params: { section: "unknown", item: "routine:morning.1" },
+    }),
+    { parent: "plans", pathname: "/calendar", replace: true },
+  );
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/calendar",
+      params: {
+        section: [123] as unknown as string[],
+        item: "routine:morning.1",
+      },
+    }),
+    { parent: "plans", pathname: "/calendar", replace: true },
+  );
+});
+
 test("Health accepts only its closed sections and legacy tab aliases", () => {
   for (const section of [
     "overview",
@@ -655,7 +691,12 @@ test("legacy route files replace to their exact canonical parent", () => {
   const cases = [
     [
       { pathname: "/reminders" },
-      { parent: "plans", pathname: "/calendar", replace: true },
+      {
+        parent: "plans",
+        pathname: "/calendar",
+        params: { section: "reminders" },
+        replace: true,
+      },
     ],
     [
       { pathname: "/records" },
@@ -767,7 +808,7 @@ test("legacy routes preserve only validated identifiers and normalize arrays to 
     {
       parent: "plans",
       pathname: "/calendar",
-      params: { item: "routine:morning.1" },
+      params: { section: "reminders", item: "routine:morning.1" },
       replace: true,
     },
   );
@@ -849,7 +890,12 @@ test("legacy routes preserve only validated identifiers and normalize arrays to 
         pathname: "/reminders",
         params: { item, leak: "no" },
       }),
-      { parent: "plans", pathname: "/calendar", replace: true },
+      {
+        parent: "plans",
+        pathname: "/calendar",
+        params: { section: "reminders" },
+        replace: true,
+      },
     );
   }
 });
@@ -972,7 +1018,12 @@ test("query values must be own properties before they can affect a destination",
       pathname: "/reminders",
       params: Object.create({ item: "routine:inherited" }),
     }),
-    { parent: "plans", pathname: "/calendar", replace: true },
+    {
+      parent: "plans",
+      pathname: "/calendar",
+      params: { section: "reminders" },
+      replace: true,
+    },
   );
   assert.deepEqual(
     resolveCanonicalDestination({
@@ -1030,7 +1081,12 @@ test("malformed scalar arrays and object values are treated as absent query inpu
         pathname: "/reminders",
         params: { item: value as unknown as string[] },
       }),
-      { parent: "plans", pathname: "/calendar", replace: true },
+      {
+        parent: "plans",
+        pathname: "/calendar",
+        params: { section: "reminders" },
+        replace: true,
+      },
     );
     assert.deepEqual(
       resolveCanonicalDestination({

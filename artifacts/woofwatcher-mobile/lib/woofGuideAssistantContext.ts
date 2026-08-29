@@ -2,6 +2,7 @@ import {
   deriveCareDayStatus,
   deriveCareHandoff,
   deriveHealthWatch,
+  isCareFollowUpSeverity,
   normalizeCareEventType,
   selectSharedCareEvidence,
 } from "../../../lib/care-domain/src/index.ts";
@@ -21,15 +22,23 @@ export function buildWoofGuideAssistantContext(
   const today = todayLocalDateKey(new Date(now));
   const todayEntries = entries.filter((entry) => {
     const occurredAt = new Date(entry.occurredAt);
-    return Number.isFinite(occurredAt.getTime()) && localDateKey(occurredAt) === today;
+    return (
+      Number.isFinite(occurredAt.getTime()) &&
+      localDateKey(occurredAt) === today
+    );
   });
   const normalizedType = (entry: CareState["entries"][number]) =>
     normalizeCareEventType(entry.type, entry.details);
   const sortedEntries = [...entries].sort(
-    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+    (a, b) =>
+      new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
   );
-  const meals = sortedEntries.filter((entry) => normalizedType(entry) === "meal");
-  const walks = sortedEntries.filter((entry) => normalizedType(entry) === "walk");
+  const meals = sortedEntries.filter(
+    (entry) => normalizedType(entry) === "meal",
+  );
+  const walks = sortedEntries.filter(
+    (entry) => normalizedType(entry) === "walk",
+  );
   const dayStatus = deriveCareDayStatus(entries, state.routines, now);
   const healthWatch = deriveHealthWatch({
     entries,
@@ -61,7 +70,10 @@ export function buildWoofGuideAssistantContext(
     },
     healthWatch: {
       status: healthWatch.status,
-      label: healthWatch.status === "good" ? "No concerns" : healthWatch.summary,
+      label:
+        healthWatch.status === "good"
+          ? "No logged Health Watch signals"
+          : healthWatch.summary,
       summary: healthWatch.summary,
       signals: healthWatch.signals.slice(0, 4),
       redFlags: healthWatch.redFlags,
@@ -73,12 +85,14 @@ export function buildWoofGuideAssistantContext(
       completedCount: todayEntries.length,
       totalCount: state.routines.length,
       nextItems: handoffSummary.next
-        ? [{
-            label: handoffSummary.next.label,
-            time: handoffSummary.next.time,
-            owner: handoffSummary.next.owner,
-            note: handoffSummary.next.note,
-          }]
+        ? [
+            {
+              label: handoffSummary.next.label,
+              time: handoffSummary.next.time,
+              owner: handoffSummary.next.owner,
+              note: handoffSummary.next.note,
+            },
+          ]
         : [],
     },
     handoff: {
@@ -92,7 +106,7 @@ export function buildWoofGuideAssistantContext(
       lastMeal: meals[0] ?? null,
       lastWalk: walks[0] ?? null,
       followUps: entries
-        .filter((entry) => entry.severity === "watch" || entry.severity === "urgent")
+        .filter((entry) => isCareFollowUpSeverity(entry.severity))
         .slice(0, 3),
       caregiverLoad: handoffSummary.caregiverLoad,
       sections: handoffSummary.sections,

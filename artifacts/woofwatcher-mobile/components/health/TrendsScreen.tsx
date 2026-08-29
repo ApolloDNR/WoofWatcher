@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   LayoutChangeEvent,
@@ -70,11 +70,24 @@ function moodLookbackDays(key: TrendWindowKey): number {
 function Kicker({ text }: { text: string }) {
   const colors = useColors();
   return (
-    <Text style={[styles.kicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{text}</Text>
+    <Text
+      style={[
+        styles.kicker,
+        { color: colors.sage, fontFamily: "Inter_700Bold" },
+      ]}
+    >
+      {text}
+    </Text>
   );
 }
 
-function AxisLabels({ buckets, labelStride }: { buckets: TrendBucket[]; labelStride: number }) {
+function AxisLabels({
+  buckets,
+  labelStride,
+}: {
+  buckets: TrendBucket[];
+  labelStride: number;
+}) {
   const colors = useColors();
   // Month buckets are ~12px wide, so a 2-digit "Jun 20" tick would clip to an
   // ambiguous "2.." inside its own cell. For dense axes we let the label overflow
@@ -91,7 +104,11 @@ function AxisLabels({ buckets, labelStride }: { buckets: TrendBucket[]; labelStr
         const label = (
           <Text
             numberOfLines={1}
-            style={[styles.axisText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+            maxFontSizeMultiplier={1.3}
+            style={[
+              styles.axisText,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
           >
             {bucket.label}
           </Text>
@@ -111,7 +128,10 @@ function AxisLabels({ buckets, labelStride }: { buckets: TrendBucket[]; labelStr
               : styles.axisLabelCenter;
         return (
           <View key={i} style={styles.axisCell}>
-            <View style={[styles.axisLabelAnchor, anchorStyle]} pointerEvents="none">
+            <View
+              style={[styles.axisLabelAnchor, anchorStyle]}
+              pointerEvents="none"
+            >
               {label}
             </View>
           </View>
@@ -124,9 +144,23 @@ function AxisLabels({ buckets, labelStride }: { buckets: TrendBucket[]; labelStr
 function ChartEmpty({ message, height }: { message: string; height: number }) {
   const colors = useColors();
   return (
-    <View style={[styles.emptyWrap, { height, borderColor: colors.border }]}>
-      <Ionicons name="sparkles-outline" size={18} color={colors.mutedForeground} />
-      <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+    <View
+      style={[
+        styles.emptyWrap,
+        { minHeight: height, borderColor: colors.border },
+      ]}
+    >
+      <Ionicons
+        name="sparkles-outline"
+        size={18}
+        color={colors.mutedForeground}
+      />
+      <Text
+        style={[
+          styles.emptyText,
+          { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+        ]}
+      >
         {message}
       </Text>
     </View>
@@ -159,7 +193,9 @@ function AnimatedBar({
   const style = useAnimatedStyle(() => ({
     height: (targetHeight > 0 ? Math.max(targetHeight, 3) : 0) * grow.value,
   }));
-  return <Animated.View style={[styles.bar, { backgroundColor: color }, style]} />;
+  return (
+    <Animated.View style={[styles.bar, { backgroundColor: color }, style]} />
+  );
 }
 
 function MetricBarChart({
@@ -188,7 +224,10 @@ function MetricBarChart({
     >
       <View style={[styles.barsRow, { height: BAR_HEIGHT }]}>
         {values.map((value, i) => (
-          <View key={i} style={[styles.barCell, { paddingHorizontal: cellPad }]}>
+          <View
+            key={i}
+            style={[styles.barCell, { paddingHorizontal: cellPad }]}
+          >
             <AnimatedBar
               targetHeight={(value / max) * BAR_HEIGHT}
               color={color}
@@ -229,13 +268,16 @@ function MoodLineChart({
       if (value == null) return;
       const clamped = Math.max(MOOD_MIN, Math.min(MOOD_MAX, value));
       const x = (i + 0.5) * step;
-      const y = LINE_PAD + (1 - (clamped - MOOD_MIN) / (MOOD_MAX - MOOD_MIN)) * plotH;
+      const y =
+        LINE_PAD + (1 - (clamped - MOOD_MIN) / (MOOD_MAX - MOOD_MIN)) * plotH;
       result.push({ x, y });
     });
     return result;
   }, [averages, width, n, plotH]);
 
-  const pointsStr = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const pointsStr = points
+    .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(" ");
   const length = useMemo(() => polylineLength(points), [pointsStr]); // eslint-disable-line react-hooks/exhaustive-deps
   const draw = useSharedValue(reduced ? 1 : 0);
   useEffect(() => {
@@ -244,7 +286,10 @@ function MoodLineChart({
       return;
     }
     draw.value = 0;
-    draw.value = withTiming(1, { duration: 700, easing: Easing.inOut(Easing.cubic) });
+    draw.value = withTiming(1, {
+      duration: 700,
+      easing: Easing.inOut(Easing.cubic),
+    });
   }, [pointsStr, reduced, draw]);
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: length * (1 - draw.value),
@@ -252,7 +297,8 @@ function MoodLineChart({
 
   const gridYs = [LINE_PAD, LINE_PAD + plotH / 2, LINE_PAD + plotH];
 
-  const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
+  const onLayout = (event: LayoutChangeEvent) =>
+    setWidth(event.nativeEvent.layout.width);
 
   return (
     <View
@@ -326,11 +372,24 @@ function ChartCard({
       <View style={styles.chartHead}>
         <View style={styles.chartHeadText}>
           <Kicker text={kicker} />
-          <Text style={[styles.chartTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+          <Text
+            style={[
+              styles.chartTitle,
+              { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+            ]}
+          >
             {title}
           </Text>
         </View>
-        <Text style={[styles.chartStat, { color: statTone ?? colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+        <Text
+          style={[
+            styles.chartStat,
+            {
+              color: statTone ?? colors.mutedForeground,
+              fontFamily: "Inter_700Bold",
+            },
+          ]}
+        >
           {stat}
         </Text>
       </View>
@@ -339,7 +398,10 @@ function ChartCard({
   );
 }
 
-function signalToneColor(tone: string, colors: ReturnType<typeof useColors>): string {
+function signalToneColor(
+  tone: string,
+  colors: ReturnType<typeof useColors>,
+): string {
   if (tone === "good") return colors.sage;
   if (tone === "watch") return colors.amber;
   if (tone === "alert") return colors.rose;
@@ -403,14 +465,24 @@ export default function TrendsScreen({
     return { moodSamples: mood, activitySamples: activity, pottyTimes: potty };
   }, [state.entries, now, windowKey, state.profile.name]);
 
-  const moodAverages = useMemo(() => bucketAverages(moodSamples, win.buckets), [moodSamples, win]);
-  const activityValues = useMemo(() => bucketSums(activitySamples, win.buckets), [activitySamples, win]);
-  const pottyValues = useMemo(() => bucketCounts(pottyTimes, win.buckets), [pottyTimes, win]);
+  const moodAverages = useMemo(
+    () => bucketAverages(moodSamples, win.buckets),
+    [moodSamples, win],
+  );
+  const activityValues = useMemo(
+    () => bucketSums(activitySamples, win.buckets),
+    [activitySamples, win],
+  );
+  const pottyValues = useMemo(
+    () => bucketCounts(pottyTimes, win.buckets),
+    [pottyTimes, win],
+  );
 
   const inWindow = (at: number) => at >= win.start && at < win.end;
   const moodInWindow = moodSamples.filter((sample) => inWindow(sample.at));
   const moodAvg = moodInWindow.length
-    ? moodInWindow.reduce((sum, sample) => sum + sample.value, 0) / moodInWindow.length
+    ? moodInWindow.reduce((sum, sample) => sum + sample.value, 0) /
+      moodInWindow.length
     : 0;
   const activityTotal = activityValues.reduce((sum, value) => sum + value, 0);
   const pottyTotal = pottyValues.reduce((sum, value) => sum + value, 0);
@@ -422,7 +494,9 @@ export default function TrendsScreen({
   // plot; potty follows the same completed-count guard for consistency.
   const hasActivity = activityTotal > 0;
   const hasPotty = pottyTotal > 0;
-  const moodValues = moodAverages.filter((value): value is number => value != null);
+  const moodValues = moodAverages.filter(
+    (value): value is number => value != null,
+  );
   const moodLow = moodValues.length ? Math.min(...moodValues) : 0;
   const moodHigh = moodValues.length ? Math.max(...moodValues) : 0;
   const activePeriods = activityValues.filter((value) => value > 0).length;
@@ -479,7 +553,10 @@ export default function TrendsScreen({
               accessibilityLabel={moodChartSummary}
             />
           ) : (
-            <ChartEmpty message="No mood check-ins yet — they'll chart here." height={LINE_HEIGHT} />
+            <ChartEmpty
+              message="No mood check-ins yet — they'll chart here."
+              height={LINE_HEIGHT}
+            />
           )}
         </ChartCard>
 
@@ -522,16 +599,29 @@ export default function TrendsScreen({
               accessibilityLabel={pottyChartSummary}
             />
           ) : (
-            <ChartEmpty message="No potty logs yet — they'll chart here." height={BAR_HEIGHT} />
+            <ChartEmpty
+              message="No potty logs yet — they'll chart here."
+              height={BAR_HEIGHT}
+            />
           )}
         </ChartCard>
 
         <BoardCard enter={3} style={styles.card}>
           <Kicker text="This Week" />
-          <Text style={[styles.summaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+          <Text
+            style={[
+              styles.summaryTitle,
+              { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+            ]}
+          >
             This Week&apos;s Summary
           </Text>
-          <Text style={[styles.summaryBody, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            style={[
+              styles.summaryBody,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {careTrends.summary}
           </Text>
 
@@ -539,15 +629,30 @@ export default function TrendsScreen({
             <>
               <PressScale
                 accessibilityRole="button"
-                accessibilityLabel={showSignals ? "Hide weekly signals" : "Show weekly signals"}
+                accessibilityLabel={
+                  showSignals ? "Hide weekly signals" : "Show weekly signals"
+                }
                 aria-expanded={showSignals}
                 onPress={() => setShowSignals((prev) => !prev)}
                 haptic="light"
                 containerStyle={styles.summaryToggleLayout}
-                style={[styles.summaryToggle, { borderColor: colors.border, backgroundColor: colors.background }]}
+                style={[
+                  styles.summaryToggle,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                  },
+                ]}
               >
-                <Text style={[styles.summaryToggleText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
-                  {showSignals ? "Hide signals" : `View ${careTrends.signals.length} signal${careTrends.signals.length === 1 ? "" : "s"}`}
+                <Text
+                  style={[
+                    styles.summaryToggleText,
+                    { color: colors.forest, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  {showSignals
+                    ? "Hide signals"
+                    : `View ${careTrends.signals.length} signal${careTrends.signals.length === 1 ? "" : "s"}`}
                 </Text>
                 <Ionicons
                   name={showSignals ? "chevron-up" : "chevron-forward"}
@@ -559,15 +664,42 @@ export default function TrendsScreen({
               {showSignals ? (
                 <View style={styles.signalList}>
                   {careTrends.signals.map((signal) => (
-                    <View key={signal.kind} style={[styles.signalRow, { borderColor: colors.border }]}>
+                    <View
+                      key={signal.kind}
+                      style={[styles.signalRow, { borderColor: colors.border }]}
+                    >
                       <View
-                        style={[styles.signalDot, { backgroundColor: signalToneColor(signal.tone, colors) }]}
+                        style={[
+                          styles.signalDot,
+                          {
+                            backgroundColor: signalToneColor(
+                              signal.tone,
+                              colors,
+                            ),
+                          },
+                        ]}
                       />
                       <View style={styles.signalText}>
-                        <Text style={[styles.signalLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            styles.signalLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
                           {signal.label}
                         </Text>
-                        <Text style={[styles.signalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        <Text
+                          style={[
+                            styles.signalDetail,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
                           {signal.detail}
                         </Text>
                       </View>
@@ -577,7 +709,15 @@ export default function TrendsScreen({
               ) : null}
             </>
           ) : (
-            <Text style={[styles.summaryHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              style={[
+                styles.summaryHint,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
               {careTrends.nextStep}
             </Text>
           )}
@@ -643,7 +783,7 @@ const styles = StyleSheet.create({
   // Dense (month) axis labels are absolutely positioned, so the row needs an
   // explicit height to reserve their vertical space.
   axisRowDense: {
-    minHeight: 14,
+    minHeight: 18,
   },
   axisCell: {
     flex: 1,
@@ -681,6 +821,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderStyle: "dashed",
     paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   emptyText: {
     fontSize: 12.5,

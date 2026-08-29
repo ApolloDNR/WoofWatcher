@@ -1,20 +1,14 @@
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
-  useFonts,
-} from "@expo-google-fonts/inter";
-import {
-  Fredoka_500Medium,
-  Fredoka_600SemiBold,
-  Fredoka_700Bold,
-} from "@expo-google-fonts/fredoka";
-import {
-  Fraunces_600SemiBold,
-  Fraunces_700Bold,
-} from "@expo-google-fonts/fraunces";
+import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
+import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
+import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
+import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
+import { Inter_800ExtraBold } from "@expo-google-fonts/inter/800ExtraBold";
+import { useFonts } from "@expo-google-fonts/inter/useFonts";
+import { Fredoka_500Medium } from "@expo-google-fonts/fredoka/500Medium";
+import { Fredoka_600SemiBold } from "@expo-google-fonts/fredoka/600SemiBold";
+import { Fredoka_700Bold } from "@expo-google-fonts/fredoka/700Bold";
+import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
+import { Fraunces_700Bold } from "@expo-google-fonts/fraunces/700Bold";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider, ClerkLoaded } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
@@ -23,7 +17,13 @@ import { LinkPreviewContextProvider } from "expo-router/build/link/preview/LinkP
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  useColorScheme,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useReducedMotion } from "react-native-reanimated";
@@ -96,6 +96,7 @@ function RootLayoutNav() {
     <Stack
       initialRouteName="(tabs)"
       screenOptions={{
+        animation: reducedMotion ? "none" : "default",
         headerBackTitle: "Back",
         headerTintColor: colors.copper,
         headerTitleStyle: {
@@ -168,10 +169,7 @@ function RootLayoutNav() {
           // transition matching instead of a platform-default cut. The web
           // build ignores it, so the fastlog screen runs its own mount
           // fade/rise there.
-          animation:
-            Platform.OS !== "web" && reducedMotion
-              ? "none"
-              : "slide_from_bottom",
+          animation: reducedMotion ? "none" : "slide_from_bottom",
           // Themed, not hardcoded cream: a hardcoded light background flashed
           // behind the slide-up for a beat in dark mode.
           contentStyle: { backgroundColor: colors.background },
@@ -211,7 +209,11 @@ function RootLayoutNav() {
 type WebViewport = { width: number; height: number };
 
 function getWebViewport(): WebViewport | null {
-  const viewport = (globalThis as unknown as { visualViewport?: { width: number; height: number } }).visualViewport;
+  const viewport = (
+    globalThis as unknown as {
+      visualViewport?: { width: number; height: number };
+    }
+  ).visualViewport;
   if (!viewport) return null;
   return { width: viewport.width, height: viewport.height };
 }
@@ -220,13 +222,15 @@ function useWebViewportClamp() {
   useEffect(() => {
     if (Platform.OS !== "web") return;
 
-    const webDocument = (globalThis as unknown as {
-      document?: {
-        body?: HTMLElement;
-        documentElement?: HTMLElement;
-        getElementById?: (id: string) => HTMLElement | null;
-      };
-    }).document;
+    const webDocument = (
+      globalThis as unknown as {
+        document?: {
+          body?: HTMLElement;
+          documentElement?: HTMLElement;
+          getElementById?: (id: string) => HTMLElement | null;
+        };
+      }
+    ).document;
 
     const nodes = [
       webDocument?.documentElement,
@@ -270,21 +274,45 @@ function PersonalAppFrame() {
   if (Platform.OS !== "web") return <RootLayoutNav />;
 
   const { width, height } = useWindowDimensions();
-  const [webViewport, setWebViewport] = React.useState<WebViewport | null>(() => getWebViewport());
+  const [webViewport, setWebViewport] = React.useState<WebViewport | null>(() =>
+    getWebViewport(),
+  );
 
   useEffect(() => {
-    const viewport = (globalThis as unknown as {
-      visualViewport?: {
-        addEventListener: (type: "resize", listener: () => void) => void;
-        removeEventListener: (type: "resize", listener: () => void) => void;
-      };
-    }).visualViewport;
+    const viewport = (
+      globalThis as unknown as {
+        visualViewport?: {
+          addEventListener: (type: "resize", listener: () => void) => void;
+          removeEventListener: (type: "resize", listener: () => void) => void;
+        };
+      }
+    ).visualViewport;
     if (!viewport) return;
 
-    const syncViewport = () => setWebViewport(getWebViewport());
+    let animationFrame: number | null = null;
+    const syncViewport = () => {
+      if (animationFrame !== null) return;
+      animationFrame = requestAnimationFrame(() => {
+        animationFrame = null;
+        const next = getWebViewport();
+        if (!next) return;
+        const rounded = {
+          width: Math.round(next.width * 100) / 100,
+          height: Math.round(next.height * 100) / 100,
+        };
+        setWebViewport((current) =>
+          current?.width === rounded.width && current.height === rounded.height
+            ? current
+            : rounded,
+        );
+      });
+    };
     syncViewport();
     viewport.addEventListener("resize", syncViewport);
-    return () => viewport.removeEventListener("resize", syncViewport);
+    return () => {
+      viewport.removeEventListener("resize", syncViewport);
+      if (animationFrame !== null) cancelAnimationFrame(animationFrame);
+    };
   }, []);
 
   const viewportWidth = webViewport?.width ?? width;
@@ -382,26 +410,32 @@ export default function RootLayout() {
               <AuthCredentialsLocalDataResetProvider>
                 <WebRuntimeLocalDataResetProvider>
                   <AppFileSystemProvider>
-                  <QueryCacheLocalDataResetProvider>
-                    <DevicePreferencesProvider>
-                      <AuthBridge />
-                      <CareProvider>
-                      {/* Follows the shared walk lifecycle: starts route capture when
+                    <QueryCacheLocalDataResetProvider>
+                      <DevicePreferencesProvider>
+                        <AuthBridge />
+                        <CareProvider>
+                          {/* Follows the shared walk lifecycle: starts route capture when
                           any surface opens a walk session, persists it on finish. */}
-                      <WalkRouteRecorderBridge />
-                      <AvatarProvider>
-                        <GestureHandlerRootView style={{ flex: 1 }}>
-                          <KeyboardProvider>
-                            <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
-                            <LocalDataResetAppShield>
-                              <AppFrame />
-                            </LocalDataResetAppShield>
-                          </KeyboardProvider>
-                        </GestureHandlerRootView>
-                      </AvatarProvider>
-                      </CareProvider>
-                    </DevicePreferencesProvider>
-                  </QueryCacheLocalDataResetProvider>
+                          <WalkRouteRecorderBridge />
+                          <AvatarProvider>
+                            <GestureHandlerRootView style={{ flex: 1 }}>
+                              <KeyboardProvider>
+                                <StatusBar
+                                  style={
+                                    Platform.OS !== "web" && scheme === "dark"
+                                      ? "light"
+                                      : "dark"
+                                  }
+                                />
+                                <LocalDataResetAppShield>
+                                  <AppFrame />
+                                </LocalDataResetAppShield>
+                              </KeyboardProvider>
+                            </GestureHandlerRootView>
+                          </AvatarProvider>
+                        </CareProvider>
+                      </DevicePreferencesProvider>
+                    </QueryCacheLocalDataResetProvider>
                   </AppFileSystemProvider>
                 </WebRuntimeLocalDataResetProvider>
               </AuthCredentialsLocalDataResetProvider>

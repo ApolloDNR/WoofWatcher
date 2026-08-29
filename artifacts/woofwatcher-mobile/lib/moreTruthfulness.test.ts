@@ -16,7 +16,10 @@ process.env.TZ = "America/Los_Angeles";
 
 const NOW = new Date("2026-08-28T09:00:00-07:00").getTime();
 
-function careState(entries: Entry[] = [], routines: CareState["routines"] = []): CareState {
+function careState(
+  entries: Entry[] = [],
+  routines: CareState["routines"] = [],
+): CareState {
   return {
     entries,
     routines,
@@ -45,16 +48,19 @@ test("an empty profile exposes no mood or energy fact", () => {
 
 test("a clock and scheduled walk cannot become a claimed pet mood", () => {
   const status = derivePhoenixStatus(
-    careState([], [
-      {
-        id: "walk-soon",
-        label: "Morning walk",
-        type: "walk",
-        time: "9:30 AM",
-        owner: "Owner",
-        note: "",
-      },
-    ]),
+    careState(
+      [],
+      [
+        {
+          id: "walk-soon",
+          label: "Morning walk",
+          type: "walk",
+          time: "9:30 AM",
+          owner: "Owner",
+          note: "",
+        },
+      ],
+    ),
     NOW,
   );
 
@@ -134,7 +140,10 @@ test("arbitrary and negated prose cannot become mood or energy evidence", () => 
         title: "Not anxious and not unwell",
         note: "No nervous behavior; energy was not low.",
         occurredAt: "2026-08-28T08:20:00-07:00",
-        details: { moodContext: "Owner was anxious about work", energy: "high" },
+        details: {
+          moodContext: "Owner was anxious about work",
+          energy: "high",
+        },
       }),
     ]),
     NOW,
@@ -307,7 +316,8 @@ test("terminal provider refresh failure keeps local facts visible and offers a r
       state: "error",
       isSettled: false,
       retryable: true,
-      message: "WoofWatcher could not confirm the current household records. Try again.",
+      message:
+        "WoofWatcher could not confirm the current household records. Try again.",
     },
     totalEntries: 1,
     caregiverCount: 1,
@@ -320,7 +330,10 @@ test("terminal provider refresh failure keeps local facts visible and offers a r
     dashboard.metrics.map((metric) => metric.value),
     ["1 entry", "1 member", "Needs retry"],
   );
-  assert.match(`${dashboard.message} ${dashboard.nextStep}`, /saved (?:device|on-device) data/i);
+  assert.match(
+    `${dashboard.message} ${dashboard.nextStep}`,
+    /saved (?:device|on-device) data/i,
+  );
 });
 
 test("a future-schema provider block asks for an update and never offers a fake retry", () => {
@@ -343,8 +356,14 @@ test("a future-schema provider block asks for an update and never offers a fake 
     dashboard.metrics.map((metric) => metric.value),
     ["1 entry", "1 member", "Update required"],
   );
-  assert.match(`${dashboard.title} ${dashboard.message} ${dashboard.nextStep}`, /update/i);
-  assert.doesNotMatch(`${dashboard.actionLabel} ${dashboard.nextStep}`, /retry/i);
+  assert.match(
+    `${dashboard.title} ${dashboard.message} ${dashboard.nextStep}`,
+    /update/i,
+  );
+  assert.doesNotMatch(
+    `${dashboard.actionLabel} ${dashboard.nextStep}`,
+    /retry/i,
+  );
 });
 
 test("settled provider refresh needs no dashboard override", () => {
@@ -419,8 +438,16 @@ test("storage recovery actions exist only when the shown action can really run",
 
   for (const input of [
     { isLoaded: false, isInitialSyncSettled: false, storageWarning: null },
-    { isLoaded: true, isInitialSyncSettled: true, storageWarning: "reset" as const },
-    { isLoaded: true, isInitialSyncSettled: true, storageWarning: "newer-version" as const },
+    {
+      isLoaded: true,
+      isInitialSyncSettled: true,
+      storageWarning: "reset" as const,
+    },
+    {
+      isLoaded: true,
+      isInitialSyncSettled: true,
+      storageWarning: "newer-version" as const,
+    },
   ]) {
     assert.equal(deriveCareStorageRecoveryAction(input), null);
   }
@@ -525,7 +552,10 @@ test("More consumes evidence and storage trust instead of rendering fallbacks as
   );
   assert.match(source, /careStorageRecoveryAction\.kind === "retry-read"/);
   assert.match(source, /careStorageRecoveryAction\.kind === "retry-save"/);
-  assert.doesNotMatch(source, /careStorageUnavailable[\s\S]{0,300}actionLabel:\s*"Retry"/);
+  assert.doesNotMatch(
+    source,
+    /careStorageUnavailable[\s\S]{0,300}actionLabel:\s*"Retry"/,
+  );
 });
 
 test("More hides personal profile identity until device storage is trusted", () => {
@@ -540,7 +570,9 @@ test("More hides personal profile identity until device storage is trusted", () 
   assert.match(routeHeader, /careStorageUnavailable\s*\?/);
   assert.match(routeHeader, /Care tools, records, household, and settings\./);
 
-  const recoveryAt = source.indexOf('accessibilityLabel="Care profile storage unavailable"');
+  const recoveryAt = source.indexOf(
+    'accessibilityLabel="Care profile storage unavailable"',
+  );
   const profileAt = source.indexOf("{/* Profile header card */}");
   assert.ok(recoveryAt > routeHeaderAt && recoveryAt < profileAt);
 
@@ -553,8 +585,13 @@ test("More hides personal profile identity until device storage is trusted", () 
   assert.match(woofGuide, /careStorageUnavailable\s*\?/);
   assert.match(woofGuide, /Ask about your dog's care, diet, and patterns/);
 
-  const directoryRendererAt = source.indexOf("const renderCanonicalDirectoryRow");
-  const directoryRenderer = source.slice(directoryRendererAt, directoryRendererAt + 1_900);
+  const directoryRendererAt = source.indexOf(
+    "const renderCanonicalDirectoryRow",
+  );
+  const directoryRenderer = source.slice(
+    directoryRendererAt,
+    directoryRendererAt + 1_900,
+  );
   assert.match(directoryRenderer, /item\.id === "dog-profile"/);
   assert.match(directoryRenderer, /careStorageUnavailable/);
   assert.match(directoryRenderer, /careFactsUnavailableAction/);
@@ -563,7 +600,10 @@ test("More hides personal profile identity until device storage is trusted", () 
 
   const recoveryActionStyle = source.slice(
     source.indexOf("providerSetupRowAction: {"),
-    source.indexOf("providerSetupRowActionText:", source.indexOf("providerSetupRowAction: {")),
+    source.indexOf(
+      "providerSetupRowActionText:",
+      source.indexOf("providerSetupRowAction: {"),
+    ),
   );
   assert.match(recoveryActionStyle, /minHeight:\s*MIN_MOBILE_TOUCH_TARGET/);
 
@@ -571,13 +611,27 @@ test("More hides personal profile identity until device storage is trusted", () 
     new URL("../components/more/DogProfileScreen.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(dogProfileSource, /profileStorageUnavailable\s*=\s*!isLoaded\s*\|\|\s*storageWarning !== null/);
-  const recoveryReturnAt = dogProfileSource.indexOf("if (profileStorageUnavailable)");
-  const trustedReturnAt = dogProfileSource.indexOf("{/* Full-bleed park hero", recoveryReturnAt);
+  assert.match(
+    dogProfileSource,
+    /profileStorageUnavailable\s*=\s*!isLoaded\s*\|\|\s*storageWarning !== null/,
+  );
+  const recoveryReturnAt = dogProfileSource.indexOf(
+    "if (profileStorageUnavailable)",
+  );
+  const trustedReturnAt = dogProfileSource.indexOf(
+    "{/* Full-bleed park hero",
+    recoveryReturnAt,
+  );
   assert.ok(recoveryReturnAt > 0 && trustedReturnAt > recoveryReturnAt);
-  const recoverySurface = dogProfileSource.slice(recoveryReturnAt, trustedReturnAt);
+  const recoverySurface = dogProfileSource.slice(
+    recoveryReturnAt,
+    trustedReturnAt,
+  );
   assert.match(recoverySurface, /Profile details hidden/);
-  assert.doesNotMatch(recoverySurface, /\{petName\}|profile\.breed|getAvatarSource/);
+  assert.doesNotMatch(
+    recoverySurface,
+    /\{petName\}|profile\.breed|getAvatarSource/,
+  );
 });
 
 test("Home and More present only explicit categorical energy evidence", () => {
@@ -597,9 +651,15 @@ test("Home and More present only explicit categorical energy evidence", () => {
   assert.match(source, /status\.evidence\.energy/);
   assert.match(source, /text: energyEvidenceLabel/);
   assert.doesNotMatch(source, /status\.evidence\.energy\s*-/);
-  assert.match(homeSource, /const hasEnergyEvidence = status\.evidence\.energy !== null/);
+  assert.match(
+    homeSource,
+    /const hasEnergyEvidence = status\.evidence\.energy !== null/,
+  );
   assert.match(homeSource, /energyEvidenceLabel/);
-  assert.doesNotMatch(homeSource, /valueLabel=\{hasEnergyEvidence \? `\$\{status\.energy\}%`/);
+  assert.doesNotMatch(
+    homeSource,
+    /valueLabel=\{hasEnergyEvidence \? `\$\{status\.energy\}%`/,
+  );
   assert.doesNotMatch(homeSource, /Energy \$\{status\.energy\} percent/);
 });
 
@@ -616,15 +676,26 @@ test("Home and More filter future care entries before today/streak/latest facts"
   assert.match(moreSource, /observedEntries\s*=\s*useMemo/);
   assert.match(moreSource, /selectSharedCareEvidence\(entries, now\)/);
   assert.match(moreSource, /todayLogCount[\s\S]{0,500}observedEntries\.filter/);
-  assert.match(moreSource, /latestCareUpdate[\s\S]{0,500}observedEntries\.reduce/);
+  assert.match(
+    moreSource,
+    /latestCareUpdate[\s\S]{0,500}observedEntries\.reduce/,
+  );
 
   const homeEntriesStart = homeSource.indexOf("const homeEntries = useMemo(");
   const todayEntriesStart = homeSource.indexOf(
     "const todayHomeEntries = useMemo(",
     homeEntriesStart,
   );
-  assert.notEqual(homeEntriesStart, -1, "Home must establish an evidence boundary");
-  assert.notEqual(todayEntriesStart, -1, "Home evidence boundary must be bounded");
+  assert.notEqual(
+    homeEntriesStart,
+    -1,
+    "Home must establish an evidence boundary",
+  );
+  assert.notEqual(
+    todayEntriesStart,
+    -1,
+    "Home evidence boundary must be bounded",
+  );
   const homeEvidenceBoundary = homeSource.slice(
     homeEntriesStart,
     todayEntriesStart,
@@ -652,7 +723,9 @@ test("More primary and forest CTAs use the theme foreground", () => {
   ]) {
     const actionStart = source.indexOf(`accessibilityLabel="${label}"`);
     assert.notEqual(actionStart, -1, `missing More action: ${label}`);
-    const action = source.slice(actionStart, actionStart + 800);
+    const actionEnd = source.indexOf("</Pressable>", actionStart);
+    assert.notEqual(actionEnd, -1, `unbounded More action: ${label}`);
+    const action = source.slice(actionStart, actionEnd);
     assert.match(action, /color=\{colors\.primaryForeground\}/);
     assert.match(action, /color: colors\.primaryForeground/);
     assert.doesNotMatch(action, /#FFFFFF|#fff|color: "white"/i);
@@ -664,36 +737,27 @@ test("More provider notes field has a programmatic label", () => {
     new URL("../app/(tabs)/more.tsx", import.meta.url),
     "utf8",
   );
-  const placeholder = 'placeholder="What still needs keys, rules, account approval, or QA?"';
+  const placeholder =
+    'placeholder="What still needs keys, rules, account approval, or QA?"';
   const placeholderAt = source.indexOf(placeholder);
   assert.notEqual(placeholderAt, -1);
-  const field = source.slice(Math.max(0, placeholderAt - 300), placeholderAt + 300);
+  const field = source.slice(
+    Math.max(0, placeholderAt - 300),
+    placeholderAt + 300,
+  );
   assert.match(field, /accessibilityLabel="Provider operator notes"/);
 });
 
-test("More initializes at rest and skips its entrance timing under Reduce Motion", () => {
+test("More leaves entrance ownership with its Reduce-Motion-aware cards", () => {
   const source = readFileSync(
     new URL("../app/(tabs)/more.tsx", import.meta.url),
     "utf8",
   );
-  const entranceStart = source.indexOf("// Mount animation");
-  const entranceEnd = source.indexOf("const nativeQaPrimaryMission", entranceStart);
-  assert.notEqual(entranceStart, -1);
-  assert.notEqual(entranceEnd, -1);
-  const entrance = source.slice(entranceStart, entranceEnd);
-
-  assert.match(source, /import \{ useReducedMotion \} from "react-native-reanimated"/);
+  assert.match(
+    source,
+    /import \{ useReducedMotion \} from "react-native-reanimated"/,
+  );
   assert.match(source, /const reducedMotion = useReducedMotion\(\)/);
-  assert.match(
-    entrance,
-    /new Animated\.Value\(isWebRoutePreview \|\| reducedMotion \? 1 : 0\)/,
-  );
-  assert.match(
-    entrance,
-    /new Animated\.Value\(isWebRoutePreview \|\| reducedMotion \? 0 : 16\)/,
-  );
-  assert.match(
-    entrance,
-    /if \(isWebRoutePreview \|\| reducedMotion\) \{[\s\S]*return;[\s\S]*Animated\.parallel/,
-  );
+  assert.match(source, /<BoardCard enter=\{0\}/);
+  assert.doesNotMatch(source, /new Animated\.Value|opacity: fade/);
 });

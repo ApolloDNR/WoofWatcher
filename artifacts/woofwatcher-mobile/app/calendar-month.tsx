@@ -1,14 +1,22 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
-import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from "react-native-reanimated";
+import Reanimated, {
+  FadeIn,
+  FadeInDown,
+  useReducedMotion,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { normalizeCareEventType } from "@workspace/care-domain";
 
-import { BoardCard, BoardPill, BoardRouteHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardPill,
+  BoardRouteHeader,
+} from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useAppViewport } from "@/context/AppViewportContext";
@@ -111,7 +119,10 @@ function typeTone(type: string, colors: ReturnType<typeof useColors>): string {
 function clockLabel(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "--:--";
-  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function titleFor(entry: Entry): string {
@@ -141,10 +152,18 @@ export default function CalendarMonthScreen() {
   // screens (393) are unaffected and keep the pill hugging the card edge.
   const FAB_LANE = 20 + 60;
   const CONTENT_PADDING_H = 16;
-  const pillFabClearance = screenWidth <= 360 ? FAB_LANE - CONTENT_PADDING_H + 8 : 0;
+  const pillFabClearance =
+    screenWidth <= 360 ? FAB_LANE - CONTENT_PADDING_H + 8 : 0;
 
-  const topPadding = getRouteTopPadding({ platform: Platform.OS, topInset: insets.top, surface: "standalone" });
-  const bottomPadding = getStandaloneRouteBottomPadding({ platform: Platform.OS, bottomInset: insets.bottom });
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "standalone",
+  });
+  const bottomPadding = getStandaloneRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   // "Now" is read once here and threaded into the pure month math so the lib
   // stays clock-free and deterministically testable.
@@ -159,7 +178,13 @@ export default function CalendarMonthScreen() {
   const [selectedKey, setSelectedKey] = useState(todayKey);
 
   const monthView = useMemo(
-    () => buildMonthView({ year: view.year, month: view.month, todayKey, entries: state.entries }),
+    () =>
+      buildMonthView({
+        year: view.year,
+        month: view.month,
+        todayKey,
+        entries: state.entries,
+      }),
     [view.year, view.month, todayKey, state.entries],
   );
 
@@ -179,8 +204,11 @@ export default function CalendarMonthScreen() {
       // Keep a sensible selection: land on today when stepping back into the
       // current month, otherwise select the 1st of the month now on screen.
       const todayParts = parseDateKey(todayKey);
-      const isCurrentMonth = todayParts?.year === next.year && todayParts?.month === next.month;
-      setSelectedKey(isCurrentMonth ? todayKey : dateKeyForYmd(next.year, next.month, 1));
+      const isCurrentMonth =
+        todayParts?.year === next.year && todayParts?.month === next.month;
+      setSelectedKey(
+        isCurrentMonth ? todayKey : dateKeyForYmd(next.year, next.month, 1),
+      );
     },
     [view.year, view.month, todayKey],
   );
@@ -208,21 +236,27 @@ export default function CalendarMonthScreen() {
     if (selectedKey === todayKey) return "Today";
     const parts = parseDateKey(selectedKey);
     if (!parts) return "Selected day";
-    return new Date(parts.year, parts.month, parts.day).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
+    return new Date(parts.year, parts.month, parts.day).toLocaleDateString(
+      "en-US",
+      {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      },
+    );
   }, [selectedKey, todayKey]);
 
   const selectedSubLabel = useMemo(() => {
     const parts = parseDateKey(selectedKey);
     if (!parts) return "";
-    return new Date(parts.year, parts.month, parts.day).toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+    return new Date(parts.year, parts.month, parts.day).toLocaleDateString(
+      "en-US",
+      {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      },
+    );
   }, [selectedKey]);
 
   return (
@@ -236,7 +270,12 @@ export default function CalendarMonthScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <BoardRouteHeader back onBack={goBack} title="Calendar" subtitle="Your dog's day, month by month" />
+        <BoardRouteHeader
+          back
+          onBack={goBack}
+          title="Calendar"
+          subtitle="Your dog's day, month by month"
+        />
 
         {/* Month navigator: < May 2025 > */}
         <View style={s.monthNav}>
@@ -246,11 +285,19 @@ export default function CalendarMonthScreen() {
             haptic="none"
             onPress={() => goToMonth(-1)}
             scaleTo={0.9}
-            style={[s.navChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              s.navChip,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
           >
             <Ionicons name="chevron-back" size={20} color={colors.foreground} />
           </PressScale>
-          <Text style={[s.monthTitle, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
+          <Text
+            style={[
+              s.monthTitle,
+              { color: colors.foreground, fontFamily: TITLE_SERIF },
+            ]}
+          >
             {monthView.title}
           </Text>
           <PressScale
@@ -259,9 +306,16 @@ export default function CalendarMonthScreen() {
             haptic="none"
             onPress={() => goToMonth(1)}
             scaleTo={0.9}
-            style={[s.navChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              s.navChip,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
           >
-            <Ionicons name="chevron-forward" size={20} color={colors.foreground} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.foreground}
+            />
           </PressScale>
         </View>
 
@@ -287,7 +341,9 @@ export default function CalendarMonthScreen() {
           <ScrollView
             horizontal
             scrollEnabled={monthLayout.requiresHorizontalScroll}
-            showsHorizontalScrollIndicator={monthLayout.requiresHorizontalScroll}
+            showsHorizontalScrollIndicator={
+              monthLayout.requiresHorizontalScroll
+            }
             bounces={false}
             style={s.monthGridViewport}
             contentContainerStyle={s.monthGridViewportContent}
@@ -311,11 +367,18 @@ export default function CalendarMonthScreen() {
                 ))}
               </View>
 
-              <Reanimated.View key={monthKey} entering={reduced ? undefined : FadeIn.duration(200)}>
+              <Reanimated.View
+                key={monthKey}
+                entering={reduced ? undefined : FadeIn.duration(200)}
+              >
                 {monthView.weeks.map((week, weekIndex) => (
                   <View key={`week-${weekIndex}`} style={s.weekRow}>
                     {week.map((cell, dayIndex) => {
-                      if (!cell.inMonth || cell.day === null || cell.dateKey === null) {
+                      if (
+                        !cell.inMonth ||
+                        cell.day === null ||
+                        cell.dateKey === null
+                      ) {
                         return (
                           <View
                             key={`blank-${weekIndex}-${dayIndex}`}
@@ -326,8 +389,15 @@ export default function CalendarMonthScreen() {
                       const selected = cell.dateKey === selectedKey;
                       const stamp = dateKeyStamp(cell.dateKey);
                       const planDot =
-                        hasRoutines && !cell.hasEntries && Number.isFinite(stamp) && stamp >= todayStamp;
-                      const dotColor = cell.hasEntries ? colors.forest : planDot ? colors.sage : "transparent";
+                        hasRoutines &&
+                        !cell.hasEntries &&
+                        Number.isFinite(stamp) &&
+                        stamp >= todayStamp;
+                      const dotColor = cell.hasEntries
+                        ? colors.forest
+                        : planDot
+                          ? colors.sage
+                          : "transparent";
                       const numberColor = selected
                         ? colors.primaryForeground
                         : cell.isToday
@@ -349,26 +419,41 @@ export default function CalendarMonthScreen() {
                           haptic="none"
                           scaleTo={0.9}
                           onPress={() => selectDay(cell)}
-                          containerStyle={[s.dayCell, { width: monthLayout.cellSize }]}
+                          containerStyle={[
+                            s.dayCell,
+                            { width: monthLayout.cellSize },
+                          ]}
                           style={s.dayCellInner}
                         >
                           <View
                             style={[
                               s.dayCircle,
                               selected && { backgroundColor: colors.primary },
-                              !selected && cell.isToday && { borderWidth: 1.5, borderColor: colors.primary },
+                              !selected &&
+                                cell.isToday && {
+                                  borderWidth: 1.5,
+                                  borderColor: colors.primary,
+                                },
                             ]}
                           >
                             <Text
                               style={[
                                 s.dayNumber,
-                                { color: numberColor, fontFamily: selected || cell.isToday ? "Inter_700Bold" : "Inter_600SemiBold" },
+                                {
+                                  color: numberColor,
+                                  fontFamily:
+                                    selected || cell.isToday
+                                      ? "Inter_700Bold"
+                                      : "Inter_600SemiBold",
+                                },
                               ]}
                             >
                               {cell.day}
                             </Text>
                           </View>
-                          <View style={[s.dayDot, { backgroundColor: dotColor }]} />
+                          <View
+                            style={[s.dayDot, { backgroundColor: dotColor }]}
+                          />
                         </PressScale>
                       );
                     })}
@@ -381,29 +466,70 @@ export default function CalendarMonthScreen() {
 
         {/* Selected day timeline */}
         <BoardCard enter={1} style={s.timelineCard}>
-          <View style={[s.timelineHeader, pillFabClearance ? { paddingRight: pillFabClearance } : null]}>
+          <View
+            style={[
+              s.timelineHeader,
+              pillFabClearance ? { paddingRight: pillFabClearance } : null,
+            ]}
+          >
             <View style={s.timelineHeaderCopy}>
-              <Text style={[s.timelineEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.timelineEyebrow,
+                  { color: colors.sage, fontFamily: "Inter_700Bold" },
+                ]}
+              >
                 {selectedSubLabel}
               </Text>
-              <Text style={[s.timelineTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+              <Text
+                style={[
+                  s.timelineTitle,
+                  { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                ]}
+              >
                 {selectedLabel}
               </Text>
             </View>
             <BoardPill
-              label={dayEntries.length ? `${dayEntries.length} logged` : "No logs"}
+              label={
+                dayEntries.length ? `${dayEntries.length} logged` : "No logs"
+              }
               tone={dayEntries.length ? colors.forest : colors.mutedForeground}
             />
           </View>
 
-          <Reanimated.View key={selectedKey} entering={reduced ? undefined : FadeInDown.duration(220)}>
+          <Reanimated.View
+            key={selectedKey}
+            entering={reduced ? undefined : FadeInDown.duration(220)}
+          >
             {dayEntries.length === 0 ? (
-              <View style={[s.emptyState, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View
+                style={[
+                  s.emptyState,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
                 <PixelIcon name="clock" size={30} />
-                <Text style={[s.emptyTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                <Text
+                  style={[
+                    s.emptyTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
                   Nothing logged on this day yet
                 </Text>
-                <Text style={[s.emptyBody, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.emptyBody,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   {selectedKey === todayKey
                     ? `Tap the + to log ${petName}'s first moment today.`
                     : "Real meals, walks, and potties you log will show up here."}
@@ -423,33 +549,71 @@ export default function CalendarMonthScreen() {
                       onPress={() => openEntry(entry.id)}
                       style={[
                         s.timelineRow,
-                        index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+                        index > 0 && {
+                          borderTopWidth: 1,
+                          borderTopColor: colors.border,
+                        },
                       ]}
                     >
                       <View style={[s.spine, { backgroundColor: tone }]} />
-                      <Text style={[s.rowTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      <Text
+                        style={[
+                          s.rowTime,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
                         {clockLabel(entry.occurredAt)}
                       </Text>
-                      <View style={[s.rowIcon, { backgroundColor: tone + "1F", borderColor: tone + "3A" }]}>
-                        <PixelIcon name={routinePixelIcon(entry.type)} size={20} />
+                      <View
+                        style={[
+                          s.rowIcon,
+                          {
+                            backgroundColor: tone + "1F",
+                            borderColor: tone + "3A",
+                          },
+                        ]}
+                      >
+                        <PixelIcon
+                          name={routinePixelIcon(entry.type)}
+                          size={20}
+                        />
                       </View>
                       <View style={s.rowCopy}>
                         <Text
                           numberOfLines={1}
-                          style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                          style={[
+                            s.rowTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
                         >
                           {titleFor(entry)}
                         </Text>
                         {entry.caregiver ? (
                           <Text
                             numberOfLines={1}
-                            style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                            style={[
+                              s.rowMeta,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
                           >
                             Logged by {entry.caregiver}
                           </Text>
                         ) : null}
                       </View>
-                      <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={colors.mutedForeground}
+                      />
                     </PressScale>
                   );
                 })}
@@ -470,7 +634,10 @@ export default function CalendarMonthScreen() {
         }}
         scaleTo={0.9}
         containerStyle={[s.fabContainer, { bottom: insets.bottom + 20 }]}
-        style={[s.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+        style={[
+          s.fab,
+          { backgroundColor: colors.primary, shadowColor: colors.primary },
+        ]}
       >
         <Ionicons name="add" size={30} color={colors.primaryForeground} />
       </PressScale>
@@ -481,11 +648,14 @@ export default function CalendarMonthScreen() {
 function dayNarration(cell: MonthDayCell): string {
   const parts = cell.dateKey ? parseDateKey(cell.dateKey) : null;
   if (!parts) return `Day ${cell.day ?? ""}`;
-  return new Date(parts.year, parts.month, parts.day).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  return new Date(parts.year, parts.month, parts.day).toLocaleDateString(
+    "en-US",
+    {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    },
+  );
 }
 
 const s = StyleSheet.create({

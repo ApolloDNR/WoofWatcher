@@ -162,7 +162,7 @@ test("uses canonical child transitions and consolidates weekly career metrics", 
   );
   assert.match(
     component,
-    /router\.push\(\{\s*pathname:\s*"\/health",\s*params:\s*\{\s*section:\s*"records"\s*\}\s*\}\)/,
+    /router\.push\(\{\s*pathname:\s*"\/health",\s*params:\s*\{\s*section:\s*"records"\s*\},?\s*\}\)/,
   );
   assert.match(component, /\/log\?type=walk&detail=1&intent=/);
   assert.match(component, /\/log\?entry=/);

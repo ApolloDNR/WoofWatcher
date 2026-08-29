@@ -1,7 +1,13 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
   Easing,
@@ -14,7 +20,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReducedMotion } from "react-native-reanimated";
-import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
+import {
+  normalizeCareEventType,
+  type CareEventType,
+} from "@workspace/care-domain";
 
 import { BoardCard } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
@@ -23,7 +32,10 @@ import { useCare, type Entry } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
 import { careXpForEntry } from "@/lib/careCareer";
 import { useColors } from "@/hooks/useColors";
-import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
+import {
+  MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import {
   buildQuickLogEntry,
   findRecentQuickLogDuplicate,
@@ -31,7 +43,10 @@ import {
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
 import { MEAL_OUTCOME_UPDATE_OPTIONS } from "@/lib/mealOutcomeUpdate";
-import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
+import {
+  buildWalkSessionStartEntry,
+  findOpenWalkSession,
+} from "@/lib/walkSession";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
   CARE_READ_ONLY_MESSAGE,
@@ -60,9 +75,28 @@ const FAST_LOG_TILES: FastLogTile[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
   { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
-  { key: "meds", icon: "medication", label: "Meds", type: "medication", title: "Medication" },
-  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
-  { key: "note", icon: "note", label: "Note", type: "note", title: "Care note", forceDetail: true },
+  {
+    key: "meds",
+    icon: "medication",
+    label: "Meds",
+    type: "medication",
+    title: "Medication",
+  },
+  {
+    key: "water",
+    icon: "bile",
+    label: "Water",
+    type: "water",
+    title: "Fresh water",
+  },
+  {
+    key: "note",
+    icon: "note",
+    label: "Note",
+    type: "note",
+    title: "Care note",
+    forceDetail: true,
+  },
 ];
 
 function tileIconFor(type: string): PixelIconName {
@@ -83,7 +117,10 @@ function shortTime(iso: string, now: number): string {
   if (Number.isNaN(date.getTime())) return "Logged";
   const sameDay = date.toDateString() === new Date(now).toDateString();
   if (sameDay) {
-    return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
   }
   const yesterday = new Date(now - 24 * 60 * 60 * 1000);
   if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
@@ -91,7 +128,8 @@ function shortTime(iso: string, now: number): string {
 }
 
 function detailString(details: unknown, key: string): string {
-  if (!details || typeof details !== "object" || Array.isArray(details)) return "";
+  if (!details || typeof details !== "object" || Array.isArray(details))
+    return "";
   const value = (details as Record<string, unknown>)[key];
   return value == null ? "" : String(value);
 }
@@ -118,7 +156,8 @@ function outcomeLabel(entry: {
   }
   if (type === "potty") {
     const result =
-      detailString(entry.details, "pottyOutcome") || detailString(entry.details, "pottyResult");
+      detailString(entry.details, "pottyOutcome") ||
+      detailString(entry.details, "pottyResult");
     if (result) return result.charAt(0).toUpperCase() + result.slice(1);
   }
   if (entry.durationMinutes && entry.durationMinutes > 0) {
@@ -138,8 +177,18 @@ export default function FastLogScreen() {
   const [justLogged, setJustLogged] = useState<string | null>(null);
   const loggedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(
+    () => () => {
+      if (loggedTimer.current) clearTimeout(loggedTimer.current);
+    },
+    [],
+  );
+
   const caregiver = state.caregivers[0]?.name ?? "you";
-  const openWalkSession = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
+  const openWalkSession = useMemo(
+    () => findOpenWalkSession(state.entries),
+    [state.entries],
+  );
 
   const recent = useMemo(
     () =>
@@ -199,7 +248,9 @@ export default function FastLogScreen() {
 
   const flashLogged = (key: string, message: string) => {
     if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
     }
     // The badge and haptic are invisible to screen readers; say what saved.
     announce(message);
@@ -209,7 +260,9 @@ export default function FastLogScreen() {
   };
 
   const openDetail = (tile: FastLogTile) => {
-    router.replace(`/log?type=${tile.type}&detail=1&intent=${Date.now()}` as never);
+    router.replace(
+      `/log?type=${tile.type}&detail=1&intent=${Date.now()}` as never,
+    );
   };
 
   // Double-tap safety: the ref catches a second press in the same tick
@@ -221,8 +274,8 @@ export default function FastLogScreen() {
     const prev = recentQuickSave.current;
     return Boolean(
       prev &&
-        prev.type === type &&
-        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+      prev.type === type &&
+      Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
     );
   };
 
@@ -251,7 +304,10 @@ export default function FastLogScreen() {
       }
       if (isDuplicateQuickTap("walk")) return;
       const entryId = addEntry(
-        buildWalkSessionStartEntry({ caregiver, now: Date.now() }) as Omit<Entry, "id">,
+        buildWalkSessionStartEntry({ caregiver, now: Date.now() }) as Omit<
+          Entry,
+          "id"
+        >,
       );
       if (!careMutationWasAccepted(entryId)) {
         showCareReadOnly();
@@ -268,7 +324,9 @@ export default function FastLogScreen() {
     ) {
       return;
     }
-    const role = state.caregivers.find((person) => person.name === caregiver)?.role;
+    const role = state.caregivers.find(
+      (person) => person.name === caregiver,
+    )?.role;
     const entry = buildQuickLogEntry(
       { type: tile.type, title: tile.title },
       state,
@@ -293,8 +351,8 @@ export default function FastLogScreen() {
           // from the app's ivory field into the parchment surface while the
           // content rises, instead of cutting in a single frame.
           backgroundColor: reducedMotion
-              ? colors.background
-              : sheetProgress.interpolate({
+            ? colors.background
+            : sheetProgress.interpolate({
                 inputRange: [0, 1],
                 outputRange: [
                   colors.isDark ? colors.shellNavy : colors.ivory,
@@ -320,146 +378,214 @@ export default function FastLogScreen() {
           },
         ]}
       >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingBottom: Math.max(insets.bottom, 16) + 12,
-        }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close quick log"
-          hitSlop={MOBILE_INLINE_HIT_SLOP}
-          onPress={close}
-          style={({ pressed }) => [
-            s.closeButton,
-            {
-              backgroundColor: pressed ? colors.secondary : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: Math.max(insets.bottom, 16) + 12,
+          }}
         >
-          <Ionicons name="close" size={20} color={colors.foreground} />
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close quick log"
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
+            onPress={close}
+            style={({ pressed }) => [
+              s.closeButton,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Ionicons name="close" size={20} color={colors.foreground} />
+          </Pressable>
 
-        <Text style={[s.title, { color: colors.foreground, fontFamily: "Fredoka_700Bold" }]}>
-          What would you like{"\n"}to log?
-        </Text>
-
-        <View style={s.tileGrid}>
-          {FAST_LOG_TILES.map((tile) => (
-            <PressScale
-              key={tile.key}
-              accessibilityRole="button"
-              accessibilityLabel={`Log ${tile.label}`}
-              accessibilityHint={
-                tile.forceDetail || getQuickLogPolicy(tile.type).tapBehavior === "detail-required"
-                  ? "Opens details before saving."
-                  : "Saves a quick log. Long press opens details."
-              }
-              onPress={() => logTile(tile)}
-              onLongPress={() => openDetail(tile)}
-              scaleTo={0.94}
-              haptic="none"
-              containerStyle={s.tileLayout}
-              style={[
-                s.tile,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  shadowColor: colors.navy,
-                },
-              ]}
-            >
-              {justLogged === tile.key ? (
-                <View style={[s.tileLoggedBadge, { backgroundColor: colors.sage }]}>
-                  <Ionicons
-                    name="checkmark"
-                    size={13}
-                    color={colors.isDark ? colors.brandNavy : "#FFFFFF"}
-                  />
-                </View>
-              ) : null}
-              <PixelIcon name={tile.icon} size={34} />
-              <Text style={[s.tileLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                {tile.label}
-              </Text>
-            </PressScale>
-          ))}
-        </View>
-
-        <BoardCard style={s.recentSection}>
-          <Text style={[s.recentTitle, { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" }]}>
-            Recent
+          <Text
+            style={[
+              s.title,
+              { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+            ]}
+          >
+            What would you like{"\n"}to log?
           </Text>
-          {recent.length ? (
-            recent.map((entry) => (
-              <Pressable
-                key={entry.id}
+
+          <View style={s.tileGrid}>
+            {FAST_LOG_TILES.map((tile) => (
+              <PressScale
+                key={tile.key}
                 accessibilityRole="button"
-                accessibilityLabel={`Open recent log: ${entry.title}. ${outcomeLabel(entry)}.`}
-                onPress={() =>
-                  router.replace(`/log?entry=${encodeURIComponent(entry.id)}` as never)
+                accessibilityLabel={`Log ${tile.label}`}
+                accessibilityHint={
+                  tile.forceDetail ||
+                  getQuickLogPolicy(tile.type).tapBehavior === "detail-required"
+                    ? "Opens details before saving."
+                    : "Saves a quick log. Long press opens details."
                 }
-                style={({ pressed }) => [
-                  s.recentRow,
+                onPress={() => logTile(tile)}
+                onLongPress={() => openDetail(tile)}
+                scaleTo={0.94}
+                haptic="none"
+                containerStyle={s.tileLayout}
+                style={[
+                  s.tile,
                   {
-                    backgroundColor: pressed ? colors.secondary : colors.background,
+                    backgroundColor: colors.card,
                     borderColor: colors.border,
+                    shadowColor: colors.brandNavy,
                   },
                 ]}
               >
-                <View style={[s.recentIcon, { backgroundColor: colors.secondary }]}>
-                  <PixelIcon name={tileIconFor(entry.type)} size={20} />
-                </View>
-                <View style={s.recentCopy}>
-                  <Text
-                    style={[s.recentName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                {justLogged === tile.key ? (
+                  <View
+                    style={[
+                      s.tileLoggedBadge,
+                      { backgroundColor: colors.sage },
+                    ]}
                   >
-                    {entry.title.split(" - ")[0]}
-                  </Text>
-                  <Text
-                    style={[s.recentMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                  >
-                    {shortTime(entry.occurredAt, Date.now())} · {entry.caregiver}
-                  </Text>
-                </View>
+                    <Ionicons
+                      name="checkmark"
+                      size={13}
+                      color={colors.isDark ? colors.brandNavy : "#FFFFFF"}
+                    />
+                  </View>
+                ) : null}
+                <PixelIcon name={tile.icon} size={34} />
                 <Text
-                  style={[s.recentOutcome, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}
+                  style={[
+                    s.tileLabel,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
                 >
-                  {outcomeLabel(entry)}
+                  {tile.label}
                 </Text>
-                <View style={[s.recentCheck, { backgroundColor: colors.sage }]}>
-                  <Ionicons
-                    name="checkmark"
-                    size={13}
-                    color={colors.isDark ? colors.brandNavy : "#FFFFFF"}
-                  />
-                </View>
-              </Pressable>
-            ))
-          ) : (
-            <Text style={[s.recentEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              No care logged yet. Tap a tile above and it appears here instantly.
-            </Text>
-          )}
-        </BoardCard>
+              </PressScale>
+            ))}
+          </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="View full log"
-          onPress={() => router.replace(canonicalLogRoute() as never)}
-          style={({ pressed }) => [
-            s.fullLogButton,
-            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Text style={[s.fullLogText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-            View Full Log
-          </Text>
-        </Pressable>
-      </ScrollView>
+          <BoardCard style={s.recentSection}>
+            <Text
+              style={[
+                s.recentTitle,
+                { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" },
+              ]}
+            >
+              Recent
+            </Text>
+            {recent.length ? (
+              recent.map((entry) => (
+                <Pressable
+                  key={entry.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open recent log: ${entry.title}. ${outcomeLabel(entry)}.`}
+                  onPress={() =>
+                    router.replace(
+                      `/log?entry=${encodeURIComponent(entry.id)}` as never,
+                    )
+                  }
+                  style={({ pressed }) => [
+                    s.recentRow,
+                    {
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.recentIcon,
+                      { backgroundColor: colors.secondary },
+                    ]}
+                  >
+                    <PixelIcon name={tileIconFor(entry.type)} size={20} />
+                  </View>
+                  <View style={s.recentCopy}>
+                    <Text
+                      style={[
+                        s.recentName,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {entry.title.split(" - ")[0]}
+                    </Text>
+                    <Text
+                      style={[
+                        s.recentMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      {shortTime(entry.occurredAt, Date.now())} ·{" "}
+                      {entry.caregiver}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      s.recentOutcome,
+                      { color: colors.amber, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {outcomeLabel(entry)}
+                  </Text>
+                  <View
+                    style={[s.recentCheck, { backgroundColor: colors.sage }]}
+                  >
+                    <Ionicons
+                      name="checkmark"
+                      size={13}
+                      color={colors.isDark ? colors.brandNavy : "#FFFFFF"}
+                    />
+                  </View>
+                </Pressable>
+              ))
+            ) : (
+              <Text
+                style={[
+                  s.recentEmpty,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                No care logged yet. Tap a tile above and it appears here
+                instantly.
+              </Text>
+            )}
+          </BoardCard>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View full log"
+            onPress={() => router.replace(canonicalLogRoute() as never)}
+            style={({ pressed }) => [
+              s.fullLogButton,
+              { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Text
+              style={[
+                s.fullLogText,
+                {
+                  color: colors.primaryForeground,
+                  fontFamily: "Inter_700Bold",
+                },
+              ]}
+            >
+              View Full Log
+            </Text>
+          </Pressable>
+        </ScrollView>
       </Animated.View>
     </Animated.View>
   );

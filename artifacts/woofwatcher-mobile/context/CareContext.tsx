@@ -164,7 +164,10 @@ import {
   normalizeReminderNotificationPreferences,
   type ReminderNotificationPreferences,
 } from "@/lib/reminderNotificationPreferences";
-import { normalizeLaunchProviderProfile, type LaunchStorageProviderEvidence } from "@/lib/launchProviderSetup";
+import {
+  normalizeLaunchProviderProfile,
+  type LaunchStorageProviderEvidence,
+} from "@/lib/launchProviderProfile";
 import {
   convertLegacyState,
   parseLegacyState,
@@ -1735,15 +1738,26 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     hydrated && authIdentityBoundary.canDisplay(activeDataScopeRef.current);
   const trackedInitialSyncStatus =
     initialSyncReadiness.getStatus(currentScopeLoaded);
-  const initialSyncStatus: CareInitialSyncStatus =
-    householdIdentitySnapshot.state === "error"
-      ? {
-          state: "error",
-          isSettled: false,
-          retryable: householdIdentitySnapshot.retryable,
-          message: householdIdentitySnapshot.message,
-        }
-      : trackedInitialSyncStatus;
+  const initialSyncStatus = useMemo<CareInitialSyncStatus>(
+    () =>
+      householdIdentitySnapshot.state === "error"
+        ? {
+            state: "error",
+            isSettled: false,
+            retryable: householdIdentitySnapshot.retryable,
+            message: householdIdentitySnapshot.message,
+          }
+        : trackedInitialSyncStatus,
+    [
+      householdIdentitySnapshot.message,
+      householdIdentitySnapshot.retryable,
+      householdIdentitySnapshot.state,
+      trackedInitialSyncStatus.isSettled,
+      trackedInitialSyncStatus.message,
+      trackedInitialSyncStatus.retryable,
+      trackedInitialSyncStatus.state,
+    ],
+  );
   const isInitialSyncSettled = initialSyncStatus.isSettled;
 
   const retryLocalHydration = useCallback(() => {
@@ -3840,12 +3854,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const visibleLegacyImport = currentScopeLoaded ? legacyImport : null;
   const identityScopeKey =
     authIdentity.phase === "signed-in" ? authIdentity.identityKey : null;
-  const identityScopeStatus: CareIdentityScopeStatus =
-    {
+  const identityScopeStatus = useMemo<CareIdentityScopeStatus>(
+    () => ({
       state: householdIdentitySnapshot.state,
       retryable: householdIdentitySnapshot.retryable,
       message: householdIdentitySnapshot.message,
-    };
+    }),
+    [
+      householdIdentitySnapshot.message,
+      householdIdentitySnapshot.retryable,
+      householdIdentitySnapshot.state,
+    ],
+  );
   const restartIdentityScope = revokeHouseholdAuthority;
   const renderMutationOrigin = authIdentityBoundary.captureMutationOrigin();
   const addEntryForRender = useCallback(

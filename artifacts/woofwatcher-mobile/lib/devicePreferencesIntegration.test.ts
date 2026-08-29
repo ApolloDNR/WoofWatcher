@@ -33,9 +33,7 @@ function recursiveFiles(root: string): string[] {
 function productionTypeScriptFiles(): string[] {
   return ["app", "components", "constants", "context", "hooks", "lib"]
     .flatMap((directory) => recursiveFiles(join(MOBILE_ROOT, directory)))
-    .filter(
-      (path) => /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path),
-    )
+    .filter((path) => /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path))
     .sort();
 }
 
@@ -47,7 +45,11 @@ test("closes mobile production storage behind the four approved root owners", ()
   const files = productionTypeScriptFiles();
   const routeBypasses = files
     .filter((path) => /^(app|components)\//.test(relativeMobile(path)))
-    .filter((path) => /\b(?:AsyncStorage|localStorage|sessionStorage)\b/.test(readFileSync(path, "utf8")))
+    .filter((path) =>
+      /\b(?:AsyncStorage|localStorage|sessionStorage)\b/.test(
+        readFileSync(path, "utf8"),
+      ),
+    )
     .map(relativeMobile);
   assert.deepEqual(routeBypasses, []);
 
@@ -79,7 +81,11 @@ test("keeps each normal preference literal in the central manifest only", () => 
     const owners = files
       .filter((path) => readFileSync(path, "utf8").includes(literal))
       .map(relativeMobile);
-    assert.deepEqual(owners, [expectedOwner], `unexpected owners for ${literal}`);
+    assert.deepEqual(
+      owners,
+      [expectedOwner],
+      `unexpected owners for ${literal}`,
+    );
   }
 
   assert.match(
@@ -98,10 +104,19 @@ test("keeps each normal preference literal in the central manifest only", () => 
 
 test("records the legacy PWA and fixture carveouts without widening the mobile store", () => {
   const central = readMobile("lib", "devicePreferences.ts");
-  const pwaEntry = readRepo("artifacts", "woofwatcher", "src", "vanilla", "app-entry.js");
+  const pwaEntry = readRepo(
+    "artifacts",
+    "woofwatcher",
+    "src",
+    "vanilla",
+    "app-entry.js",
+  );
   const qaSeed = readMobile("scripts", "qa-seed-populated.mjs");
 
-  assert.match(central, /LEGACY_PWA_THEME_KEY\s*=\s*["']woofwatcher\.v1\.theme["']/);
+  assert.match(
+    central,
+    /LEGACY_PWA_THEME_KEY\s*=\s*["']woofwatcher\.v1\.theme["']/,
+  );
   assert.match(pwaEntry, /THEME_KEY\s*=\s*["']woofwatcher\.v1\.theme["']/);
   assert.match(
     pwaEntry,
@@ -126,10 +141,7 @@ test("records the legacy PWA and fixture carveouts without widening the mobile s
 
 test("mounts one tracked preference store and one identity-safe raw reset owner", () => {
   const context = readMobile("context", "DevicePreferencesContext.tsx");
-  const resetOwner = readMobile(
-    "lib",
-    "devicePreferencesLocalDataReset.ts",
-  );
+  const resetOwner = readMobile("lib", "devicePreferencesLocalDataReset.ts");
   const layout = readMobile("app", "_layout.tsx");
 
   assert.match(context, /useLocalDataReset\(\)/);
@@ -199,7 +211,7 @@ test("mounts one tracked preference store and one identity-safe raw reset owner"
 
 test("migrates Home, QA, More, and Supplies normal I/O to the shared store", () => {
   const home = readMobile("app", "(tabs)", "index.tsx");
-  const qa = readMobile("app", "care-twin-qa.tsx");
+  const qa = readMobile("components", "owner", "CareTwinQaScreen.tsx");
   const more = readMobile("app", "(tabs)", "more.tsx");
   const supplies = readMobile(
     "components",
@@ -213,12 +225,19 @@ test("migrates Home, QA, More, and Supplies normal I/O to the shared store", () 
     ["More", more],
     ["Supplies", supplies],
   ] as const) {
-    assert.match(source, /useDevicePreferences/ , `${name} does not consume the store`);
+    assert.match(
+      source,
+      /useDevicePreferences/,
+      `${name} does not consume the store`,
+    );
     assert.doesNotMatch(source, /\bAsyncStorage\b/);
   }
 
   assert.match(home, /store\s*\.\s*hydrate\(HOME_WELCOME_DISMISSED_KEY/);
-  assert.match(home, /store\s*\.\s*save\(HOME_WELCOME_DISMISSED_KEY,\s*["']true["']\)/);
+  assert.match(
+    home,
+    /store\s*\.\s*save\(HOME_WELCOME_DISMISSED_KEY,\s*["']true["']\)/,
+  );
   assert.match(home, /LocalDataResetInProgressError/);
 
   assert.match(qa, /store\s*\.\s*hydrate\(MOBILE_QA_SESSION_STORAGE_KEY/);
@@ -241,7 +260,7 @@ test("migrates Home, QA, More, and Supplies normal I/O to the shared store", () 
 
 test("mounted preference projections follow reset epochs and bounded retry lifetimes", () => {
   const home = readMobile("app", "(tabs)", "index.tsx");
-  const qa = readMobile("app", "care-twin-qa.tsx");
+  const qa = readMobile("components", "owner", "CareTwinQaScreen.tsx");
   const more = readMobile("app", "(tabs)", "more.tsx");
   const supplies = readMobile(
     "components",
@@ -255,14 +274,26 @@ test("mounted preference projections follow reset epochs and bounded retry lifet
     ["More", more],
     ["Supplies", supplies],
   ] as const) {
-    assert.match(source, /operationSettledEpoch/, `${name} ignores reset settlement`);
+    assert.match(
+      source,
+      /operationSettledEpoch/,
+      `${name} ignores reset settlement`,
+    );
     assert.match(
       source,
       /createDevicePreferenceHydrationRetryScheduler/,
       `${name} lacks bounded hydration retry`,
     );
-    assert.match(source, /hydrationRetry\.activate\(\)/, `${name} does not activate retry`);
-    assert.match(source, /hydrationRetry\.deactivate\(\)/, `${name} leaks retry after cleanup`);
+    assert.match(
+      source,
+      /(?:activeHydrationRetry|hydrationRetry)\.activate\(\)/,
+      `${name} does not activate retry`,
+    );
+    assert.match(
+      source,
+      /(?:activeHydrationRetry|hydrationRetry)\.deactivate\(\)/,
+      `${name} leaks retry after cleanup`,
+    );
   }
 
   assert.doesNotMatch(
@@ -272,7 +303,10 @@ test("mounted preference projections follow reset epochs and bounded retry lifet
   assert.match(home, /hydrationRetry\.request\(hydrateWelcomePreference\)/);
 
   assert.match(more, /useFocusEffect/);
-  assert.match(more, /hydrationRetry\.request\(hydrateQaProof\)/);
+  assert.match(
+    more,
+    /(?:activeHydrationRetry|hydrationRetry)\.request\(hydrateQaProof\)/,
+  );
   assert.doesNotMatch(
     more,
     /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,420}setSavedNativeQaSummary\(null\)/,

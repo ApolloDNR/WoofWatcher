@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -22,7 +22,12 @@ import Reanimated, {
   withSpring,
 } from "react-native-reanimated";
 
-import { enterUp, MeterPip, PressScale, SPRING } from "@/components/motion/GameFeel";
+import {
+  enterUp,
+  MeterPip,
+  PressScale,
+  SPRING,
+} from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
 import { hapticSelect } from "@/lib/haptics";
@@ -159,7 +164,9 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 }
 
 function buildQaReturnToCockpitRoute(qaSurface: string | undefined): string {
-  return qaSurface ? `/care-twin-qa?qaSurface=${encodeURIComponent(qaSurface)}` : "/care-twin-qa";
+  return qaSurface
+    ? `/care-twin-qa?qaSurface=${encodeURIComponent(qaSurface)}`
+    : "/care-twin-qa";
 }
 
 export function BoardRouteHeader({
@@ -207,7 +214,13 @@ export function BoardRouteHeader({
 
   return (
     <>
-      <View style={[styles.routeHeader, centered && styles.routeHeaderCentered, style]}>
+      <View
+        style={[
+          styles.routeHeader,
+          centered && styles.routeHeaderCentered,
+          style,
+        ]}
+      >
         {back ? (
           <Pressable
             accessibilityRole="button"
@@ -222,13 +235,21 @@ export function BoardRouteHeader({
               styles.routeIconButton,
               plain && styles.routeIconButtonPlain,
               {
-                backgroundColor: plain ? "transparent" : pressed ? colors.secondary : colors.card,
+                backgroundColor: plain
+                  ? "transparent"
+                  : pressed
+                    ? colors.secondary
+                    : colors.card,
                 borderColor: plain ? "transparent" : colors.border,
                 opacity: backDisabled ? 0.55 : 1,
               },
             ]}
           >
-            <Ionicons name="chevron-back" size={plain ? 24 : 20} color={colors.foreground} />
+            <Ionicons
+              name="chevron-back"
+              size={plain ? 24 : 20}
+              color={colors.foreground}
+            />
           </Pressable>
         ) : icon ? (
           <View
@@ -244,18 +265,43 @@ export function BoardRouteHeader({
             <Ionicons name={icon} size={20} color={colors.foreground} />
           </View>
         ) : null}
-        <View style={[styles.routeHeaderText, centered && styles.routeHeaderTextCentered]}>
+        <View
+          style={[
+            styles.routeHeaderText,
+            centered && styles.routeHeaderTextCentered,
+          ]}
+        >
           {kicker ? (
-            <Text style={[styles.routeKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{kicker}</Text>
+            <Text
+              style={[
+                styles.routeKicker,
+                { color: colors.sage, fontFamily: "Inter_700Bold" },
+              ]}
+            >
+              {kicker}
+            </Text>
           ) : null}
           <Text
             accessibilityRole="header"
-            style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}
+            style={[
+              styles.routeTitle,
+              centered && styles.routeTitleCentered,
+              { color: colors.foreground, fontFamily: TITLE_SERIF },
+            ]}
           >
             {title}
           </Text>
           {subtitle ? (
-            <Text style={[styles.routeSubtitle, centered && styles.routeSubtitleCentered, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              style={[
+                styles.routeSubtitle,
+                centered && styles.routeSubtitleCentered,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
               {subtitle}
             </Text>
           ) : null}
@@ -273,13 +319,21 @@ export function BoardRouteHeader({
               styles.routeIconButton,
               plain && styles.routeIconButtonPlain,
               {
-                backgroundColor: plain ? "transparent" : pressed || actionDisabled ? colors.secondary : colors.card,
+                backgroundColor: plain
+                  ? "transparent"
+                  : pressed || actionDisabled
+                    ? colors.secondary
+                    : colors.card,
                 borderColor: plain ? "transparent" : colors.border,
                 opacity: actionDisabled ? 0.55 : 1,
               },
             ]}
           >
-            <Ionicons name={actionIcon} size={plain ? 21 : 19} color={colors.foreground} />
+            <Ionicons
+              name={actionIcon}
+              size={plain ? 21 : 19}
+              color={colors.foreground}
+            />
           </Pressable>
         ) : null}
       </View>
@@ -287,22 +341,46 @@ export function BoardRouteHeader({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Return to QA Cockpit${qaTitle ? ` for ${qaTitle}` : ""}`}
-          onPress={() => router.push(buildQaReturnToCockpitRoute(qaSurface) as never)}
+          onPress={() =>
+            router.push(buildQaReturnToCockpitRoute(qaSurface) as never)
+          }
           style={({ pressed }) => [
             styles.qaReturnBanner,
             {
-              backgroundColor: pressed ? `${colors.sage}28` : `${colors.sage}16`,
+              backgroundColor: pressed
+                ? `${colors.sage}28`
+                : `${colors.sage}16`,
               borderColor: `${colors.sage}66`,
             },
           ]}
         >
           <Ionicons name="camera-outline" size={17} color={colors.sage} />
           <View style={styles.qaReturnText}>
-            <Text style={[styles.qaReturnTitle, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+            <Text
+              style={[
+                styles.qaReturnTitle,
+                { color: colors.sage, fontFamily: "Inter_800ExtraBold" },
+              ]}
+            >
               Return to QA Cockpit
             </Text>
-            <Text style={[styles.qaReturnDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={1}>
-              Capture done? Attach proof{qaTitle ? ` for ${qaTitle}` : qaSurface ? ` for ${qaSurface}` : ""}.
+            <Text
+              style={[
+                styles.qaReturnDetail,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                },
+              ]}
+              numberOfLines={1}
+            >
+              Capture done? Attach proof
+              {qaTitle
+                ? ` for ${qaTitle}`
+                : qaSurface
+                  ? ` for ${qaSurface}`
+                  : ""}
+              .
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={15} color={colors.sage} />
@@ -340,7 +418,12 @@ export function BoardStatusPill({
   const swatch = palette[tone];
   return (
     <View style={[styles.statusPill, { backgroundColor: swatch.bg }, style]}>
-      <Text style={[styles.statusPillText, { color: swatch.fg, fontFamily: "Inter_700Bold" }]}>
+      <Text
+        style={[
+          styles.statusPillText,
+          { color: swatch.fg, fontFamily: "Inter_700Bold" },
+        ]}
+      >
         {label}
       </Text>
     </View>
@@ -365,7 +448,9 @@ export function BoardSegmentTabs<T extends string>({
   // spring instead of teleporting. Chips are measured on layout; until the
   // active chip has a rect the pill stays hidden and the chip paints its own
   // fill, so the control never flashes unstyled.
-  const [rects, setRects] = useState<Record<string, { x: number; width: number; height: number }>>({});
+  const [rects, setRects] = useState<
+    Record<string, { x: number; width: number; height: number }>
+  >({});
   const pillPlaced = useRef(false);
   const pillX = useSharedValue(0);
   const pillWidth = useSharedValue(0);
@@ -396,7 +481,11 @@ export function BoardSegmentTabs<T extends string>({
     <View style={[styles.segmentRow, style]}>
       <Reanimated.View
         pointerEvents="none"
-        style={[styles.segmentPill, { backgroundColor: colors.primary }, pillStyle]}
+        style={[
+          styles.segmentPill,
+          { backgroundColor: colors.primary },
+          pillStyle,
+        ]}
       />
       {segments.map((segment) => {
         const isActive = segment.key === active;
@@ -411,7 +500,12 @@ export function BoardSegmentTabs<T extends string>({
               const { x, width, height } = event.nativeEvent.layout;
               setRects((prev) => {
                 const existing = prev[segment.key];
-                if (existing && existing.x === x && existing.width === width && existing.height === height) {
+                if (
+                  existing &&
+                  existing.x === x &&
+                  existing.width === width &&
+                  existing.height === height
+                ) {
                   return prev;
                 }
                 return { ...prev, [segment.key]: { x, width, height } };
@@ -440,11 +534,13 @@ export function BoardSegmentTabs<T extends string>({
             ]}
           >
             <Text
-              numberOfLines={1}
+              numberOfLines={2}
               style={[
                 styles.segmentChipText,
                 {
-                  color: isActive ? colors.primaryForeground : colors.foreground,
+                  color: isActive
+                    ? colors.primaryForeground
+                    : colors.foreground,
                   fontFamily: "Inter_700Bold",
                 },
               ]}
@@ -505,12 +601,17 @@ export function BoardActionButton({
         },
       ]}
     >
-      {icon ? <Ionicons name={icon} size={compact ? 14 : 16} color={foreground} /> : null}
+      {icon ? (
+        <Ionicons name={icon} size={compact ? 14 : 16} color={foreground} />
+      ) : null}
       <Text
         style={[
           styles.actionButtonText,
           compact && styles.actionButtonTextCompact,
-          { color: variant === "outline" ? colors.foreground : foreground, fontFamily: "Inter_700Bold" },
+          {
+            color: variant === "outline" ? colors.foreground : foreground,
+            fontFamily: "Inter_700Bold",
+          },
         ]}
       >
         {label}
@@ -552,7 +653,12 @@ export function BoardPill({
       ]}
     >
       {icon ? <Ionicons name={icon} size={12} color={pillForeground} /> : null}
-      <Text style={[styles.pillText, { color: pillForeground, fontFamily: "Inter_700Bold" }]}>
+      <Text
+        style={[
+          styles.pillText,
+          { color: pillForeground, fontFamily: "Inter_700Bold" },
+        ]}
+      >
         {label}
       </Text>
     </View>
@@ -577,15 +683,40 @@ export function BoardMetricTile({
   const colors = useColors();
   const tileTone = tone ?? colors.sage;
   return (
-    <View style={[styles.metricTile, { backgroundColor: colors.background, borderColor: colors.border }, style]}>
+    <View
+      style={[
+        styles.metricTile,
+        { backgroundColor: colors.background, borderColor: colors.border },
+        style,
+      ]}
+    >
       <View style={[styles.metricIcon, { backgroundColor: tileTone + "16" }]}>
         <PixelIcon name={icon} size={22} />
       </View>
       <View style={styles.metricText}>
-        <Text style={[styles.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
-        <Text style={[styles.metricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{value}</Text>
+        <Text
+          style={[
+            styles.metricLabel,
+            { color: colors.mutedForeground, fontFamily: "Inter_700Bold" },
+          ]}
+        >
+          {label}
+        </Text>
+        <Text
+          style={[
+            styles.metricValue,
+            { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+          ]}
+        >
+          {value}
+        </Text>
         {detail ? (
-          <Text style={[styles.metricDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            style={[
+              styles.metricDetail,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {detail}
           </Text>
         ) : null}
@@ -611,8 +742,16 @@ export function BoardCard({
   const colors = useColors();
   const reducedMotion = useReducedMotion();
   const navy = tone === "navy";
-  const backgroundColor = navy ? colors.brandNavy : tone === "soft" ? colors.accent : colors.card;
-  const borderColor = navy ? colors.copper + "66" : tone === "soft" ? colors.stone : colors.border;
+  const backgroundColor = navy
+    ? colors.brandNavy
+    : tone === "soft"
+      ? colors.accent
+      : colors.card;
+  const borderColor = navy
+    ? colors.copper + "66"
+    : tone === "soft"
+      ? colors.stone
+      : colors.border;
 
   const card = (
     <View
@@ -623,7 +762,7 @@ export function BoardCard({
           backgroundColor,
           borderColor,
           borderRadius: colors.pixelUi.radius.card,
-          shadowColor: colors.navy,
+          shadowColor: colors.brandNavy,
           shadowOpacity: colors.pixelUi.shadow.opacity,
           shadowRadius: colors.pixelUi.shadow.radius,
           shadowOffset: { width: 0, height: colors.pixelUi.shadow.y },
@@ -637,9 +776,7 @@ export function BoardCard({
 
   if (enter === undefined) return card;
   return (
-    <Reanimated.View
-      entering={reducedMotion ? undefined : enterUp(enter)}
-    >
+    <Reanimated.View entering={reducedMotion ? undefined : enterUp(enter)}>
       {card}
     </Reanimated.View>
   );
@@ -674,10 +811,20 @@ export function BoardSectionHeader({
     });
   }
   return (
-    <View style={[styles.sectionHeader, { borderBottomColor: colors.border }, style]}>
+    <View
+      style={[
+        styles.sectionHeader,
+        { borderBottomColor: colors.border },
+        style,
+      ]}
+    >
       <Text
         accessibilityRole="header"
-        style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}
+        style={[
+          styles.sectionTitle,
+          { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+          textStyle,
+        ]}
       >
         {title}
       </Text>
@@ -685,7 +832,10 @@ export function BoardSectionHeader({
         renderedAccessory
       ) : action ? (
         <Text
-          style={[styles.sectionAction, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          style={[
+            styles.sectionAction,
+            { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+          ]}
         >
           {action}
         </Text>
@@ -733,11 +883,19 @@ export function StatusMeter({
     <>
       <View style={styles.meterLabelWrap}>
         {icon ? <PixelIcon name={icon} size={20} /> : null}
-        <Text style={[styles.meterLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+        <Text
+          style={[
+            styles.meterLabel,
+            { color: colors.foreground, fontFamily: "Inter_700Bold" },
+          ]}
+        >
           {label}
         </Text>
       </View>
-      <View style={styles.meterSegments} accessibilityLabel={`${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}>
+      <View
+        style={styles.meterSegments}
+        accessibilityLabel={`${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}
+      >
         {Array.from({ length: count }).map((_, index) => (
           <MeterPip
             key={`${label}-${index}`}
@@ -749,7 +907,12 @@ export function StatusMeter({
         ))}
       </View>
       {valueLabel ? (
-        <Text style={[styles.meterValue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          style={[
+            styles.meterValue,
+            { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+          ]}
+        >
           {valueLabel}
         </Text>
       ) : null}
@@ -760,7 +923,10 @@ export function StatusMeter({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? `${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}
+        accessibilityLabel={
+          accessibilityLabel ??
+          `${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`
+        }
         accessibilityHint={accessibilityHint}
         onPress={() => {
           hapticSelect();
@@ -780,11 +946,7 @@ export function StatusMeter({
     );
   }
 
-  return (
-    <View style={styles.meterRow}>
-      {content}
-    </View>
-  );
+  return <View style={styles.meterRow}>{content}</View>;
 }
 
 export function QuickActionTile({
@@ -831,24 +993,58 @@ export function QuickActionTile({
         },
       ]}
     >
-      <View style={[styles.quickIcon, { backgroundColor: accent ?? colors.secondary }]}>
+      <View
+        style={[
+          styles.quickIcon,
+          { backgroundColor: accent ?? colors.secondary },
+        ]}
+      >
         <PixelIcon name={icon} size={iconSize} />
       </View>
-      <Text style={[styles.quickText, { color: colors.foreground, fontFamily: "Inter_700Bold" }, labelStyle]}>
+      <Text
+        style={[
+          styles.quickText,
+          { color: colors.foreground, fontFamily: "Inter_700Bold" },
+          labelStyle,
+        ]}
+      >
         {label}
       </Text>
     </PressScale>
   );
 }
 
-export function PixelSpeechBubble({ text, style }: { text: string; style?: StyleProp<ViewStyle> }) {
+export function PixelSpeechBubble({
+  text,
+  style,
+}: {
+  text: string;
+  style?: StyleProp<ViewStyle>;
+}) {
   const colors = useColors();
   return (
     <View style={[styles.bubbleWrap, style]} pointerEvents="none">
-      <View style={[styles.bubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.bubbleText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{text}</Text>
+      <View
+        style={[
+          styles.bubble,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <Text
+          style={[
+            styles.bubbleText,
+            { color: colors.foreground, fontFamily: "Inter_700Bold" },
+          ]}
+        >
+          {text}
+        </Text>
       </View>
-      <View style={[styles.bubbleTail, { backgroundColor: colors.card, borderColor: colors.border }]} />
+      <View
+        style={[
+          styles.bubbleTail,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      />
     </View>
   );
 }
@@ -873,21 +1069,44 @@ export function CareRow({
     <>
       <PixelIcon name={icon} size={24} />
       <View style={styles.rowText}>
-        <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+        <Text
+          numberOfLines={2}
+          style={[
+            styles.rowTitle,
+            { color: colors.foreground, fontFamily: "Inter_700Bold" },
+          ]}
+        >
           {title}
         </Text>
         {detail ? (
-          <Text numberOfLines={1} style={[styles.rowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            numberOfLines={2}
+            style={[
+              styles.rowDetail,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {detail}
           </Text>
         ) : null}
       </View>
       {meta ? (
-        <Text style={[styles.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          style={[
+            styles.rowMeta,
+            { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+          ]}
+        >
           {meta}
         </Text>
       ) : null}
-      {onPress ? <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} /> : null}
+      {onPress ? (
+        <Ionicons
+          name="chevron-forward"
+          size={14}
+          color={colors.mutedForeground}
+        />
+      ) : null}
     </>
   );
 
@@ -896,14 +1115,16 @@ export function CareRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          accessibilityLabel ??
-          [title, detail, meta].filter(Boolean).join(". ")
+          accessibilityLabel ?? [title, detail, meta].filter(Boolean).join(". ")
         }
         onPress={() => {
           hapticSelect();
           onPress();
         }}
-        style={({ pressed }) => [styles.careRow, { opacity: pressed ? 0.72 : 1 }]}
+        style={({ pressed }) => [
+          styles.careRow,
+          { opacity: pressed ? 0.72 : 1 },
+        ]}
       >
         {content}
       </Pressable>
@@ -1020,6 +1241,7 @@ const styles = StyleSheet.create({
   },
   segmentRow: {
     flexDirection: "row",
+    alignItems: "stretch",
     gap: 8,
     marginBottom: 14,
     position: "relative",
@@ -1031,16 +1253,21 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   segmentChip: {
+    flexBasis: 0,
+    flexGrow: 1,
     flexShrink: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     alignItems: "center",
     justifyContent: "center",
   },
   segmentChipText: {
     fontSize: 12.5,
+    lineHeight: 16,
+    textAlign: "center",
   },
   actionButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,

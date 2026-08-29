@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
 import {
@@ -21,7 +21,11 @@ import {
   ModalBackdropPressable,
   ModalSheetPressable,
 } from "@/components/board/BoardPrimitives";
-import { PulseIcon, PULSE_COLORS, type PulseIconName } from "@/components/PulseIcon";
+import {
+  PulseIcon,
+  PULSE_COLORS,
+  type PulseIconName,
+} from "@/components/PulseIcon";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -41,9 +45,7 @@ export interface DietScreenProps {
   openDetails?: boolean;
 }
 
-export default function DietScreen({
-  openDetails = false,
-}: DietScreenProps) {
+export default function DietScreen({ openDetails = false }: DietScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -140,7 +142,9 @@ export default function DietScreen({
         <BoardSectionHeader
           title="Diet Profile"
           accessory={
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+            >
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Edit diet profile"
@@ -187,7 +191,9 @@ export default function DietScreen({
           }
         />
         <View style={s.dietHeader}>
-          <View style={[s.dietIconWrap, { backgroundColor: colors.copper + "1A" }]}>
+          <View
+            style={[s.dietIconWrap, { backgroundColor: colors.copper + "1A" }]}
+          >
             <PulseIcon name="bowl" size={22} />
           </View>
           <View style={{ flex: 1 }}>
@@ -316,138 +322,140 @@ export default function DietScreen({
                 bounces={false}
                 style={s.profileFormScroll}
               >
-              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text
-                style={[
-                  s.sheetTitle,
-                  { color: colors.foreground, fontFamily: DISPLAY_SEMI },
-                ]}
-              >
-                Diet Profile
-              </Text>
-
-              {[
-                {
-                  label: "PRIMARY FOOD",
-                  value: dPrimaryFood,
-                  set: setDPrimaryFood,
-                  placeholder: "e.g. Royal Canin GI dry kibble",
-                },
-                {
-                  label: "NORMAL PORTION",
-                  value: dNormalPortion,
-                  set: setDNormalPortion,
-                  placeholder: "e.g. 1¼ cups twice daily",
-                },
-                {
-                  label: "MEAL SCHEDULE",
-                  value: dMealSchedule,
-                  set: setDMealSchedule,
-                  placeholder: "e.g. 7 AM and 6 PM",
-                },
-                {
-                  label: "TOPPERS",
-                  value: dToppers,
-                  set: setDToppers,
-                  placeholder: "e.g. Bone broth, low-sodium",
-                },
-                {
-                  label: "SUPPLEMENTS",
-                  value: dSupplements,
-                  set: setDSupplements,
-                  placeholder: "e.g. Probiotic daily",
-                },
-                {
-                  label: "BEDTIME SNACK",
-                  value: dBedtimeSnack,
-                  set: setDBedtimeSnack,
-                  placeholder: "e.g. ½ cup kibble at 10 PM",
-                },
-                {
-                  label: "TREATS ALLOWED",
-                  value: dTreatsAllowed,
-                  set: setDTreatsAllowed,
-                  placeholder: "e.g. Zuke's minis, max 3/day",
-                },
-                {
-                  label: "AVOID",
-                  value: dAvoid,
-                  set: setDAvoid,
-                  placeholder: "e.g. Grains, chicken, rawhide",
-                },
-                {
-                  label: "SENSITIVITIES",
-                  value: dSensitivities,
-                  set: setDSensitivities,
-                  placeholder: "e.g. Chicken allergy confirmed",
-                },
-                {
-                  label: "APPETITE QUIRKS",
-                  value: dAppetiteQuirks,
-                  set: setDAppetiteQuirks,
-                  placeholder: "e.g. Eats slowly, dislikes change",
-                },
-                {
-                  label: "VET NOTES",
-                  value: dVetNotes,
-                  set: setDVetNotes,
-                  placeholder: "e.g. Low-fat diet per Dr. Kim",
-                },
-              ].map((field) => (
-                <View key={field.label}>
-                  <Text
-                    style={[
-                      s.profFieldLabel,
-                      {
-                        color: colors.mutedForeground,
-                        fontFamily: "Inter_600SemiBold",
-                      },
-                    ]}
-                  >
-                    {field.label}
-                  </Text>
-                  <TextInput
-                    value={field.value}
-                    onChangeText={field.set}
-                    accessibilityLabel={field.label}
-                    placeholder={field.placeholder}
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[
-                      s.profField,
-                      {
-                        backgroundColor: colors.background,
-                        color: colors.foreground,
-                        fontFamily: "Inter_500Medium",
-                      },
-                    ]}
-                  />
-                </View>
-              ))}
-
-              <Pressable
-                onPress={saveDiet}
-                accessibilityRole="button"
-                accessibilityLabel="Save diet profile"
-                style={({ pressed }) => [
-                  s.profSaveBtn,
-                  {
-                    backgroundColor: colors.primary,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
+                <View
+                  style={[s.modalHandle, { backgroundColor: colors.border }]}
+                />
                 <Text
                   style={[
-                    s.profSaveBtnText,
+                    s.sheetTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
+                  Diet Profile
+                </Text>
+
+                {[
+                  {
+                    label: "PRIMARY FOOD",
+                    value: dPrimaryFood,
+                    set: setDPrimaryFood,
+                    placeholder: "e.g. Royal Canin GI dry kibble",
+                  },
+                  {
+                    label: "NORMAL PORTION",
+                    value: dNormalPortion,
+                    set: setDNormalPortion,
+                    placeholder: "e.g. 1¼ cups twice daily",
+                  },
+                  {
+                    label: "MEAL SCHEDULE",
+                    value: dMealSchedule,
+                    set: setDMealSchedule,
+                    placeholder: "e.g. 7 AM and 6 PM",
+                  },
+                  {
+                    label: "TOPPERS",
+                    value: dToppers,
+                    set: setDToppers,
+                    placeholder: "e.g. Bone broth, low-sodium",
+                  },
+                  {
+                    label: "SUPPLEMENTS",
+                    value: dSupplements,
+                    set: setDSupplements,
+                    placeholder: "e.g. Probiotic daily",
+                  },
+                  {
+                    label: "BEDTIME SNACK",
+                    value: dBedtimeSnack,
+                    set: setDBedtimeSnack,
+                    placeholder: "e.g. ½ cup kibble at 10 PM",
+                  },
+                  {
+                    label: "TREATS ALLOWED",
+                    value: dTreatsAllowed,
+                    set: setDTreatsAllowed,
+                    placeholder: "e.g. Zuke's minis, max 3/day",
+                  },
+                  {
+                    label: "AVOID",
+                    value: dAvoid,
+                    set: setDAvoid,
+                    placeholder: "e.g. Grains, chicken, rawhide",
+                  },
+                  {
+                    label: "SENSITIVITIES",
+                    value: dSensitivities,
+                    set: setDSensitivities,
+                    placeholder: "e.g. Chicken allergy confirmed",
+                  },
+                  {
+                    label: "APPETITE QUIRKS",
+                    value: dAppetiteQuirks,
+                    set: setDAppetiteQuirks,
+                    placeholder: "e.g. Eats slowly, dislikes change",
+                  },
+                  {
+                    label: "VET NOTES",
+                    value: dVetNotes,
+                    set: setDVetNotes,
+                    placeholder: "e.g. Low-fat diet per Dr. Kim",
+                  },
+                ].map((field) => (
+                  <View key={field.label}>
+                    <Text
+                      style={[
+                        s.profFieldLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {field.label}
+                    </Text>
+                    <TextInput
+                      value={field.value}
+                      onChangeText={field.set}
+                      accessibilityLabel={field.label}
+                      placeholder={field.placeholder}
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[
+                        s.profField,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.foreground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    />
+                  </View>
+                ))}
+
+                <Pressable
+                  onPress={saveDiet}
+                  accessibilityRole="button"
+                  accessibilityLabel="Save diet profile"
+                  style={({ pressed }) => [
+                    s.profSaveBtn,
                     {
-                      color: colors.primaryForeground,
-                      fontFamily: "Inter_700Bold",
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.85 : 1,
                     },
                   ]}
                 >
-                  Save diet profile
-                </Text>
-              </Pressable>
+                  <Text
+                    style={[
+                      s.profSaveBtnText,
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
+                    Save diet profile
+                  </Text>
+                </Pressable>
               </ScrollView>
             </ModalSheetPressable>
           </KeyboardAvoidingView>

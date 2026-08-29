@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import {
@@ -8,9 +8,14 @@ import {
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
-  Animated,
   Image,
   ImageBackground,
   Modal,
@@ -25,16 +30,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReducedMotion } from "react-native-reanimated";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
-import {
-  useGetMe,
-  getGetMeQueryKey,
-} from "@workspace/api-client-react";
+import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import {
   deriveCareIntelligence,
   deriveHouseholdResponsibility,
   selectSharedCareEvidence,
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
+import { useActiveCurrentTime } from "@/hooks/useActiveCurrentTime";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
 import { useDevicePreferences } from "@/context/DevicePreferencesContext";
@@ -47,7 +50,10 @@ import {
   deriveCareStorageUnavailableDashboard,
   derivePhoenixStatus,
 } from "@/lib/phoenixStatus";
-import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
+import {
+  deriveCareSyncDashboard,
+  type CareSyncDashboard,
+} from "@/lib/careSync";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
   buildBetaHandoffPacketShareText,
@@ -86,8 +92,14 @@ import {
   type MobileQaSessionProofManifest,
 } from "@/lib/mobileQaSession";
 import { createDevicePreferenceHydrationRetryScheduler } from "@/lib/devicePreferences";
-import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
-import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
+import {
+  buildReleasePacket,
+  buildReleasePacketShareText,
+} from "@/lib/releasePacket";
+import {
+  buildStoreSubmissionPacket,
+  buildStoreSubmissionPacketShareText,
+} from "@/lib/storeSubmissionPacket";
 import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
 import { shareTextPayload } from "@/lib/shareText";
 import {
@@ -100,7 +112,10 @@ import {
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import {
+  CARE_TWIN_ROOM_VARIANT_ASSETS,
+  getCareTwinSpriteAsset,
+} from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { resolveConsumerPetName } from "@/lib/petIdentity";
 import {
@@ -119,7 +134,11 @@ import {
   CARE_READ_ONLY_MESSAGE,
   runAcceptedCareMutation,
 } from "@/lib/careWriteProtection";
-import { addLocalCalendarDays, localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
+import {
+  addLocalCalendarDays,
+  localDateKey,
+  todayLocalDateKey,
+} from "@/lib/localCalendar";
 import {
   deriveCareCareer,
   deriveCareerWeek,
@@ -128,6 +147,7 @@ import {
 import MoreSectionRouter from "@/components/more/MoreSectionRouter";
 import {
   executeMoreDirectoryDestination,
+  getMoreDirectorySurfaceVisibility,
   MORE_DIRECTORY_GROUPS,
   searchMoreDirectory,
   type MoreDirectoryDestination,
@@ -148,6 +168,11 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const MORE_COMMAND_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.night.source;
 const MORE_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const MORE_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
+const EMPTY_MORE_COLLECTION: readonly never[] = Object.freeze([]);
+const EMPTY_MORE_ATTACHMENT_MANIFEST = deriveAttachmentManifest({});
+const EMPTY_MORE_PROVIDER_SETUP_PLAN = deriveLaunchProviderSetup(undefined);
+const EMPTY_MORE_SUPPORT_PLAN = deriveSupportRunbookPlan(undefined);
+const EMPTY_MORE_NATIVE_QA_PLAN = buildMobileLaunchQaCapturePlan(null);
 
 type HouseholdMemberSummary = {
   displayName?: string | null;
@@ -225,7 +250,8 @@ const PROVIDER_SETUP_FIELDS: Array<{
     key: "paymentsEnabled",
     proofKey: "paymentsProviderProofReady",
     label: "Plus payments",
-    detail: "Subscription tiers, app-store billing, refunds, and entitlement checks.",
+    detail:
+      "Subscription tiers, app-store billing, refunds, and entitlement checks.",
   },
   {
     key: "pushNotificationsConfigured",
@@ -237,13 +263,15 @@ const PROVIDER_SETUP_FIELDS: Array<{
     key: "appStoreAccountsReady",
     proofKey: "storeAccountsProofReady",
     label: "Store accounts",
-    detail: "Apple Developer, App Store Connect, Google Play Console, bundle ids.",
+    detail:
+      "Apple Developer, App Store Connect, Google Play Console, bundle ids.",
   },
   {
     key: "accountDeletionEnabled",
     proofKey: "accountDeletionProofReady",
     label: "Account deletion",
-    detail: "Self-serve deletion, export warning, provider deletion, and audit receipt.",
+    detail:
+      "Self-serve deletion, export warning, provider deletion, and audit receipt.",
   },
 ];
 
@@ -293,7 +321,9 @@ function launchBadgeTone(
   return colors.amber;
 }
 
-function launchNextGateIcon(action: LaunchReadinessNextGateAction): keyof typeof Ionicons.glyphMap {
+function launchNextGateIcon(
+  action: LaunchReadinessNextGateAction,
+): keyof typeof Ionicons.glyphMap {
   switch (action) {
     case "open-native-qa":
     case "share-native-qa-fix-brief":
@@ -317,7 +347,9 @@ function launchNextGateIcon(action: LaunchReadinessNextGateAction): keyof typeof
   }
 }
 
-function buildCareTwinQaFocusRoute(target: Pick<MobileLaunchQaCaptureTarget, "surfaceId"> | null | undefined): string {
+function buildCareTwinQaFocusRoute(
+  target: Pick<MobileLaunchQaCaptureTarget, "surfaceId"> | null | undefined,
+): string {
   if (!target) return "/care-twin-qa";
   return `/care-twin-qa?qaSurface=${encodeURIComponent(target.surfaceId)}`;
 }
@@ -327,7 +359,9 @@ type ProviderRowQaTarget = Pick<MobileLaunchQaCaptureTarget, "surfaceId"> & {
   iconName: keyof typeof Ionicons.glyphMap;
 };
 
-function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget | null {
+function providerRowQaTarget(
+  key: LaunchProviderSetupKey,
+): ProviderRowQaTarget | null {
   switch (key) {
     case "auth":
       return {
@@ -434,15 +468,16 @@ function MoreScreenContent({}: Record<string, never>) {
   );
   const openDirectoryDestination = (destination: MoreDirectoryDestination) => {
     Haptics.selectionAsync();
-    executeMoreDirectoryDestination(
-      destination,
-      (route) => router.push(route as never),
+    executeMoreDirectoryDestination(destination, (route) =>
+      router.push(route as never),
     );
   };
   // Owner launch tooling renders in development/internal builds only; store
   // production builds keep More to complete device-local care surfaces.
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
+  const moreDirectorySurfaceVisibility =
+    getMoreDirectorySurfaceVisibility(ownerOps);
   const providerSyncEnabled =
     consumerSurfacePolicy.providerSyncControls && isClerkEnabledForBuild;
   const {
@@ -481,7 +516,7 @@ function MoreScreenContent({}: Record<string, never>) {
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
   const myName = me.data?.user?.displayName?.trim() || "";
 
-  const now = Date.now();
+  const now = useActiveCurrentTime();
   const observedEntries = useMemo(
     () => selectSharedCareEvidence(entries, now),
     [entries, now],
@@ -527,7 +562,9 @@ function MoreScreenContent({}: Record<string, never>) {
     const days = new Set(
       observedEntries.flatMap((entry) => {
         const occurredAt = new Date(entry.occurredAt);
-        return Number.isFinite(occurredAt.getTime()) ? [localDateKey(occurredAt)] : [];
+        return Number.isFinite(occurredAt.getTime())
+          ? [localDateKey(occurredAt)]
+          : [];
       }),
     );
     let s = 0;
@@ -544,7 +581,10 @@ function MoreScreenContent({}: Record<string, never>) {
     const today = todayLocalDateKey(new Date(now));
     return observedEntries.filter((entry) => {
       const occurredAt = new Date(entry.occurredAt);
-      return Number.isFinite(occurredAt.getTime()) && localDateKey(occurredAt) === today;
+      return (
+        Number.isFinite(occurredAt.getTime()) &&
+        localDateKey(occurredAt) === today
+      );
     }).length;
   }, [observedEntries, now]);
 
@@ -557,13 +597,7 @@ function MoreScreenContent({}: Record<string, never>) {
         todayLogCount,
         streakDays: streak,
       }),
-    [
-      isLoaded,
-      routines.length,
-      storageWarning,
-      streak,
-      todayLogCount,
-    ],
+    [isLoaded, routines.length, storageWarning, streak, todayLogCount],
   );
 
   const latestCareUpdate = useMemo(
@@ -596,14 +630,17 @@ function MoreScreenContent({}: Record<string, never>) {
     if (careStorageRecoveryAction.kind === "retry-save") {
       void persistCurrentCareSnapshot();
     }
-  }, [careStorageRecoveryAction, persistCurrentCareSnapshot, retryLocalHydration]);
+  }, [
+    careStorageRecoveryAction,
+    persistCurrentCareSnapshot,
+    retryLocalHydration,
+  ]);
 
   const syncDashboard = useMemo<CareSyncDashboard>(() => {
-    const unavailableStorageDashboard =
-      deriveCareStorageUnavailableDashboard({
-        isLoaded,
-        storageWarning,
-      });
+    const unavailableStorageDashboard = deriveCareStorageUnavailableDashboard({
+      isLoaded,
+      storageWarning,
+    });
     if (unavailableStorageDashboard) return unavailableStorageDashboard;
 
     if (!providerSyncEnabled) {
@@ -613,7 +650,8 @@ function MoreScreenContent({}: Record<string, never>) {
       return {
         status: "healthy",
         title: "Saved on this device",
-        message: "Every care log is stored in this device's local care record. Nothing is waiting.",
+        message:
+          "Every care log is stored in this device's local care record. Nothing is waiting.",
         nextStep: consumerSurfacePolicy.providerSyncControls
           ? "Household sync is not connected - every care log stays on this device for now."
           : "Export a backup from Privacy & Safety before changing or resetting this device.",
@@ -669,45 +707,77 @@ function MoreScreenContent({}: Record<string, never>) {
     consumerSurfacePolicy.providerSyncControls,
     providerSyncEnabled,
   ]);
+  const ownerLaunchProviderProfile = ownerOps
+    ? state.launchProviderProfile
+    : null;
   const launchProviderSetupPlan = useMemo(
-    () => deriveLaunchProviderSetup(state.launchProviderProfile),
-    [state.launchProviderProfile],
-  );
-  const attachmentManifest = useMemo(
     () =>
-      deriveAttachmentManifest(
-        {
-          entries,
-          records: state.records,
-          adventureMemories: state.adventureMemories,
-          reportArtifacts: state.reportArtifacts,
-        },
-        {
-          storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
-          storageProviderEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence,
-        },
-      ),
-    [
-      entries,
-      launchProviderSetupPlan.providerInput.storageProviderConfigured,
-      launchProviderSetupPlan.providerInput.storageProviderEvidence,
-      state.adventureMemories,
-      state.records,
-      state.reportArtifacts,
-    ],
+      ownerLaunchProviderProfile
+        ? deriveLaunchProviderSetup(ownerLaunchProviderProfile)
+        : EMPTY_MORE_PROVIDER_SETUP_PLAN,
+    [ownerLaunchProviderProfile],
   );
+  const ownerAttachmentEntries = ownerOps ? entries : EMPTY_MORE_COLLECTION;
+  const ownerAttachmentRecords = ownerOps
+    ? state.records
+    : EMPTY_MORE_COLLECTION;
+  const ownerAttachmentMemories = ownerOps
+    ? state.adventureMemories
+    : EMPTY_MORE_COLLECTION;
+  const ownerAttachmentReports = ownerOps
+    ? state.reportArtifacts
+    : EMPTY_MORE_COLLECTION;
+  const attachmentManifest = useMemo(() => {
+    if (!ownerOps) return EMPTY_MORE_ATTACHMENT_MANIFEST;
+    return deriveAttachmentManifest(
+      {
+        entries: ownerAttachmentEntries,
+        records: ownerAttachmentRecords,
+        adventureMemories: ownerAttachmentMemories,
+        reportArtifacts: ownerAttachmentReports,
+      },
+      {
+        storageProviderConfigured:
+          launchProviderSetupPlan.providerInput.storageProviderConfigured,
+        storageProviderEvidence:
+          launchProviderSetupPlan.providerInput.storageProviderEvidence,
+      },
+    );
+  }, [
+    launchProviderSetupPlan.providerInput.storageProviderConfigured,
+    launchProviderSetupPlan.providerInput.storageProviderEvidence,
+    ownerAttachmentEntries,
+    ownerAttachmentMemories,
+    ownerAttachmentRecords,
+    ownerAttachmentReports,
+    ownerOps,
+  ]);
+  const ownerLaunchSupportProfile = ownerOps
+    ? state.launchSupportProfile
+    : null;
   const launchSupportPlan = useMemo(
-    () => deriveSupportRunbookPlan(state.launchSupportProfile),
-    [state.launchSupportProfile],
+    () =>
+      ownerLaunchSupportProfile
+        ? deriveSupportRunbookPlan(ownerLaunchSupportProfile)
+        : EMPTY_MORE_SUPPORT_PLAN,
+    [ownerLaunchSupportProfile],
   );
   const supportRunbookOwnerReviewed =
-    state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.supportRunbookApproved;
+    ownerOps &&
+    state.launchSupportProfile.providerStatus === "owner-reviewed" &&
+    launchSupportPlan.supportRunbookApproved;
   const privacyLegalOwnerReviewed =
-    state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.privacyLegalApproved;
+    ownerOps &&
+    state.launchSupportProfile.providerStatus === "owner-reviewed" &&
+    launchSupportPlan.privacyLegalApproved;
   const supportRunbookApproved =
-    state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.supportRunbookApproved;
+    ownerOps &&
+    state.launchSupportProfile.providerStatus === "provider-approved" &&
+    launchSupportPlan.supportRunbookApproved;
   const privacyLegalApproved =
-    state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.privacyLegalApproved;
+    ownerOps &&
+    state.launchSupportProfile.providerStatus === "provider-approved" &&
+    launchSupportPlan.privacyLegalApproved;
   const supportRunbookProofReady = supportRunbookApproved;
   const privacyLegalProofReady = privacyLegalApproved;
 
@@ -731,12 +801,14 @@ function MoreScreenContent({}: Record<string, never>) {
       const cleaned = name.trim();
       if (!cleaned) return;
       const key = cleaned.toLowerCase();
-      if (!byName.has(key)) byName.set(key, { name: cleaned, role: role.trim() || "Caregiver" });
+      if (!byName.has(key))
+        byName.set(key, { name: cleaned, role: role.trim() || "Caregiver" });
     };
 
     caregivers.forEach((caregiver) => add(caregiver.name, caregiver.role));
     members.forEach((member) => {
-      const name = member.displayName?.trim() || member.email?.split("@")[0] || "";
+      const name =
+        member.displayName?.trim() || member.email?.split("@")[0] || "";
       add(name, member.role === "owner" ? "Owner" : "Caregiver");
     });
 
@@ -744,7 +816,13 @@ function MoreScreenContent({}: Record<string, never>) {
   }, [caregivers, members]);
 
   const householdResponsibility = useMemo(
-    () => deriveHouseholdResponsibility({ routines, entries, caregivers: responsibilityCaregivers, now }),
+    () =>
+      deriveHouseholdResponsibility({
+        routines,
+        entries,
+        caregivers: responsibilityCaregivers,
+        now,
+      }),
     [routines, entries, responsibilityCaregivers, now],
   );
   const responsibilityTone =
@@ -801,27 +879,29 @@ function MoreScreenContent({}: Record<string, never>) {
   const [savedNativeQaSummary, setSavedNativeQaSummary] =
     useState<LaunchReadinessNativeQaSummary | null>(null);
   const [nativeQaCapturePlan, setNativeQaCapturePlan] =
-    useState<MobileLaunchQaCapturePlan>(() => buildMobileLaunchQaCapturePlan(null));
+    useState<MobileLaunchQaCapturePlan>(EMPTY_MORE_NATIVE_QA_PLAN);
   const [savedQaProofManifest, setSavedQaProofManifest] =
     useState<MobileQaSessionProofManifest | null>(null);
   const qaProofHydrationRetryRef = useRef<ReturnType<
     typeof createDevicePreferenceHydrationRetryScheduler
   > | null>(null);
-  if (qaProofHydrationRetryRef.current === null) {
+  if (ownerOps && qaProofHydrationRetryRef.current === null) {
     qaProofHydrationRetryRef.current =
       createDevicePreferenceHydrationRetryScheduler();
   }
   const hydrationRetry = qaProofHydrationRetryRef.current;
   const [providerSetupOpen, setProviderSetupOpen] = useState(false);
-  const [providerDraft, setProviderDraft] = useState<LaunchProviderProfile>(() =>
-    normalizeLaunchProviderProfile(state.launchProviderProfile),
+  const [providerDraft, setProviderDraft] = useState<LaunchProviderProfile>(
+    () => normalizeLaunchProviderProfile(state.launchProviderProfile),
   );
 
   useFocusEffect(
     React.useCallback(() => {
+      if (!ownerOps || !hydrationRetry) return undefined;
+      const activeHydrationRetry = hydrationRetry;
       let cancelled = false;
-      hydrationRetry.activate();
-      hydrationRetry.reset();
+      activeHydrationRetry.activate();
+      activeHydrationRetry.reset();
 
       function hydrateQaProof() {
         void store
@@ -832,7 +912,9 @@ function MoreScreenContent({}: Record<string, never>) {
               setSavedNativeQaSummary(
                 deriveNativeQaSummaryFromMobileQaSession(savedSession),
               );
-              setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(savedSession));
+              setNativeQaCapturePlan(
+                buildMobileLaunchQaCapturePlan(savedSession),
+              );
               setSavedQaProofManifest(
                 savedSession
                   ? buildMobileQaSessionProofManifest(
@@ -847,11 +929,12 @@ function MoreScreenContent({}: Record<string, never>) {
           })
           .then((result) => {
             if (cancelled || result === "cancelled") return;
-            hydrationRetry.reset();
+            activeHydrationRetry.reset();
           })
           .catch((error) => {
-            if (cancelled || error instanceof LocalDataResetInProgressError) return;
-            hydrationRetry.request(hydrateQaProof);
+            if (cancelled || error instanceof LocalDataResetInProgressError)
+              return;
+            activeHydrationRetry.request(hydrateQaProof);
           });
       }
 
@@ -859,9 +942,9 @@ function MoreScreenContent({}: Record<string, never>) {
 
       return () => {
         cancelled = true;
-        hydrationRetry.deactivate();
+        activeHydrationRetry.deactivate();
       };
-    }, [hydrationRetry, operationSettledEpoch, store]),
+    }, [hydrationRetry, operationSettledEpoch, ownerOps, store]),
   );
 
   const confirmSignOut = () => {
@@ -882,52 +965,41 @@ function MoreScreenContent({}: Record<string, never>) {
     );
   };
 
-  // Mount animation
-  const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(
-    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
-  ).current;
-  const slide = useRef(
-    new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16),
-  ).current;
-  useEffect(() => {
-    if (isWebRoutePreview || reducedMotion) {
-      fade.stopAnimation();
-      slide.stopAnimation();
-      fade.setValue(1);
-      slide.setValue(0);
-      return;
-    }
-    fade.setValue(0);
-    slide.setValue(16);
-    const entrance = Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]);
-    entrance.start();
-    return () => entrance.stop();
-  }, [fade, isWebRoutePreview, reducedMotion, slide]);
-
   const nativeQaPrimaryMission = nativeQaCapturePlan.primaryMission;
   const nativeQaPrimaryMissionTarget =
     nativeQaPrimaryMission.target ??
     nativeQaCapturePlan.nextTargets[0] ??
     nativeQaCapturePlan.storeScreenshotProofStatus.nextTarget;
   const routeVisualConsistencyTarget =
-    nativeQaCapturePlan.nextTargets.find((target) => target.surfaceId === "route-visual-consistency") ??
-    ({ surfaceId: "route-visual-consistency" } as Pick<MobileLaunchQaCaptureTarget, "surfaceId">);
+    nativeQaCapturePlan.nextTargets.find(
+      (target) => target.surfaceId === "route-visual-consistency",
+    ) ??
+    ({ surfaceId: "route-visual-consistency" } as Pick<
+      MobileLaunchQaCaptureTarget,
+      "surfaceId"
+    >);
   const routeVisualConsistencyDetail =
-    nativeQaCapturePlan.nextTargets.find((target) => target.surfaceId === "route-visual-consistency")?.missingEvidence[0] ??
+    nativeQaCapturePlan.nextTargets.find(
+      (target) => target.surfaceId === "route-visual-consistency",
+    )?.missingEvidence[0] ??
     "Run the six-route design pass before native screenshots.";
   const careEntryProviderSyncProofTarget = {
     surfaceId: "care-entry-provider-sync-proof",
   } as Pick<MobileLaunchQaCaptureTarget, "surfaceId">;
   const openCareEntryProviderSyncProofMission = () => {
     Haptics.selectionAsync();
-    router.push(buildCareTwinQaFocusRoute(careEntryProviderSyncProofTarget) as never);
+    router.push(
+      buildCareTwinQaFocusRoute(careEntryProviderSyncProofTarget) as never,
+    );
   };
 
-  const links: { icon: PulseIconName; iconName: keyof typeof Ionicons.glyphMap; label: string; sub: string; onPress: () => void }[] = [
+  const links: {
+    icon: PulseIconName;
+    iconName: keyof typeof Ionicons.glyphMap;
+    label: string;
+    sub: string;
+    onPress: () => void;
+  }[] = [
     {
       icon: "paw",
       iconName: "sparkles",
@@ -998,12 +1070,17 @@ function MoreScreenContent({}: Record<string, never>) {
       ? [
           {
             icon: "star" as PulseIconName,
-            iconName: "phone-portrait-outline" as keyof typeof Ionicons.glyphMap,
+            iconName:
+              "phone-portrait-outline" as keyof typeof Ionicons.glyphMap,
             label: "Care Twin QA",
             sub: "Internal device review for Phoenix room states and sprite loops",
             onPress: () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+              router.push(
+                buildCareTwinQaFocusRoute(
+                  nativeQaPrimaryMissionTarget,
+                ) as never,
+              );
             },
           },
         ]
@@ -1031,23 +1108,55 @@ function MoreScreenContent({}: Record<string, never>) {
           privacyExportReady: true,
         },
         provider: {
-          authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured),
-          authProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.authProviderProofReady),
-          databaseConfigured: Boolean(launchProviderSetupPlan.providerInput.databaseConfigured),
-          databaseProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.databaseProviderProofReady),
-          storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured),
-          storageProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.storageProviderProofReady),
+          authConfigured: Boolean(
+            launchProviderSetupPlan.providerInput.authConfigured,
+          ),
+          authProviderProofReady: Boolean(
+            launchProviderSetupPlan.providerInput.authProviderProofReady,
+          ),
+          databaseConfigured: Boolean(
+            launchProviderSetupPlan.providerInput.databaseConfigured,
+          ),
+          databaseProviderProofReady: Boolean(
+            launchProviderSetupPlan.providerInput.databaseProviderProofReady,
+          ),
+          storageProviderConfigured: Boolean(
+            launchProviderSetupPlan.providerInput.storageProviderConfigured,
+          ),
+          storageProviderProofReady: Boolean(
+            launchProviderSetupPlan.providerInput.storageProviderProofReady,
+          ),
           storageQueue: attachmentManifest.launchQueue,
-          aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
-          aiProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.aiProviderProofReady),
-          paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),
-          paymentsProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.paymentsProviderProofReady),
-          accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
-          accountDeletionProofReady: Boolean(launchProviderSetupPlan.providerInput.accountDeletionProofReady),
-          pushNotificationsConfigured: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsConfigured),
-          pushNotificationsProofReady: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsProofReady),
-          appStoreAccountsReady: Boolean(launchProviderSetupPlan.providerInput.appStoreAccountsReady),
-          storeAccountsProofReady: Boolean(launchProviderSetupPlan.providerInput.storeAccountsProofReady),
+          aiProviderConfigured: Boolean(
+            launchProviderSetupPlan.providerInput.aiProviderConfigured,
+          ),
+          aiProviderProofReady: Boolean(
+            launchProviderSetupPlan.providerInput.aiProviderProofReady,
+          ),
+          paymentsEnabled: Boolean(
+            launchProviderSetupPlan.providerInput.paymentsEnabled,
+          ),
+          paymentsProviderProofReady: Boolean(
+            launchProviderSetupPlan.providerInput.paymentsProviderProofReady,
+          ),
+          accountDeletionEnabled: Boolean(
+            launchProviderSetupPlan.providerInput.accountDeletionEnabled,
+          ),
+          accountDeletionProofReady: Boolean(
+            launchProviderSetupPlan.providerInput.accountDeletionProofReady,
+          ),
+          pushNotificationsConfigured: Boolean(
+            launchProviderSetupPlan.providerInput.pushNotificationsConfigured,
+          ),
+          pushNotificationsProofReady: Boolean(
+            launchProviderSetupPlan.providerInput.pushNotificationsProofReady,
+          ),
+          appStoreAccountsReady: Boolean(
+            launchProviderSetupPlan.providerInput.appStoreAccountsReady,
+          ),
+          storeAccountsProofReady: Boolean(
+            launchProviderSetupPlan.providerInput.storeAccountsProofReady,
+          ),
           privacyLegalApproved,
           privacyLegalOwnerReviewed,
           privacyLegalProofReady,
@@ -1076,7 +1185,10 @@ function MoreScreenContent({}: Record<string, never>) {
     tone: launchStatusTone(tile.status, colors),
     onPress:
       tile.key === "native-qa"
-        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never)
+        ? () =>
+            router.push(
+              buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never,
+            )
         : tile.key === "storage" || tile.key === "store-approval"
           ? () => openMoreSection("privacy")
           : tile.key === "woofguide-ai"
@@ -1087,8 +1199,13 @@ function MoreScreenContent({}: Record<string, never>) {
                 ? () => refresh()
                 : undefined,
   }));
-  const readinessBadgeTone = launchBadgeTone(launchReadinessPlan.status, colors);
-  const launchNextGateIconName = launchNextGateIcon(launchReadinessPlan.nextGate.action);
+  const readinessBadgeTone = launchBadgeTone(
+    launchReadinessPlan.status,
+    colors,
+  );
+  const launchNextGateIconName = launchNextGateIcon(
+    launchReadinessPlan.nextGate.action,
+  );
   const launchReleasePacket = useMemo(
     () =>
       buildReleasePacket(launchReadinessPlan, {
@@ -1102,7 +1219,9 @@ function MoreScreenContent({}: Record<string, never>) {
     () => buildStoreSubmissionPacket(launchReleasePacket),
     [launchReleasePacket],
   );
-  const storeSubmissionTone = launchStoreSubmissionPacket.submissionReady ? colors.sage : colors.amber;
+  const storeSubmissionTone = launchStoreSubmissionPacket.submissionReady
+    ? colors.sage
+    : colors.amber;
   const betaShipTone =
     launchReleasePacket.betaShipStatus === "ready"
       ? colors.sage
@@ -1116,12 +1235,19 @@ function MoreScreenContent({}: Record<string, never>) {
         ? colors.copper
         : colors.rose;
   const providerSetupVisibleRows = useMemo(() => {
-    const openRows = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready");
-    return (openRows.length ? openRows : launchProviderSetupPlan.rows).slice(0, 4);
+    const openRows = launchProviderSetupPlan.rows.filter(
+      (row) => row.status !== "ready",
+    );
+    return (openRows.length ? openRows : launchProviderSetupPlan.rows).slice(
+      0,
+      4,
+    );
   }, [launchProviderSetupPlan.rows]);
 
   const openProviderSetup = () => {
-    setProviderDraft(normalizeLaunchProviderProfile(state.launchProviderProfile));
+    setProviderDraft(
+      normalizeLaunchProviderProfile(state.launchProviderProfile),
+    );
     setProviderSetupOpen(true);
   };
 
@@ -1141,7 +1267,8 @@ function MoreScreenContent({}: Record<string, never>) {
       (field) => normalized[field.key] && normalized[field.proofKey],
     );
     const providerStatus =
-      normalized.providerStatus === "provider-approved" && !allProviderGatesReady
+      normalized.providerStatus === "provider-approved" &&
+      !allProviderGatesReady
         ? "owner-reviewed"
         : normalized.providerStatus;
     const updated = updateCareDoc((doc) => ({
@@ -1162,44 +1289,66 @@ function MoreScreenContent({}: Record<string, never>) {
   const shareProviderSetupPlan = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     void shareTextPayload({
-      message: buildLaunchProviderSetupShareText(launchProviderSetupPlan, new Date(now).toISOString()),
+      message: buildLaunchProviderSetupShareText(
+        launchProviderSetupPlan,
+        new Date(now).toISOString(),
+      ),
       title: launchProviderSetupPlan.title,
     });
   };
 
   const shareLaunchPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message: buildReleasePacketShareText(launchReleasePacket), title: launchReleasePacket.title });
+    void shareTextPayload({
+      message: buildReleasePacketShareText(launchReleasePacket),
+      title: launchReleasePacket.title,
+    });
   };
 
   const shareBetaHandoffPacket = () => {
     const generatedAtIso = new Date(now).toISOString();
-    const message = buildBetaHandoffPacketShareText(launchReleasePacket, nativeQaCapturePlan, {
-      generatedAtIso,
-      ciProof: RECORDED_MOBILE_BETA_CI_PROOF,
-      livePreviewProof: RECORDED_LIVE_PREVIEW_HANDOFF_PROOF,
-      providerSetupPlan: launchProviderSetupPlan,
-      proofManifest: savedQaProofManifest,
-    });
+    const message = buildBetaHandoffPacketShareText(
+      launchReleasePacket,
+      nativeQaCapturePlan,
+      {
+        generatedAtIso,
+        ciProof: RECORDED_MOBILE_BETA_CI_PROOF,
+        livePreviewProof: RECORDED_LIVE_PREVIEW_HANDOFF_PROOF,
+        providerSetupPlan: launchProviderSetupPlan,
+        proofManifest: savedQaProofManifest,
+      },
+    );
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message, title: "WoofWatcher 48-Hour Beta Handoff" });
+    void shareTextPayload({
+      message,
+      title: "WoofWatcher 48-Hour Beta Handoff",
+    });
   };
 
   const shareStoreSubmissionPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket), title: launchStoreSubmissionPacket.title });
+    void shareTextPayload({
+      message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket),
+      title: launchStoreSubmissionPacket.title,
+    });
   };
 
   const shareNativeQaCapturePlan = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     void shareTextPayload({
-      message: buildMobileLaunchQaCaptureShareText(nativeQaCapturePlan, new Date(now).toISOString()),
+      message: buildMobileLaunchQaCaptureShareText(
+        nativeQaCapturePlan,
+        new Date(now).toISOString(),
+      ),
       title: "WoofWatcher Native QA Plan",
     });
   };
 
   const shareNativeQaFixBrief = () => {
-    const message = buildMobileLaunchQaFixBriefShareText(nativeQaCapturePlan, new Date(now).toISOString());
+    const message = buildMobileLaunchQaFixBriefShareText(
+      nativeQaCapturePlan,
+      new Date(now).toISOString(),
+    );
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     void shareTextPayload({
       message,
@@ -1211,7 +1360,9 @@ function MoreScreenContent({}: Record<string, never>) {
     switch (launchReadinessPlan.nextGate.action) {
       case "open-native-qa":
         Haptics.selectionAsync();
-        router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+        router.push(
+          buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never,
+        );
         return;
       case "share-native-qa-fix-brief":
         shareNativeQaFixBrief();
@@ -1248,21 +1399,37 @@ function MoreScreenContent({}: Record<string, never>) {
     }
   };
 
-  const nativeQaCaptureNeedsTuneTarget = nativeQaCapturePlan.firstNeedsTuneTarget;
+  const nativeQaCaptureNeedsTuneTarget =
+    nativeQaCapturePlan.firstNeedsTuneTarget;
   const ownerPreviewProofStatus = nativeQaCapturePlan.ownerPreviewProofStatus;
-  const storeScreenshotProofStatus = nativeQaCapturePlan.storeScreenshotProofStatus;
-  const ownerPreviewProofHasPending = ownerPreviewProofStatus.statusLabel === "Pass pending proof";
+  const storeScreenshotProofStatus =
+    nativeQaCapturePlan.storeScreenshotProofStatus;
+  const ownerPreviewProofHasPending =
+    ownerPreviewProofStatus.statusLabel === "Pass pending proof";
   const ownerPreviewProofSummary =
-    ownerPreviewProofStatus.missingEvidence[0] ?? "Owner preview proof is complete for the saved QA session.";
-  const storeScreenshotProofHasPending = storeScreenshotProofStatus.statusLabel !== "Store proof complete";
+    ownerPreviewProofStatus.missingEvidence[0] ??
+    "Owner preview proof is complete for the saved QA session.";
+  const storeScreenshotProofHasPending =
+    storeScreenshotProofStatus.statusLabel !== "Store proof complete";
   const storeScreenshotProofSummary =
-    storeScreenshotProofStatus.missingEvidence[0] ?? "Store screenshot proof is complete for the saved QA session.";
-  const nativeQaCaptureHasProofPending = nativeQaCapturePlan.nextTargets.some(
-    (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
-  ) || ownerPreviewProofHasPending || storeScreenshotProofStatus.statusLabel === "Pass pending proof";
-  const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "QA Cockpit";
-  const moreCommandOpenGates = launchReadinessPlan.tiles.filter((tile) => tile.status !== "ready").length;
-  const moreCommandProviderOpen = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready").length;
+    storeScreenshotProofStatus.missingEvidence[0] ??
+    "Store screenshot proof is complete for the saved QA session.";
+  const nativeQaCaptureHasProofPending =
+    nativeQaCapturePlan.nextTargets.some(
+      (target) =>
+        mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
+    ) ||
+    ownerPreviewProofHasPending ||
+    storeScreenshotProofStatus.statusLabel === "Pass pending proof";
+  const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending
+    ? "Finish Proof"
+    : "QA Cockpit";
+  const moreCommandOpenGates = launchReadinessPlan.tiles.filter(
+    (tile) => tile.status !== "ready",
+  ).length;
+  const moreCommandProviderOpen = launchProviderSetupPlan.rows.filter(
+    (row) => row.status !== "ready",
+  ).length;
   const moreCommandStatusLabel =
     launchReadinessPlan.status === "store-ready"
       ? "Store Ready"
@@ -1290,7 +1457,10 @@ function MoreScreenContent({}: Record<string, never>) {
     },
     {
       label: "Sync",
-      value: syncDashboard.status === "healthy" ? "Current" : syncDashboard.actionLabel,
+      value:
+        syncDashboard.status === "healthy"
+          ? "Current"
+          : syncDashboard.actionLabel,
     },
     {
       label: "Roster",
@@ -1305,10 +1475,15 @@ function MoreScreenContent({}: Record<string, never>) {
       return;
     }
     if (careIntelligence.nextAction.targetEntryId) {
-      router.push(`/log?entry=${encodeURIComponent(careIntelligence.nextAction.targetEntryId)}` as never);
+      router.push(
+        `/log?entry=${encodeURIComponent(careIntelligence.nextAction.targetEntryId)}` as never,
+      );
       return;
     }
-    if (careIntelligence.nextAction.kind === "handle-routine" || careIntelligence.nextAction.targetRoutineId) {
+    if (
+      careIntelligence.nextAction.kind === "handle-routine" ||
+      careIntelligence.nextAction.targetRoutineId
+    ) {
       router.push("/calendar");
       return;
     }
@@ -1319,7 +1494,8 @@ function MoreScreenContent({}: Record<string, never>) {
     router.push("/log");
   };
 
-  const careFactsUnavailableActionLabel = careStorageRecoveryAction?.label ??
+  const careFactsUnavailableActionLabel =
+    careStorageRecoveryAction?.label ??
     (storageWarning === "reset"
       ? "Review backup"
       : storageWarning === "newer-version"
@@ -1409,7 +1585,11 @@ function MoreScreenContent({}: Record<string, never>) {
             tone: colors.sage,
             onPress: () => {
               Haptics.selectionAsync();
-              router.push(buildCareTwinQaFocusRoute(routeVisualConsistencyTarget) as never);
+              router.push(
+                buildCareTwinQaFocusRoute(
+                  routeVisualConsistencyTarget,
+                ) as never,
+              );
             },
           },
           {
@@ -1422,7 +1602,11 @@ function MoreScreenContent({}: Record<string, never>) {
             tone: betaShipTone,
             onPress: () => {
               Haptics.selectionAsync();
-              router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+              router.push(
+                buildCareTwinQaFocusRoute(
+                  nativeQaPrimaryMissionTarget,
+                ) as never,
+              );
             },
           },
         ]
@@ -1435,8 +1619,8 @@ function MoreScreenContent({}: Record<string, never>) {
       careStorageUnavailable && item.id === "dog-profile";
     const profileRecoveryAvailable = Boolean(
       careStorageRecoveryAction ||
-        storageWarning === "reset" ||
-        storageWarning === "newer-version",
+      storageWarning === "reset" ||
+      storageWarning === "newer-version",
     );
     const disabled = profileDirectoryBlocked && !profileRecoveryAvailable;
 
@@ -1476,8 +1660,17 @@ function MoreScreenContent({}: Record<string, never>) {
         ]}
       >
         <View style={s.canonicalDirectoryCopy}>
-          <Text style={[s.canonicalDirectoryLabel, { color: colors.foreground }]}>{item.label}</Text>
-          <Text style={[s.canonicalDirectoryDetail, { color: colors.mutedForeground }]}>
+          <Text
+            style={[s.canonicalDirectoryLabel, { color: colors.foreground }]}
+          >
+            {item.label}
+          </Text>
+          <Text
+            style={[
+              s.canonicalDirectoryDetail,
+              { color: colors.mutedForeground },
+            ]}
+          >
             {profileDirectoryBlocked
               ? `Profile hidden until device storage is trusted.${
                   profileRecoveryAvailable
@@ -1501,10 +1694,14 @@ function MoreScreenContent({}: Record<string, never>) {
       <ScrollView
         ref={scrollRef}
         style={s.container}
-        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{
+          paddingTop: topPadding,
+          paddingBottom: bottomPadding,
+          paddingHorizontal: H_PAD,
+        }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+        <View>
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
@@ -1518,25 +1715,47 @@ function MoreScreenContent({}: Record<string, never>) {
           />
 
           {careStorageUnavailable ? (
-            <BoardCard enter={0} style={[s.moreBoardCard, { borderColor: colors.amber + "44" }]}>
+            <BoardCard
+              enter={0}
+              style={[s.moreBoardCard, { borderColor: colors.amber + "44" }]}
+            >
               <View style={s.syncTop}>
-                <View style={[s.syncIcon, { backgroundColor: colors.amber + "18" }]}>
-                  <Ionicons name="shield-outline" size={20} color={colors.amber} />
+                <View
+                  style={[s.syncIcon, { backgroundColor: colors.amber + "18" }]}
+                >
+                  <Ionicons
+                    name="shield-outline"
+                    size={20}
+                    color={colors.amber}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     accessibilityRole="header"
                     accessibilityLabel="Care profile storage unavailable"
-                    style={[s.syncTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                    style={[
+                      s.syncTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
                   >
                     Profile hidden until storage is trusted
                   </Text>
-                  <Text style={[s.syncMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <Text
+                    style={[
+                      s.syncMessage,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
                     {syncDashboard.message}
                   </Text>
                 </View>
               </View>
-              {careStorageRecoveryAction || storageWarning === "reset" || storageWarning === "newer-version" ? (
+              {careStorageRecoveryAction ||
+              storageWarning === "reset" ||
+              storageWarning === "newer-version" ? (
                 <Pressable
                   onPress={careFactsUnavailableAction}
                   accessibilityRole="button"
@@ -1550,8 +1769,17 @@ function MoreScreenContent({}: Record<string, never>) {
                     },
                   ]}
                 >
-                  <Ionicons name="refresh-outline" size={14} color={colors.amber} />
-                  <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  <Ionicons
+                    name="refresh-outline"
+                    size={14}
+                    color={colors.amber}
+                  />
+                  <Text
+                    style={[
+                      s.providerSetupRowActionText,
+                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {careFactsUnavailableActionLabel}
                   </Text>
                 </Pressable>
@@ -1559,336 +1787,641 @@ function MoreScreenContent({}: Record<string, never>) {
             </BoardCard>
           ) : null}
 
-          <BoardCard enter={0} style={s.canonicalDirectoryCard}>
-            <TextInput
-              value={moreSearchQuery}
-              onChangeText={setMoreSearchQuery}
-              accessibilityLabel="Search More destinations"
-              placeholder="Search More"
-              placeholderTextColor={colors.mutedForeground}
-              style={[
-                s.canonicalDirectorySearch,
-                { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background },
-              ]}
-            />
-            {normalizedMoreQuery ? (
-              <View style={s.canonicalDirectoryGroup}>
-                <Text accessibilityRole="header" style={[s.canonicalDirectoryHeading, { color: colors.sage }]}>Search results</Text>
-                {moreSearchResults.length ? (
-                  moreSearchResults.map(renderCanonicalDirectoryRow)
-                ) : (
-                  <Text accessibilityRole="text" style={[s.canonicalDirectoryEmpty, { color: colors.mutedForeground }]}>
-                    {`No More destinations match “${normalizedMoreQuery}”. Try care team, export, privacy, or vet report.`}
+          {moreDirectorySurfaceVisibility.canonicalSearchDirectory ? (
+            <BoardCard enter={0} style={s.canonicalDirectoryCard}>
+              <TextInput
+                value={moreSearchQuery}
+                onChangeText={setMoreSearchQuery}
+                accessibilityLabel="Search More destinations"
+                placeholder="Search More"
+                placeholderTextColor={colors.mutedForeground}
+                style={[
+                  s.canonicalDirectorySearch,
+                  {
+                    color: colors.foreground,
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                  },
+                ]}
+              />
+              {normalizedMoreQuery ? (
+                <View style={s.canonicalDirectoryGroup}>
+                  <Text
+                    accessibilityRole="header"
+                    style={[
+                      s.canonicalDirectoryHeading,
+                      { color: colors.sage },
+                    ]}
+                  >
+                    Search results
                   </Text>
-                )}
-              </View>
-            ) : (
-              MORE_DIRECTORY_GROUPS.map((group) => (
-                <View key={group.id} style={s.canonicalDirectoryGroup}>
-                  <Text accessibilityRole="header" style={[s.canonicalDirectoryHeading, { color: colors.sage }]}>{group.title}</Text>
-                  {group.items.map(renderCanonicalDirectoryRow)}
+                  {moreSearchResults.length ? (
+                    moreSearchResults.map(renderCanonicalDirectoryRow)
+                  ) : (
+                    <Text
+                      accessibilityRole="text"
+                      style={[
+                        s.canonicalDirectoryEmpty,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {`No More destinations match “${normalizedMoreQuery}”. Try care team, export, privacy, or vet report.`}
+                    </Text>
+                  )}
                 </View>
-              ))
-            )}
-          </BoardCard>
+              ) : (
+                MORE_DIRECTORY_GROUPS.map((group) => (
+                  <View key={group.id} style={s.canonicalDirectoryGroup}>
+                    <Text
+                      accessibilityRole="header"
+                      style={[
+                        s.canonicalDirectoryHeading,
+                        { color: colors.sage },
+                      ]}
+                    >
+                      {group.title}
+                    </Text>
+                    {group.items.map(renderCanonicalDirectoryRow)}
+                  </View>
+                ))
+              )}
+            </BoardCard>
+          ) : null}
 
           {ownerOps ? (
-          /* Launch Command Hub: a light parchment console. Same real gates,
+            /* Launch Command Hub: a light parchment console. Same real gates,
              QA counts, sync, and roster stats as light chips; the night-room
              pixel scene lives on as a small rounded living thumbnail. */
-          <BoardCard style={s.moreCommandStageCard}>
-            <View style={s.moreCommandHeadRow}>
-              <ImageBackground
-                source={MORE_COMMAND_STAGE_ROOM}
-                resizeMode="cover"
-                imageStyle={[stageImageFill, s.moreCommandThumbImage, pixelImageStyle]}
-                style={[s.moreCommandThumb, { borderColor: colors.border }]}
-                testID="more-launch-command-pixel-stage"
-              >
-                <SpriteSheetPlayer
-                  asset={MORE_COMMAND_STAGE_SPRITE}
-                  track={MORE_COMMAND_STAGE_TRACK}
-                  width={44}
-                  height={44}
-                  testID="more-launch-command-pixel-sprite"
-                />
-              </ImageBackground>
-              <View style={s.moreCommandHeadCopy}>
-                <Text style={[s.moreCommandKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Launch Command Hub
-                </Text>
-                <Text
-                  numberOfLines={3}
-                  style={[s.moreCommandSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+            <BoardCard style={s.moreCommandStageCard}>
+              <View style={s.moreCommandHeadRow}>
+                <ImageBackground
+                  source={MORE_COMMAND_STAGE_ROOM}
+                  resizeMode="cover"
+                  imageStyle={[
+                    stageImageFill,
+                    s.moreCommandThumbImage,
+                    pixelImageStyle,
+                  ]}
+                  style={[s.moreCommandThumb, { borderColor: colors.border }]}
+                  testID="more-launch-command-pixel-stage"
                 >
-                  {moreCommandSpeech}
-                </Text>
-              </View>
-              <BoardPill
-                label={moreCommandStatusLabel}
-                tone={readinessBadgeTone}
-                style={{ alignSelf: "center" }}
-              />
-            </View>
-
-            <View style={s.moreCommandStats}>
-              {moreCommandHud.map((metric) => (
-                <View
-                  key={metric.label}
-                  style={[s.moreCommandStat, { backgroundColor: colors.background, borderColor: colors.border }]}
-                >
-                  <Text style={[s.moreCommandStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    {metric.label}
+                  <SpriteSheetPlayer
+                    asset={MORE_COMMAND_STAGE_SPRITE}
+                    track={MORE_COMMAND_STAGE_TRACK}
+                    width={44}
+                    height={44}
+                    testID="more-launch-command-pixel-sprite"
+                  />
+                </ImageBackground>
+                <View style={s.moreCommandHeadCopy}>
+                  <Text
+                    style={[
+                      s.moreCommandKicker,
+                      { color: colors.sage, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    Launch Command Hub
                   </Text>
                   <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    style={[s.moreCommandStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                    numberOfLines={3}
+                    style={[
+                      s.moreCommandSpeech,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
                   >
-                    {metric.value}
+                    {moreCommandSpeech}
                   </Text>
                 </View>
-              ))}
-            </View>
+                <BoardPill
+                  label={moreCommandStatusLabel}
+                  tone={readinessBadgeTone}
+                  style={{ alignSelf: "center" }}
+                />
+              </View>
 
-            <View style={[s.moreCommandGates, { backgroundColor: colors.amberSoft }]}>
-              <Ionicons name="flag-outline" size={14} color={colors.amber} />
-              <Text
-                numberOfLines={1}
-                style={[s.moreCommandGatesText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}
+              <View style={s.moreCommandStats}>
+                {moreCommandHud.map((metric) => (
+                  <View
+                    key={metric.label}
+                    style={[
+                      s.moreCommandStat,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.moreCommandStatLabel,
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      {metric.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[
+                        s.moreCommandStatValue,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      {metric.value}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              <View
+                style={[
+                  s.moreCommandGates,
+                  { backgroundColor: colors.amberSoft },
+                ]}
               >
-                Open gates - {moreCommandOpenGates} launch / {moreCommandProviderOpen} provider
-              </Text>
-            </View>
+                <Ionicons name="flag-outline" size={14} color={colors.amber} />
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    s.moreCommandGatesText,
+                    { color: colors.amber, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  Open gates - {moreCommandOpenGates} launch /{" "}
+                  {moreCommandProviderOpen} provider
+                </Text>
+              </View>
 
-            <BoardActionButton
-              label={launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
-              icon={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
-              accessibilityLabel={
-                launchReleasePacket.betaShipStatus === "qa-first"
-                  ? "Open native QA cockpit from launch command hub"
-                  : "Share WoofWatcher beta handoff packet from launch command hub"
-              }
-              onPress={() => {
-                Haptics.selectionAsync();
-                if (launchReleasePacket.betaShipStatus === "qa-first") {
-                  router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
-                  return;
+              <BoardActionButton
+                label={
+                  launchReleasePacket.betaShipStatus === "qa-first"
+                    ? "QA Cockpit"
+                    : "Beta Packet"
                 }
-                shareBetaHandoffPacket();
-              }}
-            />
-          </BoardCard>
+                icon={
+                  launchReleasePacket.betaShipStatus === "qa-first"
+                    ? "camera-outline"
+                    : "share-social-outline"
+                }
+                accessibilityLabel={
+                  launchReleasePacket.betaShipStatus === "qa-first"
+                    ? "Open native QA cockpit from launch command hub"
+                    : "Share WoofWatcher beta handoff packet from launch command hub"
+                }
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  if (launchReleasePacket.betaShipStatus === "qa-first") {
+                    router.push(
+                      buildCareTwinQaFocusRoute(
+                        nativeQaPrimaryMissionTarget,
+                      ) as never,
+                    );
+                    return;
+                  }
+                  shareBetaHandoffPacket();
+                }}
+              />
+            </BoardCard>
           ) : null}
 
           {moreCareFacts.trusted ? (
-          <BoardCard style={s.moreDirectoryCard}>
-            <BoardSectionHeader
-              title="Career & Stats"
-              accessory={
-                <BoardPill
-                  label={`Lv ${moreCareCareer.level} ${moreCareCareer.title}`}
+            <BoardCard style={s.moreDirectoryCard}>
+              <BoardSectionHeader
+                title="Career & Stats"
+                accessory={
+                  <BoardPill
+                    label={`Lv ${moreCareCareer.level} ${moreCareCareer.title}`}
+                    tone={colors.sage}
+                  />
+                }
+              />
+              {/* XP toward the next level: real lifetime-care XP on the shared
+                gentle-spring progress fill. */}
+              <View style={s.careerXpBlock}>
+                <View style={s.careerXpHeader}>
+                  <Text
+                    style={[
+                      s.careerXpLabel,
+                      { color: colors.sage, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    XP toward Lv {moreCareCareer.level + 1}
+                  </Text>
+                  <Text
+                    style={[
+                      s.careerXpValue,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    {moreCareCareer.levelXp.toLocaleString()} /{" "}
+                    {moreCareCareer.levelSpanXp.toLocaleString()}
+                  </Text>
+                </View>
+                <ProgressFill
+                  ratio={Math.max(0.02, moreCareCareer.levelProgress)}
+                  color={colors.forest}
+                  trackColor={colors.muted}
+                  height={9}
+                />
+              </View>
+              <View style={{ gap: 8 }}>
+                <BoardMetricTile
+                  icon="note"
+                  label="Logs this week"
+                  value={String(moreCareerWeek.logsThisWeek)}
+                  detail="Real care logs in the last 7 days"
                   tone={colors.sage}
                 />
-              }
-            />
-            {/* XP toward the next level: real lifetime-care XP on the shared
-                gentle-spring progress fill. */}
-            <View style={s.careerXpBlock}>
-              <View style={s.careerXpHeader}>
-                <Text style={[s.careerXpLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  XP toward Lv {moreCareCareer.level + 1}
-                </Text>
-                <Text style={[s.careerXpValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {moreCareCareer.levelXp.toLocaleString()} / {moreCareCareer.levelSpanXp.toLocaleString()}
-                </Text>
+                <BoardMetricTile
+                  icon="clock"
+                  label="Active days"
+                  value={`${moreCareerWeek.activeDays}/7`}
+                  detail="Days with at least one real care log this week"
+                  tone={colors.blueSignal}
+                />
+                <BoardMetricTile
+                  icon="energy"
+                  label="Care streak"
+                  value={
+                    moreCareStreak > 0
+                      ? `${moreCareStreak} day${moreCareStreak === 1 ? "" : "s"}`
+                      : "Start today"
+                  }
+                  detail="Consecutive days of logged care"
+                  tone={colors.amber}
+                />
               </View>
-              <ProgressFill
-                ratio={Math.max(0.02, moreCareCareer.levelProgress)}
-                color={colors.forest}
-                trackColor={colors.muted}
-                height={9}
-              />
-            </View>
-            <View style={{ gap: 8 }}>
-              <BoardMetricTile
-                icon="note"
-                label="Logs this week"
-                value={String(moreCareerWeek.logsThisWeek)}
-                detail="Real care logs in the last 7 days"
-                tone={colors.sage}
-              />
-              <BoardMetricTile
-                icon="clock"
-                label="Active days"
-                value={`${moreCareerWeek.activeDays}/7`}
-                detail="Days with at least one real care log this week"
-                tone={colors.blueSignal}
-              />
-              <BoardMetricTile
-                icon="energy"
-                label="Care streak"
-                value={
-                  moreCareStreak > 0
-                    ? `${moreCareStreak} day${moreCareStreak === 1 ? "" : "s"}`
-                    : "Start today"
-                }
-                detail="Consecutive days of logged care"
-                tone={colors.amber}
-              />
-            </View>
-          </BoardCard>
+            </BoardCard>
           ) : (
             <BoardCard style={s.moreDirectoryCard}>
               <BoardSectionHeader
                 title="Career & Stats"
-                accessory={<BoardPill label="Unavailable" tone={colors.amber} />}
+                accessory={
+                  <BoardPill label="Unavailable" tone={colors.amber} />
+                }
               />
-              <Text style={[s.intelligenceSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                Log totals, active days, streaks, and care XP are withheld until device storage is trusted.
+              <Text
+                style={[
+                  s.intelligenceSummary,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                Log totals, active days, streaks, and care XP are withheld until
+                device storage is trusted.
               </Text>
             </BoardCard>
           )}
 
-          <BoardCard style={s.moreDirectoryCard}>
-            <BoardSectionHeader
-              title="Command Directory"
-              accessory={<BoardPill label={`${moreDirectoryItems.length} hubs`} tone={colors.sage} />}
-            />
-            <View style={s.moreDirectoryList}>
-              {moreDirectoryItems.map((item, index) => (
-                <Pressable
-                  key={item.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${item.eyebrow}: ${item.label}. ${item.detail}`}
-                  accessibilityState={{ disabled: item.disabled === true }}
-                  disabled={item.disabled}
-                  onPress={item.onPress}
-                  style={({ pressed }) => [
-                    s.moreDirectoryRow,
-                    index < moreDirectoryItems.length - 1 && {
-                      borderBottomWidth: 1,
-                      borderBottomColor: colors.border,
-                    },
-                    {
-                      opacity: item.disabled ? 0.58 : pressed ? 0.72 : 1,
-                    },
-                  ]}
-                >
-                  <View style={[s.moreDirectoryIcon, { backgroundColor: item.tone + "18" }]}>
-                    <Ionicons name={item.iconName} size={19} color={item.tone} />
-                  </View>
-                  <View style={s.moreDirectoryCopy}>
-                    <Text style={[s.moreDirectoryEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      {item.eyebrow}
-                    </Text>
-                    {/* Wraps to a 2nd line rather than clipping mid-word: the
+          {moreDirectorySurfaceVisibility.ownerSupplementalDirectories ? (
+            <BoardCard style={s.moreDirectoryCard}>
+              <BoardSectionHeader
+                title="Command Directory"
+                accessory={
+                  <BoardPill
+                    label={`${moreDirectoryItems.length} hubs`}
+                    tone={colors.sage}
+                  />
+                }
+              />
+              <View style={s.moreDirectoryList}>
+                {moreDirectoryItems.map((item, index) => (
+                  <Pressable
+                    key={item.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item.eyebrow}: ${item.label}. ${item.detail}`}
+                    accessibilityState={{ disabled: item.disabled === true }}
+                    disabled={item.disabled}
+                    onPress={item.onPress}
+                    style={({ pressed }) => [
+                      s.moreDirectoryRow,
+                      index < moreDirectoryItems.length - 1 && {
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border,
+                      },
+                      {
+                        opacity: item.disabled ? 0.58 : pressed ? 0.72 : 1,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        s.moreDirectoryIcon,
+                        { backgroundColor: item.tone + "18" },
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.iconName}
+                        size={19}
+                        color={item.tone}
+                      />
+                    </View>
+                    <View style={s.moreDirectoryCopy}>
+                      <Text
+                        style={[
+                          s.moreDirectoryEyebrow,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        {item.eyebrow}
+                      </Text>
+                      {/* Wraps to a 2nd line rather than clipping mid-word: the
                         action chip squeezes this column, and the longest title
                         ("Owner Preview Core Loop") overran ~7px on one line.
                         Short titles still render on a single line. */}
-                    <Text numberOfLines={2} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {item.label}
-                    </Text>
-                    <Text numberOfLines={2} style={[s.moreDirectoryDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {item.detail}
-                    </Text>
-                  </View>
-                  <View style={[s.moreDirectoryAction, { borderColor: item.tone + "35", backgroundColor: item.tone + "10" }]}>
-                    <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      style={[s.moreDirectoryActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}
+                      <Text
+                        numberOfLines={2}
+                        style={[
+                          s.moreDirectoryTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        style={[
+                          s.moreDirectoryDetail,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {item.detail}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        s.moreDirectoryAction,
+                        {
+                          borderColor: item.tone + "35",
+                          backgroundColor: item.tone + "10",
+                        },
+                      ]}
                     >
-                      {item.actionLabel}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={14} color={item.tone} />
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          </BoardCard>
+                      <Text
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        style={[
+                          s.moreDirectoryActionText,
+                          {
+                            color: item.tone,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {item.actionLabel}
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={14}
+                        color={item.tone}
+                      />
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </BoardCard>
+          ) : null}
 
           {/* Profile header card */}
           {!careStorageUnavailable ? (
-          <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-            <LinearGradient
-              colors={[colors.forest, colors.forestBright]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={s.profileBanner}
-            />
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                openMoreSection("dog-profile");
-              }}
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel="Open dog profile"
-              style={[s.profileEditBtn, { backgroundColor: colors.ivory }]}
+            <View
+              style={[
+                s.profileCard,
+                { backgroundColor: colors.card, shadowColor: colors.primary },
+              ]}
             >
-              <Ionicons name="pencil" size={14} color={colors.forest} />
-            </Pressable>
-            <View style={s.profileAvatarWrap}>
-              <View style={[s.profileAvatar, { backgroundColor: colors.card, borderColor: colors.card }]}>
-                <Image source={getAvatarSource(status.mood)} style={s.profileAvatarImg} resizeMode="cover" />
+              <LinearGradient
+                colors={[colors.forest, colors.forestBright]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={s.profileBanner}
+              />
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  openMoreSection("dog-profile");
+                }}
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel="Open dog profile"
+                style={[s.profileEditBtn, { backgroundColor: colors.ivory }]}
+              >
+                <Ionicons name="pencil" size={14} color={colors.forest} />
+              </Pressable>
+              <View style={s.profileAvatarWrap}>
+                <View
+                  style={[
+                    s.profileAvatar,
+                    { backgroundColor: colors.card, borderColor: colors.card },
+                  ]}
+                >
+                  <Image
+                    source={getAvatarSource(status.mood)}
+                    style={s.profileAvatarImg}
+                    resizeMode="cover"
+                  />
+                </View>
               </View>
-            </View>
-            <View style={s.profileBody}>
-              <Text style={[s.profileName, { color: colors.foreground, fontFamily: DISPLAY }]}>{petName}</Text>
-              <Text style={[s.profileBreed, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{profile.breed}</Text>
-              <View style={[s.avatarIdentityPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                <Ionicons name={hasConfiguredAvatar ? "sparkles" : "color-palette-outline"} size={12} color={colors.primary} />
-                <Text style={[s.avatarIdentityText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {avatarTemplate.label} care twin
+              <View style={s.profileBody}>
+                <Text
+                  style={[
+                    s.profileName,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
+                  {petName}
                 </Text>
-              </View>
-              <View style={[s.profileStats, { borderTopColor: colors.border }]}>
-                <View style={s.profileStat}>
-                  <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {moreCareFacts.trusted && profile.weight.current > 0
-                      ? `${profile.weight.current} ${profile.weight.unit}`
-                      : "—"}
+                <Text
+                  style={[
+                    s.profileBreed,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  {profile.breed}
+                </Text>
+                <View
+                  style={[
+                    s.avatarIdentityPill,
+                    {
+                      backgroundColor: colors.secondary,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      hasConfiguredAvatar ? "sparkles" : "color-palette-outline"
+                    }
+                    size={12}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[
+                      s.avatarIdentityText,
+                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {avatarTemplate.label} care twin
                   </Text>
-                  <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Weight</Text>
                 </View>
-                <View style={[s.profileStatDivider, { backgroundColor: colors.border }]} />
-                <View style={s.profileStat}>
-                  <Text style={[s.profileStatValue, { color: (moreCareFacts.streakDays ?? 0) > 0 ? colors.sage : colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>
-                    {(moreCareFacts.streakDays ?? 0) > 0 ? `${moreCareFacts.streakDays}d` : "—"}
-                  </Text>
-                  <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Streak</Text>
-                </View>
-                <View style={[s.profileStatDivider, { backgroundColor: colors.border }]} />
-                <View style={s.profileStat}>
-                  <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {moreCareFacts.routineCount ?? "—"}
-                  </Text>
-                  <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Routines</Text>
+                <View
+                  style={[s.profileStats, { borderTopColor: colors.border }]}
+                >
+                  <View style={s.profileStat}>
+                    <Text
+                      style={[
+                        s.profileStatValue,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      {moreCareFacts.trusted && profile.weight.current > 0
+                        ? `${profile.weight.current} ${profile.weight.unit}`
+                        : "—"}
+                    </Text>
+                    <Text
+                      style={[
+                        s.profileStatLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      Weight
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      s.profileStatDivider,
+                      { backgroundColor: colors.border },
+                    ]}
+                  />
+                  <View style={s.profileStat}>
+                    <Text
+                      style={[
+                        s.profileStatValue,
+                        {
+                          color:
+                            (moreCareFacts.streakDays ?? 0) > 0
+                              ? colors.sage
+                              : colors.mutedForeground,
+                          fontFamily: DISPLAY_SEMI,
+                        },
+                      ]}
+                    >
+                      {(moreCareFacts.streakDays ?? 0) > 0
+                        ? `${moreCareFacts.streakDays}d`
+                        : "—"}
+                    </Text>
+                    <Text
+                      style={[
+                        s.profileStatLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      Streak
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      s.profileStatDivider,
+                      { backgroundColor: colors.border },
+                    ]}
+                  />
+                  <View style={s.profileStat}>
+                    <Text
+                      style={[
+                        s.profileStatValue,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      {moreCareFacts.routineCount ?? "—"}
+                    </Text>
+                    <Text
+                      style={[
+                        s.profileStatLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      Routines
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
           ) : null}
 
           {/* Today's status strip */}
-          <View style={[s.statusStrip, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
-            <View style={[s.statusCell, { borderRightWidth: 1, borderRightColor: colors.border }]}>
-              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                {moreCareFacts.trusted && status.evidence.mood ? status.meta.label : "No data"}
+          <View
+            style={[
+              s.statusStrip,
+              {
+                backgroundColor: colors.card,
+                shadowColor: colors.primary,
+                marginTop: 12,
+              },
+            ]}
+          >
+            <View
+              style={[
+                s.statusCell,
+                { borderRightWidth: 1, borderRightColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[
+                  s.statusValue,
+                  { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                ]}
+              >
+                {moreCareFacts.trusted && status.evidence.mood
+                  ? status.meta.label
+                  : "No data"}
               </Text>
-              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Mood</Text>
+              <Text
+                style={[
+                  s.statusLabel,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
+                Mood
+              </Text>
             </View>
             <View
               style={s.statusCell}
               accessible
               accessibilityLabel="Energy level"
-              accessibilityValue={
-                { text: energyEvidenceLabel }
-              }
+              accessibilityValue={{ text: energyEvidenceLabel }}
             >
               {energyDots === null ? (
-                <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>No data</Text>
+                <Text
+                  style={[
+                    s.statusValue,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
+                  No data
+                </Text>
               ) : (
                 <View style={s.statusEnergyRow}>
                   {[1, 2, 3, 4, 5].map((dot) => (
@@ -1896,901 +2429,1926 @@ function MoreScreenContent({}: Record<string, never>) {
                       key={dot}
                       style={[
                         s.statusEnergyDot,
-                        { backgroundColor: dot <= energyDots ? colors.primary : colors.border },
+                        {
+                          backgroundColor:
+                            dot <= energyDots ? colors.primary : colors.border,
+                        },
                       ]}
                     />
                   ))}
                 </View>
               )}
-              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Energy level</Text>
+              <Text
+                style={[
+                  s.statusLabel,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
+                Energy level
+              </Text>
             </View>
-            <View style={[s.statusCell, { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
-              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+            <View
+              style={[
+                s.statusCell,
+                { borderLeftWidth: 1, borderLeftColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[
+                  s.statusValue,
+                  { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                ]}
+              >
                 {moreCareFacts.todayLogCount ?? "—"}
               </Text>
-              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Logs today</Text>
+              <Text
+                style={[
+                  s.statusLabel,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
+                Logs today
+              </Text>
             </View>
           </View>
 
-
           {moreCareFacts.careIntelligenceAvailable ? (
-          <BoardCard style={[s.moreBoardCard, { borderColor: intelligenceTone + "44" }]}>
-            <BoardSectionHeader
-              title="Care Intelligence"
-              accessory={
-                <View style={[s.intelligenceBadge, { backgroundColor: intelligenceTone + "18" }]}>
-                  <Text style={[s.intelligenceBadgeText, { color: intelligenceTone, fontFamily: "Inter_700Bold" }]}>
-                    {careIntelligence.score}% IQ
-                  </Text>
-                </View>
-              }
-            />
-            <View style={s.intelligenceTop}>
-              <View style={[s.intelligenceIcon, { backgroundColor: intelligenceTone + "18" }]}>
-                <Ionicons name="analytics-outline" size={20} color={intelligenceTone} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.intelligenceTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {careIntelligence.title}
-                </Text>
-                <Text style={[s.intelligenceSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {careIntelligence.subtitle}
-                </Text>
-              </View>
-            </View>
-            <View style={[s.intelligenceMeter, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View
-                style={[
-                  s.intelligenceMeterFill,
-                  { width: `${careIntelligence.score}%`, backgroundColor: intelligenceTone },
-                ]}
-              />
-            </View>
-            <View style={s.intelligenceGrid}>
-              {careIntelligence.metrics.map((metric) => (
-                <View key={metric.label} style={[s.intelligenceMetric, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[s.intelligenceMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {metric.value}
-                  </Text>
-                  <Text style={[s.intelligenceMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    {metric.label}
-                  </Text>
-                  <Text style={[s.intelligenceMetricDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {metric.detail}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Care Intelligence next action: ${careIntelligence.nextAction.label}`}
-              onPress={openCareIntelligenceNextAction}
-              style={({ pressed }) => [
-                s.intelligenceAction,
-                { backgroundColor: intelligenceTone, opacity: pressed ? 0.82 : 1 },
+            <BoardCard
+              style={[
+                s.moreBoardCard,
+                { borderColor: intelligenceTone + "44" },
               ]}
             >
-              <Text style={[s.intelligenceActionText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-                {careIntelligence.nextAction.label}
-              </Text>
-              <Ionicons name="chevron-forward" size={17} color={colors.primaryForeground} />
-            </Pressable>
-          </BoardCard>
-          ) : (
-            <BoardCard style={[s.moreBoardCard, { borderColor: colors.amber + "44" }]}>
               <BoardSectionHeader
                 title="Care Intelligence"
-                accessory={<BoardPill label="Unavailable" tone={colors.amber} />}
+                accessory={
+                  <View
+                    style={[
+                      s.intelligenceBadge,
+                      { backgroundColor: intelligenceTone + "18" },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.intelligenceBadgeText,
+                        {
+                          color: intelligenceTone,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {careIntelligence.score}% IQ
+                    </Text>
+                  </View>
+                }
               />
-              <Text style={[s.intelligenceSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                Scores, routine status, and care-log recommendations are withheld until device storage is trusted.
+              <View style={s.intelligenceTop}>
+                <View
+                  style={[
+                    s.intelligenceIcon,
+                    { backgroundColor: intelligenceTone + "18" },
+                  ]}
+                >
+                  <Ionicons
+                    name="analytics-outline"
+                    size={20}
+                    color={intelligenceTone}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      s.intelligenceTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    {careIntelligence.title}
+                  </Text>
+                  <Text
+                    style={[
+                      s.intelligenceSummary,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {careIntelligence.subtitle}
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={[
+                  s.intelligenceMeter,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    s.intelligenceMeterFill,
+                    {
+                      width: `${careIntelligence.score}%`,
+                      backgroundColor: intelligenceTone,
+                    },
+                  ]}
+                />
+              </View>
+              <View style={s.intelligenceGrid}>
+                {careIntelligence.metrics.map((metric) => (
+                  <View
+                    key={metric.label}
+                    style={[
+                      s.intelligenceMetric,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.intelligenceMetricValue,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      {metric.value}
+                    </Text>
+                    <Text
+                      style={[
+                        s.intelligenceMetricLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {metric.label}
+                    </Text>
+                    <Text
+                      style={[
+                        s.intelligenceMetricDetail,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      {metric.detail}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Care Intelligence next action: ${careIntelligence.nextAction.label}`}
+                onPress={openCareIntelligenceNextAction}
+                style={({ pressed }) => [
+                  s.intelligenceAction,
+                  {
+                    backgroundColor: intelligenceTone,
+                    opacity: pressed ? 0.82 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.intelligenceActionText,
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
+                >
+                  {careIntelligence.nextAction.label}
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={17}
+                  color={colors.primaryForeground}
+                />
+              </Pressable>
+            </BoardCard>
+          ) : (
+            <BoardCard
+              style={[s.moreBoardCard, { borderColor: colors.amber + "44" }]}
+            >
+              <BoardSectionHeader
+                title="Care Intelligence"
+                accessory={
+                  <BoardPill label="Unavailable" tone={colors.amber} />
+                }
+              />
+              <Text
+                style={[
+                  s.intelligenceSummary,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                Scores, routine status, and care-log recommendations are
+                withheld until device storage is trusted.
               </Text>
             </BoardCard>
           )}
 
           {ownerOps ? (
             <>
-          <BoardCard style={s.moreBoardCard}>
-            <BoardSectionHeader
-              title="Launch Readiness"
-              accessory={
-                <View style={[s.launchBadge, { backgroundColor: readinessBadgeTone + "18" }]}>
-                  <Text style={[s.launchBadgeText, { color: readinessBadgeTone, fontFamily: "Inter_700Bold" }]}>
-                    {launchReadinessPlan.badgeLabel}
-                  </Text>
-                </View>
-              }
-            />
-            <View style={s.launchGrid}>
-              {launchReadiness.map((item) => {
-                const content = (
-                  <>
-                    <View style={[s.launchTileIcon, { backgroundColor: item.tone + "18" }]}>
-                      <Ionicons name={item.iconName} size={18} color={item.tone} />
-                    </View>
-                    <Text style={[s.launchTileLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {item.label}
-                    </Text>
-                    <Text style={[s.launchTileValue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {item.value}
-                    </Text>
-                  </>
-                );
-                if (item.onPress) {
-                  return (
-                    <Pressable
-                      key={item.label}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        item.onPress?.();
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${item.label}. ${item.value}. ${item.detail}`}
-                      style={({ pressed }) => [
-                        s.launchTile,
-                        { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
+              <BoardCard style={s.moreBoardCard}>
+                <BoardSectionHeader
+                  title="Launch Readiness"
+                  accessory={
+                    <View
+                      style={[
+                        s.launchBadge,
+                        { backgroundColor: readinessBadgeTone + "18" },
                       ]}
                     >
-                      {content}
-                    </Pressable>
-                  );
-                }
-                return (
-                  <View key={item.label} style={[s.launchTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    {content}
-                  </View>
-                );
-              })}
-            </View>
-            <View style={[s.launchNotice, { backgroundColor: readinessBadgeTone + "12", borderColor: readinessBadgeTone + "33" }]}>
-              <Ionicons name="lock-closed-outline" size={15} color={readinessBadgeTone} />
-              <Text style={[s.launchNoticeText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                {launchReadinessPlan.summary} {launchReadinessPlan.nextActions[0] ?? "Prepare the final store packet after Apollo approval."}
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Next launch gate: ${launchReadinessPlan.nextGate.label}. ${launchReadinessPlan.nextGate.detail}`}
-              onPress={openLaunchNextGate}
-              style={({ pressed }) => [
-                s.launchNextGate,
-                {
-                  backgroundColor: readinessBadgeTone + "10",
-                  borderColor: readinessBadgeTone + "3D",
-                  opacity: pressed ? 0.78 : 1,
-                },
-              ]}
-            >
-              <View style={[s.launchNextGateIcon, { backgroundColor: readinessBadgeTone + "18" }]}>
-                <Ionicons name={launchNextGateIconName} size={18} color={readinessBadgeTone} />
-              </View>
-              <View style={s.launchNextGateBody}>
-                <Text style={[s.launchNextGateKicker, { color: readinessBadgeTone, fontFamily: "Inter_800ExtraBold" }]}>
-                  Next launch gate
-                </Text>
-                <Text style={[s.launchNextGateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {launchReadinessPlan.nextGate.label}
-                </Text>
-                <Text style={[s.launchNextGateDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {launchReadinessPlan.nextGate.detail}
-                </Text>
-                <View style={s.launchNextGateCta}>
-                  <Text style={[s.launchNextGateCtaText, { color: readinessBadgeTone, fontFamily: "Inter_800ExtraBold" }]}>
-                    {launchReadinessPlan.nextGate.ctaLabel}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={15} color={readinessBadgeTone} />
-                </View>
-              </View>
-            </Pressable>
-            <View style={[s.providerSetupPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View style={s.providerSetupHeader}>
-                <View style={[s.providerSetupScore, { backgroundColor: providerSetupTone + "16" }]}>
-                  <Text style={[s.providerSetupScoreValue, { color: providerSetupTone, fontFamily: DISPLAY_SEMI }]}>
-                    {launchProviderSetupPlan.percent}%
-                  </Text>
-                  <Text style={[s.providerSetupScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    providers
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.providerSetupTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                    Provider Launch Setup
-                  </Text>
-                  <Text style={[s.providerSetupSub, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {launchProviderSetupPlan.headline}. {launchProviderSetupPlan.statusLabel}.
-                  </Text>
-                  <Text style={[s.providerSetupCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {launchProviderSetupPlan.summary}
-                  </Text>
-                </View>
-              </View>
-              {launchProviderSetupPlan.nextGate ? (
-                <View
-                  style={[
-                    s.providerNextGate,
-                    {
-                      backgroundColor: providerSetupTone + "10",
-                      borderColor: providerSetupTone + "30",
-                    },
-                  ]}
-                >
-                  <View style={s.providerNextGateHeader}>
-                    <Ionicons name="flag-outline" size={15} color={providerSetupTone} />
-                    <Text style={[s.providerNextGateKicker, { color: providerSetupTone, fontFamily: "Inter_800ExtraBold" }]}>
-                      Next provider gate
-                    </Text>
-                  </View>
-                  <Text style={[s.providerNextGateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {launchProviderSetupPlan.nextGate.label}
-                  </Text>
-                  <Text style={[s.providerNextGateMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    Owner: {launchProviderSetupPlan.nextGate.owner}
-                  </Text>
-                  <Text style={[s.providerNextGateCopy, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                    {launchProviderSetupPlan.nextGate.nextAction}
-                  </Text>
-                  <Text style={[s.providerNextGateProof, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    Proof: {launchProviderSetupPlan.nextGate.proofRequired}
-                  </Text>
-                  {launchProviderSetupPlan.nextGate.proofChecklist.length ? (
-                    <View style={s.providerSetupProofChecklist}>
-                      {launchProviderSetupPlan.nextGate.proofChecklist.slice(0, 4).map((proofItem) => (
-                        <Text
-                          key={proofItem}
-                          numberOfLines={2}
-                          style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-                        >
-                          - {proofItem}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
-                </View>
-              ) : (
-                <View
-                  style={[
-                    s.providerNextGate,
-                    {
-                      backgroundColor: colors.sage + "12",
-                      borderColor: colors.sage + "35",
-                    },
-                  ]}
-                >
-                  <View style={s.providerNextGateHeader}>
-                    <Ionicons name="checkmark-circle-outline" size={15} color={colors.sage} />
-                    <Text style={[s.providerNextGateKicker, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
-                      Provider gates ready for owner approval
-                    </Text>
-                  </View>
-                  <Text style={[s.providerNextGateCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                    Run native QA, confirm legal/support/store approvals, and keep this as a final review state until Apollo approves submission.
-                  </Text>
-                </View>
-              )}
-              <View style={s.providerSetupRows}>
-                {providerSetupVisibleRows.map((row) => {
-                  const rowTone = row.status === "ready" ? colors.sage : colors.amber;
-                  const rowQaTarget = providerRowQaTarget(row.key);
-                  return (
-                    <View key={row.key} style={[s.providerSetupRow, { borderTopColor: colors.border }]}>
-                      <Ionicons
-                        name={row.status === "ready" ? "checkmark-circle" : "ellipse-outline"}
-                        size={16}
-                        color={rowTone}
-                      />
-                      <View style={{ flex: 1 }}>
-                        <Text style={[s.providerSetupRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                          {row.label}
-                        </Text>
-                        <Text
-                          numberOfLines={2}
-                          style={[s.providerSetupRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                        >
-                          {row.status === "blocked" ? row.nextAction : row.detail}
-                        </Text>
-                        <Text
-                          numberOfLines={2}
-                          style={[s.providerSetupRowProof, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-                        >
-                          Proof needed: {row.proofRequired}
-                        </Text>
-                        {row.proofChecklist.length ? (
-                          <View style={s.providerSetupProofChecklist}>
-                            {row.proofChecklist.slice(0, 3).map((proofItem) => (
-                              <Text
-                                key={proofItem}
-                                numberOfLines={2}
-                                style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-                              >
-                                - {proofItem}
-                              </Text>
-                            ))}
-                            {row.proofChecklist.length > 3 ? (
-                              <Text
-                                numberOfLines={1}
-                                style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
-                              >
-                                More proof steps: {row.proofChecklist.length - 3} in Share Provider Plan
-                              </Text>
-                            ) : null}
-                          </View>
-                        ) : null}
-                        {rowQaTarget ? (
-                          <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={`Open proof mission for ${row.label}: ${rowQaTarget.detail}`}
-                            onPress={() => {
-                              Haptics.selectionAsync();
-                              router.push(buildCareTwinQaFocusRoute({ surfaceId: rowQaTarget.surfaceId }) as never);
-                            }}
-                            style={({ pressed }) => [
-                              s.providerSetupRowAction,
-                              {
-                                backgroundColor: rowTone + "12",
-                                borderColor: rowTone + "45",
-                                opacity: pressed ? 0.74 : 1,
-                              },
-                            ]}
-                          >
-                            <Ionicons name={rowQaTarget.iconName} size={13} color={rowTone} />
-                            <Text style={[s.providerSetupRowActionText, { color: rowTone, fontFamily: "Inter_800ExtraBold" }]}>
-                              Open proof mission
-                            </Text>
-                          </Pressable>
-                        ) : null}
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-              <View style={s.providerSetupActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Edit WoofWatcher provider launch setup"
-                  onPress={openProviderSetup}
-                  style={({ pressed }) => [
-                    s.providerSetupButton,
-                    { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
-                  ]}
-                >
-                  <Ionicons name="construct-outline" size={15} color={colors.primaryForeground} />
-                  <Text style={[s.providerSetupButtonText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Edit Provider Plan</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Share WoofWatcher provider setup plan"
-                  onPress={shareProviderSetupPlan}
-                  style={({ pressed }) => [
-                    s.providerSetupButton,
-                    { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
-                  ]}
-                >
-                  <Ionicons name="share-social-outline" size={15} color={colors.primaryForeground} />
-                  <Text style={[s.providerSetupButtonText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Provider Plan</Text>
-                </Pressable>
-              </View>
-            </View>
-            {nativeQaCapturePlan.nextTargets.length > 0 ? (
-              <View style={[s.nativeQaCapturePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={s.nativeQaCaptureHeader}>
-                  <View style={[s.nativeQaCaptureIcon, { backgroundColor: colors.primary + "14" }]}>
-                    <Ionicons name="camera-outline" size={17} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.nativeQaCaptureTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                      Native QA Next Captures
-                    </Text>
-                    <Text style={[s.nativeQaCaptureSub, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {nativeQaCapturePlan.completeSurfaces}/{nativeQaCapturePlan.totalSurfaces} surfaces complete.
-                      {" "}
-                      {nativeQaCapturePlan.openSurfaces} still open.
-                    </Text>
-                  </View>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open primary Native QA mission: ${nativeQaPrimaryMission.label}. ${nativeQaPrimaryMission.detail}`}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
-                  }}
-                  style={({ pressed }) => [
-                    s.nativeQaOwnerProofRow,
-                    {
-                      borderColor: colors.primary + "66",
-                      backgroundColor: pressed ? colors.primary + "18" : colors.primary + "10",
-                      opacity: pressed ? 0.76 : 1,
-                    },
-                  ]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.primary, fontFamily: "Inter_800ExtraBold" }]}>
-                      Primary mission
-                    </Text>
-                    <Text style={[s.nativeQaOwnerProofTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                      {nativeQaPrimaryMission.label}
-                    </Text>
-                    <Text
-                      numberOfLines={2}
-                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-                    >
-                      {nativeQaPrimaryMission.detail}
-                    </Text>
-                  </View>
-                  <Ionicons name="locate-outline" size={17} color={colors.primary} />
-                </Pressable>
-                {savedQaProofManifest ? (
-                  <Pressable
-                    accessibilityLabel={`Share beta handoff proof manifest ${savedQaProofManifest.proofId}`}
-                    accessibilityRole="button"
-                    onPress={shareBetaHandoffPacket}
-                    style={[
-                      s.nativeQaOwnerProofRow,
-                      {
-                        borderColor: colors.primary + "44",
-                        backgroundColor: colors.primary + "0D",
-                      },
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                        Proof manifest
-                      </Text>
-                      <Text style={[s.nativeQaOwnerProofTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                        {savedQaProofManifest.proofId}
-                      </Text>
                       <Text
-                        numberOfLines={2}
-                        style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-                      >
-                        {savedQaProofManifest.totalEvidenceFiles} files. {savedQaProofManifest.platformEvidenceLabel}. Local metadata only.
-                      </Text>
-                    </View>
-                    <Ionicons name="share-social-outline" size={17} color={colors.primary} />
-                  </Pressable>
-                ) : null}
-                <View
-                  style={[
-                    s.nativeQaOwnerProofRow,
-                    {
-                      borderColor: ownerPreviewProofHasPending ? colors.amber + "66" : colors.border,
-                      backgroundColor: ownerPreviewProofHasPending ? colors.amber + "12" : colors.card,
-                    },
-                  ]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      Owner preview proof
-                    </Text>
-                    <Text
-                      style={[
-                        s.nativeQaOwnerProofTitle,
-                        {
-                          color: ownerPreviewProofHasPending ? colors.amber : colors.foreground,
-                          fontFamily: "Inter_800ExtraBold",
-                        },
-                      ]}
-                    >
-                      {ownerPreviewProofStatus.statusLabel}
-                    </Text>
-                    <Text
-                      numberOfLines={2}
-                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-                    >
-                      {ownerPreviewProofStatus.evidenceAttached} attached. {ownerPreviewProofSummary}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name={ownerPreviewProofHasPending ? "lock-closed-outline" : "shield-checkmark-outline"}
-                    size={17}
-                    color={ownerPreviewProofHasPending ? colors.amber : colors.sage}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open store screenshot QA proof. ${storeScreenshotProofStatus.statusLabel}. ${storeScreenshotProofStatus.nextTarget ? `Next store screenshot: ${storeScreenshotProofStatus.nextTarget.title}. ${storeScreenshotProofSummary}` : storeScreenshotProofSummary}`}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    router.push(buildCareTwinQaFocusRoute(storeScreenshotProofStatus.nextTarget) as never);
-                  }}
-                  style={({ pressed }) => [
-                    s.nativeQaOwnerProofRow,
-                    {
-                      borderColor: storeScreenshotProofHasPending ? colors.copper + "66" : colors.border,
-                      backgroundColor: storeScreenshotProofHasPending ? colors.copper + "12" : colors.card,
-                      opacity: pressed ? 0.76 : 1,
-                    },
-                  ]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      Store screenshot proof
-                    </Text>
-                    <Text
-                      style={[
-                        s.nativeQaOwnerProofTitle,
-                        {
-                          color: storeScreenshotProofHasPending ? colors.copper : colors.foreground,
-                          fontFamily: "Inter_800ExtraBold",
-                        },
-                      ]}
-                    >
-                      {storeScreenshotProofStatus.statusLabel}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-                    >
-                      {storeScreenshotProofStatus.complete}/{storeScreenshotProofStatus.total} complete. {storeScreenshotProofStatus.open} open.
-                    </Text>
-                    {storeScreenshotProofStatus.nextTarget ? (
-                      <Text
-                        numberOfLines={2}
-                        style={[s.nativeQaOwnerProofDetail, { color: colors.copper, fontFamily: "Inter_700Bold" }]}
-                      >
-                        Next store screenshot: {storeScreenshotProofStatus.nextTarget.title} - {storeScreenshotProofSummary}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <Ionicons
-                    name={storeScreenshotProofHasPending ? "storefront-outline" : "shield-checkmark-outline"}
-                    size={17}
-                    color={storeScreenshotProofHasPending ? colors.copper : colors.sage}
-                  />
-                </Pressable>
-                <View style={s.nativeQaCaptureActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Share Native QA capture plan"
-                    onPress={shareNativeQaCapturePlan}
-                    style={({ pressed }) => [
-                      s.nativeQaCaptureShare,
-                      { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
-                    ]}
-                  >
-                    <Ionicons name="share-social-outline" size={15} color={colors.primaryForeground} />
-                    <Text style={[s.nativeQaCaptureShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
-                  </Pressable>
-                  {nativeQaCaptureNeedsTuneTarget ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Open first Native QA Needs tune target: ${nativeQaCaptureNeedsTuneTarget.title}`}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        router.push(buildCareTwinQaFocusRoute(nativeQaCaptureNeedsTuneTarget) as never);
-                      }}
-                      style={({ pressed }) => [
-                        s.nativeQaCaptureNeedsTuneAction,
-                        {
-                          borderColor: colors.rose + "66",
-                          backgroundColor: pressed ? colors.rose + "21" : colors.rose + "14",
-                        },
-                      ]}
-                    >
-                      <Ionicons name="locate-outline" size={15} color={colors.rose} />
-                      <Text style={[s.nativeQaCaptureCockpitActionText, { color: colors.rose, fontFamily: "Inter_800ExtraBold" }]}>
-                        Open Needs Tune
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                  {nativeQaCaptureNeedsTuneTarget ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Share first Native QA Needs tune fix brief"
-                      onPress={shareNativeQaFixBrief}
-                      style={({ pressed }) => [
-                        s.nativeQaCaptureFixBrief,
-                        {
-                          borderColor: colors.amber + "66",
-                          backgroundColor: pressed ? colors.amber + "21" : colors.amber + "14",
-                        },
-                      ]}
-                    >
-                      <Ionicons name="construct-outline" size={15} color={colors.amber} />
-                      <Text style={[s.nativeQaCaptureCockpitActionText, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
-                        Share Fix Brief
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      nativeQaCaptureHasProofPending
-                        ? "Open QA Cockpit to finish pending Native QA proof"
-                        : "Open QA Cockpit for Native QA capture"
-                    }
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
-                    }}
-                    style={({ pressed }) => [
-                      s.nativeQaCaptureCockpitAction,
-                      {
-                        borderColor: nativeQaCaptureHasProofPending ? colors.amber + "66" : colors.border,
-                        backgroundColor: nativeQaCaptureHasProofPending ? colors.amber + "14" : colors.card,
-                        opacity: pressed ? 0.78 : 1,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={nativeQaCaptureHasProofPending ? "shield-checkmark-outline" : "clipboard-outline"}
-                      size={15}
-                      color={nativeQaCaptureHasProofPending ? colors.amber : colors.foreground}
-                    />
-                    <Text
-                      style={[
-                        s.nativeQaCaptureCockpitActionText,
-                        {
-                          color: nativeQaCaptureHasProofPending ? colors.amber : colors.foreground,
-                          fontFamily: "Inter_800ExtraBold",
-                        },
-                      ]}
-                    >
-                      {nativeQaCaptureCockpitActionLabel}
-                    </Text>
-                  </Pressable>
-                </View>
-                {nativeQaCapturePlan.nextTargets.map((target) => {
-                  const targetStatusLabel = mobileLaunchQaCaptureTargetStatusLabel(target);
-                  const targetStatusTone =
-                    targetStatusLabel === "Pass pending proof"
-                      ? colors.amber
-                      : target.status === "needs-review"
-                        ? colors.amber
-                        : target.status === "pass"
-                          ? colors.sage
-                          : colors.mutedForeground;
-
-                  return (
-                    <Pressable
-                      key={target.surfaceId}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Open ${target.title} QA capture. Status: ${targetStatusLabel}. ${target.missingEvidence.join(" ")} ${target.setupSteps[0] ?? ""} ${target.verificationSteps[0] ?? ""} ${target.acceptanceCriteria[0] ?? ""} ${target.failureEscalation}`}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        router.push(buildCareTwinQaFocusRoute(target) as never);
-                      }}
-                      style={({ pressed }) => [
-                        s.nativeQaCaptureRow,
-                        { borderTopColor: colors.border, opacity: pressed ? 0.72 : 1 },
-                      ]}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[s.nativeQaCaptureRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                          {target.title}
-                        </Text>
-                        <View style={s.nativeQaCaptureStatusLine}>
-                          <Text style={[s.nativeQaCaptureStatusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                            Proof status
-                          </Text>
-                          <Text style={[s.nativeQaCaptureStatusValue, { color: targetStatusTone, fontFamily: "Inter_800ExtraBold" }]}>
-                            {targetStatusLabel}
-                          </Text>
-                        </View>
-                        <Text
-                          numberOfLines={2}
-                          style={[s.nativeQaCaptureRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                        >
-                          {target.missingEvidence.join(" ")}
-                        </Text>
-                        {target.setupSteps[0] ? (
-                          <Text
-                            numberOfLines={2}
-                            style={[s.nativeQaCaptureRowPrep, { color: colors.copper, fontFamily: "Inter_700Bold" }]}
-                          >
-                            Prep: {target.setupSteps[0]}
-                          </Text>
-                        ) : null}
-                        {target.verificationSteps[0] ? (
-                          <Text
-                            numberOfLines={2}
-                            style={[s.nativeQaCaptureRowStep, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
-                          >
-                            Step: {target.verificationSteps[0]}
-                          </Text>
-                        ) : null}
-                        {target.acceptanceCriteria[0] ? (
-                          <Text
-                            numberOfLines={2}
-                            style={[s.nativeQaCaptureRowCriteria, { color: colors.sage, fontFamily: "Inter_700Bold" }]}
-                          >
-                            Pass: {target.acceptanceCriteria[0]}
-                          </Text>
-                        ) : null}
-                      </View>
-                      <View
                         style={[
-                          s.nativeQaCapturePill,
+                          s.launchBadgeText,
                           {
-                            backgroundColor: (target.priority === "launch-critical" ? colors.rose : colors.copper) + "14",
+                            color: readinessBadgeTone,
+                            fontFamily: "Inter_700Bold",
                           },
                         ]}
                       >
+                        {launchReadinessPlan.badgeLabel}
+                      </Text>
+                    </View>
+                  }
+                />
+                <View style={s.launchGrid}>
+                  {launchReadiness.map((item) => {
+                    const content = (
+                      <>
+                        <View
+                          style={[
+                            s.launchTileIcon,
+                            { backgroundColor: item.tone + "18" },
+                          ]}
+                        >
+                          <Ionicons
+                            name={item.iconName}
+                            size={18}
+                            color={item.tone}
+                          />
+                        </View>
                         <Text
                           style={[
-                            s.nativeQaCapturePillText,
+                            s.launchTileLabel,
                             {
-                              color: target.priority === "launch-critical" ? colors.rose : colors.copper,
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                        <Text
+                          style={[
+                            s.launchTileValue,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          {item.value}
+                        </Text>
+                      </>
+                    );
+                    if (item.onPress) {
+                      return (
+                        <Pressable
+                          key={item.label}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            item.onPress?.();
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${item.label}. ${item.value}. ${item.detail}`}
+                          style={({ pressed }) => [
+                            s.launchTile,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: colors.border,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}
+                        >
+                          {content}
+                        </Pressable>
+                      );
+                    }
+                    return (
+                      <View
+                        key={item.label}
+                        style={[
+                          s.launchTile,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        {content}
+                      </View>
+                    );
+                  })}
+                </View>
+                <View
+                  style={[
+                    s.launchNotice,
+                    {
+                      backgroundColor: readinessBadgeTone + "12",
+                      borderColor: readinessBadgeTone + "33",
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={15}
+                    color={readinessBadgeTone}
+                  />
+                  <Text
+                    style={[
+                      s.launchNoticeText,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {launchReadinessPlan.summary}{" "}
+                    {launchReadinessPlan.nextActions[0] ??
+                      "Prepare the final store packet after Apollo approval."}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Next launch gate: ${launchReadinessPlan.nextGate.label}. ${launchReadinessPlan.nextGate.detail}`}
+                  onPress={openLaunchNextGate}
+                  style={({ pressed }) => [
+                    s.launchNextGate,
+                    {
+                      backgroundColor: readinessBadgeTone + "10",
+                      borderColor: readinessBadgeTone + "3D",
+                      opacity: pressed ? 0.78 : 1,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.launchNextGateIcon,
+                      { backgroundColor: readinessBadgeTone + "18" },
+                    ]}
+                  >
+                    <Ionicons
+                      name={launchNextGateIconName}
+                      size={18}
+                      color={readinessBadgeTone}
+                    />
+                  </View>
+                  <View style={s.launchNextGateBody}>
+                    <Text
+                      style={[
+                        s.launchNextGateKicker,
+                        {
+                          color: readinessBadgeTone,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      Next launch gate
+                    </Text>
+                    <Text
+                      style={[
+                        s.launchNextGateTitle,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      {launchReadinessPlan.nextGate.label}
+                    </Text>
+                    <Text
+                      style={[
+                        s.launchNextGateDetail,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {launchReadinessPlan.nextGate.detail}
+                    </Text>
+                    <View style={s.launchNextGateCta}>
+                      <Text
+                        style={[
+                          s.launchNextGateCtaText,
+                          {
+                            color: readinessBadgeTone,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {launchReadinessPlan.nextGate.ctaLabel}
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={15}
+                        color={readinessBadgeTone}
+                      />
+                    </View>
+                  </View>
+                </Pressable>
+                <View
+                  style={[
+                    s.providerSetupPanel,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={s.providerSetupHeader}>
+                    <View
+                      style={[
+                        s.providerSetupScore,
+                        { backgroundColor: providerSetupTone + "16" },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.providerSetupScoreValue,
+                          {
+                            color: providerSetupTone,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
+                        {launchProviderSetupPlan.percent}%
+                      </Text>
+                      <Text
+                        style={[
+                          s.providerSetupScoreLabel,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        providers
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          s.providerSetupTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        Provider Launch Setup
+                      </Text>
+                      <Text
+                        style={[
+                          s.providerSetupSub,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {launchProviderSetupPlan.headline}.{" "}
+                        {launchProviderSetupPlan.statusLabel}.
+                      </Text>
+                      <Text
+                        style={[
+                          s.providerSetupCopy,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {launchProviderSetupPlan.summary}
+                      </Text>
+                    </View>
+                  </View>
+                  {launchProviderSetupPlan.nextGate ? (
+                    <View
+                      style={[
+                        s.providerNextGate,
+                        {
+                          backgroundColor: providerSetupTone + "10",
+                          borderColor: providerSetupTone + "30",
+                        },
+                      ]}
+                    >
+                      <View style={s.providerNextGateHeader}>
+                        <Ionicons
+                          name="flag-outline"
+                          size={15}
+                          color={providerSetupTone}
+                        />
+                        <Text
+                          style={[
+                            s.providerNextGateKicker,
+                            {
+                              color: providerSetupTone,
                               fontFamily: "Inter_800ExtraBold",
                             },
                           ]}
                         >
-                          {target.priority === "launch-critical" ? "Critical" : "Polish"}
+                          Next provider gate
                         </Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
-            <View style={[s.launchPacket, { backgroundColor: betaShipTone + "10", borderColor: betaShipTone + "33" }]}>
-              <View style={[s.launchScore, { backgroundColor: betaShipTone + "18" }]}>
-                <Text style={[s.launchScoreValue, { color: betaShipTone, fontFamily: DISPLAY_SEMI }]}>48h</Text>
-                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                  beta
-                </Text>
-              </View>
-              <View style={s.launchPacketBody}>
-                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                  {launchReleasePacket.betaVerdictLabel}
-                </Text>
-                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {launchReleasePacket.betaSummary}
-                </Text>
-                <View style={s.betaNextActions}>
-                  {launchReleasePacket.betaNextActions.slice(0, 3).map((action, index) => (
-                    <View key={`${index}-${action}`} style={s.betaNextActionRow}>
-                      <View style={[s.betaNextActionDot, { backgroundColor: betaShipTone }]} />
-                      <Text style={[s.betaNextActionText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                        {action}
+                      <Text
+                        style={[
+                          s.providerNextGateTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
+                        {launchProviderSetupPlan.nextGate.label}
+                      </Text>
+                      <Text
+                        style={[
+                          s.providerNextGateMeta,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Owner: {launchProviderSetupPlan.nextGate.owner}
+                      </Text>
+                      <Text
+                        style={[
+                          s.providerNextGateCopy,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {launchProviderSetupPlan.nextGate.nextAction}
+                      </Text>
+                      <Text
+                        style={[
+                          s.providerNextGateProof,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Proof: {launchProviderSetupPlan.nextGate.proofRequired}
+                      </Text>
+                      {launchProviderSetupPlan.nextGate.proofChecklist
+                        .length ? (
+                        <View style={s.providerSetupProofChecklist}>
+                          {launchProviderSetupPlan.nextGate.proofChecklist
+                            .slice(0, 4)
+                            .map((proofItem) => (
+                              <Text
+                                key={proofItem}
+                                numberOfLines={2}
+                                style={[
+                                  s.providerSetupProofItem,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                - {proofItem}
+                              </Text>
+                            ))}
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : (
+                    <View
+                      style={[
+                        s.providerNextGate,
+                        {
+                          backgroundColor: colors.sage + "12",
+                          borderColor: colors.sage + "35",
+                        },
+                      ]}
+                    >
+                      <View style={s.providerNextGateHeader}>
+                        <Ionicons
+                          name="checkmark-circle-outline"
+                          size={15}
+                          color={colors.sage}
+                        />
+                        <Text
+                          style={[
+                            s.providerNextGateKicker,
+                            {
+                              color: colors.sage,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          Provider gates ready for owner approval
+                        </Text>
+                      </View>
+                      <Text
+                        style={[
+                          s.providerNextGateCopy,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        Run native QA, confirm legal/support/store approvals,
+                        and keep this as a final review state until Apollo
+                        approves submission.
                       </Text>
                     </View>
-                  ))}
+                  )}
+                  <View style={s.providerSetupRows}>
+                    {providerSetupVisibleRows.map((row) => {
+                      const rowTone =
+                        row.status === "ready" ? colors.sage : colors.amber;
+                      const rowQaTarget = providerRowQaTarget(row.key);
+                      return (
+                        <View
+                          key={row.key}
+                          style={[
+                            s.providerSetupRow,
+                            { borderTopColor: colors.border },
+                          ]}
+                        >
+                          <Ionicons
+                            name={
+                              row.status === "ready"
+                                ? "checkmark-circle"
+                                : "ellipse-outline"
+                            }
+                            size={16}
+                            color={rowTone}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[
+                                s.providerSetupRowTitle,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
+                              {row.label}
+                            </Text>
+                            <Text
+                              numberOfLines={2}
+                              style={[
+                                s.providerSetupRowSub,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_500Medium",
+                                },
+                              ]}
+                            >
+                              {row.status === "blocked"
+                                ? row.nextAction
+                                : row.detail}
+                            </Text>
+                            <Text
+                              numberOfLines={2}
+                              style={[
+                                s.providerSetupRowProof,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              Proof needed: {row.proofRequired}
+                            </Text>
+                            {row.proofChecklist.length ? (
+                              <View style={s.providerSetupProofChecklist}>
+                                {row.proofChecklist
+                                  .slice(0, 3)
+                                  .map((proofItem) => (
+                                    <Text
+                                      key={proofItem}
+                                      numberOfLines={2}
+                                      style={[
+                                        s.providerSetupProofItem,
+                                        {
+                                          color: colors.mutedForeground,
+                                          fontFamily: "Inter_600SemiBold",
+                                        },
+                                      ]}
+                                    >
+                                      - {proofItem}
+                                    </Text>
+                                  ))}
+                                {row.proofChecklist.length > 3 ? (
+                                  <Text
+                                    numberOfLines={1}
+                                    style={[
+                                      s.providerSetupProofItem,
+                                      {
+                                        color: colors.mutedForeground,
+                                        fontFamily: "Inter_700Bold",
+                                      },
+                                    ]}
+                                  >
+                                    More proof steps:{" "}
+                                    {row.proofChecklist.length - 3} in Share
+                                    Provider Plan
+                                  </Text>
+                                ) : null}
+                              </View>
+                            ) : null}
+                            {rowQaTarget ? (
+                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={`Open proof mission for ${row.label}: ${rowQaTarget.detail}`}
+                                onPress={() => {
+                                  Haptics.selectionAsync();
+                                  router.push(
+                                    buildCareTwinQaFocusRoute({
+                                      surfaceId: rowQaTarget.surfaceId,
+                                    }) as never,
+                                  );
+                                }}
+                                style={({ pressed }) => [
+                                  s.providerSetupRowAction,
+                                  {
+                                    backgroundColor: rowTone + "12",
+                                    borderColor: rowTone + "45",
+                                    opacity: pressed ? 0.74 : 1,
+                                  },
+                                ]}
+                              >
+                                <Ionicons
+                                  name={rowQaTarget.iconName}
+                                  size={13}
+                                  color={rowTone}
+                                />
+                                <Text
+                                  style={[
+                                    s.providerSetupRowActionText,
+                                    {
+                                      color: rowTone,
+                                      fontFamily: "Inter_800ExtraBold",
+                                    },
+                                  ]}
+                                >
+                                  Open proof mission
+                                </Text>
+                              </Pressable>
+                            ) : null}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <View style={s.providerSetupActions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit WoofWatcher provider launch setup"
+                      onPress={openProviderSetup}
+                      style={({ pressed }) => [
+                        s.providerSetupButton,
+                        {
+                          backgroundColor: colors.primary,
+                          opacity: pressed ? 0.84 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="construct-outline"
+                        size={15}
+                        color={colors.primaryForeground}
+                      />
+                      <Text
+                        style={[
+                          s.providerSetupButtonText,
+                          {
+                            color: colors.primaryForeground,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        Edit Provider Plan
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Share WoofWatcher provider setup plan"
+                      onPress={shareProviderSetupPlan}
+                      style={({ pressed }) => [
+                        s.providerSetupButton,
+                        {
+                          backgroundColor: colors.forest,
+                          opacity: pressed ? 0.84 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="share-social-outline"
+                        size={15}
+                        color={colors.primaryForeground}
+                      />
+                      <Text
+                        style={[
+                          s.providerSetupButtonText,
+                          {
+                            color: colors.primaryForeground,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        Share Provider Plan
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
-                <View style={s.betaNextActionRail}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      launchReleasePacket.betaShipStatus === "qa-first"
-                        ? "Open beta device QA cockpit"
-                        : "Share WoofWatcher beta release packet"
-                    }
-                    onPress={
-                      launchReleasePacket.betaShipStatus === "qa-first"
-                        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never)
-                        : shareBetaHandoffPacket
-                    }
-                    style={({ pressed }) => [
-                      s.betaNextActionButton,
-                      { backgroundColor: betaShipTone, opacity: pressed ? 0.86 : 1 },
-                    ]}
-                  >
-                    <Ionicons
-                      name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
-                      size={15}
-                      color="#FFFFFF"
-                    />
-                    <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
-                      {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Share Beta Packet"}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Share WoofWatcher 48-hour beta handoff"
-                    onPress={shareBetaHandoffPacket}
-                    style={({ pressed }) => [
-                      s.betaHandoffShareButton,
+                {nativeQaCapturePlan.nextTargets.length > 0 ? (
+                  <View
+                    style={[
+                      s.nativeQaCapturePanel,
                       {
-                        borderColor: betaShipTone + "66",
-                        backgroundColor: colors.card,
-                        opacity: pressed ? 0.78 : 1,
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
-                    <Ionicons name="document-text-outline" size={15} color={betaShipTone} />
-                    <Text style={[s.betaHandoffShareText, { color: betaShipTone, fontFamily: "Inter_800ExtraBold" }]}>
-                      Share Beta Handoff
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-            <View style={[s.launchPacket, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View style={[s.launchScore, { backgroundColor: readinessBadgeTone + "16" }]}>
-                <Text style={[s.launchScoreValue, { color: readinessBadgeTone, fontFamily: DISPLAY_SEMI }]}>
-                  {launchReleasePacket.readinessScore}%
-                </Text>
-                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                  release score
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                  {launchReleasePacket.verdictLabel}
-                </Text>
-                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {launchReleasePacket.ownerSummary}
-                </Text>
-              </View>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Share WoofWatcher release packet"
-              onPress={shareLaunchPacket}
-              style={({ pressed }) => [
-                s.launchShare,
-                { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
-              ]}
-            >
-              <Ionicons name="share-social-outline" size={16} color={colors.primaryForeground} />
-              <Text style={[s.launchShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Launch Packet</Text>
-            </Pressable>
-            <View style={[s.launchPacket, { backgroundColor: storeSubmissionTone + "10", borderColor: storeSubmissionTone + "33" }]}>
-              <View style={[s.launchScore, { backgroundColor: storeSubmissionTone + "18" }]}>
-                <Text style={[s.launchScoreValue, { color: storeSubmissionTone, fontFamily: DISPLAY_SEMI }]}>
-                  {launchStoreSubmissionPacket.screenshotChecklist.length}
-                </Text>
-                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                  screens
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                  Store Submission - {launchStoreSubmissionPacket.verdictLabel}
-                </Text>
-                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {launchStoreSubmissionPacket.metadata.shortDescription} {launchStoreSubmissionPacket.reviewNotes[0]}
-                </Text>
-              </View>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Share WoofWatcher store submission packet"
-              onPress={shareStoreSubmissionPacket}
-              style={({ pressed }) => [
-                s.launchShare,
-                { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
-              ]}
-            >
-              <Ionicons name="storefront-outline" size={16} color={colors.primaryForeground} />
-              <Text style={[s.launchShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Store Packet</Text>
-            </Pressable>
-          </BoardCard>
+                    <View style={s.nativeQaCaptureHeader}>
+                      <View
+                        style={[
+                          s.nativeQaCaptureIcon,
+                          { backgroundColor: colors.primary + "14" },
+                        ]}
+                      >
+                        <Ionicons
+                          name="camera-outline"
+                          size={17}
+                          color={colors.primary}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.nativeQaCaptureTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          Native QA Next Captures
+                        </Text>
+                        <Text
+                          style={[
+                            s.nativeQaCaptureSub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          {nativeQaCapturePlan.completeSurfaces}/
+                          {nativeQaCapturePlan.totalSurfaces} surfaces complete.{" "}
+                          {nativeQaCapturePlan.openSurfaces} still open.
+                        </Text>
+                      </View>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open primary Native QA mission: ${nativeQaPrimaryMission.label}. ${nativeQaPrimaryMission.detail}`}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        router.push(
+                          buildCareTwinQaFocusRoute(
+                            nativeQaPrimaryMissionTarget,
+                          ) as never,
+                        );
+                      }}
+                      style={({ pressed }) => [
+                        s.nativeQaOwnerProofRow,
+                        {
+                          borderColor: colors.primary + "66",
+                          backgroundColor: pressed
+                            ? colors.primary + "18"
+                            : colors.primary + "10",
+                          opacity: pressed ? 0.76 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.nativeQaOwnerProofLabel,
+                            {
+                              color: colors.primary,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          Primary mission
+                        </Text>
+                        <Text
+                          style={[
+                            s.nativeQaOwnerProofTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          {nativeQaPrimaryMission.label}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[
+                            s.nativeQaOwnerProofDetail,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          {nativeQaPrimaryMission.detail}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name="locate-outline"
+                        size={17}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                    {savedQaProofManifest ? (
+                      <Pressable
+                        accessibilityLabel={`Share beta handoff proof manifest ${savedQaProofManifest.proofId}`}
+                        accessibilityRole="button"
+                        onPress={shareBetaHandoffPacket}
+                        style={[
+                          s.nativeQaOwnerProofRow,
+                          {
+                            borderColor: colors.primary + "44",
+                            backgroundColor: colors.primary + "0D",
+                          },
+                        ]}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[
+                              s.nativeQaOwnerProofLabel,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            Proof manifest
+                          </Text>
+                          <Text
+                            style={[
+                              s.nativeQaOwnerProofTitle,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
+                          >
+                            {savedQaProofManifest.proofId}
+                          </Text>
+                          <Text
+                            numberOfLines={2}
+                            style={[
+                              s.nativeQaOwnerProofDetail,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {savedQaProofManifest.totalEvidenceFiles} files.{" "}
+                            {savedQaProofManifest.platformEvidenceLabel}. Local
+                            metadata only.
+                          </Text>
+                        </View>
+                        <Ionicons
+                          name="share-social-outline"
+                          size={17}
+                          color={colors.primary}
+                        />
+                      </Pressable>
+                    ) : null}
+                    <View
+                      style={[
+                        s.nativeQaOwnerProofRow,
+                        {
+                          borderColor: ownerPreviewProofHasPending
+                            ? colors.amber + "66"
+                            : colors.border,
+                          backgroundColor: ownerPreviewProofHasPending
+                            ? colors.amber + "12"
+                            : colors.card,
+                        },
+                      ]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.nativeQaOwnerProofLabel,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Owner preview proof
+                        </Text>
+                        <Text
+                          style={[
+                            s.nativeQaOwnerProofTitle,
+                            {
+                              color: ownerPreviewProofHasPending
+                                ? colors.amber
+                                : colors.foreground,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          {ownerPreviewProofStatus.statusLabel}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[
+                            s.nativeQaOwnerProofDetail,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          {ownerPreviewProofStatus.evidenceAttached} attached.{" "}
+                          {ownerPreviewProofSummary}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={
+                          ownerPreviewProofHasPending
+                            ? "lock-closed-outline"
+                            : "shield-checkmark-outline"
+                        }
+                        size={17}
+                        color={
+                          ownerPreviewProofHasPending
+                            ? colors.amber
+                            : colors.sage
+                        }
+                      />
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open store screenshot QA proof. ${storeScreenshotProofStatus.statusLabel}. ${storeScreenshotProofStatus.nextTarget ? `Next store screenshot: ${storeScreenshotProofStatus.nextTarget.title}. ${storeScreenshotProofSummary}` : storeScreenshotProofSummary}`}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        router.push(
+                          buildCareTwinQaFocusRoute(
+                            storeScreenshotProofStatus.nextTarget,
+                          ) as never,
+                        );
+                      }}
+                      style={({ pressed }) => [
+                        s.nativeQaOwnerProofRow,
+                        {
+                          borderColor: storeScreenshotProofHasPending
+                            ? colors.copper + "66"
+                            : colors.border,
+                          backgroundColor: storeScreenshotProofHasPending
+                            ? colors.copper + "12"
+                            : colors.card,
+                          opacity: pressed ? 0.76 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.nativeQaOwnerProofLabel,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Store screenshot proof
+                        </Text>
+                        <Text
+                          style={[
+                            s.nativeQaOwnerProofTitle,
+                            {
+                              color: storeScreenshotProofHasPending
+                                ? colors.copper
+                                : colors.foreground,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          {storeScreenshotProofStatus.statusLabel}
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            s.nativeQaOwnerProofDetail,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          {storeScreenshotProofStatus.complete}/
+                          {storeScreenshotProofStatus.total} complete.{" "}
+                          {storeScreenshotProofStatus.open} open.
+                        </Text>
+                        {storeScreenshotProofStatus.nextTarget ? (
+                          <Text
+                            numberOfLines={2}
+                            style={[
+                              s.nativeQaOwnerProofDetail,
+                              {
+                                color: colors.copper,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            Next store screenshot:{" "}
+                            {storeScreenshotProofStatus.nextTarget.title} -{" "}
+                            {storeScreenshotProofSummary}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Ionicons
+                        name={
+                          storeScreenshotProofHasPending
+                            ? "storefront-outline"
+                            : "shield-checkmark-outline"
+                        }
+                        size={17}
+                        color={
+                          storeScreenshotProofHasPending
+                            ? colors.copper
+                            : colors.sage
+                        }
+                      />
+                    </Pressable>
+                    <View style={s.nativeQaCaptureActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Share Native QA capture plan"
+                        onPress={shareNativeQaCapturePlan}
+                        style={({ pressed }) => [
+                          s.nativeQaCaptureShare,
+                          {
+                            backgroundColor: colors.forest,
+                            opacity: pressed ? 0.84 : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="share-social-outline"
+                          size={15}
+                          color={colors.primaryForeground}
+                        />
+                        <Text
+                          style={[
+                            s.nativeQaCaptureShareText,
+                            {
+                              color: colors.primaryForeground,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          Share QA Plan
+                        </Text>
+                      </Pressable>
+                      {nativeQaCaptureNeedsTuneTarget ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open first Native QA Needs tune target: ${nativeQaCaptureNeedsTuneTarget.title}`}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            router.push(
+                              buildCareTwinQaFocusRoute(
+                                nativeQaCaptureNeedsTuneTarget,
+                              ) as never,
+                            );
+                          }}
+                          style={({ pressed }) => [
+                            s.nativeQaCaptureNeedsTuneAction,
+                            {
+                              borderColor: colors.rose + "66",
+                              backgroundColor: pressed
+                                ? colors.rose + "21"
+                                : colors.rose + "14",
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="locate-outline"
+                            size={15}
+                            color={colors.rose}
+                          />
+                          <Text
+                            style={[
+                              s.nativeQaCaptureCockpitActionText,
+                              {
+                                color: colors.rose,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
+                          >
+                            Open Needs Tune
+                          </Text>
+                        </Pressable>
+                      ) : null}
+                      {nativeQaCaptureNeedsTuneTarget ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Share first Native QA Needs tune fix brief"
+                          onPress={shareNativeQaFixBrief}
+                          style={({ pressed }) => [
+                            s.nativeQaCaptureFixBrief,
+                            {
+                              borderColor: colors.amber + "66",
+                              backgroundColor: pressed
+                                ? colors.amber + "21"
+                                : colors.amber + "14",
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="construct-outline"
+                            size={15}
+                            color={colors.amber}
+                          />
+                          <Text
+                            style={[
+                              s.nativeQaCaptureCockpitActionText,
+                              {
+                                color: colors.amber,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
+                          >
+                            Share Fix Brief
+                          </Text>
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          nativeQaCaptureHasProofPending
+                            ? "Open QA Cockpit to finish pending Native QA proof"
+                            : "Open QA Cockpit for Native QA capture"
+                        }
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          router.push(
+                            buildCareTwinQaFocusRoute(
+                              nativeQaPrimaryMissionTarget,
+                            ) as never,
+                          );
+                        }}
+                        style={({ pressed }) => [
+                          s.nativeQaCaptureCockpitAction,
+                          {
+                            borderColor: nativeQaCaptureHasProofPending
+                              ? colors.amber + "66"
+                              : colors.border,
+                            backgroundColor: nativeQaCaptureHasProofPending
+                              ? colors.amber + "14"
+                              : colors.card,
+                            opacity: pressed ? 0.78 : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={
+                            nativeQaCaptureHasProofPending
+                              ? "shield-checkmark-outline"
+                              : "clipboard-outline"
+                          }
+                          size={15}
+                          color={
+                            nativeQaCaptureHasProofPending
+                              ? colors.amber
+                              : colors.foreground
+                          }
+                        />
+                        <Text
+                          style={[
+                            s.nativeQaCaptureCockpitActionText,
+                            {
+                              color: nativeQaCaptureHasProofPending
+                                ? colors.amber
+                                : colors.foreground,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          {nativeQaCaptureCockpitActionLabel}
+                        </Text>
+                      </Pressable>
+                    </View>
+                    {nativeQaCapturePlan.nextTargets.map((target) => {
+                      const targetStatusLabel =
+                        mobileLaunchQaCaptureTargetStatusLabel(target);
+                      const targetStatusTone =
+                        targetStatusLabel === "Pass pending proof"
+                          ? colors.amber
+                          : target.status === "needs-review"
+                            ? colors.amber
+                            : target.status === "pass"
+                              ? colors.sage
+                              : colors.mutedForeground;
 
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/premium");
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Open WoofWatcher Plus"
-            style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
-          >
-            <LinearGradient
-              colors={[colors.forest, colors.forestBright]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={s.premiumCard}
-            >
-              <View style={s.premiumIcon}>
-                <Ionicons name="diamond-outline" size={19} color={colors.primaryForeground} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.premiumTitle, { color: colors.primaryForeground, fontFamily: DISPLAY_SEMI }]}>WoofWatcher Plus</Text>
-                <Text style={[s.premiumSub, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
-                  Advanced meals, Health Watch, reports, records, and household care sync.
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.primaryForeground} />
-            </LinearGradient>
-          </Pressable>
+                      return (
+                        <Pressable
+                          key={target.surfaceId}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open ${target.title} QA capture. Status: ${targetStatusLabel}. ${target.missingEvidence.join(" ")} ${target.setupSteps[0] ?? ""} ${target.verificationSteps[0] ?? ""} ${target.acceptanceCriteria[0] ?? ""} ${target.failureEscalation}`}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            router.push(
+                              buildCareTwinQaFocusRoute(target) as never,
+                            );
+                          }}
+                          style={({ pressed }) => [
+                            s.nativeQaCaptureRow,
+                            {
+                              borderTopColor: colors.border,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[
+                                s.nativeQaCaptureRowTitle,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
+                              {target.title}
+                            </Text>
+                            <View style={s.nativeQaCaptureStatusLine}>
+                              <Text
+                                style={[
+                                  s.nativeQaCaptureStatusLabel,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
+                                Proof status
+                              </Text>
+                              <Text
+                                style={[
+                                  s.nativeQaCaptureStatusValue,
+                                  {
+                                    color: targetStatusTone,
+                                    fontFamily: "Inter_800ExtraBold",
+                                  },
+                                ]}
+                              >
+                                {targetStatusLabel}
+                              </Text>
+                            </View>
+                            <Text
+                              numberOfLines={2}
+                              style={[
+                                s.nativeQaCaptureRowSub,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_500Medium",
+                                },
+                              ]}
+                            >
+                              {target.missingEvidence.join(" ")}
+                            </Text>
+                            {target.setupSteps[0] ? (
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.nativeQaCaptureRowPrep,
+                                  {
+                                    color: colors.copper,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
+                                Prep: {target.setupSteps[0]}
+                              </Text>
+                            ) : null}
+                            {target.verificationSteps[0] ? (
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.nativeQaCaptureRowStep,
+                                  {
+                                    color: colors.foreground,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                Step: {target.verificationSteps[0]}
+                              </Text>
+                            ) : null}
+                            {target.acceptanceCriteria[0] ? (
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.nativeQaCaptureRowCriteria,
+                                  {
+                                    color: colors.sage,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
+                                Pass: {target.acceptanceCriteria[0]}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <View
+                            style={[
+                              s.nativeQaCapturePill,
+                              {
+                                backgroundColor:
+                                  (target.priority === "launch-critical"
+                                    ? colors.rose
+                                    : colors.copper) + "14",
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.nativeQaCapturePillText,
+                                {
+                                  color:
+                                    target.priority === "launch-critical"
+                                      ? colors.rose
+                                      : colors.copper,
+                                  fontFamily: "Inter_800ExtraBold",
+                                },
+                              ]}
+                            >
+                              {target.priority === "launch-critical"
+                                ? "Critical"
+                                : "Polish"}
+                            </Text>
+                          </View>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={16}
+                            color={colors.mutedForeground}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+                <View
+                  style={[
+                    s.launchPacket,
+                    {
+                      backgroundColor: betaShipTone + "10",
+                      borderColor: betaShipTone + "33",
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.launchScore,
+                      { backgroundColor: betaShipTone + "18" },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.launchScoreValue,
+                        { color: betaShipTone, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      48h
+                    </Text>
+                    <Text
+                      style={[
+                        s.launchScoreLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      beta
+                    </Text>
+                  </View>
+                  <View style={s.launchPacketBody}>
+                    <Text
+                      style={[
+                        s.launchPacketTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {launchReleasePacket.betaVerdictLabel}
+                    </Text>
+                    <Text
+                      style={[
+                        s.launchPacketCopy,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      {launchReleasePacket.betaSummary}
+                    </Text>
+                    <View style={s.betaNextActions}>
+                      {launchReleasePacket.betaNextActions
+                        .slice(0, 3)
+                        .map((action, index) => (
+                          <View
+                            key={`${index}-${action}`}
+                            style={s.betaNextActionRow}
+                          >
+                            <View
+                              style={[
+                                s.betaNextActionDot,
+                                { backgroundColor: betaShipTone },
+                              ]}
+                            />
+                            <Text
+                              style={[
+                                s.betaNextActionText,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              {action}
+                            </Text>
+                          </View>
+                        ))}
+                    </View>
+                    <View style={s.betaNextActionRail}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          launchReleasePacket.betaShipStatus === "qa-first"
+                            ? "Open beta device QA cockpit"
+                            : "Share WoofWatcher beta release packet"
+                        }
+                        onPress={
+                          launchReleasePacket.betaShipStatus === "qa-first"
+                            ? () =>
+                                router.push(
+                                  buildCareTwinQaFocusRoute(
+                                    nativeQaPrimaryMissionTarget,
+                                  ) as never,
+                                )
+                            : shareBetaHandoffPacket
+                        }
+                        style={({ pressed }) => [
+                          s.betaNextActionButton,
+                          {
+                            backgroundColor: betaShipTone,
+                            opacity: pressed ? 0.86 : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={
+                            launchReleasePacket.betaShipStatus === "qa-first"
+                              ? "camera-outline"
+                              : "share-social-outline"
+                          }
+                          size={15}
+                          color="#FFFFFF"
+                        />
+                        <Text
+                          style={[
+                            s.betaNextActionButtonText,
+                            { fontFamily: "Inter_800ExtraBold" },
+                          ]}
+                        >
+                          {launchReleasePacket.betaShipStatus === "qa-first"
+                            ? "QA Cockpit"
+                            : "Share Beta Packet"}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Share WoofWatcher 48-hour beta handoff"
+                        onPress={shareBetaHandoffPacket}
+                        style={({ pressed }) => [
+                          s.betaHandoffShareButton,
+                          {
+                            borderColor: betaShipTone + "66",
+                            backgroundColor: colors.card,
+                            opacity: pressed ? 0.78 : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="document-text-outline"
+                          size={15}
+                          color={betaShipTone}
+                        />
+                        <Text
+                          style={[
+                            s.betaHandoffShareText,
+                            {
+                              color: betaShipTone,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          Share Beta Handoff
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+                <View
+                  style={[
+                    s.launchPacket,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.launchScore,
+                      { backgroundColor: readinessBadgeTone + "16" },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.launchScoreValue,
+                        { color: readinessBadgeTone, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      {launchReleasePacket.readinessScore}%
+                    </Text>
+                    <Text
+                      style={[
+                        s.launchScoreLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      release score
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.launchPacketTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {launchReleasePacket.verdictLabel}
+                    </Text>
+                    <Text
+                      style={[
+                        s.launchPacketCopy,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      {launchReleasePacket.ownerSummary}
+                    </Text>
+                  </View>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share WoofWatcher release packet"
+                  onPress={shareLaunchPacket}
+                  style={({ pressed }) => [
+                    s.launchShare,
+                    {
+                      backgroundColor: colors.forest,
+                      opacity: pressed ? 0.84 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="share-social-outline"
+                    size={16}
+                    color={colors.primaryForeground}
+                  />
+                  <Text
+                    style={[
+                      s.launchShareText,
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
+                    ]}
+                  >
+                    Share Launch Packet
+                  </Text>
+                </Pressable>
+                <View
+                  style={[
+                    s.launchPacket,
+                    {
+                      backgroundColor: storeSubmissionTone + "10",
+                      borderColor: storeSubmissionTone + "33",
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.launchScore,
+                      { backgroundColor: storeSubmissionTone + "18" },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.launchScoreValue,
+                        {
+                          color: storeSubmissionTone,
+                          fontFamily: DISPLAY_SEMI,
+                        },
+                      ]}
+                    >
+                      {launchStoreSubmissionPacket.screenshotChecklist.length}
+                    </Text>
+                    <Text
+                      style={[
+                        s.launchScoreLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      screens
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.launchPacketTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      Store Submission -{" "}
+                      {launchStoreSubmissionPacket.verdictLabel}
+                    </Text>
+                    <Text
+                      style={[
+                        s.launchPacketCopy,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      {launchStoreSubmissionPacket.metadata.shortDescription}{" "}
+                      {launchStoreSubmissionPacket.reviewNotes[0]}
+                    </Text>
+                  </View>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share WoofWatcher store submission packet"
+                  onPress={shareStoreSubmissionPacket}
+                  style={({ pressed }) => [
+                    s.launchShare,
+                    {
+                      backgroundColor: colors.forest,
+                      opacity: pressed ? 0.84 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="storefront-outline"
+                    size={16}
+                    color={colors.primaryForeground}
+                  />
+                  <Text
+                    style={[
+                      s.launchShareText,
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
+                    ]}
+                  >
+                    Share Store Packet
+                  </Text>
+                </Pressable>
+              </BoardCard>
+
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push("/premium");
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Open WoofWatcher Plus"
+                style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
+              >
+                <LinearGradient
+                  colors={[colors.forest, colors.forestBright]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={s.premiumCard}
+                >
+                  <View style={s.premiumIcon}>
+                    <Ionicons
+                      name="diamond-outline"
+                      size={19}
+                      color={colors.primaryForeground}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.premiumTitle,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: DISPLAY_SEMI,
+                        },
+                      ]}
+                    >
+                      WoofWatcher Plus
+                    </Text>
+                    <Text
+                      style={[
+                        s.premiumSub,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      Advanced meals, Health Watch, reports, records, and
+                      household care sync.
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={colors.primaryForeground}
+                  />
+                </LinearGradient>
+              </Pressable>
             </>
           ) : null}
 
-
           {/* Sync health */}
-          <BoardCard style={[s.moreBoardCard, { borderColor: syncTone + "44" }]}>
+          <BoardCard
+            style={[s.moreBoardCard, { borderColor: syncTone + "44" }]}
+          >
             <BoardSectionHeader
               title={
                 consumerSurfacePolicy.providerSyncControls
@@ -2838,7 +4396,16 @@ function MoreScreenContent({}: Record<string, never>) {
                     }
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                   >
-                    <Text style={[s.sectionLink, { color: syncTone, fontFamily: "Inter_600SemiBold", opacity: isSyncing ? 0.65 : 1 }]}>
+                    <Text
+                      style={[
+                        s.sectionLink,
+                        {
+                          color: syncTone,
+                          fontFamily: "Inter_600SemiBold",
+                          opacity: isSyncing ? 0.65 : 1,
+                        },
+                      ]}
+                    >
                       {syncDashboard.actionLabel}
                     </Text>
                   </Pressable>
@@ -2861,27 +4428,64 @@ function MoreScreenContent({}: Record<string, never>) {
                 <Ionicons name={syncIcon} size={20} color={syncTone} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.syncTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                <Text
+                  style={[
+                    s.syncTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
                   {syncDashboard.title}
                 </Text>
-                <Text style={[s.syncMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.syncMessage,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   {syncDashboard.message}
                 </Text>
               </View>
             </View>
             <View style={s.syncMetrics}>
               {syncDashboard.metrics.map((metric) => (
-                <View key={metric.label} style={[s.syncMetric, { backgroundColor: colors.background }]}>
-                  <Text style={[s.syncMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                <View
+                  key={metric.label}
+                  style={[s.syncMetric, { backgroundColor: colors.background }]}
+                >
+                  <Text
+                    style={[
+                      s.syncMetricValue,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {metric.value}
                   </Text>
-                  <Text style={[s.syncMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.syncMetricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     {metric.label}
                   </Text>
                 </View>
               ))}
             </View>
-            <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              style={[
+                s.syncNextStep,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
               {syncDashboard.nextStep}
             </Text>
             {careStorageRecoveryAction ? (
@@ -2899,7 +4503,12 @@ function MoreScreenContent({}: Record<string, never>) {
                 ]}
               >
                 <Ionicons name="refresh-outline" size={14} color={syncTone} />
-                <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.providerSetupRowActionText,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   {careStorageRecoveryAction.label}
                 </Text>
               </Pressable>
@@ -2917,8 +4526,17 @@ function MoreScreenContent({}: Record<string, never>) {
                   },
                 ]}
               >
-                <Ionicons name="shield-checkmark-outline" size={14} color={syncTone} />
-                <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={14}
+                  color={syncTone}
+                />
+                <Text
+                  style={[
+                    s.providerSetupRowActionText,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   Review backup options
                 </Text>
               </Pressable>
@@ -2931,45 +4549,111 @@ function MoreScreenContent({}: Record<string, never>) {
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
                 style={({ pressed }) => [
                   s.providerSetupRowAction,
-                  { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    opacity: pressed ? 0.72 : 1,
+                  },
                 ]}
               >
                 <Ionicons name="server-outline" size={14} color={syncTone} />
-                <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.providerSetupRowActionText,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   Open sync proof
                 </Text>
               </Pressable>
             ) : null}
           </BoardCard>
 
-
           {/* Links */}
-          <BoardCard style={s.moreBoardCard}>
-            <BoardSectionHeader title="Tools & Sharing" />
-            {links.map((l, i) => (
-              <Pressable
-                key={l.label}
-                onPress={l.onPress}
-                accessibilityRole="button"
-                accessibilityLabel={`${l.label}. ${l.sub}`}
-                style={({ pressed }) => [s.linkRow, i < links.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }, { opacity: pressed ? 0.6 : 1 }]}
-              >
-                <View style={[s.linkIconWrap, { backgroundColor: PULSE_COLORS[l.icon] + "16" }]}>
-                  <Ionicons name={l.iconName} size={20} color={PULSE_COLORS[l.icon]} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{l.label}</Text>
-                  <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{l.sub}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
-              </Pressable>
-            ))}
-          </BoardCard>
+          {moreDirectorySurfaceVisibility.ownerSupplementalDirectories ? (
+            <BoardCard style={s.moreBoardCard}>
+              <BoardSectionHeader title="Tools & Sharing" />
+              {links.map((l, i) => (
+                <Pressable
+                  key={l.label}
+                  onPress={l.onPress}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${l.label}. ${l.sub}`}
+                  style={({ pressed }) => [
+                    s.linkRow,
+                    i < links.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.linkIconWrap,
+                      { backgroundColor: PULSE_COLORS[l.icon] + "16" },
+                    ]}
+                  >
+                    <Ionicons
+                      name={l.iconName}
+                      size={20}
+                      color={PULSE_COLORS[l.icon]}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.linkLabel,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {l.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.linkSub,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
+                    >
+                      {l.sub}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={colors.mutedForeground}
+                  />
+                </Pressable>
+              ))}
+            </BoardCard>
+          ) : null}
 
           {/* About / boundary */}
-          <View style={[s.notice, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View
+            style={[
+              s.notice,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             <Ionicons name="shield-checkmark" size={16} color={colors.sage} />
-            <Text style={[s.noticeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{profile.vetBoundary}</Text>
+            <Text
+              style={[
+                s.noticeText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_400Regular",
+                },
+              ]}
+            >
+              {profile.vetBoundary}
+            </Text>
           </View>
 
           {/* Sign out renders only when a real account provider is configured
@@ -2980,22 +4664,48 @@ function MoreScreenContent({}: Record<string, never>) {
               onPress={confirmSignOut}
               accessibilityRole="button"
               accessibilityLabel="Sign out of WoofWatcher"
-              style={({ pressed }) => [s.signOut, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [
+                s.signOut,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
             >
               <Ionicons name="log-out-outline" size={19} color={colors.rose} />
-              <Text style={[s.signOutText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Sign out</Text>
+              <Text
+                style={[
+                  s.signOutText,
+                  { color: colors.rose, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                Sign out
+              </Text>
             </Pressable>
           ) : null}
 
-          <Text style={[s.footer, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            WoofWatcher · Happy dog, simplified care 💚
+          <Text
+            style={[
+              s.footer,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
+            WoofWatcher · Care, clearly organized.
           </Text>
-        </Animated.View>
+        </View>
       </ScrollView>
 
-
-      <Modal visible={providerSetupOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setProviderSetupOpen(false)}>
-        <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
+      <Modal
+        visible={providerSetupOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setProviderSetupOpen(false)}
+      >
+        <ModalBackdropPressable
+          style={[s.modalBackdrop, { justifyContent: "flex-end" }]}
+          onPress={() => setProviderSetupOpen(false)}
+        >
           <ModalSheetPressable
             visible={providerSetupOpen}
             onRequestClose={() => setProviderSetupOpen(false)}
@@ -3003,29 +4713,69 @@ function MoreScreenContent({}: Record<string, never>) {
           >
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
+              contentContainerStyle={{
+                paddingBottom: modalSheetBottomPadding,
+                paddingHorizontal: 22,
+              }}
               bounces={false}
             >
-              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Provider Launch Setup</Text>
-              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Mark only production providers you have actually configured. This updates Launch Readiness but does not approve App Store or Play Store submission.
+              <View
+                style={[s.modalHandle, { backgroundColor: colors.border }]}
+              />
+              <Text
+                accessibilityRole="header"
+                style={[
+                  s.sheetTitle,
+                  { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                ]}
+              >
+                Provider Launch Setup
+              </Text>
+              <Text
+                style={[
+                  s.sheetSubtitle,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                Mark only production providers you have actually configured.
+                This updates Launch Readiness but does not approve App Store or
+                Play Store submission.
               </Text>
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>REVIEW STATUS</Text>
+              <Text
+                style={[
+                  s.profFieldLabel,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                REVIEW STATUS
+              </Text>
               <View style={s.providerStatusGrid}>
                 {[
                   { key: "local-draft" as const, label: "Draft" },
                   { key: "owner-reviewed" as const, label: "Owner reviewed" },
-                  { key: "provider-approved" as const, label: "Provider approved" },
+                  {
+                    key: "provider-approved" as const,
+                    label: "Provider approved",
+                  },
                 ].map((statusOption) => {
-                  const selected = providerDraft.providerStatus === statusOption.key;
+                  const selected =
+                    providerDraft.providerStatus === statusOption.key;
                   return (
                     <Pressable
                       key={statusOption.key}
                       onPress={() => {
                         Haptics.selectionAsync();
-                        setProviderDraft((prev) => ({ ...prev, providerStatus: statusOption.key }));
+                        setProviderDraft((prev) => ({
+                          ...prev,
+                          providerStatus: statusOption.key,
+                        }));
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={`Set provider setup status to ${statusOption.label}`}
@@ -3033,12 +4783,26 @@ function MoreScreenContent({}: Record<string, never>) {
                       style={[
                         s.providerStatusPill,
                         {
-                          backgroundColor: selected ? colors.primary + "18" : colors.background,
-                          borderColor: selected ? colors.primary : colors.border,
+                          backgroundColor: selected
+                            ? colors.primary + "18"
+                            : colors.background,
+                          borderColor: selected
+                            ? colors.primary
+                            : colors.border,
                         },
                       ]}
                     >
-                      <Text style={[s.providerStatusText, { color: selected ? colors.primary : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      <Text
+                        style={[
+                          s.providerStatusText,
+                          {
+                            color: selected
+                              ? colors.primary
+                              : colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
                         {statusOption.label}
                       </Text>
                     </Pressable>
@@ -3046,7 +4810,9 @@ function MoreScreenContent({}: Record<string, never>) {
                 })}
               </View>
 
-              <View style={[s.providerChecklist, { borderTopColor: colors.border }]}>
+              <View
+                style={[s.providerChecklist, { borderTopColor: colors.border }]}
+              >
                 {PROVIDER_SETUP_FIELDS.map((field) => {
                   const checked = providerDraft[field.key];
                   return (
@@ -3058,7 +4824,10 @@ function MoreScreenContent({}: Record<string, never>) {
                       accessibilityLabel={`${field.label}. ${field.detail}`}
                       style={({ pressed }) => [
                         s.providerChecklistRow,
-                        { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 },
+                        {
+                          borderBottomColor: colors.border,
+                          opacity: pressed ? 0.72 : 1,
+                        },
                       ]}
                     >
                       <Ionicons
@@ -3067,10 +4836,26 @@ function MoreScreenContent({}: Record<string, never>) {
                         color={checked ? colors.sage : colors.mutedForeground}
                       />
                       <View style={{ flex: 1 }}>
-                        <Text style={[s.providerChecklistTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.providerChecklistTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
                           {field.label}
                         </Text>
-                        <Text style={[s.providerChecklistSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        <Text
+                          style={[
+                            s.providerChecklistSub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
                           {field.detail}
                         </Text>
                       </View>
@@ -3079,10 +4864,22 @@ function MoreScreenContent({}: Record<string, never>) {
                 })}
               </View>
 
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>OPERATOR NOTES</Text>
+              <Text
+                style={[
+                  s.profFieldLabel,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                OPERATOR NOTES
+              </Text>
               <TextInput
                 value={providerDraft.notes}
-                onChangeText={(notes) => setProviderDraft((prev) => ({ ...prev, notes }))}
+                onChangeText={(notes) =>
+                  setProviderDraft((prev) => ({ ...prev, notes }))
+                }
                 accessibilityLabel="Provider operator notes"
                 placeholder="What still needs keys, rules, account approval, or QA?"
                 placeholderTextColor={colors.mutedForeground}
@@ -3103,15 +4900,30 @@ function MoreScreenContent({}: Record<string, never>) {
                 onPress={saveProviderSetup}
                 accessibilityRole="button"
                 accessibilityLabel="Save provider launch setup"
-                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [
+                  s.profSaveBtn,
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
               >
-                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
+                <Text
+                  style={[
+                    s.profSaveBtnText,
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
+                >
+                  Save provider setup
+                </Text>
               </Pressable>
             </ScrollView>
           </ModalSheetPressable>
         </ModalBackdropPressable>
       </Modal>
-
     </View>
   );
 }
@@ -3149,9 +4961,23 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   canonicalDirectoryCopy: { flex: 1 },
-  canonicalDirectoryLabel: { fontFamily: "Inter_700Bold", fontSize: 16, lineHeight: 20 },
-  canonicalDirectoryDetail: { fontFamily: "Inter_500Medium", fontSize: 14, lineHeight: 19, marginTop: 2 },
-  canonicalDirectoryEmpty: { fontFamily: "Inter_500Medium", fontSize: 15, lineHeight: 21, paddingVertical: 16 },
+  canonicalDirectoryLabel: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  canonicalDirectoryDetail: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
+    lineHeight: 19,
+    marginTop: 2,
+  },
+  canonicalDirectoryEmpty: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 15,
+    lineHeight: 21,
+    paddingVertical: 16,
+  },
 
   moreCommandStageCard: {
     alignSelf: "stretch",
@@ -3259,7 +5085,12 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   profileAvatarImg: { width: "100%", height: "100%", borderRadius: 20 },
-  profileBody: { alignItems: "center", paddingHorizontal: 20, paddingBottom: 20, paddingTop: 10 },
+  profileBody: {
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+  },
   profileName: { fontSize: 24, letterSpacing: -0.3 },
   profileBreed: { fontSize: 13.5, marginTop: 2, textAlign: "center" },
   avatarIdentityPill: {
@@ -3273,7 +5104,14 @@ const s = StyleSheet.create({
     gap: 6,
   },
   avatarIdentityText: { fontSize: 11.5 },
-  profileStats: { flexDirection: "row", alignItems: "center", marginTop: 16, paddingTop: 16, borderTopWidth: 1, width: "100%" },
+  profileStats: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    width: "100%",
+  },
   profileStat: { flex: 1, alignItems: "center", paddingHorizontal: 8 },
   profileStatValue: { fontSize: 16, letterSpacing: -0.2, textAlign: "center" },
   profileStatLabel: { fontSize: 12, marginTop: 3 },
@@ -3352,15 +5190,40 @@ const s = StyleSheet.create({
 
   launchBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
   launchBadgeText: { fontSize: 9.5, letterSpacing: 0.5 },
-  intelligenceBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
-  intelligenceBadgeText: { fontSize: 10, letterSpacing: 0.3, textTransform: "uppercase" },
+  intelligenceBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 9,
+  },
+  intelligenceBadgeText: {
+    fontSize: 10,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
   intelligenceTop: { flexDirection: "row", alignItems: "center", gap: 12 },
-  intelligenceIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  intelligenceIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   intelligenceTitle: { fontSize: 16, letterSpacing: 0 },
   intelligenceSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
-  intelligenceMeter: { height: 12, borderRadius: 999, borderWidth: 1, marginTop: 14, overflow: "hidden" },
+  intelligenceMeter: {
+    height: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginTop: 14,
+    overflow: "hidden",
+  },
   intelligenceMeterFill: { height: "100%", borderRadius: 999 },
-  intelligenceGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
+  intelligenceGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 14,
+  },
   intelligenceMetric: {
     flexGrow: 1,
     flexBasis: "47%",
@@ -3371,7 +5234,12 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   intelligenceMetricValue: { fontSize: 17 },
-  intelligenceMetricLabel: { fontSize: 10.5, lineHeight: 13, marginTop: 2, textTransform: "uppercase" },
+  intelligenceMetricLabel: {
+    fontSize: 10.5,
+    lineHeight: 13,
+    marginTop: 2,
+    textTransform: "uppercase",
+  },
   intelligenceMetricDetail: { fontSize: 11, lineHeight: 15, marginTop: 3 },
   intelligenceAction: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -3393,7 +5261,13 @@ const s = StyleSheet.create({
     padding: 12,
     justifyContent: "space-between",
   },
-  launchTileIcon: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  launchTileIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   launchTileLabel: { fontSize: 12.5, marginTop: 8 },
   launchTileValue: { fontSize: 11, lineHeight: 15, marginTop: 3 },
   launchNotice: {
@@ -3424,10 +5298,19 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   launchNextGateBody: { flex: 1 },
-  launchNextGateKicker: { fontSize: 9.4, lineHeight: 12, textTransform: "uppercase" },
+  launchNextGateKicker: {
+    fontSize: 9.4,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
   launchNextGateTitle: { fontSize: 14.2, lineHeight: 18, marginTop: 3 },
   launchNextGateDetail: { fontSize: 11.4, lineHeight: 16, marginTop: 4 },
-  launchNextGateCta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
+  launchNextGateCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8,
+  },
   launchNextGateCtaText: { fontSize: 11.5, lineHeight: 15 },
   providerSetupPanel: {
     marginTop: 12,
@@ -3448,7 +5331,12 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   providerSetupScoreValue: { fontSize: 22, lineHeight: 25 },
-  providerSetupScoreLabel: { fontSize: 8.7, lineHeight: 12, textTransform: "uppercase", marginTop: 2 },
+  providerSetupScoreLabel: {
+    fontSize: 8.7,
+    lineHeight: 12,
+    textTransform: "uppercase",
+    marginTop: 2,
+  },
   providerSetupTitle: { fontSize: 13.5, lineHeight: 18 },
   providerSetupSub: { fontSize: 11.2, lineHeight: 15, marginTop: 2 },
   providerSetupCopy: { fontSize: 11.2, lineHeight: 16, marginTop: 4 },
@@ -3459,8 +5347,16 @@ const s = StyleSheet.create({
     marginTop: 10,
     gap: 4,
   },
-  providerNextGateHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  providerNextGateKicker: { fontSize: 9.3, lineHeight: 12, textTransform: "uppercase" },
+  providerNextGateHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  providerNextGateKicker: {
+    fontSize: 9.3,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
   providerNextGateTitle: { fontSize: 13, lineHeight: 17 },
   providerNextGateMeta: { fontSize: 10.3, lineHeight: 14 },
   providerNextGateCopy: { fontSize: 11, lineHeight: 15 },
@@ -3536,7 +5432,11 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  nativeQaOwnerProofLabel: { fontSize: 9.5, lineHeight: 13, textTransform: "uppercase" },
+  nativeQaOwnerProofLabel: {
+    fontSize: 9.5,
+    lineHeight: 13,
+    textTransform: "uppercase",
+  },
   nativeQaOwnerProofTitle: { fontSize: 13, lineHeight: 17, marginTop: 1 },
   nativeQaOwnerProofDetail: { fontSize: 10.8, lineHeight: 15, marginTop: 2 },
   nativeQaCaptureActions: {
@@ -3646,7 +5546,12 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   launchScoreValue: { fontSize: 22, lineHeight: 26 },
-  launchScoreLabel: { fontSize: 9, lineHeight: 12, textTransform: "uppercase", marginTop: 2 },
+  launchScoreLabel: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+    marginTop: 2,
+  },
   launchPacketTitle: { fontSize: 13.5, lineHeight: 18 },
   launchPacketCopy: { fontSize: 11.5, lineHeight: 16, marginTop: 3 },
   betaNextActions: { marginTop: 8, gap: 6 },
@@ -3689,11 +5594,24 @@ const s = StyleSheet.create({
   launchShareText: { fontSize: 13 },
 
   syncTop: { flexDirection: "row", alignItems: "center", gap: 12 },
-  syncIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  syncIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   syncTitle: { fontSize: 16, letterSpacing: 0 },
   syncMessage: { fontSize: 13, lineHeight: 18, marginTop: 3 },
   syncMetrics: { flexDirection: "row", gap: 8, marginTop: 14 },
-  syncMetric: { flex: 1, minHeight: 66, borderRadius: 15, paddingHorizontal: 9, paddingVertical: 10, justifyContent: "center" },
+  syncMetric: {
+    flex: 1,
+    minHeight: 66,
+    borderRadius: 15,
+    paddingHorizontal: 9,
+    paddingVertical: 10,
+    justifyContent: "center",
+  },
   syncMetricValue: { fontSize: 14, textAlign: "center" },
   syncMetricLabel: { fontSize: 10.5, textAlign: "center", marginTop: 3 },
   syncNextStep: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
@@ -3710,10 +5628,26 @@ const s = StyleSheet.create({
   },
   signOutText: { fontSize: 15 },
 
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)", justifyContent: "center", paddingHorizontal: 28 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15,31,36,0.45)",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
 
-  linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15 },
-  linkIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 15,
+  },
+  linkIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   linkLabel: { fontSize: 15.5 },
   linkSub: { fontSize: 13, marginTop: 2 },
 
@@ -3726,17 +5660,47 @@ const s = StyleSheet.create({
     shadowRadius: 14,
     elevation: 2,
   },
-  statusCell: { flex: 1, alignItems: "center", paddingVertical: 16, paddingHorizontal: 6 },
-  statusValue: { fontSize: 16, letterSpacing: -0.2, textTransform: "capitalize" },
+  statusCell: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 6,
+  },
+  statusValue: {
+    fontSize: 16,
+    letterSpacing: -0.2,
+    textTransform: "capitalize",
+  },
   statusLabel: { fontSize: 11.5, marginTop: 3, textAlign: "center" },
   statusEnergyRow: { flexDirection: "row", gap: 4, marginBottom: 1 },
   statusEnergyDot: { width: 8, height: 8, borderRadius: 4 },
-  premiumCard: { flexDirection: "row", alignItems: "center", gap: 13, borderRadius: 22, padding: 16, marginTop: 12 },
-  premiumIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.15)" },
+  premiumCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 13,
+    borderRadius: 22,
+    padding: 16,
+    marginTop: 12,
+  },
+  premiumIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.15)",
+  },
   premiumTitle: { fontSize: 17, letterSpacing: 0 },
   premiumSub: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
 
-  notice: { flexDirection: "row", gap: 10, borderRadius: 18, borderWidth: 1, padding: 16, marginTop: 24 },
+  notice: {
+    flexDirection: "row",
+    gap: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 24,
+  },
   noticeText: { flex: 1, fontSize: 13, lineHeight: 19 },
   footer: { fontSize: 13, textAlign: "center", marginTop: 18 },
 
@@ -3755,11 +5719,27 @@ const s = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  profileModal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", paddingTop: 14 },
-  modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, marginBottom: 16 },
+  profileModal: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: "90%",
+    paddingTop: 14,
+  },
+  modalHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: 16,
+  },
   sheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
   sheetSubtitle: { fontSize: 12.5, lineHeight: 18, marginBottom: 2 },
-  providerStatusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
+  providerStatusGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 2,
+  },
   providerStatusPill: {
     flexGrow: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -3781,8 +5761,25 @@ const s = StyleSheet.create({
   },
   providerChecklistTitle: { fontSize: 13.2, lineHeight: 17 },
   providerChecklistSub: { fontSize: 11.2, lineHeight: 16, marginTop: 2 },
-  profFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 16 },
-  profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  profSaveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
+  profFieldLabel: {
+    fontSize: 11,
+    letterSpacing: 0.6,
+    marginBottom: 7,
+    marginTop: 16,
+  },
+  profField: {
+    borderRadius: 13,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+  },
+  profSaveBtn: {
+    marginTop: 24,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 15,
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   profSaveBtnText: { fontSize: 15.5 },
 });

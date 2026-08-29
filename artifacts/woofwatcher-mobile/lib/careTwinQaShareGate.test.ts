@@ -9,8 +9,9 @@ const QA_ROUTE = join(
   process.cwd(),
   "artifacts",
   "woofwatcher-mobile",
-  "app",
-  "care-twin-qa.tsx",
+  "components",
+  "owner",
+  "CareTwinQaScreen.tsx",
 );
 
 function deferred() {
@@ -82,15 +83,23 @@ test("the owner QA route sends all four report handlers through one mounted-safe
   ] as const;
 
   assert.equal(
-    gateSetup.match(/qaReportShareGateRef\.current = createExclusiveAsyncAction\(\)/g)?.length,
+    gateSetup.match(
+      /qaReportShareGateRef\.current = createExclusiveAsyncAction\(\)/g,
+    )?.length,
     1,
     "the four report actions must share one gate instance",
   );
-  assert.match(gateSetup, /const \[qaReportShareBusy, setQaReportShareBusy\] = useState\(false\)/);
+  assert.match(
+    gateSetup,
+    /const \[qaReportShareBusy, setQaReportShareBusy\] = useState\(false\)/,
+  );
   assert.match(runner, /qaReportShareGate\.run/);
   assert.match(runner, /if \(!qaScreenMountedRef\.current\) return/);
   assert.match(runner, /setQaReportShareBusy\(true\)/);
-  assert.match(runner, /if \(qaScreenMountedRef\.current\) setQaReportShareBusy\(false\)/);
+  assert.match(
+    runner,
+    /if \(qaScreenMountedRef\.current\) setQaReportShareBusy\(false\)/,
+  );
 
   for (const [start, end] of handlers) {
     const handler = sourceBetween(source, start, end);
@@ -105,7 +114,7 @@ test("the owner QA route sends all four report handlers through one mounted-safe
   );
   assert.match(
     source,
-    /onPress=\{nextBetaTarget \? \(\) => router\.push\([\s\S]{0,180}?\) : shareQaSummary\}/,
+    /onPress=\{\s*nextBetaTarget\s*\?\s*\(\)\s*=>\s*router\.push\(buildQaReturnRoute\(nextBetaTarget\) as never\)\s*:\s*shareQaSummary\s*\}/,
   );
   for (const handler of [
     "shareFocusedTargetChecklist",
@@ -119,10 +128,13 @@ test("the owner QA route sends all four report handlers through one mounted-safe
         "g",
       ),
     );
-    assert.ok(directTriggers?.length, `${handler} needs a disabled accessible trigger`);
+    assert.ok(
+      directTriggers?.length,
+      `${handler} needs a disabled accessible trigger`,
+    );
   }
   assert.match(
     source,
-    /accessibilityState=\{\{ disabled: qaReportShareBusy \}\}[\s\S]{0,160}?disabled=\{qaReportShareBusy\}[\s\S]{0,360}?onPress=\{nextBetaTarget[\s\S]{0,180}?: shareQaSummary\}/,
+    /accessibilityState=\{\{ disabled: qaReportShareBusy \}\}[\s\S]{0,200}?disabled=\{qaReportShareBusy\}[\s\S]{0,800}?onPress=\{\s*nextBetaTarget\s*\?[\s\S]{0,240}?:\s*shareQaSummary\s*\}/,
   );
 });

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, {
@@ -144,7 +144,9 @@ function parseStoredObject(raw: string | null): Record<string, unknown> | null {
   if (typeof raw !== "string" || !raw.trim()) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+    return parsed !== null &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : null;
   } catch {
@@ -152,7 +154,9 @@ function parseStoredObject(raw: string | null): Record<string, unknown> | null {
   }
 }
 
-function storedSuppliesProjectionIsMissingOrCorrupt(raw: string | null): boolean {
+function storedSuppliesProjectionIsMissingOrCorrupt(
+  raw: string | null,
+): boolean {
   const payload = parseStoredObject(raw);
   if (!payload || payload.version !== 1 || !Array.isArray(payload.items)) {
     return true;
@@ -199,7 +203,9 @@ function storedSuppliesProjectionIsMissingOrCorrupt(raw: string | null): boolean
   return false;
 }
 
-function storedTravelBagProjectionIsMissingOrCorrupt(raw: string | null): boolean {
+function storedTravelBagProjectionIsMissingOrCorrupt(
+  raw: string | null,
+): boolean {
   const payload = parseStoredObject(raw);
   if (!payload || payload.version !== 1) return true;
   if (
@@ -615,11 +621,8 @@ export function CareTeamSuppliesScreen({
     renderCareOperationPermit?.phase === "signed-in" &&
     isCareOperationPermitCurrent(renderCareOperationPermit);
   const { store, operationSettledEpoch } = useDevicePreferences();
-  const {
-    operationState,
-    isWriteAdmissionOpen,
-    runTrackedLocalDataWork,
-  } = useLocalDataReset();
+  const { operationState, isWriteAdmissionOpen, runTrackedLocalDataWork } =
+    useLocalDataReset();
   const { prepareHouseholdTransition } = useQueryCacheLocalDataReset();
   const { isSignedIn } = useWoofAuth();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
@@ -645,15 +648,13 @@ export function CareTeamSuppliesScreen({
     operationState.status === "deleting";
   const householdActionsBlocked =
     householdOperationActive || localDataOperationActive;
-  const renderHouseholdOperationPermit =
-    captureCareHouseholdOperationPermit();
+  const renderHouseholdOperationPermit = captureCareHouseholdOperationPermit();
   const canContinueRenderHouseholdOperation = () =>
     !householdActionsBlocked &&
     isWriteAdmissionOpen() &&
     renderHouseholdOperationPermit !== null &&
     isCareHouseholdOperationPermitCurrent(renderHouseholdOperationPermit);
-  const householdActionsUnavailable =
-    !canContinueRenderHouseholdOperation();
+  const householdActionsUnavailable = !canContinueRenderHouseholdOperation();
   const householdMemberships = useQuery({
     queryKey: [
       "listMyHouseholdMemberships",
@@ -698,12 +699,10 @@ export function CareTeamSuppliesScreen({
     : [];
   const householdMembershipListRejected = Boolean(
     householdMemberships.isFetchedAfterMount &&
-      householdMemberships.data &&
-      renderHouseholdOperationPermit &&
-      isCareHouseholdOperationPermitCurrent(
-        renderHouseholdOperationPermit,
-      ) &&
-      !admittedHouseholdMemberships,
+    householdMemberships.data &&
+    renderHouseholdOperationPermit &&
+    isCareHouseholdOperationPermitCurrent(renderHouseholdOperationPermit) &&
+    !admittedHouseholdMemberships,
   );
   const householdMembershipListFailure = householdMembershipListRejected
     ? describeHouseholdMembershipListFailure(
@@ -719,15 +718,11 @@ export function CareTeamSuppliesScreen({
     if (
       !householdMembershipListFailure?.rediscoverIdentity ||
       !renderHouseholdOperationPermit ||
-      !isCareHouseholdOperationPermitCurrent(
-        renderHouseholdOperationPermit,
-      )
+      !isCareHouseholdOperationPermitCurrent(renderHouseholdOperationPermit)
     ) {
       return;
     }
-    rediscoverIdentityScopeFromMembershipList(
-      renderHouseholdOperationPermit,
-    );
+    rediscoverIdentityScopeFromMembershipList(renderHouseholdOperationPermit);
   }, [
     householdMembershipListFailure?.rediscoverIdentity,
     householdMemberships.errorUpdatedAt,
@@ -743,17 +738,13 @@ export function CareTeamSuppliesScreen({
       !householdMemberships.isFetchedAfterMount ||
       admittedHouseholdMemberships.activeMembershipPresent ||
       !renderHouseholdOperationPermit ||
-      !isCareHouseholdOperationPermitCurrent(
-        renderHouseholdOperationPermit,
-      )
+      !isCareHouseholdOperationPermitCurrent(renderHouseholdOperationPermit)
     ) {
       return;
     }
     // Absence of A contradicts the active permit. Revoke before paint; one
     // fresh rediscovery is allowed, then Care stays in its retryable shield.
-    rediscoverIdentityScopeFromMembershipList(
-      renderHouseholdOperationPermit,
-    );
+    rediscoverIdentityScopeFromMembershipList(renderHouseholdOperationPermit);
   }, [
     admittedHouseholdMemberships,
     householdMemberships.isFetchedAfterMount,
@@ -767,9 +758,7 @@ export function CareTeamSuppliesScreen({
       !admittedHouseholdMemberships?.activeMembershipPresent ||
       !householdMemberships.isFetchedAfterMount ||
       !renderHouseholdOperationPermit ||
-      !isCareHouseholdOperationPermitCurrent(
-        renderHouseholdOperationPermit,
-      )
+      !isCareHouseholdOperationPermitCurrent(renderHouseholdOperationPermit)
     ) {
       return;
     }
@@ -893,7 +882,8 @@ export function CareTeamSuppliesScreen({
           resetRetryAfterBothHydrated();
         })
         .catch((error) => {
-          if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          if (cancelled || error instanceof LocalDataResetInProgressError)
+            return;
           suppliesNeedsRetry = true;
           hydrationRetry.request(retryFailedHydrations);
         });
@@ -918,7 +908,8 @@ export function CareTeamSuppliesScreen({
           resetRetryAfterBothHydrated();
         })
         .catch((error) => {
-          if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          if (cancelled || error instanceof LocalDataResetInProgressError)
+            return;
           travelBagNeedsRetry = true;
           hydrationRetry.request(retryFailedHydrations);
         });
@@ -936,9 +927,7 @@ export function CareTeamSuppliesScreen({
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
   const canCreateHouseholdInvitation = Boolean(
     household &&
-      members.some(
-        (member) => member.isSelf === true && member.role === "owner",
-      ),
+    members.some((member) => member.isSelf === true && member.role === "owner"),
   );
   const myName = me.data?.user?.displayName?.trim() || "";
 
@@ -993,9 +982,7 @@ export function CareTeamSuppliesScreen({
   const householdAccess = useMemo(
     () =>
       deriveHouseholdAccessPlan({
-        household: household
-          ? { name: household.name }
-          : null,
+        household: household ? { name: household.name } : null,
         members,
         caregivers: state.caregivers,
         routines: state.routines,
@@ -1111,11 +1098,9 @@ export function CareTeamSuppliesScreen({
 
   const commitTravelBag = (next: TravelBagSession) => {
     setTravelBag(next);
-    void store
-      .save(TRAVEL_BAG_KEY, serializeTravelBag(next))
-      .catch((error) => {
-        if (error instanceof LocalDataResetInProgressError) return;
-      });
+    void store.save(TRAVEL_BAG_KEY, serializeTravelBag(next)).catch((error) => {
+      if (error instanceof LocalDataResetInProgressError) return;
+    });
   };
 
   const activateBag = () => {
@@ -1363,15 +1348,11 @@ export function CareTeamSuppliesScreen({
           if (!scope.isCurrent()) throw new LocalDataResetInProgressError();
           return start();
         }),
-      activateTransport: (
-        targetHouseholdId,
-        expectedSourceHouseholdId,
-      ) =>
+      activateTransport: (targetHouseholdId, expectedSourceHouseholdId) =>
         activateHousehold(
           { householdId: targetHouseholdId },
           {
-            "X-WoofWatcher-Expected-Household-Id":
-              expectedSourceHouseholdId,
+            "X-WoofWatcher-Expected-Household-Id": expectedSourceHouseholdId,
           },
         ),
       // The activation response is intentionally never rendered or cached.
@@ -2440,9 +2421,7 @@ export function CareTeamSuppliesScreen({
                 <BoardCard style={s.sectionCard}>
                   <BoardSectionHeader title="Your households" />
                   {householdMembershipListFailure ? (
-                    <View
-                      style={s.householdListRecovery}
-                    >
+                    <View style={s.householdListRecovery}>
                       <View
                         accessibilityRole="alert"
                         accessibilityLabel={`${householdMembershipListFailure.title}. ${householdMembershipListFailure.message}`}
@@ -2483,9 +2462,7 @@ export function CareTeamSuppliesScreen({
                           s.inlineAction,
                           {
                             opacity:
-                              pressed || householdActionsUnavailable
-                                ? 0.55
-                                : 1,
+                              pressed || householdActionsUnavailable ? 0.55 : 1,
                           },
                         ]}
                       >
@@ -2596,9 +2573,7 @@ export function CareTeamSuppliesScreen({
                                 onPress={() => {
                                   if (membershipRow.disabled) return;
                                   void Haptics.selectionAsync();
-                                  switchHousehold(
-                                    membershipRow.householdId,
-                                  );
+                                  switchHousehold(membershipRow.householdId);
                                 }}
                                 style={({ pressed }) => [
                                   s.infoAction,
@@ -3290,7 +3265,8 @@ export function CareTeamSuppliesScreen({
                     s.infoAction,
                     {
                       borderColor: colors.border,
-                      opacity: pressed || householdActionsUnavailable ? 0.55 : 1,
+                      opacity:
+                        pressed || householdActionsUnavailable ? 0.55 : 1,
                     },
                   ]}
                 >
@@ -3434,8 +3410,7 @@ export function CareTeamSuppliesScreen({
             onChangeText={setRenameValue}
             confirmLabel="Save"
             valid={
-              renameValue.trim().length > 0 &&
-              canCreateHouseholdInvitation
+              renameValue.trim().length > 0 && canCreateHouseholdInvitation
             }
             loading={householdActionsBlocked}
             onCancel={() => setRenameOpen(false)}
@@ -3628,136 +3603,136 @@ export function CareTeamSuppliesScreen({
                     paddingHorizontal: 22,
                   }}
                 >
-                <View
-                  style={[s.modalHandle, { backgroundColor: colors.border }]}
-                />
-                <Text
-                  style={[
-                    s.sheetTitle,
-                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
-                  ]}
-                >
-                  Create Access Pass
-                </Text>
-                <Text
-                  style={[
-                    s.sheetSubtitle,
-                    {
-                      color: colors.mutedForeground,
-                      fontFamily: "Inter_500Medium",
-                    },
-                  ]}
-                >
-                  Save helper permissions as a local draft. Remote sharing is
-                  coming soon - passes stay on this device for now.
-                </Text>
-                <Text
-                  style={[
-                    s.profFieldLabel,
-                    {
-                      color: colors.mutedForeground,
-                      fontFamily: "Inter_600SemiBold",
-                    },
-                  ]}
-                >
-                  HELPER NAME
-                </Text>
-                <TextInput
-                  value={accessPassName}
-                  onChangeText={setAccessPassName}
-                  placeholder="e.g. Maya"
-                  placeholderTextColor={colors.mutedForeground}
-                  accessibilityLabel="Access Pass helper name"
-                  style={[
-                    s.profField,
-                    {
-                      backgroundColor: colors.background,
-                      color: colors.foreground,
-                      fontFamily: "Inter_500Medium",
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    s.profFieldLabel,
-                    {
-                      color: colors.mutedForeground,
-                      fontFamily: "Inter_600SemiBold",
-                    },
-                  ]}
-                >
-                  ROLE
-                </Text>
-                <View style={s.passKindGrid}>
-                  {(
-                    [
-                      { key: "sitter", label: "Sitter" },
-                      { key: "trainer", label: "Trainer" },
-                      { key: "vet", label: "Vet viewer" },
-                      { key: "emergency", label: "Emergency" },
-                    ] as const
-                  ).map((kind) => {
-                    const selected = accessPassKind === kind.key;
-                    return (
-                      <Pressable
-                        key={kind.key}
-                        onPress={() => setAccessPassKind(kind.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Set Access Pass role to ${kind.label}`}
-                        accessibilityState={{ selected }}
-                        style={[
-                          s.passKind,
-                          {
-                            borderColor: selected
-                              ? colors.primary
-                              : colors.border,
-                            backgroundColor: selected
-                              ? colors.primary + "18"
-                              : colors.background,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            s.passKindText,
-                            {
-                              color: selected
-                                ? colors.primary
-                                : colors.foreground,
-                              fontFamily: "Inter_700Bold",
-                            },
-                          ]}
-                        >
-                          {kind.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                <Pressable
-                  onPress={saveAccessPassDraft}
-                  accessibilityRole="button"
-                  accessibilityLabel="Save Access Pass draft"
-                  style={({ pressed }) => [
-                    s.profSaveBtn,
-                    {
-                      backgroundColor: colors.primary,
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                >
+                  <View
+                    style={[s.modalHandle, { backgroundColor: colors.border }]}
+                  />
                   <Text
                     style={[
-                      s.profSaveBtnText,
+                      s.sheetTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    Create Access Pass
+                  </Text>
+                  <Text
+                    style={[
+                      s.sheetSubtitle,
                       {
-                        color: colors.primaryForeground,
-                        fontFamily: "Inter_700Bold",
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
                       },
                     ]}
                   >
-                    Save Local Draft
+                    Save helper permissions as a local draft. Remote sharing is
+                    coming soon - passes stay on this device for now.
                   </Text>
-                </Pressable>
+                  <Text
+                    style={[
+                      s.profFieldLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    HELPER NAME
+                  </Text>
+                  <TextInput
+                    value={accessPassName}
+                    onChangeText={setAccessPassName}
+                    placeholder="e.g. Maya"
+                    placeholderTextColor={colors.mutedForeground}
+                    accessibilityLabel="Access Pass helper name"
+                    style={[
+                      s.profField,
+                      {
+                        backgroundColor: colors.background,
+                        color: colors.foreground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      s.profFieldLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    ROLE
+                  </Text>
+                  <View style={s.passKindGrid}>
+                    {(
+                      [
+                        { key: "sitter", label: "Sitter" },
+                        { key: "trainer", label: "Trainer" },
+                        { key: "vet", label: "Vet viewer" },
+                        { key: "emergency", label: "Emergency" },
+                      ] as const
+                    ).map((kind) => {
+                      const selected = accessPassKind === kind.key;
+                      return (
+                        <Pressable
+                          key={kind.key}
+                          onPress={() => setAccessPassKind(kind.key)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Set Access Pass role to ${kind.label}`}
+                          accessibilityState={{ selected }}
+                          style={[
+                            s.passKind,
+                            {
+                              borderColor: selected
+                                ? colors.primary
+                                : colors.border,
+                              backgroundColor: selected
+                                ? colors.primary + "18"
+                                : colors.background,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.passKindText,
+                              {
+                                color: selected
+                                  ? colors.primary
+                                  : colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {kind.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  <Pressable
+                    onPress={saveAccessPassDraft}
+                    accessibilityRole="button"
+                    accessibilityLabel="Save Access Pass draft"
+                    style={({ pressed }) => [
+                      s.profSaveBtn,
+                      {
+                        backgroundColor: colors.primary,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.profSaveBtnText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Save Local Draft
+                    </Text>
+                  </Pressable>
                 </ScrollView>
               </ModalSheetPressable>
             </KeyboardAvoidingView>
@@ -3850,7 +3825,10 @@ function PromptModal({
               contentContainerStyle={s.modalContent}
             >
               <View
-                style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}
+                style={[
+                  s.modalIcon,
+                  { backgroundColor: colors.primary + "1A" },
+                ]}
               >
                 <Ionicons name={icon} size={22} color={colors.primary} />
               </View>
@@ -3920,7 +3898,9 @@ function PromptModal({
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={busy ? `${confirmLabel} in progress` : confirmLabel}
+                  accessibilityLabel={
+                    busy ? `${confirmLabel} in progress` : confirmLabel
+                  }
                   accessibilityState={{ disabled: confirmDisabled, busy }}
                   onPress={confirmIfIdle}
                   disabled={confirmDisabled}

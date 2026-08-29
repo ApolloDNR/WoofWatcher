@@ -73,7 +73,7 @@ test("Setup gates duplicate saves, waits for durable care and twin work, and fre
     /saveGateRef\.current\.run\([\s\S]*persistSetupFoundation\([\s\S]*persistCare:\s*persistCurrentCareSnapshot[\s\S]*persistTwin:/,
   );
   assert.match(setupSource, /gated\.value\.status === "twin-persistence-failed"/);
-  assert.match(setupSource, /Profile saved; twin unchanged/);
+  assert.match(setupSource, /Setup saved; avatar unchanged/);
   assert.match(setupSource, /editable=\{!controlsDisabled\}/);
   assert.match(setupSource, /disabled=\{controlsDisabled\}/);
   assert.match(setupSource, /Loading saved care/);

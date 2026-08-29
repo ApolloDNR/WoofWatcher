@@ -14,8 +14,19 @@ const COMPONENT_PATH = join(
   "more",
   "AvatarStudioScreen.tsx",
 );
+const OWNER_PANEL_PATH = join(
+  MOBILE_ROOT,
+  "components",
+  "owner",
+  "AvatarSpriteProductionPanel.tsx",
+);
 const PORTRAIT_ROUTE_PATH = join(MOBILE_ROOT, "app", "portrait.tsx");
-const ROUTER_PATH = join(MOBILE_ROOT, "components", "more", "MoreSectionRouter.tsx");
+const ROUTER_PATH = join(
+  MOBILE_ROOT,
+  "components",
+  "more",
+  "MoreSectionRouter.tsx",
+);
 
 function read(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
@@ -40,6 +51,7 @@ test("moves Avatar Studio mechanically into one dual-surface owner", () => {
     "AvatarStudioScreen.tsx must exist before Portrait delegates",
   );
   const component = read(COMPONENT_PATH);
+  const ownerPanel = read(OWNER_PANEL_PATH);
 
   assert.match(component, /export interface AvatarStudioScreenProps\s*\{/);
   assert.match(component, /surface:\s*"standalone"\s*\|\s*"tabbed"/);
@@ -54,21 +66,27 @@ test("moves Avatar Studio mechanically into one dual-surface owner", () => {
   assert.match(component, /title="Avatar Studio"/);
   assert.match(
     component,
-    /subtitle=\{avatarIsLoaded[\s\S]*Choose a pixel twin, then customize\.[\s\S]*Loading saved avatar choices…/,
+    /subtitle=\{\s*avatarIsLoaded[\s\S]*Choose a pixel twin, then customize\.[\s\S]*Loading saved avatar choices…/,
   );
   assert.match(component, /backDisabled=\{avatarPersistenceBusy\}/);
   assert.match(component, /actionDisabled=\{avatarEditorDisabled\}/);
   assert.match(component, /onBack=\{onBack\}/);
   assert.match(
     component,
-    /const openAvatarSpriteProductionQa = \(\) => \{[\s\S]{0,180}Haptics\.selectionAsync\(\)[\s\S]{0,120}onOpenSpriteQa\(\)/,
+    /<AvatarSpriteProductionPanel[\s\S]{0,160}templateId=\{draft\.templateId\}[\s\S]{0,160}onOpenSpriteQa=\{onOpenSpriteQa\}/,
   );
-  assert.match(component, /onPress=\{openAvatarSpriteProductionQa\}/);
-  assert.doesNotMatch(component, /useRouter|router\.(?:push|replace)|pathname:\s*"\/care-twin-qa"/);
+  assert.match(ownerPanel, /Haptics\.selectionAsync\(\)/);
+  assert.match(ownerPanel, /onOpenSpriteQa\(\)/);
+  assert.match(ownerPanel, /onPress=\{openQa\}/);
+  assert.doesNotMatch(
+    component,
+    /useRouter|router\.(?:push|replace)|pathname:\s*"\/care-twin-qa"/,
+  );
 });
 
 test("preserves the Avatar state, art, picker, motion, and creator anatomy", () => {
   const component = read(COMPONENT_PATH);
+  const ownerPanel = read(OWNER_PANEL_PATH);
 
   for (const anchor of [
     "activeTab",
@@ -76,20 +94,35 @@ test("preserves the Avatar state, art, picker, motion, and creator anatomy", () 
     "previewEmote",
     "sourceUri",
     "savedToast",
-    "setNow",
+    "useActiveCurrentTime",
     "ImagePicker",
     "AVATAR_TEMPLATES",
     "AVATAR_ACCESSORIES",
     "AVATAR_EMOTE_STATES",
     "SpriteSheetPlayer",
     "LivingPhoenixRoom",
-    "buildAvatarSpriteProductionQaSummary",
-    "buildAvatarSpriteProductionTemplateReview",
     "useReducedMotion",
     "MIN_MOBILE_TOUCH_TARGET",
     "MOBILE_INLINE_HIT_SLOP",
   ]) {
-    assert.match(component, new RegExp(`\\b${anchor}\\b`), `${anchor} must survive the move`);
+    assert.match(
+      component,
+      new RegExp(`\\b${anchor}\\b`),
+      `${anchor} must survive the move`,
+    );
+  }
+  for (const ownerAnchor of [
+    "buildAvatarSpriteProductionQaSummary",
+    "buildAvatarSpriteProductionTemplateReview",
+    "Sprite production review",
+    "Open sprite QA cockpit",
+  ]) {
+    assert.match(ownerPanel, new RegExp(ownerAnchor));
+    assert.doesNotMatch(
+      component,
+      new RegExp(ownerAnchor),
+      `${ownerAnchor} must stay behind the owner-only component boundary`,
+    );
   }
   assert.match(component, /requestCameraPermissionsAsync/);
   assert.match(component, /requestMediaLibraryPermissionsAsync/);
@@ -99,7 +132,10 @@ test("preserves the Avatar state, art, picker, motion, and creator anatomy", () 
     component,
     /if \(!res \|\| res\.canceled \|\| !res\.assets\?\.\[0\]\?\.uri\) return/,
   );
-  assert.match(component, /Haptics\.impactAsync\(Haptics\.ImpactFeedbackStyle\.Medium\)/);
+  assert.match(
+    component,
+    /Haptics\.impactAsync\(Haptics\.ImpactFeedbackStyle\.Medium\)/,
+  );
   assert.match(
     component,
     /useEffect\([\s\S]{0,120}navigation\.addListener\("beforeRemove"[\s\S]{0,260}event\.preventDefault\(\)[\s\S]{0,220}requestAvatarDraftExit\([\s\S]{0,340}navigation\.dispatch\(event\.data\.action\)[\s\S]{0,120}\[navigation\]/,
@@ -111,33 +147,51 @@ test("preserves the Avatar state, art, picker, motion, and creator anatomy", () 
   );
   assert.match(
     component,
-    /useEffect\(\(\) => \{[\s\S]{0,100}avatarStudioMountedRef\.current = true[\s\S]{0,120}setInterval\([\s\S]{0,220}avatarStudioMountedRef\.current = false[\s\S]{0,260}clearInterval\(id\)[\s\S]{0,520}releasePickedMediaReferences\([\s\S]{0,360}\[appFileSystem\]/,
-    "unmount must stop timers and release the locally owned photo reference",
+    /useEffect\(\(\) => \{[\s\S]{0,100}avatarStudioMountedRef\.current = true[\s\S]{0,220}avatarStudioMountedRef\.current = false[\s\S]{0,520}releasePickedMediaReferences\([\s\S]{0,360}\[appFileSystem\]/,
+    "unmount must release the locally owned photo reference",
   );
+  assert.match(component, /const now = useActiveCurrentTime\(\);/);
+  assert.doesNotMatch(component, /setInterval\(\(\) => setNow/);
   assert.match(
     component,
-    /useEffect\(\(\) => \{[\s\S]{0,80}if \(reduced\) return[\s\S]{0,100}Animated\.loop\([\s\S]{0,620}lifeLoop\.start\(\)[\s\S]{0,180}lifeLoop\.stop\(\)[\s\S]{0,100}templateLife\.setValue\(0\)[\s\S]{0,100}\[reduced, templateLife\]/,
-    "the template preview loop must honor Reduce Motion and clean up",
+    /useEffect\(\(\) => \{[\s\S]{0,100}if \(reduced \|\| !routeMotionActive\) return[\s\S]{0,120}Animated\.loop\([\s\S]{0,620}lifeLoop\.start\(\)[\s\S]{0,180}lifeLoop\.stop\(\)[\s\S]{0,100}templateLife\.setValue\(0\)[\s\S]{0,140}\[reduced, routeMotionActive, templateLife\]/,
+    "the template preview loop must honor Reduce Motion, route activity, and clean up",
   );
   assert.equal(component.match(/\bAnimated\.loop\(/g)?.length ?? 0, 1);
   assert.equal(component.match(/\.stop\(\)/g)?.length ?? 0, 1);
-  assert.equal(component.match(/\bclearInterval\(/g)?.length ?? 0, 1);
+  assert.equal(component.match(/\bclearInterval\(/g)?.length ?? 0, 0);
   assert.ok(
     (component.match(/\bclearTimeout\(/g)?.length ?? 0) >= 1,
     "saved feedback timers must be cleared during replacement or unmount",
   );
   assert.equal(component.match(/\.setValue\(0\)/g)?.length ?? 0, 1);
 
-  const pick = between(component, "const pick = async", "const selectTemplate =");
-  assert.match(component, /type StudioTab = "reference" \| "template" \| "customize" \| "emotes"/);
+  const pick = between(
+    component,
+    "const pick = async",
+    "const selectTemplate =",
+  );
+  assert.match(
+    component,
+    /type StudioTab = "reference" \| "template" \| "customize" \| "emotes"/,
+  );
   assert.match(component, /Photo reference/);
   assert.match(component, /Local only/);
   assert.match(component, /Selected reference photo/);
   assert.match(component, /Current manual pixel twin/);
   assert.match(pick, /setSourceUri\(res\.assets\[0\]\.uri\)/);
-  assert.doesNotMatch(pick, /setDraft|setPhase|setTimeout|setInterval|suggest/i);
-  assert.doesNotMatch(component, /\bPhase\b|setPhase|scanLine|finishTimer|lineTimer|scanLoop|pulseLoop/);
-  assert.doesNotMatch(component, /AvatarScanSuggestion|buildTemplateScanSuggestion|detectedTraits|\bconfidence\b/);
+  assert.doesNotMatch(
+    pick,
+    /setDraft|setPhase|setTimeout|setInterval|suggest/i,
+  );
+  assert.doesNotMatch(
+    component,
+    /\bPhase\b|setPhase|scanLine|finishTimer|lineTimer|scanLoop|pulseLoop/,
+  );
+  assert.doesNotMatch(
+    component,
+    /AvatarScanSuggestion|buildTemplateScanSuggestion|detectedTraits|\bconfidence\b/,
+  );
 });
 
 test("keeps Avatar persistence separate and preserves Save and Reset ordering", () => {
@@ -145,8 +199,17 @@ test("keeps Avatar persistence separate and preserves Save and Reset ordering", 
 
   assert.equal(callCount(component, "saveAvatarConfig"), 1);
   assert.equal(callCount(component, "resetAvatarConfig"), 1);
-  for (const careMutation of ["addEntry", "updateEntry", "deleteEntry", "updateCareDoc"]) {
-    assert.equal(callCount(component, careMutation), 0, `${careMutation} must not enter Avatar Studio`);
+  for (const careMutation of [
+    "addEntry",
+    "updateEntry",
+    "deleteEntry",
+    "updateCareDoc",
+  ]) {
+    assert.equal(
+      callCount(component, careMutation),
+      0,
+      `${careMutation} must not enter Avatar Studio`,
+    );
   }
   assert.doesNotMatch(component, /AsyncStorage/);
   assert.match(
@@ -175,14 +238,26 @@ test("keeps Portrait as one small replace-only bridge and moves focused QA navig
   const route = read(PORTRAIT_ROUTE_PATH);
   const router = read(ROUTER_PATH);
 
-  assert.ok(route.length <= 1_400, `Portrait delegate should stay small, received ${route.length} chars`);
+  assert.ok(
+    route.length <= 1_400,
+    `Portrait delegate should stay small, received ${route.length} chars`,
+  );
   assert.match(route, /useLocalSearchParams/);
   assert.match(route, /resolveCanonicalDestination/);
   assert.match(route, /pathname:\s*"\/portrait"/);
   assert.match(route, /<Redirect\s+href=\{redirectHref\}\s*\/>/);
-  assert.doesNotMatch(route, /AvatarStudioScreen|surface="standalone"|useRouter|router\.|care-twin-qa|qaSurface/);
-  assert.doesNotMatch(route, /ImagePicker|useAvatar|setInterval|Animated|StyleSheet|saveAvatarConfig|resetAvatarConfig/);
-  assert.match(router, /<AvatarStudioScreen\s+surface="tabbed"[\s\S]{0,240}onOpenSpriteQa=\{openSpriteQa\}/);
+  assert.doesNotMatch(
+    route,
+    /AvatarStudioScreen|surface="standalone"|useRouter|router\.|care-twin-qa|qaSurface/,
+  );
+  assert.doesNotMatch(
+    route,
+    /ImagePicker|useAvatar|setInterval|Animated|StyleSheet|saveAvatarConfig|resetAvatarConfig/,
+  );
+  assert.match(
+    router,
+    /<AvatarStudioScreen\s+surface="tabbed"[\s\S]{0,240}onOpenSpriteQa=\{openSpriteQa\}/,
+  );
   assert.match(router, /pathname:\s*"\/care-twin-qa"/);
   assert.match(router, /qaSurface:\s*"avatar-sprite-production-review"/);
 });
@@ -192,13 +267,18 @@ test("leaves Avatar model, context keys, and registries as the persistence owner
   const localData = read(join(MOBILE_ROOT, "lib", "avatarLocalDataReset.ts"));
   const model = read(join(MOBILE_ROOT, "lib", "avatarStudio.ts"));
   const assets = read(join(MOBILE_ROOT, "lib", "avatarTemplateAssets.ts"));
-  const sprites = read(join(MOBILE_ROOT, "lib", "avatarTemplateSpriteAssets.ts"));
+  const sprites = read(
+    join(MOBILE_ROOT, "lib", "avatarTemplateSpriteAssets.ts"),
+  );
 
   assert.match(localData, /woofwatcher\.avatarSet\.v1/);
   assert.match(localData, /woofwatcher\.petAvatarConfig\.v1/);
   assert.match(context, /AVATAR_KEY/);
   assert.match(context, /AVATAR_CONFIG_KEY/);
-  assert.doesNotMatch(context, /woofwatcher\.(?:avatarSet|petAvatarConfig)\.v1/);
+  assert.doesNotMatch(
+    context,
+    /woofwatcher\.(?:avatarSet|petAvatarConfig)\.v1/,
+  );
   assert.match(context, /normalizeAvatarConfig/);
   assert.match(model, /createDefaultAvatarConfig/);
   assert.match(model, /normalizeAvatarConfig/);

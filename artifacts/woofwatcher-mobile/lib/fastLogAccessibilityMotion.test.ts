@@ -51,7 +51,7 @@ test("Fast Log dismisses immediately and never interpolates its background under
   );
 });
 
-test("Fast Log native presentation honors Reduce Motion while web keeps its screen-owned transition", () => {
+test("Fast Log presentation honors Reduce Motion while web keeps its screen-owned transition", () => {
   assert.match(
     navigatorSource,
     /import \{ useReducedMotion \} from "react-native-reanimated"/,
@@ -66,8 +66,9 @@ test("Fast Log native presentation honors Reduce Motion while web keeps its scre
   );
   assert.match(
     navigatorSource,
-    /animation:\s*Platform\.OS !== "web" && reducedMotion\s*\?\s*"none"\s*:\s*"slide_from_bottom"/,
+    /animation:\s*reducedMotion\s*\?\s*"none"\s*:\s*"slide_from_bottom"/,
   );
+  assert.match(fastLogSource, /const animatesInternally = Platform\.OS === "web"/);
 });
 
 test("Fast Log recent title, metadata, and outcome preserve large text without truncation", () => {

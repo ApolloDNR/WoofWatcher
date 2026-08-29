@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -53,7 +53,8 @@ export function OwnerOpsUnavailableScreen({
           ]}
         >
           This page isn't available in this version of WoofWatcher. Everything
-          for your dog's day is available from Home, Log, Plans, Health, and More.
+          for your dog's day is available from Home, Log, Plans, Health, and
+          More.
         </Text>
         <Pressable
           accessibilityRole="button"

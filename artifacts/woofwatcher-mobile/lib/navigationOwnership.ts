@@ -1,5 +1,7 @@
 export type PrimaryTab = "home" | "log" | "plans" | "health" | "more";
 
+export type PlansSection = "reminders";
+
 export type HealthSection =
   | "overview"
   | "health-watch"
@@ -74,7 +76,6 @@ const PRIMARY_PATHS: Readonly<
   "/": { parent: "home", pathname: "/" },
   "/log": { parent: "log", pathname: "/log" },
   "/fastlog": { parent: "log", pathname: "/fastlog" },
-  "/calendar": { parent: "plans", pathname: "/calendar" },
 };
 
 const LEGACY_HEALTH_TABS: Readonly<Record<string, HealthSection>> = {
@@ -244,6 +245,40 @@ function healthSectionDestination(
   return destination("health", "/health", replace, { section, ...params });
 }
 
+function plansReminderDestination(
+  replace: boolean,
+  params?: Readonly<Record<string, string>>,
+): CanonicalDestination {
+  return destination("plans", "/calendar", replace, {
+    section: "reminders",
+    ...params,
+  });
+}
+
+function resolvePlans(
+  params: IncomingParams | undefined,
+): CanonicalDestination {
+  const sectionPresent = Boolean(
+    params && Object.prototype.hasOwnProperty.call(params, "section"),
+  );
+  const section = ownScalarParam(params, "section");
+  const item = validatedIdentifier(params, "item");
+
+  if (sectionPresent) {
+    if (section === "reminders") {
+      return plansReminderDestination(false, item ? { item } : undefined);
+    }
+    return destination("plans", "/calendar", true);
+  }
+  if (item) {
+    return plansReminderDestination(true, { item });
+  }
+  if (params && Object.prototype.hasOwnProperty.call(params, "item")) {
+    return destination("plans", "/calendar", true);
+  }
+  return destination("plans", "/calendar", false);
+}
+
 function moreSectionDestination(
   section: Exclude<MoreSection, "root">,
   replace: boolean,
@@ -305,6 +340,8 @@ export function resolveCanonicalDestination(input: {
   pathname: string;
   params?: IncomingParams;
 }): CanonicalDestination {
+  if (input.pathname === "/calendar") return resolvePlans(input.params);
+
   const primary = ownValue(PRIMARY_PATHS, input.pathname);
   if (primary) return destination(primary.parent, primary.pathname, false);
 
@@ -312,9 +349,7 @@ export function resolveCanonicalDestination(input: {
   if (input.pathname === "/more") return resolveMore(input.params);
 
   if (input.pathname === "/reminders") {
-    return destination(
-      "plans",
-      "/calendar",
+    return plansReminderDestination(
       true,
       validatedIdentifiers(input.params, ["item"]),
     );

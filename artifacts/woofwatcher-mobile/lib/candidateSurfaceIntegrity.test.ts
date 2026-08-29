@@ -54,29 +54,52 @@ test("keeps every React Native modal on the VoiceOver-safe structural contract",
     /<Pressable[\s\S]*accessible=\{false\}[\s\S]*accessibilityViewIsModal[\s\S]*onAccessibilityEscape=\{requestCloseIfAllowed\}[\s\S]*event\.stopPropagation\(\)/,
   );
   assert.match(primitives, /accessibilityLabel=\{closeAccessibilityLabel\}/);
-  assert.match(primitives, /AccessibilityInfo\.setAccessibilityFocus\(reactTag\)/);
+  assert.match(
+    primitives,
+    /AccessibilityInfo\.setAccessibilityFocus\(reactTag\)/,
+  );
   assert.match(primitives, /if \(!visible \|\| closeBlocked\) return/);
   assert.match(primitives, /minHeight:\s*MIN_MOBILE_TOUCH_TARGET/);
   assert.match(primitives, /minWidth:\s*MIN_MOBILE_TOUCH_TARGET/);
-  assert.ok(modalOwners.length > 0, "the candidate should still have modal owners");
+  assert.ok(
+    modalOwners.length > 0,
+    "the candidate should still have modal owners",
+  );
 
   for (const path of modalOwners) {
     const source = readFileSync(path, "utf8");
     const label = relative(ROOT, path);
     const modalCount = source.match(/<Modal\b/g)?.length ?? 0;
-    const backdropCount = source.match(/<ModalBackdropPressable\b/g)?.length ?? 0;
+    const backdropCount =
+      source.match(/<ModalBackdropPressable\b/g)?.length ?? 0;
     const sheetCount = source.match(/<ModalSheetPressable\b/g)?.length ?? 0;
-    const sheetCloseCount = source.match(
-      /<ModalSheetPressable\b(?=[\s\S]{0,420}?\bonRequestClose=)/g,
-    )?.length ?? 0;
-    const sheetVisibilityCount = source.match(
-      /<ModalSheetPressable\b(?=[\s\S]{0,420}?\bvisible=)/g,
-    )?.length ?? 0;
+    const sheetCloseCount =
+      source.match(/<ModalSheetPressable\b(?=[\s\S]{0,420}?\bonRequestClose=)/g)
+        ?.length ?? 0;
+    const sheetVisibilityCount =
+      source.match(/<ModalSheetPressable\b(?=[\s\S]{0,420}?\bvisible=)/g)
+        ?.length ?? 0;
 
-    assert.equal(backdropCount, modalCount, `${label}: one safe backdrop per modal`);
-    assert.equal(sheetCount, modalCount, `${label}: one modal focus boundary per modal`);
-    assert.equal(sheetCloseCount, modalCount, `${label}: every modal sheet exposes an explicit close action`);
-    assert.equal(sheetVisibilityCount, modalCount, `${label}: focus moves only when its modal is visible`);
+    assert.equal(
+      backdropCount,
+      modalCount,
+      `${label}: one safe backdrop per modal`,
+    );
+    assert.equal(
+      sheetCount,
+      modalCount,
+      `${label}: one modal focus boundary per modal`,
+    );
+    assert.equal(
+      sheetCloseCount,
+      modalCount,
+      `${label}: every modal sheet exposes an explicit close action`,
+    );
+    assert.equal(
+      sheetVisibilityCount,
+      modalCount,
+      `${label}: focus moves only when its modal is visible`,
+    );
     assert.doesNotMatch(
       source,
       /<Pressable\s+style=\{\[?s\.modalBackdrop/,
@@ -95,7 +118,9 @@ test("keeps shared primary controls at the declared 48-point minimum", () => {
   ]) {
     assert.match(
       primitives,
-      new RegExp(`${styleName}: \\{[\\s\\S]{0,180}?minHeight: MIN_MOBILE_TOUCH_TARGET`),
+      new RegExp(
+        `${styleName}: \\{[\\s\\S]{0,180}?minHeight: MIN_MOBILE_TOUCH_TARGET`,
+      ),
       `${styleName} must use the shared 48-point minimum`,
     );
   }
@@ -110,8 +135,14 @@ test("serializes proof picking and commits care metadata before physical cleanup
   );
 
   assert.match(attachProof, /proofPickerInFlightRef\.current/);
-  assert.match(attachProof, /const latestEntry = careStateRef\.current\.entries\.find/);
-  assert.match(attachProof, /buildCareLogPhotoProofAttachmentPatch\(latestEntry/);
+  assert.match(
+    attachProof,
+    /const latestEntry = careStateRef\.current\.entries\.find/,
+  );
+  assert.match(
+    attachProof,
+    /buildCareLogPhotoProofAttachmentPatch\(latestEntry/,
+  );
   assert.match(attachProof, /source: "library",\s*now: Date\.now\(\)/);
   assert.doesNotMatch(attachProof, /source: "library",\s*now,/);
   assert.doesNotMatch(attachProof, /cleanupAfterApplyUris/);
@@ -124,17 +155,19 @@ test("serializes proof picking and commits care metadata before physical cleanup
   assert.match(log, /disabled=\{proofPickerBusy\}/);
   assert.match(log, /accessibilityState=\{\{ disabled: proofPickerBusy \}\}/);
   assert.ok(
-    (records.match(/runCareFileCleanupAfterDurableSnapshot\(\{/g)?.length ?? 0) >= 2,
+    (records.match(/runCareFileCleanupAfterDurableSnapshot\(\{/g)?.length ??
+      0) >= 2,
     "record replacement and deletion both need the durability gate",
   );
   assert.ok(
-    (log.match(/runCareFileCleanupAfterDurableSnapshot\(\{/g)?.length ?? 0) >= 2,
+    (log.match(/runCareFileCleanupAfterDurableSnapshot\(\{/g)?.length ?? 0) >=
+      2,
     "proof replacement and log deletion both need the durability gate",
   );
 });
 
 test("QA evidence actions are exclusive and freeze concurrent note or status edits", () => {
-  const qa = readMobile("app", "care-twin-qa.tsx");
+  const qa = readMobile("components", "owner", "CareTwinQaScreen.tsx");
   const editAdmission = qa.slice(
     qa.indexOf("const applyRealQaEdit ="),
     qa.indexOf("const setQaStatusById:"),
@@ -174,7 +207,10 @@ test("keeps long modal forms reachable above compact screens and the keyboard", 
 
   assert.match(calendar, /KeyboardAvoidingView/);
   assert.match(calendar, /getKeyboardAvoidingVerticalOffset/);
-  assert.match(calendar, /modalDock:\s*\{\s*flex:\s*1,\s*justifyContent:\s*"flex-end"\s*\}/);
+  assert.match(
+    calendar,
+    /modalDock:\s*\{\s*flex:\s*1,\s*justifyContent:\s*"flex-end"\s*\}/,
+  );
   assert.match(calendar, /modalSheet:\s*\{[^}]*maxHeight:\s*"92%"/);
   assert.equal(
     calendar.match(/style=\{s\.modalFormScroll\}/g)?.length,
@@ -198,7 +234,11 @@ test("keeps long modal forms reachable above compact screens and the keyboard", 
     ["Dog Profile", dogProfile],
     ["Diet Profile", diet],
   ] as const) {
-    assert.match(source, /KeyboardAvoidingView/, `${label} must avoid the keyboard`);
+    assert.match(
+      source,
+      /KeyboardAvoidingView/,
+      `${label} must avoid the keyboard`,
+    );
     assert.match(source, /getKeyboardAvoidingVerticalOffset/);
     assert.match(
       source,
@@ -215,36 +255,34 @@ test("keeps long modal forms reachable above compact screens and the keyboard", 
 
 test("keeps owner tooling and proof language outside the consumer candidate", () => {
   const qaRoute = readMobile("app", "care-twin-qa.tsx");
+  const qaScreen = readMobile("components", "owner", "CareTwinQaScreen.tsx");
   const premiumRoute = readMobile("app", "premium.tsx");
   const signInRoute = readMobile("app", "(auth)", "sign-in.tsx");
   const signUpRoute = readMobile("app", "(auth)", "sign-up.tsx");
   const rootLayout = readMobile("app", "_layout.tsx");
-  const boundary = readMobile(
-    "components",
-    "board",
-    "OwnerOpsBoundary.tsx",
-  );
-  const primitives = readMobile(
-    "components",
-    "board",
-    "BoardPrimitives.tsx",
-  );
+  const boundary = readMobile("components", "board", "OwnerOpsBoundary.tsx");
+  const primitives = readMobile("components", "board", "BoardPrimitives.tsx");
   const authUi = readMobile("components", "auth-ui.tsx");
-  const avatarStudio = readMobile("components", "more", "AvatarStudioScreen.tsx");
+  const avatarStudio = readMobile(
+    "components",
+    "more",
+    "AvatarStudioScreen.tsx",
+  );
   const records = readMobile("components", "health", "RecordsScreen.tsx");
-  const privacy = readMobile(
-    "components",
-    "more",
-    "PrivacyDataScreen.tsx",
-  );
-  const settings = readMobile(
-    "components",
-    "more",
-    "SettingsScreen.tsx",
-  );
+  const privacy = readMobile("components", "more", "PrivacyDataScreen.tsx");
+  const settings = readMobile("components", "more", "SettingsScreen.tsx");
   const notFound = readMobile("app", "+not-found.tsx");
 
-  for (const route of [qaRoute, premiumRoute]) {
+  assert.match(
+    qaRoute,
+    /import CareTwinQaScreen from "@\/components\/owner\/CareTwinQaScreen"/,
+  );
+  assert.doesNotMatch(
+    qaRoute,
+    /mobileReleaseQa|mobileQaSession|launchReadiness/,
+  );
+
+  for (const route of [qaScreen, premiumRoute]) {
     assert.match(
       route,
       /if \(!isOwnerOpsBuild\(\)\) \{\s*return <OwnerOpsUnavailableScreen \/>;\s*\}/,
@@ -282,23 +320,20 @@ test("keeps owner tooling and proof language outside the consumer candidate", ()
   );
   assert.match(
     authUi,
-    /const authSetupProofManifest = ownerOps \? buildAuthSetupProofManifest\(\) : null/,
+    /const authSetupProofManifest = ownerOps\s*\?\s*buildAuthSetupProofManifest\(\)\s*:\s*null/,
   );
-  assert.match(
-    authUi,
-    /\{ownerOps && authSetupProofManifest \? \(/,
-  );
+  assert.match(authUi, /\{ownerOps && authSetupProofManifest \? \(/);
   assert.match(
     records,
-    /const binaryProofManifest = ownerOps \? buildReportBinaryExportProofManifest\(/,
+    /const binaryProofManifest = ownerOps\s*\?\s*buildRecordsOwnerBinaryProofManifest\(/,
   );
   assert.match(records, /\{ownerOps && binaryProofManifest \? \(/);
   assert.match(
     privacy,
     /\{ownerOps \? \(\s*<BoardCard enter=\{1\}[\s\S]*title="Attachment queue"/,
   );
-  assert.match(privacy, /<StatCard label="File refs"/);
-  assert.match(settings, /Your care data stays on this device/);
+  assert.match(privacy, /<StatCard\s+label="File refs"/);
+  assert.match(settings, /Your care\s*data stays on this device/);
   assert.doesNotMatch(settings, /provider|readiness|launch|proof|QA/i);
   assert.doesNotMatch(notFound, /Phoenix|QA|proof|provider|store/i);
   assert.doesNotMatch(
@@ -343,9 +378,15 @@ test("keeps fresh-install names and care copy natural and truthful", () => {
   assert.doesNotMatch(reminders, /reminder candidates?/i);
   assert.doesNotMatch(medication, /reminder candidate/i);
   assert.match(home, /buildPetSetupCopy\(state\.profile\.name\)/);
-  assert.doesNotMatch(home, /Let's make \{petName\} yours|Phoenix \$\{avatarTemplate\.label\}/);
+  assert.doesNotMatch(
+    home,
+    /Let's make \{petName\} yours|Phoenix \$\{avatarTemplate\.label\}/,
+  );
   assert.doesNotMatch(calendarMonth, /log Phoenix's first moment/);
-  assert.doesNotMatch(livingRoom, /`Phoenix room|"PHOENIX TWIN"|\?\? "Shepherd"|\?\? "Phoenix"/);
+  assert.doesNotMatch(
+    livingRoom,
+    /`Phoenix room|"PHOENIX TWIN"|\?\? "Shepherd"|\?\? "Phoenix"/,
+  );
   assert.doesNotMatch(
     avatarContext,
     /createDefaultAvatarConfig\("Phoenix"\)|normalizeAvatarConfig\(JSON\.parse\(raw\), "Phoenix"\)|config\.petName \|\| "Phoenix"|petName = "Phoenix"/,
@@ -363,7 +404,10 @@ test("keeps fresh-install names and care copy natural and truthful", () => {
   );
   assert.match(authUi, /Your dog's care starts here/);
   assert.match(woofGuide, /placeholder=\{`Ask about \$\{name\}\.\.\.`\}/);
-  assert.doesNotMatch(woofGuide, /placeholder=\{`Ask about \$\{state\.profile\.name\}/);
+  assert.doesNotMatch(
+    woofGuide,
+    /placeholder=\{`Ask about \$\{state\.profile\.name\}/,
+  );
   assert.doesNotMatch(
     `${log}\n${records}`,
     /durable app storage|local proof file|Attach proof photo|Proof not attached|care log is accurate/i,

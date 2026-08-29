@@ -14,7 +14,9 @@ const MORE_PATH = join(
 
 test("provider review-status pills expose their visual selection to assistive technology", () => {
   const more = readFileSync(MORE_PATH, "utf8");
-  const statusOptionsStart = more.indexOf("const selected = providerDraft.providerStatus");
+  const statusOptionsStart = more.indexOf(
+    "providerDraft.providerStatus === statusOption.key",
+  );
   const statusOptionsEnd = more.indexOf("</View>", statusOptionsStart);
 
   assert.ok(statusOptionsStart >= 0 && statusOptionsEnd > statusOptionsStart);

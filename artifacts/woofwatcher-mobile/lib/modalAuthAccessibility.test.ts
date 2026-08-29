@@ -63,7 +63,10 @@ test("web dialog owns modal semantics, keyboard containment, and queue-safe focu
   assert.match(source, /nativeID="web-dialog-title"/);
   assert.match(source, /nativeID="web-dialog-message"/);
   assert.match(source, /event\.key === "Tab"/);
-  assert.match(source, /getNextWebDialogFocusIndex\([\s\S]{0,180}event\.shiftKey/);
+  assert.match(
+    source,
+    /getNextWebDialogFocusIndex\([\s\S]{0,180}event\.shiftKey/,
+  );
   assert.match(
     source,
     /const initialFocusRef = current\.cancelLabel != null\s*\? cancelButtonRef\s*: confirmButtonRef/,
@@ -72,7 +75,10 @@ test("web dialog owns modal semantics, keyboard containment, and queue-safe focu
   assert.match(source, /previouslyFocusedRef\.current\?\.focus\(\)/);
   assert.match(source, /dialogSessionActiveRef\.current/);
   assert.match(source, /queueRef\.current/);
-  assert.match(source, /if \(queueRef\.current\[0\] !== expectedRequest\) return/);
+  assert.match(
+    source,
+    /if \(queueRef\.current\[0\] !== expectedRequest\) return/,
+  );
   assert.match(source, /addEventListener\("keydown", onKeyDown, true\)/);
   assert.match(
     source,
@@ -82,7 +88,10 @@ test("web dialog owns modal semantics, keyboard containment, and queue-safe focu
   assert.match(source, /createDeliberateConfirmationLatch/);
   assert.match(source, /trySettleDeliberateConfirmation/);
   assert.match(source, /transitionDeliberateConfirmation/);
-  assert.match(source, /accessibilityState=\{\{ disabled: activationBlocked \}\}/);
+  assert.match(
+    source,
+    /accessibilityState=\{\{ disabled: activationBlocked \}\}/,
+  );
   assert.match(source, /disabled=\{activationBlocked\}/);
   assert.ok(WEB_DIALOG_STEP_TRANSITION_MS >= 300);
 });
@@ -99,7 +108,10 @@ test("Privacy deletion binds both displayed stages to a transition latch", () =>
     source,
     /accessibilityState=\{\{[\s\S]{0,100}disabled:[\s\S]{0,100}localDataOperationBusy \|\| eraseTransitionBlocked/,
   );
-  assert.match(source, /disabled=\{localDataOperationBusy \|\| eraseTransitionBlocked\}/);
+  assert.match(
+    source,
+    /disabled=\{localDataOperationBusy \|\| eraseTransitionBlocked\}/,
+  );
 });
 
 test("shared auth errors announce immediately with AA text in light and dark palettes", () => {
@@ -119,7 +131,8 @@ test("shared auth errors announce immediately with AA text in light and dark pal
     /color: colors\.isDark\s*\? colors\.brandNavy\s*: colors\.destructiveForeground/,
   );
   assert.ok(
-    contrast(palette.light.destructiveForeground, palette.light.destructive) >= 4.5,
+    contrast(palette.light.destructiveForeground, palette.light.destructive) >=
+      4.5,
   );
   assert.ok(contrast(palette.dark.brandNavy, palette.dark.destructive) >= 4.5);
 });
@@ -127,9 +140,15 @@ test("shared auth errors announce immediately with AA text in light and dark pal
 test("setup selected controls use the palette foreground token", () => {
   const source = read("app", "setup.tsx");
 
-  assert.match(source, /selected \? colors\.primaryForeground : colors\.primary/);
-  assert.match(source, /selected \? colors\.primaryForeground : colors\.foreground/);
-  assert.doesNotMatch(source, /selected \? "#(?:fff|FFFFFF)"/i);
+  assert.match(
+    source,
+    /selected\s*\?\s*colors\.primaryForeground\s*:\s*colors\.primary/,
+  );
+  assert.match(
+    source,
+    /selected\s*\?\s*colors\.primaryForeground\s*:\s*colors\.foreground/,
+  );
+  assert.doesNotMatch(source, /selected\s*\?\s*"#(?:fff|FFFFFF)"/i);
 });
 
 test("modal owners use the shared named close action without a second visible X", () => {
@@ -139,12 +158,12 @@ test("modal owners use the shared named close action without a second visible X"
   const errorModal = sourceBetween(error, "<Modal\n", "</Modal>");
   const privacyEditor = sourceBetween(
     privacy,
-    "<Modal visible={launchEditorOpen}",
+    "visible={launchEditorOpen}",
     "</Modal>",
   );
   const ownerReview = sourceBetween(
     guide,
-    "<Modal visible={reviewAction !== null}",
+    "visible={reviewAction !== null}",
     "</Modal>",
   );
 
@@ -155,7 +174,10 @@ test("modal owners use the shared named close action without a second visible X"
   );
   assert.match(ownerReview, /closeAccessibilityLabel="Close owner review"/);
   for (const modal of [errorModal, privacyEditor, ownerReview]) {
-    assert.doesNotMatch(modal, /<Pressable[\s\S]{0,260}<Ionicons?[^>]+name="close"/);
+    assert.doesNotMatch(
+      modal,
+      /<Pressable[\s\S]{0,260}<Ionicons?[^>]+name="close"/,
+    );
     assert.doesNotMatch(modal, /<Pressable[\s\S]{0,260}<Feather[^>]+name="x"/);
   }
 });
@@ -171,7 +193,10 @@ test("shared modal close exposes busy state and Records cannot focus a no-op clo
 
   assert.match(sharedSheet, /closeDisabled = false/);
   assert.match(sharedSheet, /closeBusy = false/);
-  assert.match(sharedSheet, /const closeBlocked = closeDisabled \|\| closeBusy/);
+  assert.match(
+    sharedSheet,
+    /const closeBlocked = closeDisabled \|\| closeBusy/,
+  );
   assert.match(sharedSheet, /if \(!visible \|\| closeBlocked\) return/);
   assert.match(sharedSheet, /onAccessibilityEscape=\{requestCloseIfAllowed\}/);
   assert.match(sharedSheet, /disabled=\{closeBlocked\}/);
@@ -183,7 +208,7 @@ test("shared modal close exposes busy state and Records cannot focus a no-op clo
   const carePassSheet = sourceBetween(
     records,
     "visible={carePassPreview !== null}",
-    "style={[s.recordSheet",
+    "style={[",
   );
   assert.match(carePassSheet, /closeDisabled=\{carePassSaveShareBusy\}/);
   assert.match(carePassSheet, /closeBusy=\{carePassSaveShareBusy\}/);
@@ -191,7 +216,7 @@ test("shared modal close exposes busy state and Records cannot focus a no-op clo
   const recordEditorSheet = sourceBetween(
     records,
     "visible={recordOpen}",
-    "style={[s.recordSheet",
+    "style={[",
   );
   assert.match(recordEditorSheet, /closeDisabled=\{recordSaveBusy\}/);
   assert.match(recordEditorSheet, /closeBusy=\{recordSaveBusy\}/);
@@ -200,7 +225,11 @@ test("shared modal close exposes busy state and Records cannot focus a no-op clo
 test("error recovery and Diet save expose explicit button semantics", () => {
   const error = read("components", "ErrorFallback.tsx");
   const diet = read("components", "health", "DietScreen.tsx");
-  const restart = sourceBetween(error, "onPress={handleRestart}", "</Pressable>");
+  const restart = sourceBetween(
+    error,
+    "onPress={handleRestart}",
+    "</Pressable>",
+  );
   const saveDiet = sourceBetween(diet, "onPress={saveDiet}", "</Pressable>");
 
   assert.match(restart, /accessibilityRole="button"/);

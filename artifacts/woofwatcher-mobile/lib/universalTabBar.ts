@@ -1,4 +1,8 @@
-import type { HealthSection, MoreSection } from "./navigationOwnership.ts";
+import type {
+  HealthSection,
+  MoreSection,
+  PlansSection,
+} from "./navigationOwnership.ts";
 import { UNIVERSAL_PRIMARY_TAB_MODELS } from "./universalNavigationManifest.ts";
 
 export const UNIVERSAL_PRIMARY_TABS = UNIVERSAL_PRIMARY_TAB_MODELS;
@@ -9,14 +13,14 @@ export const UNIVERSAL_COMPATIBILITY_TABS = [
   "records",
 ] as const;
 
-export type UniversalTabName =
-  (typeof UNIVERSAL_PRIMARY_TABS)[number]["name"];
+export type UniversalTabName = (typeof UNIVERSAL_PRIMARY_TABS)[number]["name"];
 
 export interface UniversalTabPressInput {
   tabName: UniversalTabName;
   focused: boolean;
   pathname: string;
   plansItem?: string;
+  plansSection?: PlansSection;
   healthSection?: HealthSection;
   moreSection: MoreSection;
 }
@@ -36,7 +40,7 @@ export function handleUniversalTabPress(
   if (
     input.tabName === "calendar" &&
     input.pathname === "/calendar" &&
-    input.plansItem
+    (input.plansItem || input.plansSection === "reminders")
   ) {
     root = "/calendar";
   } else if (

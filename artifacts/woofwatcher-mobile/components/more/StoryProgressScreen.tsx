@@ -1,6 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Image as ExpoImage } from "expo-image";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
   Platform,
@@ -16,6 +17,7 @@ import {
   deriveAdventureMode,
   deriveWalkActivity,
   deriveWalkRouteTemplates,
+  isHouseholdVisibleCareEvidence,
   normalizeCareEventType,
   selectSharedCareEvidence,
 } from "@workspace/care-domain";
@@ -31,13 +33,18 @@ import {
   BoardStatusPill,
   CareRow,
 } from "@/components/board/BoardPrimitives";
-import { enterUp, PressScale, ProgressFill } from "@/components/motion/GameFeel";
+import {
+  enterUp,
+  PressScale,
+  ProgressFill,
+} from "@/components/motion/GameFeel";
 import { type DayTrailStop } from "@/components/DayTrailScene";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { TrailMap } from "@/components/TrailMap";
 import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { useActiveCurrentTime } from "@/hooks/useActiveCurrentTime";
 import {
   careLevelSpanXp,
   careTitleForLevel,
@@ -53,6 +60,12 @@ import {
 } from "@/lib/mobileLayout";
 import { resolvePetName } from "@/lib/petIdentity";
 import {
+  createStoryMemoryArchiveIdentity,
+  selectStoryMemoryArchivePage,
+  type StoryMemoryArchiveItem,
+  type StoryMemoryArchivePagination,
+} from "@/lib/storyMemoryArchive";
+import {
   formatRouteDistanceMiles,
   parseWalkRoute,
   routeDistanceMeters,
@@ -64,6 +77,7 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // big level number - pixel/serif stays an accent, never body copy.
 const TITLE_SERIF = "Fraunces_700Bold";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const MEMORY_PAGE_SIZE = 24;
 
 type StorySegment = "adventures" | "memories" | "badges";
 
@@ -117,7 +131,11 @@ const BADGE_TROPHY_ART = require("@/assets/story/badge-trophy.png");
 function formatMemoryDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "Recently saved";
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function formatTrailDate(iso: string): string {
@@ -150,18 +168,21 @@ function sentenceCase(value: string): string {
   return trimmed[0].toUpperCase() + trimmed.slice(1);
 }
 
-function entryPhotoUri(details: { [key: string]: unknown } | undefined): string {
+function entryPhotoUri(
+  details: { [key: string]: unknown } | undefined,
+): string {
   const uri = details?.photoProofAttachmentUri;
   return typeof uri === "string" ? uri.trim() : "";
 }
 
 /** One tile in the mock-board memories grid: a real saved adventure memory or
  *  a real care-log proof photo, never a placeholder image. */
-type MemoryGridItem = {
+type MemoryGridItem = StoryMemoryArchiveItem & {
   id: string;
   kind: "memory" | "entry";
   title: string;
   dateIso: string;
+  sortTime: number;
   photoUri?: string;
   entryId?: string;
 };
@@ -174,7 +195,6 @@ type WalkJournalStory = {
   mood?: string;
   photoUri?: string;
 };
-
 
 export interface StoryProgressScreenProps {
   /** Validated canonical IDs; intentionally inert until a reviewed focus UX exists. */
@@ -194,11 +214,16 @@ export default function StoryProgressScreen({
   const reducedMotion = useReducedMotion();
   const { width: windowWidth } = useAppViewport();
   const { state } = useCare();
-  const now = Date.now();
+  const now = useActiveCurrentTime();
   /* Mock-board memories grid: 3 columns on the parchment background - 16px
      screen gutters and two 8px gaps between rounded tiles. */
   const memoryTile = Math.floor((windowWidth - 32 - 16) / 3);
   const [segment, setSegment] = useState<StorySegment>("adventures");
+  const [memoryPagination, setMemoryPagination] =
+    useState<StoryMemoryArchivePagination>({
+      collectionIdentity: "",
+      page: 0,
+    });
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -217,8 +242,14 @@ export default function StoryProgressScreen({
   );
 
   /* Care career: level, title, XP, and streak from real logged care only. */
-  const career = useMemo(() => deriveCareCareer(storyEntries, now), [storyEntries, now]);
-  const careStreak = useMemo(() => deriveCareStreak(storyEntries, now), [storyEntries, now]);
+  const career = useMemo(
+    () => deriveCareCareer(storyEntries, now),
+    [storyEntries, now],
+  );
+  const careStreak = useMemo(
+    () => deriveCareStreak(storyEntries, now),
+    [storyEntries, now],
+  );
   const careerWeek = useMemo(
     () => deriveCareerWeek(storyEntries, now),
     [storyEntries, now],
@@ -240,46 +271,115 @@ export default function StoryProgressScreen({
     [storyEntries, now],
   );
   const questsCompleteToday = useMemo(
-    () => adventure.quests.filter((quest) => quest.status === "complete").length,
+    () =>
+      adventure.quests.filter((quest) => quest.status === "complete").length,
     [adventure.quests],
   );
 
   /* Mock-board memories grid: every tile is a real saved adventure memory or
      a real care-log proof photo, grouped by month, newest first. Memories
      without a photo yet render as quiet note tiles - never stock imagery. */
-  const memoryMonths = useMemo(() => {
-    const items: MemoryGridItem[] = [];
-    for (const memory of adventure.memories) {
-      items.push({
-        id: `memory-${memory.id}`,
-        kind: "memory",
-        title: memory.title,
-        dateIso: memory.createdAt,
-        photoUri: memory.photoUri?.trim() || undefined,
-      });
-    }
-    for (const entry of storyEntries) {
-      const uri = entryPhotoUri(entry.details);
-      if (!uri) continue;
-      items.push({
-        id: `entry-${entry.id}`,
-        kind: "entry",
-        title: entry.title || "Care log photo",
-        dateIso: entry.occurredAt,
-        photoUri: uri,
-        entryId: entry.id,
-      });
-    }
-    items.sort((a, b) => (Date.parse(b.dateIso) || 0) - (Date.parse(a.dateIso) || 0));
-    const months: { key: string; label: string; items: MemoryGridItem[] }[] = [];
-    for (const item of items) {
+  const memoryArchiveCollection = useMemo(() => {
+    const memoryItems: MemoryGridItem[] = state.adventureMemories.map(
+      (memory) => {
+        const sortTime = Date.parse(memory.createdAt) || 0;
+        const photoUri = memory.photoUri?.trim() || undefined;
+        return {
+          id: `memory-${memory.id}`,
+          kind: "memory",
+          title: memory.title,
+          dateIso: memory.createdAt,
+          sortTime,
+          availableAt: null,
+          identityKey: JSON.stringify([
+            "memory",
+            memory.title,
+            memory.createdAt,
+            photoUri ?? "",
+          ]),
+          photoUri,
+        };
+      },
+    );
+    const entryItems: MemoryGridItem[] = state.entries.flatMap((entry) => {
+      if (!isHouseholdVisibleCareEvidence(entry)) return [];
+      const availableAt = Date.parse(entry.occurredAt);
+      const photoUri = entryPhotoUri(entry.details);
+      if (!Number.isFinite(availableAt) || !photoUri) return [];
+      const title = entry.title || "Care log photo";
+      return [
+        {
+          id: `entry-${entry.id}`,
+          kind: "entry",
+          title,
+          dateIso: entry.occurredAt,
+          sortTime: availableAt,
+          availableAt,
+          identityKey: JSON.stringify([
+            "entry",
+            title,
+            entry.occurredAt,
+            photoUri,
+            entry.id,
+          ]),
+          photoUri,
+          entryId: entry.id,
+        },
+      ];
+    });
+    const items = [...memoryItems, ...entryItems];
+    items.sort((a, b) => b.sortTime - a.sortTime);
+    return {
+      identity: createStoryMemoryArchiveIdentity(items),
+      items,
+    };
+  }, [state.adventureMemories, state.entries]);
+
+  const memoryArchive = useMemo(() => {
+    const page = selectStoryMemoryArchivePage(memoryArchiveCollection.items, {
+      now,
+      pageSize: MEMORY_PAGE_SIZE,
+      collectionIdentity: memoryArchiveCollection.identity,
+      pagination: memoryPagination,
+    });
+    const months: { key: string; label: string; items: MemoryGridItem[] }[] =
+      [];
+    for (const item of page.items) {
       const label = formatMemoryMonth(item.dateIso);
       const last = months[months.length - 1];
       if (last && last.label === label) last.items.push(item);
-      else months.push({ key: `${label}-${months.length}`, label, items: [item] });
+      else
+        months.push({ key: `${label}-${months.length}`, label, items: [item] });
     }
-    return months;
-  }, [adventure.memories, storyEntries]);
+    return { ...page, months };
+  }, [memoryArchiveCollection, memoryPagination, now]);
+  const memoryMonths = memoryArchive.months;
+  const newerMemoryCount = memoryArchive.pageStart;
+  const olderMemoryCount = Math.max(
+    0,
+    memoryArchive.total - memoryArchive.pageEnd,
+  );
+
+  useEffect(() => {
+    setMemoryPagination((current) => {
+      const resolved = memoryArchive.pagination;
+      return current.collectionIdentity === resolved.collectionIdentity &&
+        current.page === resolved.page
+        ? current
+        : resolved;
+    });
+  }, [
+    memoryArchive.pagination.collectionIdentity,
+    memoryArchive.pagination.page,
+  ]);
+
+  const changeMemoryPage = (delta: number) => {
+    const current = memoryArchive.pagination;
+    setMemoryPagination({
+      collectionIdentity: current.collectionIdentity,
+      page: Math.max(0, current.page + delta),
+    });
+  };
 
   /* Walk journal: real walk logs that carry journal content (a note, a mood,
      or a proof photo), told as mock-board story cards. There is no reaction
@@ -288,7 +388,8 @@ export default function StoryProgressScreen({
   const walkJournal = useMemo(() => {
     const stories: WalkJournalStory[] = [];
     for (const entry of storyEntries) {
-      if (normalizeCareEventType(entry.type, entry.details) !== "walk") continue;
+      if (normalizeCareEventType(entry.type, entry.details) !== "walk")
+        continue;
       const note = (entry.note ?? "").trim();
       const mood = (entry.mood ?? "").trim();
       const photoUri = entryPhotoUri(entry.details);
@@ -326,11 +427,14 @@ export default function StoryProgressScreen({
   const routedWalk = useMemo(() => {
     const routed: { entry: Entry; route: WalkRoutePoint[] }[] = [];
     for (const entry of storyEntries) {
-      if (normalizeCareEventType(entry.type, entry.details) !== "walk") continue;
+      if (normalizeCareEventType(entry.type, entry.details) !== "walk")
+        continue;
       const route = parseWalkRoute(entry.details?.route);
       if (route) routed.push({ entry, route });
     }
-    routed.sort((a, b) => Date.parse(b.entry.occurredAt) - Date.parse(a.entry.occurredAt));
+    routed.sort(
+      (a, b) => Date.parse(b.entry.occurredAt) - Date.parse(a.entry.occurredAt),
+    );
     return routed[0] ?? null;
   }, [storyEntries]);
 
@@ -356,7 +460,10 @@ export default function StoryProgressScreen({
           id: entry.id,
           type: normalizeCareEventType(entry.type, entry.details),
           label: entry.title || "Care log",
-          timeLabel: when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+          timeLabel: when.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+          }),
         },
       });
     }
@@ -366,7 +473,8 @@ export default function StoryProgressScreen({
 
   /* One-line recap that pays off Home's "Today's Story" promise - the same
      real logs, summarized. Empty state is honest, never a fake highlight. */
-  const latestTodayStop = dayTrailStops.length > 0 ? dayTrailStops[dayTrailStops.length - 1] : null;
+  const latestTodayStop =
+    dayTrailStops.length > 0 ? dayTrailStops[dayTrailStops.length - 1] : null;
   const todayRecap = latestTodayStop
     ? `${dayTrailStops.length} care moment${dayTrailStops.length === 1 ? "" : "s"} today - latest: ${latestTodayStop.label}.`
     : `${petName}'s story is ready for its first care moment today.`;
@@ -375,11 +483,13 @@ export default function StoryProgressScreen({
     if (!routedWalk) return "";
     const details = routedWalk.entry.details ?? {};
     const distanceM =
-      typeof details.routeDistanceM === "number" && Number.isFinite(details.routeDistanceM)
+      typeof details.routeDistanceM === "number" &&
+      Number.isFinite(details.routeDistanceM)
         ? details.routeDistanceM
         : routeDistanceMeters(routedWalk.route);
     const duration =
-      routedWalk.entry.durationMinutes != null && routedWalk.entry.durationMinutes > 0
+      routedWalk.entry.durationMinutes != null &&
+      routedWalk.entry.durationMinutes > 0
         ? `${routedWalk.entry.durationMinutes} min`
         : "";
     return ["Latest walk", formatRouteDistanceMiles(distanceM), duration]
@@ -465,27 +575,59 @@ export default function StoryProgressScreen({
           plain
         />
 
-        <BoardSegmentTabs segments={STORY_SEGMENTS} active={segment} onChange={setSegment} />
+        <BoardSegmentTabs
+          segments={STORY_SEGMENTS}
+          active={segment}
+          onChange={setSegment}
+        />
 
         {segment === "adventures" ? (
           <>
             {/* Today: the real recap + progress, paying off Home's "Today's
                 Story" promise with the same real logs instead of a painting. */}
             <BoardCard style={s.board} enter={0}>
-              <Text style={[s.todayRecap, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+              <Text
+                style={[
+                  s.todayRecap,
+                  { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                ]}
+              >
                 {todayRecap}
               </Text>
               <View style={s.levelStrip}>
-                <View style={[s.levelBadge, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
-                  <Text style={[s.levelBadgeValue, { color: colors.forest, fontFamily: TITLE_SERIF }]}>
+                <View
+                  style={[
+                    s.levelBadge,
+                    {
+                      backgroundColor: colors.sageSoft,
+                      borderColor: colors.sage + "55",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.levelBadgeValue,
+                      { color: colors.forest, fontFamily: TITLE_SERIF },
+                    ]}
+                  >
                     {career.level}
                   </Text>
-                  <Text style={[s.levelBadgeLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.levelBadgeLabel,
+                      { color: colors.sage, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     Level
                   </Text>
                 </View>
                 <View style={s.levelCopy}>
-                  <Text style={[s.levelTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  <Text
+                    style={[
+                      s.levelTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {career.title}
                   </Text>
                   <ProgressFill
@@ -495,8 +637,19 @@ export default function StoryProgressScreen({
                     height={10}
                     style={s.xpTrack}
                   />
-                  <Text style={[s.levelMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    +{career.todayXp} XP today - {careStreak > 0 ? `${careStreak}-day streak` : "start your streak"}
+                  <Text
+                    style={[
+                      s.levelMeta,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    +{career.todayXp} XP today -{" "}
+                    {careStreak > 0
+                      ? `${careStreak}-day streak`
+                      : "start your streak"}
                   </Text>
                 </View>
               </View>
@@ -509,9 +662,14 @@ export default function StoryProgressScreen({
                 accessibilityRole="button"
                 accessibilityLabel={`Trail map of the latest recorded walk. ${routedWalkChip}. Open the walk log.`}
                 onPress={() =>
-                  router.push(`/log?entry=${encodeURIComponent(routedWalk.entry.id)}` as never)
+                  router.push(
+                    `/log?entry=${encodeURIComponent(routedWalk.entry.id)}` as never,
+                  )
                 }
-                style={({ pressed }) => [s.trailHeroPress, { opacity: pressed ? 0.92 : 1 }]}
+                style={({ pressed }) => [
+                  s.trailHeroPress,
+                  { opacity: pressed ? 0.92 : 1 },
+                ]}
               >
                 <TrailMap
                   route={routedWalk.route}
@@ -520,12 +678,29 @@ export default function StoryProgressScreen({
                   accessibilityLabel="Private device-only view of the latest recorded walk route"
                 >
                   <View
-                    style={[s.trailHeroChip, { backgroundColor: colors.card + "F0", borderColor: colors.border }]}
+                    style={[
+                      s.trailHeroChip,
+                      {
+                        backgroundColor: colors.card + "F0",
+                        borderColor: colors.border,
+                      },
+                    ]}
                   >
-                    <View style={[s.trailHeroChipDot, { backgroundColor: colors.sage }]} />
+                    <View
+                      style={[
+                        s.trailHeroChipDot,
+                        { backgroundColor: colors.sage },
+                      ]}
+                    />
                     <Text
                       numberOfLines={1}
-                      style={[s.trailHeroChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                      style={[
+                        s.trailHeroChipText,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
                     >
                       {routedWalkChip}
                     </Text>
@@ -541,7 +716,10 @@ export default function StoryProgressScreen({
                   title="Today's timeline"
                   accessory={
                     dayTrailStops.length > 0 ? (
-                      <BoardPill label={`${dayTrailStops.length} logged`} tone={colors.sage} />
+                      <BoardPill
+                        label={`${dayTrailStops.length} logged`}
+                        tone={colors.sage}
+                      />
                     ) : undefined
                   }
                 />
@@ -552,35 +730,75 @@ export default function StoryProgressScreen({
                         key={stop.id}
                         accessibilityRole="button"
                         accessibilityLabel={`${stop.label} at ${stop.timeLabel}. Open this log.`}
-                        onPress={() => router.push(`/log?entry=${encodeURIComponent(stop.id)}` as never)}
+                        onPress={() =>
+                          router.push(
+                            `/log?entry=${encodeURIComponent(stop.id)}` as never,
+                          )
+                        }
                         style={({ pressed }) => [
                           s.todayStopRow,
                           {
                             borderBottomColor: colors.border,
-                            borderBottomWidth: index === dayTrailStops.length - 1 ? 0 : 1,
+                            borderBottomWidth:
+                              index === dayTrailStops.length - 1 ? 0 : 1,
                             opacity: pressed ? 0.6 : 1,
                           },
                         ]}
                       >
-                        <View style={[s.todayStopIcon, { backgroundColor: colors.sageSoft }]}>
-                          <PixelIcon name={STORY_STOP_ICON[stop.type] ?? "note"} size={18} />
+                        <View
+                          style={[
+                            s.todayStopIcon,
+                            { backgroundColor: colors.sageSoft },
+                          ]}
+                        >
+                          <PixelIcon
+                            name={STORY_STOP_ICON[stop.type] ?? "note"}
+                            size={18}
+                          />
                         </View>
                         <Text
                           numberOfLines={1}
-                          style={[s.todayStopLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                          style={[
+                            s.todayStopLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
                         >
                           {stop.label}
                         </Text>
-                        <Text style={[s.todayStopTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        <Text
+                          style={[
+                            s.todayStopTime,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
                           {stop.timeLabel}
                         </Text>
-                        <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                        <Ionicons
+                          name="chevron-forward"
+                          size={15}
+                          color={colors.mutedForeground}
+                        />
                       </Pressable>
                     ))}
                   </View>
                 ) : (
-                  <Text style={[s.todayEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Nothing logged yet today. Log a meal, walk, or potty and it shows up here as it happens.
+                  <Text
+                    style={[
+                      s.todayEmpty,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    Nothing logged yet today. Log a meal, walk, or potty and it
+                    shows up here as it happens.
                   </Text>
                 )}
               </BoardCard>
@@ -608,32 +826,60 @@ export default function StoryProgressScreen({
                       <View style={s.trailCopy}>
                         <Text
                           numberOfLines={1}
-                          style={[s.trailName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                          style={[
+                            s.trailName,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
                         >
                           {stop.name}
                         </Text>
                         <Text
                           numberOfLines={1}
-                          style={[s.trailMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                          style={[
+                            s.trailMeta,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
                         >
                           {[
                             formatTrailDate(stop.latestAt),
-                            stop.averageMinutes > 0 ? `~${stop.averageMinutes} min` : "",
+                            stop.averageMinutes > 0
+                              ? `~${stop.averageMinutes} min`
+                              : "",
                             `${stop.visits} ${stop.visits === 1 ? "visit" : "visits"}`,
-                            stop.dogInteractions > 0 ? `${stop.dogInteractions} dog friends` : "",
+                            stop.dogInteractions > 0
+                              ? `${stop.dogInteractions} dog friends`
+                              : "",
                           ]
                             .filter(Boolean)
                             .join(" · ")}
                         </Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                      <Ionicons
+                        name="chevron-forward"
+                        size={14}
+                        color={colors.mutedForeground}
+                      />
                     </PressScale>
                   ))}
                 </View>
               ) : (
-                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Your first spot lands here once discovered, with real visit counts and average
-                  time on the trail.
+                <Text
+                  style={[
+                    s.emptyText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  Your first spot lands here once discovered, with real visit
+                  counts and average time on the trail.
                 </Text>
               )}
               <BoardActionButton
@@ -650,50 +896,144 @@ export default function StoryProgressScreen({
             <BoardCard style={s.board} enter={1}>
               <BoardSectionHeader
                 title="Walk story"
-                accessory={<BoardStatusPill label={walkStatusLabel} tone={walkStatusTone} />}
+                accessory={
+                  <BoardStatusPill
+                    label={walkStatusLabel}
+                    tone={walkStatusTone}
+                  />
+                }
               />
-              <Text style={[s.sectionCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.sectionCopy,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 {walkActivity.summary}
               </Text>
               <View style={s.statPairRow}>
-                <View style={[s.statPairTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View
+                  style={[
+                    s.statPairTile,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="walk" size={20} />
-                  <Text style={[s.statPairValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  <Text
+                    style={[
+                      s.statPairValue,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {walkActivity.total}
                   </Text>
-                  <Text style={[s.statPairLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.statPairLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
                     Walks today
                   </Text>
-                  <Text style={[s.statPairDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {walkActivity.totalMinutes} of {walkActivity.targetMinutes} min target
+                  <Text
+                    style={[
+                      s.statPairDetail,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {walkActivity.totalMinutes} of {walkActivity.targetMinutes}{" "}
+                    min target
                   </Text>
                 </View>
-                <View style={[s.statPairTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View
+                  style={[
+                    s.statPairTile,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="clock" size={20} />
-                  <Text style={[s.statPairValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  <Text
+                    style={[
+                      s.statPairValue,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {walksThisWeek}
                   </Text>
-                  <Text style={[s.statPairLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.statPairLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
                     Walks this week
                   </Text>
-                  <Text style={[s.statPairDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <Text
+                    style={[
+                      s.statPairDetail,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
                     Logged in the last 7 days
                   </Text>
                 </View>
               </View>
               {walkActivity.last ? (
-                <View style={[s.latestWalk, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <View style={[s.latestWalkDot, { backgroundColor: colors.sage }]} />
+                <View
+                  style={[
+                    s.latestWalk,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[s.latestWalkDot, { backgroundColor: colors.sage }]}
+                  />
                   <View style={s.latestWalkCopy}>
                     <Text
                       numberOfLines={1}
-                      style={[s.latestWalkTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                      style={[
+                        s.latestWalkTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
                     >
                       Latest: {walkActivity.last.label}
                     </Text>
                     <Text
                       numberOfLines={1}
-                      style={[s.latestWalkMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                      style={[
+                        s.latestWalkMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
                     >
                       {[
                         walkActivity.last.place,
@@ -718,7 +1058,10 @@ export default function StoryProgressScreen({
                 title="Walk records"
                 detail="Walk activity and saved routes live in Records"
                 onPress={() =>
-                  router.push({ pathname: "/health", params: { section: "records" } })
+                  router.push({
+                    pathname: "/health",
+                    params: { section: "records" },
+                  })
                 }
                 accessibilityLabel="Open walk records"
               />
@@ -731,43 +1074,97 @@ export default function StoryProgressScreen({
                 invented. */}
             {walkJournal.length > 0 ? (
               <>
-                <Animated.View entering={reducedMotion ? undefined : enterUp(2)}>
-                  <Text style={[s.quietLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                <Animated.View
+                  entering={reducedMotion ? undefined : enterUp(2)}
+                >
+                  <Text
+                    style={[
+                      s.quietLabel,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     Walk journal
                   </Text>
                 </Animated.View>
                 {walkJournal.map((story, index) => (
-                  <BoardCard key={story.id} style={s.board} padded={false} enter={3 + index}>
+                  <BoardCard
+                    key={story.id}
+                    style={s.board}
+                    padded={false}
+                    enter={3 + index}
+                  >
                     <PressScale
                       accessibilityRole="button"
                       accessibilityLabel={`Open walk story from ${formatMemoryDate(story.occurredAt)}: ${story.text}`}
                       accessibilityHint="Opens this walk in the care log."
                       onPress={() =>
-                        router.push(`/log?entry=${encodeURIComponent(story.id)}` as never)
+                        router.push(
+                          `/log?entry=${encodeURIComponent(story.id)}` as never,
+                        )
                       }
                       scaleTo={0.97}
                       style={s.journalCard}
                     >
                       <View style={s.journalBody}>
                         <View style={s.journalCopy}>
-                          <Text style={[s.journalDate, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          <Text
+                            style={[
+                              s.journalDate,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
                             {formatMemoryDate(story.occurredAt)}
                           </Text>
                           <Text
                             numberOfLines={3}
-                            style={[s.journalText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                            style={[
+                              s.journalText,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
                           >
                             {story.text}
                           </Text>
                           <View style={s.journalChips}>
-                            <View style={[s.journalChip, { backgroundColor: colors.sageSoft }]}>
-                              <Text style={[s.journalChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                            <View
+                              style={[
+                                s.journalChip,
+                                { backgroundColor: colors.sageSoft },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  s.journalChipText,
+                                  {
+                                    color: colors.forest,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
                                 Walk
                               </Text>
                             </View>
                             {story.mood ? (
-                              <View style={[s.journalChip, { backgroundColor: colors.amberSoft }]}>
-                                <Text style={[s.journalChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                              <View
+                                style={[
+                                  s.journalChip,
+                                  { backgroundColor: colors.amberSoft },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    s.journalChipText,
+                                    {
+                                      color: colors.amber,
+                                      fontFamily: "Inter_700Bold",
+                                    },
+                                  ]}
+                                >
                                   {sentenceCase(story.mood)}
                                 </Text>
                               </View>
@@ -775,10 +1172,18 @@ export default function StoryProgressScreen({
                           </View>
                         </View>
                         {story.photoUri ? (
-                          <Image
+                          <ExpoImage
                             source={{ uri: story.photoUri }}
-                            style={[s.journalThumb, { backgroundColor: colors.muted }]}
-                            resizeMode="cover"
+                            style={[
+                              s.journalThumb,
+                              { backgroundColor: colors.muted },
+                            ]}
+                            contentFit="cover"
+                            allowDownscaling
+                            enforceEarlyResizing
+                            cachePolicy="memory-disk"
+                            recyclingKey={`walk-story-${story.id}`}
+                            transition={reducedMotion ? 0 : 120}
                             accessibilityIgnoresInvertColors
                           />
                         ) : null}
@@ -803,7 +1208,12 @@ export default function StoryProgressScreen({
                   entering={reducedMotion ? undefined : enterUp(monthIndex)}
                   style={s.memoryMonth}
                 >
-                  <Text style={[s.quietLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  <Text
+                    style={[
+                      s.quietLabel,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {month.label}
                   </Text>
                   <View style={s.memoryGrid}>
@@ -823,14 +1233,16 @@ export default function StoryProgressScreen({
                         }
                         onPress={() =>
                           item.kind === "entry" && item.entryId
-                            ? router.push(`/log?entry=${encodeURIComponent(item.entryId)}` as never)
+                            ? router.push(
+                                `/log?entry=${encodeURIComponent(item.entryId)}` as never,
+                              )
                             : openAdventure()
                         }
                         scaleTo={0.95}
                         containerStyle={{ width: memoryTile }}
                       >
                         {item.photoUri ? (
-                          <Image
+                          <ExpoImage
                             source={{ uri: item.photoUri }}
                             style={[
                               s.memoryPhoto,
@@ -840,7 +1252,12 @@ export default function StoryProgressScreen({
                                 backgroundColor: colors.muted,
                               },
                             ]}
-                            resizeMode="cover"
+                            contentFit="cover"
+                            allowDownscaling
+                            enforceEarlyResizing
+                            cachePolicy="memory-disk"
+                            recyclingKey={`memory-${item.id}`}
+                            transition={reducedMotion ? 0 : 120}
                             accessibilityIgnoresInvertColors
                           />
                         ) : (
@@ -857,12 +1274,27 @@ export default function StoryProgressScreen({
                               },
                             ]}
                           >
-                            <View style={[s.memoryNoteIcon, { backgroundColor: colors.sageSoft }]}>
-                              <Ionicons name="book-outline" size={14} color={colors.forest} />
+                            <View
+                              style={[
+                                s.memoryNoteIcon,
+                                { backgroundColor: colors.sageSoft },
+                              ]}
+                            >
+                              <Ionicons
+                                name="book-outline"
+                                size={14}
+                                color={colors.forest}
+                              />
                             </View>
                             <Text
                               numberOfLines={3}
-                              style={[s.memoryNoteTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                              style={[
+                                s.memoryNoteTitle,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
                             >
                               {item.title}
                             </Text>
@@ -873,10 +1305,39 @@ export default function StoryProgressScreen({
                   </View>
                 </Animated.View>
               ))}
-              <BoardCard style={s.board} enter={Math.min(memoryMonths.length, 8)}>
-                <Text style={[s.footnote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Memories stay private to the household. Photos stay on this device for now -
-                  cloud backup isn't available yet.
+              {newerMemoryCount > 0 ? (
+                <BoardActionButton
+                  label={`Show ${Math.min(MEMORY_PAGE_SIZE, newerMemoryCount)} newer memories`}
+                  accessibilityLabel={`${newerMemoryCount} newer memories are hidden. Show the previous ${Math.min(MEMORY_PAGE_SIZE, newerMemoryCount)}.`}
+                  variant="soft"
+                  icon="chevron-up"
+                  onPress={() => changeMemoryPage(-1)}
+                />
+              ) : null}
+              {olderMemoryCount > 0 ? (
+                <BoardActionButton
+                  label={`Show ${Math.min(MEMORY_PAGE_SIZE, olderMemoryCount)} older memories`}
+                  accessibilityLabel={`${olderMemoryCount} older memories are hidden. Show the next ${Math.min(MEMORY_PAGE_SIZE, olderMemoryCount)}.`}
+                  variant="soft"
+                  icon="chevron-down"
+                  onPress={() => changeMemoryPage(1)}
+                />
+              ) : null}
+              <BoardCard
+                style={s.board}
+                enter={Math.min(memoryMonths.length, 8)}
+              >
+                <Text
+                  style={[
+                    s.footnote,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  Memories stay private to the household. Photos stay on this
+                  device for now - cloud backup isn't available yet.
                 </Text>
                 <BoardActionButton
                   label="Save a memory in Adventure"
@@ -906,7 +1367,9 @@ export default function StoryProgressScreen({
                         // the padded card, size to its inner width instead so
                         // the third tile never clips.
                         width: Math.floor((windowWidth - 32 - 32 - 16) / 3),
-                        height: Math.round(((windowWidth - 32 - 32 - 16) / 3) * (4 / 3)),
+                        height: Math.round(
+                          ((windowWidth - 32 - 32 - 16) / 3) * (4 / 3),
+                        ),
                         borderColor: colors.border,
                         backgroundColor: colors.accent,
                       },
@@ -918,11 +1381,28 @@ export default function StoryProgressScreen({
                   </View>
                 ))}
               </View>
-              <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.emptyText,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 Photos from walks and stories land here.
               </Text>
-              <Text style={[s.footnote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Photos stay on this device for now - cloud backup isn't available yet.
+              <Text
+                style={[
+                  s.footnote,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                Photos stay on this device for now - cloud backup isn't
+                available yet.
               </Text>
               <BoardActionButton
                 label="Save a memory in Adventure"
@@ -942,19 +1422,44 @@ export default function StoryProgressScreen({
             <BoardCard style={s.board} enter={0}>
               <BoardSectionHeader
                 title="Care career"
-                accessory={<BoardPill label={career.levelLabel} tone={colors.sage} />}
+                accessory={
+                  <BoardPill label={career.levelLabel} tone={colors.sage} />
+                }
               />
               <View style={s.levelStrip}>
-                <View style={[s.levelBadge, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
-                  <Text style={[s.levelBadgeValue, { color: colors.forest, fontFamily: TITLE_SERIF }]}>
+                <View
+                  style={[
+                    s.levelBadge,
+                    {
+                      backgroundColor: colors.sageSoft,
+                      borderColor: colors.sage + "55",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.levelBadgeValue,
+                      { color: colors.forest, fontFamily: TITLE_SERIF },
+                    ]}
+                  >
                     {career.level}
                   </Text>
-                  <Text style={[s.levelBadgeLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.levelBadgeLabel,
+                      { color: colors.sage, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     Level
                   </Text>
                 </View>
                 <View style={s.levelCopy}>
-                  <Text style={[s.levelTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  <Text
+                    style={[
+                      s.levelTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {career.title}
                   </Text>
                   <ProgressFill
@@ -964,28 +1469,82 @@ export default function StoryProgressScreen({
                     height={10}
                     style={s.xpTrack}
                   />
-                  <Text style={[s.levelMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {career.levelXp.toLocaleString()} / {career.levelSpanXp.toLocaleString()} XP -{" "}
-                    {career.xpToNextLevel.toLocaleString()} XP to Lv {career.level + 1}
+                  <Text
+                    style={[
+                      s.levelMeta,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {career.levelXp.toLocaleString()} /{" "}
+                    {career.levelSpanXp.toLocaleString()} XP -{" "}
+                    {career.xpToNextLevel.toLocaleString()} XP to Lv{" "}
+                    {career.level + 1}
                   </Text>
                 </View>
               </View>
               <View style={s.statPairRow}>
-                <View style={[s.statPairTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View
+                  style={[
+                    s.statPairTile,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="energy" size={20} />
-                  <Text style={[s.statPairValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {careStreak > 0 ? `${careStreak} day${careStreak === 1 ? "" : "s"}` : "Start today"}
+                  <Text
+                    style={[
+                      s.statPairValue,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    {careStreak > 0
+                      ? `${careStreak} day${careStreak === 1 ? "" : "s"}`
+                      : "Start today"}
                   </Text>
-                  <Text style={[s.statPairLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.statPairLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
                     Care streak
                   </Text>
                 </View>
-                <View style={[s.statPairTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View
+                  style={[
+                    s.statPairTile,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="heart" size={20} />
-                  <Text style={[s.statPairValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  <Text
+                    style={[
+                      s.statPairValue,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {career.todayXp} XP
                   </Text>
-                  <Text style={[s.statPairLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.statPairLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
                     Earned today
                   </Text>
                 </View>
@@ -1000,12 +1559,24 @@ export default function StoryProgressScreen({
               <BoardSectionHeader
                 title="Badge ladder"
                 accessory={
-                  <BoardPill label={`${earnedTitles.length} of ${badgeLadder.length} earned`} tone={colors.sage} />
+                  <BoardPill
+                    label={`${earnedTitles.length} of ${badgeLadder.length} earned`}
+                    tone={colors.sage}
+                  />
                 }
               />
-              <Text style={[s.sectionCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Every badge on {petName}'s ladder is unlocked by real logged care -{" "}
-                {career.totalXp.toLocaleString()} lifetime care XP so far.
+              <Text
+                style={[
+                  s.sectionCopy,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                Every badge on {petName}'s ladder is unlocked by real logged
+                care - {career.totalXp.toLocaleString()} lifetime care XP so
+                far.
               </Text>
               {/* Mock-board badge shelf: one pixel emblem per earned title,
                   the trophy marks the current one. Hidden on the single-title
@@ -1040,34 +1611,61 @@ export default function StoryProgressScreen({
                         key={tier.title}
                         accessible
                         accessibilityLabel={`${tier.title} badge earned. Unlocked at level ${tier.level}${
-                          earnedDate ? ` on ${formatMemoryDate(earnedDate)}` : ""
+                          earnedDate
+                            ? ` on ${formatMemoryDate(earnedDate)}`
+                            : ""
                         }.${current ? " Current title." : ""}`}
                         style={[
                           s.titleRow,
                           {
                             backgroundColor: colors.background,
-                            borderColor: current ? colors.sage + "66" : colors.border,
+                            borderColor: current
+                              ? colors.sage + "66"
+                              : colors.border,
                           },
                         ]}
                       >
                         <Image
-                          source={current ? BADGE_TROPHY_ART : BADGE_ART[tierIndex % BADGE_ART.length]}
+                          source={
+                            current
+                              ? BADGE_TROPHY_ART
+                              : BADGE_ART[tierIndex % BADGE_ART.length]
+                          }
                           style={s.titleBadgeArt}
                           resizeMode="contain"
                         />
                         <View style={s.titleCopy}>
                           <Text
                             numberOfLines={1}
-                            style={[s.titleName, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                            style={[
+                              s.titleName,
+                              {
+                                color: colors.foreground,
+                                fontFamily: DISPLAY_SEMI,
+                              },
+                            ]}
                           >
                             {tier.title}
                           </Text>
-                          <Text style={[s.titleMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          <Text
+                            style={[
+                              s.titleMeta,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
                             Unlocked at Lv {tier.level}
-                            {earnedDate ? ` - ${formatMemoryDate(earnedDate)}` : ""}
+                            {earnedDate
+                              ? ` - ${formatMemoryDate(earnedDate)}`
+                              : ""}
                           </Text>
                         </View>
-                        <BoardStatusPill label={current ? "Current" : "Earned"} tone="done" />
+                        <BoardStatusPill
+                          label={current ? "Current" : "Earned"}
+                          tone="done"
+                        />
                       </View>
                     );
                   }
@@ -1084,23 +1682,59 @@ export default function StoryProgressScreen({
                       key={tier.title}
                       accessible
                       accessibilityLabel={`${tier.title} badge locked. Reach level ${tier.level}. ${career.totalXp.toLocaleString()} of ${tier.xpRequired.toLocaleString()} lifetime care XP so far.`}
-                      style={[s.titleRow, s.titleRowLocked, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      style={[
+                        s.titleRow,
+                        s.titleRowLocked,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
+                        },
+                      ]}
                     >
-                      <View style={[s.titleLockIcon, { backgroundColor: colors.muted }]}>
-                        <Ionicons name="lock-closed" size={14} color={colors.mutedForeground} />
+                      <View
+                        style={[
+                          s.titleLockIcon,
+                          { backgroundColor: colors.muted },
+                        ]}
+                      >
+                        <Ionicons
+                          name="lock-closed"
+                          size={14}
+                          color={colors.mutedForeground}
+                        />
                       </View>
                       <View style={s.titleCopy}>
                         <Text
                           numberOfLines={1}
-                          style={[s.titleName, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}
+                          style={[
+                            s.titleName,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
                         >
                           {tier.title}
                         </Text>
-                        <Text style={[s.titleMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          Reach Lv {tier.level} - {career.totalXp.toLocaleString()} of{" "}
+                        <Text
+                          style={[
+                            s.titleMeta,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          Reach Lv {tier.level} -{" "}
+                          {career.totalXp.toLocaleString()} of{" "}
                           {tier.xpRequired.toLocaleString()} XP
                         </Text>
-                        <View style={[s.tierTrack, { backgroundColor: colors.muted }]}>
+                        <View
+                          style={[
+                            s.tierTrack,
+                            { backgroundColor: colors.muted },
+                          ]}
+                        >
                           <View
                             style={[
                               s.tierFill,
@@ -1116,7 +1750,15 @@ export default function StoryProgressScreen({
                   );
                 })}
               </View>
-              <Text style={[s.nextTitle, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+              <Text
+                style={[
+                  s.nextTitle,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
                 {nextLockedTier
                   ? `Next up: ${nextLockedTier.title} at Lv ${nextLockedTier.level} - ${(
                       nextLockedTier.xpRequired - career.totalXp
@@ -1173,16 +1815,38 @@ const s = StyleSheet.create({
   emptyText: { fontSize: 12.5, lineHeight: 18, marginBottom: 6 },
   footnote: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
   cardButton: { marginTop: 10 },
-  levelStrip: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
-  levelBadge: { width: 64, height: 64, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  levelStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  levelBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   levelBadgeValue: { fontSize: 26, lineHeight: 30 },
-  levelBadgeLabel: { fontSize: 9, textTransform: "uppercase", letterSpacing: 1.1 },
+  levelBadgeLabel: {
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+  },
   levelCopy: { flex: 1, minWidth: 0 },
   levelTitle: { fontSize: 17 },
   xpTrack: { marginTop: 7 },
   levelMeta: { fontSize: 11, marginTop: 6 },
   statPairRow: { flexDirection: "row", gap: 8, marginBottom: 6 },
-  statPairTile: { flex: 1, borderWidth: 1, borderRadius: 10, padding: 11, gap: 3 },
+  statPairTile: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 11,
+    gap: 3,
+  },
   statPairValue: { fontSize: 16, marginTop: 3 },
   statPairLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0 },
   statPairDetail: { fontSize: 10.5, lineHeight: 14 },
@@ -1204,7 +1868,13 @@ const s = StyleSheet.create({
   trailHeroChipDot: { width: 8, height: 8, borderRadius: 4 },
   trailHeroChipText: { fontSize: 12, flexShrink: 1 },
   trailList: { gap: 4, marginBottom: 2 },
-  trailRow: { flexDirection: "row", alignItems: "center", gap: 11, minHeight: 56, paddingVertical: 6 },
+  trailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    minHeight: 56,
+    paddingVertical: 6,
+  },
   trailThumb: { width: 48, height: 48, borderRadius: 12, borderWidth: 1 },
   badgeShelf: {
     flexDirection: "row",
@@ -1247,7 +1917,13 @@ const s = StyleSheet.create({
     padding: 8,
     gap: 6,
   },
-  memoryNoteIcon: { width: 26, height: 26, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  memoryNoteIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   memoryNoteTitle: { fontSize: 10, lineHeight: 13, textAlign: "center" },
   /* Mock-board story cards: date header, story text, photo thumb right,
      soft activity tag chips. */
@@ -1256,21 +1932,49 @@ const s = StyleSheet.create({
   journalCopy: { flex: 1, minWidth: 0 },
   journalDate: { fontSize: 11.5 },
   journalText: { fontSize: 13, lineHeight: 19, marginTop: 4 },
-  journalChips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 9 },
+  journalChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 9,
+  },
   journalChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   journalChipText: { fontSize: 10.5, letterSpacing: 0.2 },
   journalThumb: { width: 72, height: 72, borderRadius: 14 },
-  latestWalk: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 10, padding: 11, marginBottom: 2 },
+  latestWalk: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 11,
+    marginBottom: 2,
+  },
   latestWalkDot: { width: 8, height: 8, borderRadius: 4 },
   latestWalkCopy: { flex: 1, minWidth: 0 },
   latestWalkTitle: { fontSize: 12.5 },
   latestWalkMeta: { fontSize: 11.5, marginTop: 1 },
   titleList: { gap: 8 },
-  titleRow: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 9 },
+  titleRow: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
   // Locked tiers stay quiet: dashed border, muted lock - waiting, not
   // warning.
   titleRowLocked: { borderStyle: "dashed" },
-  titleLockIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  titleLockIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   tierTrack: { height: 6, borderRadius: 999, marginTop: 6, overflow: "hidden" },
   tierFill: { height: "100%", borderRadius: 999 },
   titleCopy: { flex: 1, minWidth: 0 },

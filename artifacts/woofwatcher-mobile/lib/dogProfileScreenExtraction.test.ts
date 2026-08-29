@@ -142,7 +142,7 @@ test("keeps truthful facts and routes every supported edit into the one editor",
   assert.match(component, /onPress\?:\s*\(\)\s*=>\s*void/);
   assert.match(component, /if \(onPress\)/);
   assert.match(component, /accessibilityRole="text"/);
-  assert.match(component, /\{onPress \? \([\s\S]{0,120}<Ionicons name="chevron-forward"/);
+  assert.match(component, /\{onPress \? \([\s\S]{0,160}<Ionicons\s+name="chevron-forward"/);
   for (const inputLabel of [
     "Dog name",
     "Dog breed",

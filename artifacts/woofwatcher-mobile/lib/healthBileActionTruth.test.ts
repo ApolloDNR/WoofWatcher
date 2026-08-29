@@ -9,7 +9,7 @@ const health = readFileSync(
 
 test("Health and Bile snapshots do not offer a dead or misleading seven-day navigation action", () => {
   const snapshotPanel = health.match(
-    /<View style=\{\[s\.healthHeroPanel,[\s\S]*?<View style=\{s\.healthHeroStatusRow\}>/,
+    /<View\s+style=\{\[\s*s\.healthHeroPanel,[\s\S]*?<View\s+style=\{s\.healthHeroStatusRow\}>/,
   )?.[0];
   assert.ok(snapshotPanel, "the snapshot panel must remain inspectable");
   assert.doesNotMatch(snapshotPanel, /HealthHeaderAction/);
@@ -20,7 +20,7 @@ test("Health and Bile snapshots do not offer a dead or misleading seven-day navi
 test("the Bile route hierarchy gives its chart and summary distinct factual labels", () => {
   assert.match(
     health,
-    /<BoardSectionHeader title="7-day bile log" style=\{s\.boardSectionTop\} \/>/,
+    /<BoardSectionHeader\s+title="7-day bile log"\s+style=\{s\.boardSectionTop\}\s*\/>/,
   );
   assert.match(health, />\s*Recent timing\s*<\/Text>/);
   assert.match(health, /const snapshotTitle = isBileTab \? "Bile Snapshot"/);

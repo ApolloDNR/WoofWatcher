@@ -24,9 +24,12 @@ const noWatchCounts = {
 };
 
 const NOW = Date.parse("2026-08-28T18:00:00.000Z");
-const at = (hoursAgo: number) => new Date(NOW - hoursAgo * 3_600_000).toISOString();
+const at = (hoursAgo: number) =>
+  new Date(NOW - hoursAgo * 3_600_000).toISOString();
 
-function deriveMetrics(entries: Parameters<typeof deriveHealthMetricEvidence>[0]["entries"]) {
+function deriveMetrics(
+  entries: Parameters<typeof deriveHealthMetricEvidence>[0]["entries"],
+) {
   return deriveHealthMetricEvidence({
     entries,
     healthCounts: noWatchCounts,
@@ -150,7 +153,9 @@ test("explicit pee, attempt, and tried-nothing outcomes beat stale stool-looking
 
 test("a mood entry without an energy observation does not become positive energy evidence", () => {
   assert.deepEqual(
-    deriveMetrics([{ type: "mood", occurredAt: at(1), details: { mood: "happy" } }]).energy,
+    deriveMetrics([
+      { type: "mood", occurredAt: at(1), details: { mood: "happy" } },
+    ]).energy,
     {
       status: "No data",
       detail: "No energy logs",
@@ -217,8 +222,16 @@ test("metric evidence excludes private, malformed, and future entries before con
     now: NOW,
     entries: [
       privateEntry,
-      { type: "mood", occurredAt: "not-a-date", details: { energyLevel: "high" } },
-      { type: "mood", occurredAt: new Date(NOW + 1).toISOString(), details: { energyLevel: "high" } },
+      {
+        type: "mood",
+        occurredAt: "not-a-date",
+        details: { energyLevel: "high" },
+      },
+      {
+        type: "mood",
+        occurredAt: new Date(NOW + 1).toISOString(),
+        details: { energyLevel: "high" },
+      },
     ],
     healthCounts: noWatchCounts,
     signals: [],
@@ -237,7 +250,11 @@ test("metric copy preserves recognized evidence-derived positives and warnings",
   const metrics = deriveHealthMetricEvidence({
     entries: [
       { type: "walk", occurredAt: at(1) },
-      { type: "potty", occurredAt: at(2), details: { pottyOutcome: "poop", condition: "normal" } },
+      {
+        type: "potty",
+        occurredAt: at(2),
+        details: { pottyOutcome: "poop", condition: "normal" },
+      },
       { type: "water", occurredAt: at(3) },
       { type: "mood", occurredAt: at(4), details: { energyLevel: "high" } },
       { type: "vomit", occurredAt: at(5) },
@@ -287,7 +304,9 @@ test("explicit poop outcome or recognized stool detail counts as stool evidence"
   }
 
   assert.deepEqual(
-    deriveMetrics([{ type: "potty", occurredAt: at(1), details: { stoolCondition: "soft" } }]).stool,
+    deriveMetrics([
+      { type: "potty", occurredAt: at(1), details: { stoolCondition: "soft" } },
+    ]).stool,
     {
       status: "Watch",
       detail: "1 stool log needs review",
@@ -295,7 +314,13 @@ test("explicit poop outcome or recognized stool detail counts as stool evidence"
     },
   );
 
-  for (const stoolColor of ["yellow", "red-black", "black-tarry", "gray", "white"]) {
+  for (const stoolColor of [
+    "yellow",
+    "red-black",
+    "black-tarry",
+    "gray",
+    "white",
+  ]) {
     assert.deepEqual(
       deriveMetrics([
         {
@@ -389,7 +414,10 @@ test("the shared 30-day bile evidence retains a 14-day event and rejects unrelat
 
   assert.equal(evidence.vomitEntriesNewestFirst.length, 1);
   assert.equal(evidence.yellowBileEntriesNewestFirst.length, 1);
-  assert.equal(evidence.yellowBileEntriesNewestFirst[0]?.occurredAt, at(14 * 24));
+  assert.equal(
+    evidence.yellowBileEntriesNewestFirst[0]?.occurredAt,
+    at(14 * 24),
+  );
   assert.equal(deriveBileWatchStatus(evidence), "Watch");
 
   const unrelatedAlertEvidence = deriveBileVomitEvidence30({
@@ -403,10 +431,7 @@ test("the shared 30-day bile evidence retains a 14-day event and rejects unrelat
       },
     ],
   });
-  assert.equal(
-    deriveBileWatchStatus(unrelatedAlertEvidence),
-    "No data",
-  );
+  assert.equal(deriveBileWatchStatus(unrelatedAlertEvidence), "No data");
 });
 
 test("zero bile or vomit evidence stays explicitly unknown, including packet language", () => {
@@ -462,7 +487,8 @@ test("shared review packet cannot include private health or bile content", () =>
     },
     redFlagCount: health.redFlags.length,
     bileStatus: deriveBileWatchStatus(bile),
-    lastYellowBileLabel: bile.yellowBileEntriesNewestFirst[0]?.occurredAt ?? "No data",
+    lastYellowBileLabel:
+      bile.yellowBileEntriesNewestFirst[0]?.occurredAt ?? "No data",
     longestMealLogIntervalLabel: "Needs at least two meal logs in 30 days",
     bedtimeSnackPlanLabel: "Not set",
   });
@@ -496,15 +522,35 @@ test("an urgent overall status outranks bile no-data in packet boundary language
 
 test("Health and Bile no-evidence presentation avoids positive status leakage", () => {
   const healthSource = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "app", "(tabs)", "health.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "app",
+      "(tabs)",
+      "health.tsx",
+    ),
     "utf8",
   );
   const packetSource = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "healthReviewPacket.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "healthReviewPacket.ts",
+    ),
     "utf8",
   );
   const logSource = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "app", "(tabs)", "log.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "app",
+      "(tabs)",
+      "log.tsx",
+    ),
     "utf8",
   );
 
@@ -513,20 +559,35 @@ test("Health and Bile no-evidence presentation avoids positive status leakage", 
     healthSource,
     /You're on a roll|Feeling steady|Care rhythm looks steady|Let's take it easy/,
   );
-  assert.doesNotMatch(healthSource, /Bile looks low risk|records patterns calmly/);
-  assert.match(healthSource, /heroLoggedDays7\s*=\s*isBileTab\s*\?\s*bileLoggedDays7\s*:\s*loggedDays7/);
-  assert.match(healthSource, /heroStatusTone\s*=\s*isBileTab\s*\?\s*bileTone\s*:\s*statusTone/);
+  assert.doesNotMatch(
+    healthSource,
+    /Bile looks low risk|records patterns calmly/,
+  );
+  assert.match(
+    healthSource,
+    /heroLoggedDays7\s*=\s*isBileTab\s*\?\s*bileLoggedDays7\s*:\s*loggedDays7/,
+  );
+  assert.match(
+    healthSource,
+    /heroStatusTone\s*=\s*isBileTab\s*\?\s*bileTone\s*:\s*statusTone/,
+  );
   assert.match(healthSource, /selectSharedCareEvidence\(state\.entries, now\)/);
-  assert.match(healthSource, /deriveBileVomitEvidence30\(\{ entries: sharedEntries, now \}\)/);
+  assert.match(
+    healthSource,
+    /deriveBileVomitEvidence30\(\{ entries: sharedEntries, now \}\)/,
+  );
   assert.match(healthSource, /deriveBileWatchStatus\(bileEvidence30\)/);
   assert.match(
     healthSource,
-    /onPress=\{\(\) => openHealthStatusRoute\(isBileTab \? "symptom" : "note"\)\}/,
+    /onPress=\{\s*\(\)\s*=>\s*openHealthStatusRoute\(\s*isBileTab\s*\?\s*"symptom"\s*:\s*"note"\s*\)\s*\}/,
   );
-  assert.match(healthSource, /isBileTab \? "Log vomiting" : "Log health note"/);
+  assert.match(
+    healthSource,
+    /isBileTab\s*\?\s*"Log vomiting"\s*:\s*"Log health note"/,
+  );
   assert.match(
     logSource,
-    /label: "Vomit", type: "symptom"[^\n]+preset: \{ what: "vomit", severity: "watch" \}/,
+    /\{\s*label:\s*"Vomit",\s*type:\s*"symptom",[\s\S]{0,160}?preset:\s*\{\s*what:\s*"vomit",\s*severity:\s*"watch"\s*\},?\s*\}/,
   );
   assert.doesNotMatch(healthSource, /label="Longest food gap"/);
   assert.doesNotMatch(healthSource, /label="Bedtime snack proof"/);
@@ -538,7 +599,14 @@ test("Health and Bile no-evidence presentation avoids positive status leakage", 
 
 test("Health uses semantic foregrounds for primary actions and small status copy", () => {
   const healthSource = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "app", "(tabs)", "health.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "app",
+      "(tabs)",
+      "health.tsx",
+    ),
     "utf8",
   );
 
@@ -546,22 +614,35 @@ test("Health uses semantic foregrounds for primary actions and small status copy
     "accessibilityLabel={healthReviewPacket.primaryAction.label}",
   );
   assert.notEqual(primaryActionAt, -1);
-  const primaryAction = healthSource.slice(primaryActionAt, primaryActionAt + 700);
+  const primaryAction = healthSource.slice(
+    primaryActionAt,
+    primaryActionAt + 700,
+  );
   assert.match(primaryAction, /backgroundColor: colors\.primary/);
   assert.match(primaryAction, /color: colors\.primaryForeground/);
   assert.doesNotMatch(primaryAction, /#FFFFFF|#fff|color: "white"/i);
 
-  for (const semanticText of [
-    "s.heroLabel, { color: colors.foreground",
-    "s.healthRhythmTitle, { color: colors.foreground",
-    "s.healthSignalStatus, { color: colors.foreground",
-    "s.healthSignalAction, { color: colors.foreground",
-    "s.patternStep, { color: colors.foreground",
-    "s.boundaryLabel, { color: colors.foreground",
-  ]) {
-    assert.ok(
-      healthSource.includes(semanticText),
-      `missing semantic small-text foreground: ${semanticText}`,
+  for (const [label, pattern] of [
+    ["hero label", /s\.heroLabel,\s*\{\s*color:\s*colors\.foreground/],
+    [
+      "health rhythm title",
+      /s\.healthRhythmTitle,\s*\{\s*color:\s*colors\.foreground/,
+    ],
+    [
+      "health signal status",
+      /s\.healthSignalStatus,\s*\{\s*color:\s*colors\.foreground/,
+    ],
+    [
+      "health signal action",
+      /s\.healthSignalAction,\s*\{\s*color:\s*colors\.foreground/,
+    ],
+    ["pattern step", /s\.patternStep,\s*\{\s*color:\s*colors\.foreground/],
+    ["boundary label", /s\.boundaryLabel,\s*\{\s*color:\s*colors\.foreground/],
+  ] as const) {
+    assert.match(
+      healthSource,
+      pattern,
+      `missing semantic small-text foreground: ${label}`,
     );
   }
 });

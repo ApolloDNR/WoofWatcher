@@ -33,11 +33,11 @@ test("WoofGuide names its composer and uses contrast-safe bright-copper bubble t
   assert.match(composer, /accessibilityLabel=\{`Ask WoofGuide about \$\{name\}`\}/);
   assert.match(
     WOOFGUIDE_SOURCE,
-    /item\.role === "user" \? colors\.brandNavy : colors\.foreground/,
+    /item\.role === "user"\s*\? colors\.brandNavy\s*:\s*colors\.foreground/,
   );
   assert.match(
     WOOFGUIDE_SOURCE,
-    /s\.userBubble, \{ backgroundColor: colors\.copperBright \}/,
+    /s\.userBubble,\s*\{ backgroundColor: colors\.copperBright \}/,
   );
   assert.doesNotMatch(
     WOOFGUIDE_SOURCE,
@@ -50,11 +50,11 @@ test("WoofGuide names its composer and uses contrast-safe bright-copper bubble t
   const sendAction = WOOFGUIDE_SOURCE.slice(sendStart, sendEnd);
   assert.match(
     sendAction,
-    /accessibilityLabel=\{loading \? "WoofGuide is thinking" : "Send WoofGuide message"\}/,
+    /accessibilityLabel=\{\s*loading\s*\? "WoofGuide is thinking"\s*:\s*"Send WoofGuide message"\s*\}/,
   );
   assert.match(
     sendAction,
-    /accessibilityState=\{\{ disabled: !input\.trim\(\) \|\| loading, busy: loading \}\}/,
+    /accessibilityState=\{\{\s*disabled: !input\.trim\(\) \|\| loading,\s*busy: loading,?\s*\}\}/,
   );
   assert.match(sendAction, /style=\{\(\{ pressed \}\) =>/);
   assert.match(sendAction, /pressed \? 0\.82 : 1/);

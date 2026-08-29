@@ -20,11 +20,23 @@ test("prioritizes a vet-note action for active health watch signals", () => {
         normalPortion: "1 cup",
         mealSchedule: "7 AM and 6 PM",
       },
-      routines: [{ id: "dinner", type: "meal", label: "Dinner", time: "6:00 PM" }],
+      routines: [
+        { id: "dinner", type: "meal", label: "Dinner", time: "6:00 PM" },
+      ],
       records: [
         { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2027" },
-        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
-        { id: "insurance", type: "insurance", title: "Lemonade", due: "Jun 1, 2027" },
+        {
+          id: "chip",
+          type: "microchip",
+          title: "HomeAgain",
+          due: "985112003004551",
+        },
+        {
+          id: "insurance",
+          type: "insurance",
+          title: "Lemonade",
+          due: "Jun 1, 2027",
+        },
       ],
       entries: [
         {
@@ -60,7 +72,9 @@ test("surfaces records review for missing or expired credential records", () => 
         mealSchedule: "7 AM and 6 PM",
       },
       routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
-      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2026" }],
+      records: [
+        { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2026" },
+      ],
       entries: [],
     },
     NOW,
@@ -85,15 +99,29 @@ test("does not claim a correction-marked record is due", () => {
       },
       routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
       records: [
-        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
-        { id: "insurance", type: "insurance", title: "Lemonade", due: "Jun 1, 2027" },
+        {
+          id: "chip",
+          type: "microchip",
+          title: "HomeAgain",
+          due: "985112003004551",
+        },
+        {
+          id: "insurance",
+          type: "insurance",
+          title: "Lemonade",
+          due: "Jun 1, 2027",
+        },
         {
           id: "rabies",
           type: "vaccine",
           title: "Rabies",
           due: "2026-02-31",
           correctionIssues: [
-            { field: "due", rawValue: "2026-02-31", message: "Enter a valid record date." },
+            {
+              field: "due",
+              rawValue: "2026-02-31",
+              message: "Enter a valid record date.",
+            },
           ],
         },
       ],
@@ -102,7 +130,10 @@ test("does not claim a correction-marked record is due", () => {
     NOW,
   );
 
-  assert.equal(actions.some((action) => action.id === "records-review"), false);
+  assert.equal(
+    actions.some((action) => action.id === "records-review"),
+    false,
+  );
 });
 
 test("uses the caregiver's local date for reviewed reminder drafts", () => {
@@ -119,13 +150,16 @@ test("uses the caregiver's local date for reviewed reminder drafts", () => {
         mealSchedule: "7 AM and 6 PM",
       },
       routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
-      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "2026-05-01" }],
+      records: [
+        { id: "rabies", type: "vaccine", title: "Rabies", due: "2026-05-01" },
+      ],
       entries: [],
     },
     now,
   );
 
-  const reminderDate = actions.find((action) => action.id === "records-review")?.draft?.calendarEvent?.date;
+  const reminderDate = actions.find((action) => action.id === "records-review")
+    ?.draft?.calendarEvent?.date;
   assert.equal(reminderDate, todayLocalDateKey(localLateEvening));
 });
 
@@ -168,10 +202,22 @@ test("routes every assistant fallback and owner action to its canonical tab sect
     NOW,
   );
 
-  assert.equal(actions.find((action) => action.id === "records-review")?.route, "/health?section=records");
-  assert.equal(actions.find((action) => action.id === "diet-baseline")?.route, "/health?section=diet");
-  assert.equal(actions.find((action) => action.id === "routine-setup")?.route, "/calendar");
-  assert.equal(actions.find((action) => action.id === "care-pass")?.route, "/health?section=care-pass");
+  assert.equal(
+    actions.find((action) => action.id === "records-review")?.route,
+    "/health?section=records",
+  );
+  assert.equal(
+    actions.find((action) => action.id === "diet-baseline")?.route,
+    "/health?section=diet",
+  );
+  assert.equal(
+    actions.find((action) => action.id === "routine-setup")?.route,
+    "/calendar",
+  );
+  assert.equal(
+    actions.find((action) => action.id === "care-pass")?.route,
+    "/health?section=care-pass",
+  );
 });
 
 test("creates an owner-reviewed meal log draft when the first meal is missing", () => {
@@ -183,11 +229,29 @@ test("creates an owner-reviewed meal log draft when the first meal is missing", 
         normalPortion: "1 cup",
         mealSchedule: "7 AM and 6 PM",
       },
-      routines: [{ id: "breakfast", type: "meal", label: "Breakfast", time: "7:00 AM", owner: "Emma" }],
+      routines: [
+        {
+          id: "breakfast",
+          type: "meal",
+          label: "Breakfast",
+          time: "7:00 AM",
+          owner: "Emma",
+        },
+      ],
       records: [
         { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" },
-        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
-        { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
+        {
+          id: "chip",
+          type: "microchip",
+          title: "HomeAgain",
+          due: "985112003004551",
+        },
+        {
+          id: "insurance",
+          type: "insurance",
+          title: "Lemonade",
+          due: "Policy WW-1042",
+        },
       ],
       entries: [],
     },
@@ -201,7 +265,10 @@ test("creates an owner-reviewed meal log draft when the first meal is missing", 
   assert.equal(mealAction?.draft?.entry?.type, "meal");
   assert.equal(mealAction?.draft?.entry?.details?.expectedPortion, "1 cup");
   assert.equal(mealAction?.draft?.entry?.details?.mealCompletion, "served");
-  assert.equal(mealAction?.draft?.entry?.details?.mealLifecycle, "outcome-pending");
+  assert.equal(
+    mealAction?.draft?.entry?.details?.mealLifecycle,
+    "outcome-pending",
+  );
   assert.equal(mealAction?.draft?.entry?.details?.requiresOutcomeUpdate, true);
   assert.equal(mealAction?.draft?.entry?.details?.householdVisible, true);
 });
@@ -213,13 +280,20 @@ test("keeps the assistant gated off until provider proof and an API domain exist
   });
   assert.equal(noProof.enabled, false);
   assert.equal(noProof.reason, "provider-proof-missing");
-  assert.equal(noProof.statusLabel, "Not in this build");
-  assert.match(noProof.headline, /isn't enabled in this build/);
-  assert.match(noProof.privacyNote, /Nothing you type here is sent anywhere/);
-  assert.doesNotMatch(noProof.headline, /try again/i, "the gated state must not pretend the outage is transient");
+  assert.equal(noProof.statusLabel, "Unavailable");
+  assert.match(noProof.headline, /aren't available/);
+  assert.match(noProof.privacyNote, /stays on this device/);
+  assert.doesNotMatch(
+    noProof.headline,
+    /try again/i,
+    "the gated state must not pretend the outage is transient",
+  );
   assert.doesNotMatch(noProof.composerNote, /try again/i);
 
-  const noDomain = resolveWoofGuideAssistantGate({ apiBaseUrl: "  ", liveAiProofReady: true });
+  const noDomain = resolveWoofGuideAssistantGate({
+    apiBaseUrl: "  ",
+    liveAiProofReady: true,
+  });
   assert.equal(noDomain.enabled, false);
   assert.equal(noDomain.reason, "api-domain-missing");
 
@@ -251,7 +325,9 @@ test("builds the owner-reviewed vet-note draft for the Health Watch funnel", () 
         normalPortion: "1 cup",
         mealSchedule: "7 AM and 6 PM",
       },
-      routines: [{ id: "dinner", type: "meal", label: "Dinner", time: "6:00 PM" }],
+      routines: [
+        { id: "dinner", type: "meal", label: "Dinner", time: "6:00 PM" },
+      ],
       records: [],
       entries: [
         {
@@ -273,5 +349,9 @@ test("builds the owner-reviewed vet-note draft for the Health Watch funnel", () 
   assert.equal(action.draft?.kind, "vet_note");
   assert.match(action.draft?.body ?? "", /Health Pattern Review/i);
   assert.match(action.draft?.body ?? "", /not a diagnosis/i);
-  assert.equal(action.prompt, undefined, "the funnel draft must not depend on a live assistant prompt");
+  assert.equal(
+    action.prompt,
+    undefined,
+    "the funnel draft must not depend on a live assistant prompt",
+  );
 });

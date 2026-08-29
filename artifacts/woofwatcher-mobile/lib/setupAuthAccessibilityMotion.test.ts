@@ -402,11 +402,11 @@ test("Google auth exposes action-specific busy state without marking sibling wor
   );
   assert.match(
     authUi,
-    /accessibilityState=\{\{ disabled: isDisabled, busy: Boolean\(loading\) \}\}/,
+    /accessibilityState=\{\{\s*disabled: isDisabled,\s*busy: Boolean\(loading\),?\s*\}\}/,
   );
   assert.match(
     authUi,
-    /accessibilityLabel=\{loading \? "Connecting to Google" : "Continue with Google"\}/,
+    /accessibilityLabel=\{\s*loading \? "Connecting to Google" : "Continue with Google"\s*\}/,
   );
   assert.match(authUi, /loading \? "Connecting to Google…" : "Continue with Google"/);
   assert.match(
@@ -420,7 +420,7 @@ test("Google auth exposes action-specific busy state without marking sibling wor
   );
   assert.match(
     primaryButton,
-    /accessibilityState=\{\{ disabled: Boolean\(isDisabled\), busy: Boolean\(loading\) \}\}/,
+    /accessibilityState=\{\{\s*disabled: Boolean\(isDisabled\),\s*busy: Boolean\(loading\),?\s*\}\}/,
   );
 });
 
@@ -544,21 +544,17 @@ test("shared auth fields use the visible label unless an accessibility label is 
   );
 });
 
-test("Premium settles its shared route entrance when Reduce Motion is on", () => {
+test("Premium leaves its route entrance to the shared Reduce Motion-aware navigator", () => {
   const premium = read("app", "premium.tsx");
+  const navigator = read("app", "_layout.tsx");
 
-  assert.match(premium, /import \{ useReducedMotion \} from "react-native-reanimated"/);
-  assert.match(premium, /import \{ MOTION_MS, SPRING \} from "@\/components\/motion\/GameFeel"/);
-  assert.match(premium, /const reducedMotion = useReducedMotion\(\)/);
+  assert.match(navigator, /const reducedMotion = useReducedMotion\(\)/);
   assert.match(
-    premium,
-    /if \(reducedMotion\) \{[\s\S]{0,180}fade\.setValue\(1\)[\s\S]{0,100}slide\.setValue\(0\)[\s\S]{0,80}return/,
+    navigator,
+    /screenOptions=\{\{[\s\S]{0,160}animation:\s*reducedMotion \? "none" : "default"/,
   );
-  assert.match(
-    premium,
-    /duration:\s*MOTION_MS\.screen[\s\S]{0,240}\.\.\.SPRING\.default/,
-  );
-  assert.match(premium, /return \(\) => entrance\.stop\(\)/);
+  assert.doesNotMatch(premium, /useReducedMotion|MOTION_MS|SPRING|enterUp/);
+  assert.doesNotMatch(premium, /const (?:fade|slide) =/);
   assert.doesNotMatch(premium, /<BoardCard[^>]*\senter=\{\d+\}/);
 });
 

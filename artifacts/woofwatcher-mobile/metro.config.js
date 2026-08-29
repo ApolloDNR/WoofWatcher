@@ -17,10 +17,63 @@ function realpathIfExists(target) {
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "..", "..");
 const config = getDefaultConfig(projectRoot);
+const buildProfile = (process.env.EXPO_PUBLIC_BUILD_PROFILE || "")
+  .trim()
+  .toLowerCase();
+const isConsumerBundle =
+  process.env.EXPO_PUBLIC_CONSUMER_PREVIEW === "1" ||
+  ["candidate", "production", "store"].includes(buildProfile);
+const ownerOpsUnavailableRoute = path.join(
+  projectRoot,
+  "components",
+  "owner",
+  "OwnerOpsUnavailableRoute.tsx",
+);
+const avatarSpriteProductionPanelUnavailable = path.join(
+  projectRoot,
+  "components",
+  "owner",
+  "AvatarSpriteProductionPanelUnavailable.tsx",
+);
+const recordsConsumerProviderRuntime = path.join(
+  projectRoot,
+  "lib",
+  "recordsConsumerProviderRuntime.ts",
+);
+const consumerMoreScreen = path.join(
+  projectRoot,
+  "components",
+  "more",
+  "ConsumerMoreScreen.tsx",
+);
+const ownerOpsBundleAliases = new Set([
+  "@/components/owner/CareTwinQaScreen",
+  path.join(projectRoot, "components", "owner", "CareTwinQaScreen"),
+  path.join(projectRoot, "components", "owner", "CareTwinQaScreen.tsx"),
+]);
+const avatarSpriteProductionPanelAliases = new Set([
+  "@/components/owner/AvatarSpriteProductionPanel",
+  path.join(projectRoot, "components", "owner", "AvatarSpriteProductionPanel"),
+  path.join(
+    projectRoot,
+    "components",
+    "owner",
+    "AvatarSpriteProductionPanel.tsx",
+  ),
+]);
+const recordsOwnerProviderRuntimeAliases = new Set([
+  "@/lib/recordsOwnerProviderRuntime",
+  path.join(projectRoot, "lib", "recordsOwnerProviderRuntime"),
+  path.join(projectRoot, "lib", "recordsOwnerProviderRuntime.ts"),
+]);
 
-const linkedMobileNodeModules = realpathIfExists(path.join(projectRoot, "node_modules"));
+const linkedMobileNodeModules = realpathIfExists(
+  path.join(projectRoot, "node_modules"),
+);
 const linkedWorkspaceNodeModules = linkedMobileNodeModules
-  ? realpathIfExists(path.resolve(linkedMobileNodeModules, "..", "..", "..", "node_modules"))
+  ? realpathIfExists(
+      path.resolve(linkedMobileNodeModules, "..", "..", "..", "node_modules"),
+    )
   : null;
 const singleInstancePackages = [
   "react",
@@ -38,9 +91,12 @@ const singleInstancePackages = [
 
 function resolvePackageRoot(packageName) {
   try {
-    const packageJson = require.resolve(path.join(packageName, "package.json"), {
-      paths: [projectRoot],
-    });
+    const packageJson = require.resolve(
+      path.join(packageName, "package.json"),
+      {
+        paths: [projectRoot],
+      },
+    );
     return fs.realpathSync(path.dirname(packageJson));
   } catch {
     return null;
@@ -63,9 +119,34 @@ function resolveRuntimeAlias(moduleName) {
 }
 
 const workspaceAliases = {
-  "@workspace/api-client-react": path.join(workspaceRoot, "lib", "api-client-react"),
+  "@workspace/api-client-react": path.join(
+    workspaceRoot,
+    "lib",
+    "api-client-react",
+  ),
   "@workspace/care-domain": path.join(workspaceRoot, "lib", "care-domain"),
 };
+
+function resolveOwnerOpsBundleAlias(moduleName) {
+  if (!isConsumerBundle) return null;
+  const normalizedModuleName = moduleName.replaceAll("\\", "/");
+  if (
+    normalizedModuleName === "./(tabs)/more.tsx" ||
+    normalizedModuleName === "app/(tabs)/more.tsx" ||
+    normalizedModuleName.endsWith("/app/(tabs)/more.tsx")
+  ) {
+    return consumerMoreScreen;
+  }
+  if (avatarSpriteProductionPanelAliases.has(moduleName)) {
+    return avatarSpriteProductionPanelUnavailable;
+  }
+  if (recordsOwnerProviderRuntimeAliases.has(moduleName)) {
+    return recordsConsumerProviderRuntime;
+  }
+  return ownerOpsBundleAliases.has(moduleName)
+    ? ownerOpsUnavailableRoute
+    : null;
+}
 
 // This automation worktree reuses a junctioned node_modules folder from the
 // primary woofwatcher checkout. Metro needs the real pnpm store roots too, or
@@ -85,7 +166,10 @@ config.resolver.extraNodeModules = {
 
 const metroResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  const aliasedModuleName = resolveRuntimeAlias(moduleName) ?? moduleName;
+  const aliasedModuleName =
+    resolveOwnerOpsBundleAlias(moduleName) ??
+    resolveRuntimeAlias(moduleName) ??
+    moduleName;
   const resolveRequest = metroResolveRequest ?? context.resolveRequest;
   return resolveRequest(context, aliasedModuleName, platform);
 };

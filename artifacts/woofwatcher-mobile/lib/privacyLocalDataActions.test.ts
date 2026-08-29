@@ -8,10 +8,10 @@ import {
 import {
   buildPrivacyResetFailurePresentation,
   getPrivacyLocalDataResetView,
-  preparePrivacyCareExportWithDeviceInventory,
   runPrivacyCareDataExport,
   runPrivacyLocalDataReset,
 } from "./privacyLocalDataActions.ts";
+import { preparePrivacyCareExportWithDeviceInventory } from "./privacyCareDataExport.ts";
 import type { LocalDataIntent } from "./localDataIntent.ts";
 
 function deferred<T>() {
@@ -94,11 +94,13 @@ test("Privacy export awaits physical inventory under export/reset exclusion befo
   const shared: Array<{ title: string; message: string }> = [];
   const exportOperation = runPrivacyCareDataExport({
     runExport: runtime.operations.runExport,
-    capture: () => Object.freeze({
-      title: "WoofWatcher care export - Phoenix",
-      serializedBundle: '{"storage":{"deviceFileInventory":{"status":"not-inspected","fileCount":null}}}',
-      inventoryIntent: Object.freeze({ marker: "current" }),
-    }),
+    capture: () =>
+      Object.freeze({
+        title: "WoofWatcher care export - Phoenix",
+        serializedBundle:
+          '{"storage":{"deviceFileInventory":{"status":"not-inspected","fileCount":null}}}',
+        inventoryIntent: Object.freeze({ marker: "current" }),
+      }),
     prepare: async (captured) => {
       assert.equal(Object.isFrozen(captured), true);
       const result = await inventory.promise;
@@ -127,10 +129,13 @@ test("Privacy export awaits physical inventory under export/reset exclusion befo
   inventory.resolve({ status: "complete", fileCount: 9 });
   await exportOperation;
   assert.equal((await reset).status, "complete");
-  assert.deepEqual(shared, [{
-    title: "WoofWatcher care export - Phoenix",
-    message: '{"storage":{"deviceFileInventory":{"status":"complete","fileCount":9}}}',
-  }]);
+  assert.deepEqual(shared, [
+    {
+      title: "WoofWatcher care export - Phoenix",
+      message:
+        '{"storage":{"deviceFileInventory":{"status":"complete","fileCount":9}}}',
+    },
+  ]);
 });
 
 test("Privacy export inventory failure shares nothing and never reports export complete", async () => {
@@ -176,10 +181,10 @@ test("consumer Privacy preparation serializes complete or unsupported inventory 
     },
   );
   assert.equal(native.title, captured.title);
-  assert.deepEqual(
-    JSON.parse(native.message).storage.deviceFileInventory,
-    { status: "complete", fileCount: 12 },
-  );
+  assert.deepEqual(JSON.parse(native.message).storage.deviceFileInventory, {
+    status: "complete",
+    fileCount: 12,
+  });
   assert.doesNotMatch(
     native.message,
     /file:\/\/\/secret|ImagePicker\/photo|phoenix-portrait/i,
@@ -189,16 +194,15 @@ test("consumer Privacy preparation serializes complete or unsupported inventory 
     captured,
     async () => ({ status: "unsupported-platform" }),
   );
-  assert.deepEqual(
-    JSON.parse(web.message).storage.deviceFileInventory,
-    { status: "unsupported-platform", fileCount: null },
-  );
+  assert.deepEqual(JSON.parse(web.message).storage.deviceFileInventory, {
+    status: "unsupported-platform",
+    fileCount: null,
+  });
 
   await assert.rejects(
-    preparePrivacyCareExportWithDeviceInventory(
-      captured,
-      async () => ({ status: "revoked" }),
-    ),
+    preparePrivacyCareExportWithDeviceInventory(captured, async () => ({
+      status: "revoked",
+    })),
     /reset.*progress/i,
   );
 });

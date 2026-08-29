@@ -58,7 +58,7 @@ test("moves the one Diet workflow from More to the canonical Health owner", () =
 
   assert.match(
     diet,
-    /export default function DietScreen\(\{\s*openDetails = false,\s*\}: DietScreenProps\)/,
+    /export default function DietScreen\(\{\s*openDetails = false,?\s*\}: DietScreenProps\)/,
   );
   assert.match(diet, /if \(openDetails\) setDietOpen\(true\);/);
   assert.match(diet, /title="Diet Profile"/);

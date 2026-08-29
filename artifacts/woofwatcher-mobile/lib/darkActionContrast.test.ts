@@ -6,12 +6,19 @@ import { test } from "node:test";
 import palette from "../constants/colors.ts";
 
 const readMobileSource = (...parts: string[]) =>
-  readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", ...parts), "utf8");
+  readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", ...parts),
+    "utf8",
+  );
 
 type Rgb = readonly [number, number, number];
 
 function rgb(hex: string): Rgb {
-  assert.match(hex, /^#[0-9A-F]{6}$/i, `expected a six-digit hex color, received ${hex}`);
+  assert.match(
+    hex,
+    /^#[0-9A-F]{6}$/i,
+    `expected a six-digit hex color, received ${hex}`,
+  );
   return [
     Number.parseInt(hex.slice(1, 3), 16),
     Number.parseInt(hex.slice(3, 5), 16),
@@ -22,8 +29,8 @@ function rgb(hex: string): Rgb {
 function composite(top: string, bottom: string, alpha: number): Rgb {
   const topRgb = rgb(top);
   const bottomRgb = rgb(bottom);
-  return topRgb.map((channel, index) =>
-    channel * alpha + bottomRgb[index] * (1 - alpha),
+  return topRgb.map(
+    (channel, index) => channel * alpha + bottomRgb[index] * (1 - alpha),
   ) as unknown as Rgb;
 }
 
@@ -77,7 +84,10 @@ test("Board pills keep AA text and a visible semantic border on both card surfac
   );
   assert.match(source, /borderColor: pillTone/);
   assert.match(source, /pill:\s*\{[\s\S]{0,120}borderWidth:\s*1/);
-  assert.doesNotMatch(source, /const pillForeground[\s\S]{0,100}["']#000000["']/);
+  assert.doesNotMatch(
+    source,
+    /const pillForeground[\s\S]{0,100}["']#000000["']/,
+  );
   assert.match(source, /color=\{pillForeground\}/);
   assert.match(source, /pillText[\s\S]{0,100}color: pillForeground/);
 
@@ -130,23 +140,23 @@ test("Calendar and WoofGuide normal text use the measured bright-copper/navy pai
 
   assert.match(
     calendar,
-    /discoverGo,[\s\S]{0,220}backgroundColor: colors\.copperBright/,
+    /s\.discoverGo,[\s\S]{0,260}?backgroundColor:\s*colors\.copperBright/,
   );
   assert.match(
     calendar,
-    /discoverGoText, \{ color: colors\.brandNavy/,
+    /s\.discoverGoText,\s*\{\s*color:\s*colors\.brandNavy/,
   );
   assert.match(
     calendar,
-    /routineFeedbackButton,[\s\S]{0,320}colors\.copperBright[\s\S]{0,360}color: colors\.brandNavy/,
+    /onPress=\{openRoutineFeedbackDetails\}[\s\S]{0,420}?s\.routineFeedbackButton,[\s\S]{0,300}?colors\.copperBright[\s\S]{0,420}?s\.routineFeedbackButtonText,[\s\S]{0,180}?color:\s*colors\.brandNavy/,
   );
   assert.match(
     guide,
-    /s\.userBubble, \{ backgroundColor: colors\.copperBright \}/,
+    /s\.userBubble,\s*\{\s*backgroundColor:\s*colors\.copperBright\s*\}/,
   );
   assert.match(
     guide,
-    /item\.role === "user" \? colors\.brandNavy : colors\.foreground/,
+    /item\.role\s*===\s*"user"\s*\?\s*colors\.brandNavy\s*:\s*colors\.foreground/,
   );
 
   for (const [themeName, theme] of [
@@ -165,20 +175,17 @@ test("Calendar and WoofGuide normal text use the measured bright-copper/navy pai
 test("WoofGuide's small labels use semantic foregrounds instead of decorative copper", () => {
   const guide = readMobileSource("components", "more", "WoofGuideScreen.tsx");
 
+  assert.match(guide, /s\.guideKicker,\s*\{\s*color:\s*colors\.brandNavy/);
   assert.match(
     guide,
-    /s\.guideKicker, \{ color: colors\.brandNavy/,
+    /s\.guideBoundaryLabel,\s*\{\s*color:\s*colors\.brandNavy/,
   );
+  assert.match(guide, /s\.guideIntroKicker,\s*\{\s*color:\s*colors\.primary/);
   assert.match(
     guide,
-    /s\.guideBoundaryLabel, \{ color: colors\.brandNavy/,
+    /s\.gatePrivacyNote,\s*\{\s*color:\s*colors\.mutedForeground/,
   );
-  assert.match(
-    guide,
-    /s\.guideIntroKicker, \{ color: colors\.primary/,
-  );
-  assert.match(guide, /s\.gateWorksLabel, \{ color: colors\.primary/);
-  assert.match(guide, /s\.reviewEyebrow, \{ color: colors\.primary/);
+  assert.match(guide, /s\.reviewEyebrow,\s*\{\s*color:\s*colors\.primary/);
 
   for (const [themeName, theme] of [
     ["light", palette.light],
@@ -196,6 +203,12 @@ test("WoofGuide's small labels use semantic foregrounds instead of decorative co
       4.5,
       `${themeName} WoofGuide light speech label`,
     );
+    assertContrast(
+      theme.mutedForeground,
+      theme.card,
+      4.5,
+      `${themeName} WoofGuide fallback explanation`,
+    );
   }
 });
 
@@ -204,15 +217,15 @@ test("Plans' unchecked completion control has a visible primary outline and glyp
 
   assert.match(
     calendar,
-    /borderColor: done \? colors\.sage : needsCorrection \? colors\.amber : colors\.primary/,
+    /borderColor:\s*done\s*\?\s*colors\.sage\s*:\s*needsCorrection\s*\?\s*colors\.amber\s*:\s*colors\.primary/,
   );
   assert.match(
     calendar,
-    /name=\{done \? "checkmark" : needsCorrection \? "warning-outline" : "checkmark"\}/,
+    /name=\{\s*done\s*\?\s*"checkmark"\s*:\s*needsCorrection\s*\?\s*"warning-outline"\s*:\s*"checkmark"\s*\}/,
   );
   assert.match(
     calendar,
-    /color=\{done \? colors\.brandNavy : needsCorrection \? colors\.amber : colors\.primary\}/,
+    /color=\{\s*done\s*\?\s*colors\.brandNavy\s*:\s*needsCorrection\s*\?\s*colors\.amber\s*:\s*colors\.primary\s*\}/,
   );
 
   for (const [themeName, theme] of [
@@ -233,19 +246,19 @@ test("Premium CTA and recommended price use measured AA token pairs", () => {
 
   assert.match(
     source,
-    /premiumValueAction,[\s\S]{0,160}backgroundColor: colors\.primary/,
+    /s\.premiumValueAction,[\s\S]{0,200}?backgroundColor:\s*colors\.primary/,
   );
   assert.match(
     source,
-    /premiumValueActionText,[\s\S]{0,100}color: colors\.primaryForeground/,
+    /s\.premiumValueActionText,[\s\S]{0,160}?color:\s*colors\.primaryForeground/,
   );
   assert.match(
     source,
-    /name="arrow-forward"[\s\S]{0,80}color=\{colors\.primaryForeground\}/,
+    /name="arrow-forward"[\s\S]{0,100}?color=\{\s*colors\.primaryForeground\s*\}/,
   );
   assert.match(
     source,
-    /priceText,[\s\S]{0,100}recommended \? colors\.primaryForeground : colors\.foreground/,
+    /s\.priceText,[\s\S]{0,180}?color:\s*recommended\s*\?\s*colors\.primaryForeground\s*:\s*colors\.foreground/,
   );
 
   for (const [themeName, theme] of [
@@ -262,19 +275,23 @@ test("Premium CTA and recommended price use measured AA token pairs", () => {
 });
 
 test("Privacy uses a real dark gradient and an AA rose confirmation foreground", () => {
-  const source = readMobileSource("components", "more", "PrivacyDataScreen.tsx");
+  const source = readMobileSource(
+    "components",
+    "more",
+    "PrivacyDataScreen.tsx",
+  );
 
   assert.match(
     source,
-    /colors=\{colors\.isDark\s*\?\s*\[colors\.brandNavy, colors\.shellNavy\]/,
+    /colors=\{\s*colors\.isDark\s*\?\s*\[\s*colors\.brandNavy\s*,\s*colors\.shellNavy\s*\]/,
   );
   assert.match(
     source,
-    /s\.confirmPrimaryBtn[\s\S]{0,220}backgroundColor: colors\.rose/,
+    /s\.confirmPrimaryBtn[\s\S]{0,300}?backgroundColor:\s*colors\.rose/,
   );
   assert.match(
     source,
-    /s\.confirmPrimaryText[\s\S]{0,180}color: colors\.brandNavy/,
+    /s\.confirmPrimaryText[\s\S]{0,220}?color:\s*colors\.brandNavy/,
   );
   assert.notEqual(
     palette.dark.brandNavy,
@@ -292,13 +309,27 @@ test("Privacy uses a real dark gradient and an AA rose confirmation foreground",
       4.5,
       `${themeName} destructive confirmation`,
     );
-    assertContrast("#FFFFFF", theme.brandNavy, 4.5, `${themeName} hero first stop`);
-    assertContrast("#FFFFFF", theme.shellNavy, 4.5, `${themeName} hero second stop`);
+    assertContrast(
+      "#FFFFFF",
+      theme.brandNavy,
+      4.5,
+      `${themeName} hero first stop`,
+    );
+    assertContrast(
+      "#FFFFFF",
+      theme.shellNavy,
+      4.5,
+      `${themeName} hero second stop`,
+    );
   }
 });
 
 test("primary-action glyph token choices meet non-text contrast", () => {
-  const privacy = readMobileSource("components", "more", "PrivacyDataScreen.tsx");
+  const privacy = readMobileSource(
+    "components",
+    "more",
+    "PrivacyDataScreen.tsx",
+  );
   const fastLog = readMobileSource("app", "fastlog.tsx");
 
   assert.match(

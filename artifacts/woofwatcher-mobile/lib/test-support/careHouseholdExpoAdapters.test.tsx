@@ -4,6 +4,8 @@ export function Ionicons(props: Record<string, unknown>): React.JSX.Element {
   return <i data-icon={String(props.name ?? "icon")} />;
 }
 
+export default Ionicons;
+
 export const ImpactFeedbackStyle = {
   Light: "light",
   Medium: "medium",

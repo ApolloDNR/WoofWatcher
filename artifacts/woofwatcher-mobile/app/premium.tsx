@@ -1,9 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useLayoutEffect, useMemo, useRef } from "react";
+import React, { useMemo } from "react";
 import {
-  Animated,
   ImageBackground,
   Platform,
   Pressable,
@@ -12,10 +11,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { OwnerOpsUnavailableScreen } from "@/components/board/OwnerOpsBoundary";
-import { MOTION_MS, SPRING } from "@/components/motion/GameFeel";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   deriveHealthWatch,
@@ -27,13 +24,21 @@ import {
 import { useCare } from "@/context/CareContext";
 import { homeImmersiveRoomIsNight } from "./(tabs)/index";
 import { useColors } from "@/hooks/useColors";
-import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardPill,
+  BoardSectionHeader,
+} from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { notifyDialog } from "@/lib/confirmDialog";
 import { canonicalHomeRoute } from "@/lib/canonicalRouteBuilders";
-import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  MIN_MOBILE_TOUCH_TARGET,
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+} from "@/lib/mobileLayout";
 import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
@@ -44,7 +49,9 @@ const PREMIUM_VALUE_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day
 const PREMIUM_VALUE_STAGE_SPRITE = getCareTwinSpriteAsset("celebrate-hop");
 const PREMIUM_VALUE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["celebrate-hop"];
 
-function signalIcon(key: PremiumValueSignal["key"]): keyof typeof Ionicons.glyphMap {
+function signalIcon(
+  key: PremiumValueSignal["key"],
+): keyof typeof Ionicons.glyphMap {
   if (key === "household") return "people-outline";
   if (key === "health") return "heart-outline";
   if (key === "reports") return "document-text-outline";
@@ -69,7 +76,12 @@ function PremiumScreenBody() {
   const now = Date.now();
 
   const healthWatch = useMemo(
-    () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
+    () =>
+      deriveHealthWatch({
+        entries: state.entries,
+        routines: state.routines,
+        now,
+      }),
     [state.entries, state.routines, now],
   );
 
@@ -92,51 +104,29 @@ function PremiumScreenBody() {
   );
 
   const recommendedPlan =
-    preview.plans.find((plan) => plan.id === preview.recommendedPlanId) ?? preview.plans[1];
+    preview.plans.find((plan) => plan.id === preview.recommendedPlanId) ??
+    preview.plans[1];
   const includedEntitlements = preview.entitlements.included.slice(0, 3);
   const lockedEntitlements = preview.entitlements.locked.slice(0, 5);
-  const premiumStageSpeech =
-    lockedEntitlements[0]
-      ? `${recommendedPlan.name} unlocks ${lockedEntitlements[0].label.toLowerCase()} when checkout is approved.`
-      : `${recommendedPlan.name} is ready to review once launch gates close.`;
+  const premiumStageSpeech = lockedEntitlements[0]
+    ? `${recommendedPlan.name} unlocks ${lockedEntitlements[0].label.toLowerCase()} when checkout is approved.`
+    : `${recommendedPlan.name} is ready to review once launch gates close.`;
   // The HUD strip is fixed dark navy in BOTH themes, so its value inks are
   // fixed bright tones (the dark-palette variants) - the light-theme
   // primary/amber/sage are dark pigments that vanish on navy.
   const premiumStageHud = [
     { label: "Plan", value: recommendedPlan.name, tone: "#FBF6E7" },
     { label: "Price", value: recommendedPlan.monthlyPrice, tone: "#D8A852" },
-    { label: "Signals", value: String(preview.valueSignals.length), tone: "#6DA36F" },
+    {
+      label: "Signals",
+      value: String(preview.valueSignals.length),
+      tone: "#6DA36F",
+    },
     { label: "Gate", value: "Checkout", tone: "#D8A852" },
   ];
   const paymentsProofManifest = buildPaymentsProviderProofManifest();
-  const premiumStageIsNight = colors.isDark || homeImmersiveRoomIsNight(new Date().getHours());
-  const reducedMotion = useReducedMotion();
-  const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 18)).current;
-  useLayoutEffect(() => {
-    if (isWebRoutePreview) return;
-    if (reducedMotion) {
-      fade.setValue(1);
-      slide.setValue(0);
-      return;
-    }
-    const entrance = Animated.parallel([
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: MOTION_MS.screen,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slide, {
-        toValue: 0,
-        ...SPRING.default,
-        useNativeDriver: true,
-      }),
-    ]);
-    entrance.start();
-    return () => entrance.stop();
-  }, [fade, isWebRoutePreview, reducedMotion, slide]);
-
+  const premiumStageIsNight =
+    colors.isDark || homeImmersiveRoomIsNight(new Date().getHours());
   const showLaunchChecklist = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     notifyDialog(
@@ -159,14 +149,22 @@ function PremiumScreenBody() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
+        contentContainerStyle={{
+          paddingTop: topPadding,
+          paddingHorizontal: 20,
+          paddingBottom: bottomPadding,
+        }}
       >
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+        <View>
           <BoardCard padded={false} style={s.premiumValueStageCard}>
             <ImageBackground
               source={PREMIUM_VALUE_STAGE_ROOM}
               resizeMode="stretch"
-              imageStyle={[stageImageFill, s.premiumValueStageImage, pixelImageStyle]}
+              imageStyle={[
+                stageImageFill,
+                s.premiumValueStageImage,
+                pixelImageStyle,
+              ]}
               style={s.premiumValueStage}
               testID="premium-value-pixel-stage"
             >
@@ -176,18 +174,28 @@ function PremiumScreenBody() {
                   // Evening/dark parity with the other stages: Home and
                   // Records swap to night art, so the always-daylight Plus
                   // room gets a night wash instead of glowing at midnight.
-                  premiumStageIsNight ? { backgroundColor: "rgba(9,17,32,0.38)" } : null,
+                  premiumStageIsNight
+                    ? { backgroundColor: "rgba(9,17,32,0.38)" }
+                    : null,
                 ]}
               />
 
               <View style={s.premiumValueStageTop}>
                 <View style={s.premiumValueBubble}>
-                  <Text style={[s.premiumValueKicker, { color: colors.copper, fontFamily: PIXEL_DISPLAY }]}>
+                  <Text
+                    style={[
+                      s.premiumValueKicker,
+                      { color: colors.copper, fontFamily: PIXEL_DISPLAY },
+                    ]}
+                  >
                     Plus Value Console
                   </Text>
                   <Text
                     numberOfLines={3}
-                    style={[s.premiumValueSpeech, { color: colors.brandNavy, fontFamily: PIXEL_DISPLAY }]}
+                    style={[
+                      s.premiumValueSpeech,
+                      { color: colors.brandNavy, fontFamily: PIXEL_DISPLAY },
+                    ]}
                   >
                     {premiumStageSpeech}
                   </Text>
@@ -196,11 +204,23 @@ function PremiumScreenBody() {
                 <View
                   style={[
                     s.premiumValueChip,
-                    { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" },
+                    {
+                      backgroundColor: colors.brandNavy + "E8",
+                      borderColor: colors.ivory + "55",
+                    },
                   ]}
                 >
-                  <Ionicons name="lock-closed-outline" size={15} color={colors.amber} />
-                  <Text style={[s.premiumValueChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={15}
+                    color={colors.amber}
+                  />
+                  <Text
+                    style={[
+                      s.premiumValueChipText,
+                      { color: colors.ivory, fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
                     Checkout gated
                   </Text>
                 </View>
@@ -220,21 +240,43 @@ function PremiumScreenBody() {
             {/* Data dock BELOW the painting (log/records/woofguide pattern):
                 the HUD and plan/CTA row used to overlay the art's floor,
                 cutting the dog's base so it floated mid-window. */}
-            <View style={[s.premiumValueDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.border }]}>
+            <View
+              style={[
+                s.premiumValueDock,
+                {
+                  backgroundColor: colors.ivory + "F4",
+                  borderTopColor: colors.border,
+                },
+              ]}
+            >
               <View
                 style={[
                   s.premiumValueHud,
-                  { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" },
+                  {
+                    backgroundColor: colors.brandNavy + "DF",
+                    borderColor: colors.ivory + "44",
+                  },
                 ]}
               >
                 {premiumStageHud.map((metric) => (
                   <View key={metric.label} style={s.premiumValueHudCell}>
-                    <Text style={[s.premiumValueHudLabel, { color: colors.ivory, fontFamily: PIXEL_DISPLAY }]}>
+                    <Text
+                      style={[
+                        s.premiumValueHudLabel,
+                        { color: colors.ivory, fontFamily: PIXEL_DISPLAY },
+                      ]}
+                    >
                       {metric.label}
                     </Text>
                     <Text
                       numberOfLines={1}
-                      style={[s.premiumValueHudValue, { color: metric.tone, fontFamily: "Inter_800ExtraBold" }]}
+                      style={[
+                        s.premiumValueHudValue,
+                        {
+                          color: metric.tone,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
                     >
                       {metric.value}
                     </Text>
@@ -246,7 +288,8 @@ function PremiumScreenBody() {
                             s.premiumValueSignalBar,
                             {
                               backgroundColor:
-                                index < Math.min(5, preview.valueSignals.length || 1)
+                                index <
+                                Math.min(5, preview.valueSignals.length || 1)
                                   ? metric.tone
                                   : colors.ivory + "30",
                             },
@@ -262,15 +305,29 @@ function PremiumScreenBody() {
                 <View
                   style={[
                     s.premiumValuePlanCard,
-                    { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" },
+                    {
+                      backgroundColor: colors.ivory + "E8",
+                      borderColor: colors.ivory + "AA",
+                    },
                   ]}
                 >
-                  <Text style={[s.premiumValuePlanLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text
+                    style={[
+                      s.premiumValuePlanLabel,
+                      {
+                        color: colors.copper,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
+                    ]}
+                  >
                     Recommended
                   </Text>
                   <Text
                     numberOfLines={1}
-                    style={[s.premiumValuePlanValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                    style={[
+                      s.premiumValuePlanValue,
+                      { color: colors.brandNavy, fontFamily: DISPLAY_SEMI },
+                    ]}
                   >
                     {recommendedPlan.name} · {recommendedPlan.monthlyPrice}
                   </Text>
@@ -281,26 +338,53 @@ function PremiumScreenBody() {
                   onPress={showLaunchChecklist}
                   style={({ pressed }) => [
                     s.premiumValueAction,
-                    { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.82 : 1,
+                    },
                   ]}
                 >
                   <Text
                     style={[
                       s.premiumValueActionText,
-                      { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" },
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
                     ]}
                   >
                     Launch checklist
                   </Text>
-                  <Ionicons name="arrow-forward" size={15} color={colors.primaryForeground} />
+                  <Ionicons
+                    name="arrow-forward"
+                    size={15}
+                    color={colors.primaryForeground}
+                  />
                 </Pressable>
               </View>
             </View>
           </BoardCard>
 
-          <View style={[s.notice, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
-            <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
-            <Text style={[s.noticeText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+          <View
+            style={[
+              s.notice,
+              {
+                backgroundColor: colors.amber + "14",
+                borderColor: colors.amber + "45",
+              },
+            ]}
+          >
+            <Ionicons
+              name="lock-closed-outline"
+              size={16}
+              color={colors.amber}
+            />
+            <Text
+              style={[
+                s.noticeText,
+                { color: colors.foreground, fontFamily: "Inter_500Medium" },
+              ]}
+            >
               {preview.launchNotice}
             </Text>
           </View>
@@ -310,15 +394,43 @@ function PremiumScreenBody() {
                 beside the accessory pill on phone widths. */}
             <BoardSectionHeader
               title="Payments proof"
-              accessory={<BoardPill label="Checkout disabled" tone={colors.amber} />}
+              accessory={
+                <BoardPill label="Checkout disabled" tone={colors.amber} />
+              }
             />
-            <Text style={[s.paymentsProofIntro, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              Paid checkout stays blocked until every provider proof row is approved from real billing evidence.
+            <Text
+              style={[
+                s.paymentsProofIntro,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              Paid checkout stays blocked until every provider proof row is
+              approved from real billing evidence.
             </Text>
             <View style={s.paymentsProofGrid}>
               {paymentsProofManifest.rows.map((row) => (
-                <View key={row.label} style={[s.paymentsProofCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                  <Text style={[s.paymentsProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                <View
+                  key={row.label}
+                  style={[
+                    s.paymentsProofCell,
+                    {
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.paymentsProofLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
                     {row.label}
                   </Text>
                   <Text
@@ -326,14 +438,24 @@ function PremiumScreenBody() {
                     style={[
                       s.paymentsProofValue,
                       {
-                        color: row.status === "ready" ? colors.sage : colors.amber,
+                        color:
+                          row.status === "ready" ? colors.sage : colors.amber,
                         fontFamily: "Inter_700Bold",
                       },
                     ]}
                   >
                     {row.value}
                   </Text>
-                  <Text numberOfLines={2} style={[s.paymentsProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      s.paymentsProofDetail,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_400Regular",
+                      },
+                    ]}
+                  >
                     {row.detail}
                   </Text>
                 </View>
@@ -343,7 +465,13 @@ function PremiumScreenBody() {
               <Text
                 key={blocker}
                 numberOfLines={2}
-                style={[s.paymentsProofBlocker, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                style={[
+                  s.paymentsProofBlocker,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_400Regular",
+                  },
+                ]}
               >
                 - {blocker}
               </Text>
@@ -353,20 +481,56 @@ function PremiumScreenBody() {
           <BoardCard style={s.premiumBoard}>
             <BoardSectionHeader
               title="Why upgrade"
-              accessory={<BoardPill label={`${preview.valueSignals.length} signals`} tone={colors.sage} />}
+              accessory={
+                <BoardPill
+                  label={`${preview.valueSignals.length} signals`}
+                  tone={colors.sage}
+                />
+              }
             />
             <View style={s.signalGrid}>
               {/* All signals render - the badge says "5 signals", so five
                   cards appear; slice(0,4) made the count read as a bug. */}
               {preview.valueSignals.map((signal) => (
-                <View key={signal.key} style={[s.signalTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <View style={[s.signalIcon, { backgroundColor: colors.sage + "16" }]}>
-                    <Ionicons name={signalIcon(signal.key)} size={18} color={colors.sage} />
+                <View
+                  key={signal.key}
+                  style={[
+                    s.signalTile,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.signalIcon,
+                      { backgroundColor: colors.sage + "16" },
+                    ]}
+                  >
+                    <Ionicons
+                      name={signalIcon(signal.key)}
+                      size={18}
+                      color={colors.sage}
+                    />
                   </View>
-                  <Text style={[s.signalLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.signalLabel,
+                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {signal.label}
                   </Text>
-                  <Text style={[s.signalDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  <Text
+                    style={[
+                      s.signalDetail,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_400Regular",
+                      },
+                    ]}
+                  >
                     {signal.detail}
                   </Text>
                 </View>
@@ -375,7 +539,12 @@ function PremiumScreenBody() {
           </BoardCard>
 
           <View style={s.planSection}>
-            <BoardSectionHeader title="Plans" accessory={<BoardPill label="Checkout gated" tone={colors.amber} />} />
+            <BoardSectionHeader
+              title="Plans"
+              accessory={
+                <BoardPill label="Checkout gated" tone={colors.amber} />
+              }
+            />
           </View>
           <View style={s.planStack}>
             {preview.plans.map((plan) => (
@@ -389,11 +558,29 @@ function PremiumScreenBody() {
           </View>
 
           <BoardCard style={s.entitlementCard}>
-            <BoardSectionHeader title="Launch entitlements" accessory={<BoardPill label="Current: Free" tone={colors.primary} />} />
-            <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <BoardSectionHeader
+              title="Launch entitlements"
+              accessory={
+                <BoardPill label="Current: Free" tone={colors.primary} />
+              }
+            />
+            <Text
+              style={[
+                s.entitlementSub,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
               Current plan: Free
             </Text>
-            <Text style={[s.entitlementNote, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              style={[
+                s.entitlementNote,
+                { color: colors.foreground, fontFamily: "Inter_500Medium" },
+              ]}
+            >
               {preview.entitlements.upgradeHeadline}
             </Text>
             <View style={s.entitlementColumns}>
@@ -417,10 +604,26 @@ function PremiumScreenBody() {
               onPress={showLaunchChecklist}
               accessibilityRole="button"
               accessibilityLabel="Open premium launch checklist"
-              style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [
+                s.primaryBtn,
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
             >
               <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
-              <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Launch checklist</Text>
+              <Text
+                style={[
+                  s.primaryText,
+                  {
+                    color: colors.primaryForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
+                Launch checklist
+              </Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -433,12 +636,26 @@ function PremiumScreenBody() {
               }}
               accessibilityRole="button"
               accessibilityLabel="Back to care"
-              style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [
+                s.secondaryBtn,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
             >
-              <Text style={[s.secondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Back to care</Text>
+              <Text
+                style={[
+                  s.secondaryText,
+                  { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                Back to care
+              </Text>
             </Pressable>
           </View>
-        </Animated.View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -457,12 +674,26 @@ function EntitlementList({
 }) {
   return (
     <View style={s.entitlementColumn}>
-      <Text style={[s.entitlementColumnTitle, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+      <Text
+        style={[
+          s.entitlementColumnTitle,
+          { color: colors.mutedForeground, fontFamily: "Inter_700Bold" },
+        ]}
+      >
         {title}
       </Text>
       {features.map((feature) => (
         <View key={feature.key} style={s.entitlementRow}>
-          <View style={[s.entitlementIcon, { backgroundColor: locked ? colors.amber + "16" : colors.sage + "16" }]}>
+          <View
+            style={[
+              s.entitlementIcon,
+              {
+                backgroundColor: locked
+                  ? colors.amber + "16"
+                  : colors.sage + "16",
+              },
+            ]}
+          >
             <Ionicons
               name={locked ? "lock-closed-outline" : "checkmark"}
               size={14}
@@ -470,11 +701,26 @@ function EntitlementList({
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[s.entitlementLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+            <Text
+              style={[
+                s.entitlementLabel,
+                { color: colors.foreground, fontFamily: "Inter_700Bold" },
+              ]}
+            >
               {feature.label}
             </Text>
-            <Text style={[s.entitlementDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {locked ? `${feature.requiredPlanId.toUpperCase()} - ${feature.detail}` : feature.detail}
+            <Text
+              style={[
+                s.entitlementDetail,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_400Regular",
+                },
+              ]}
+            >
+              {locked
+                ? `${feature.requiredPlanId.toUpperCase()} - ${feature.detail}`
+                : feature.detail}
             </Text>
           </View>
         </View>
@@ -503,32 +749,82 @@ function PlanCard({
     >
       <View style={s.planTop}>
         <View>
-          <Text style={[s.planName, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{plan.name}</Text>
-          <Text style={[s.planSummary, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            style={[
+              s.planName,
+              { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+            ]}
+          >
+            {plan.name}
+          </Text>
+          <Text
+            style={[
+              s.planSummary,
+              { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+            ]}
+          >
             {plan.summary}
           </Text>
         </View>
-        <View style={[s.pricePill, { backgroundColor: recommended ? colors.primary : colors.background }]}>
-          <Text style={[s.priceText, { color: recommended ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+        <View
+          style={[
+            s.pricePill,
+            {
+              backgroundColor: recommended ? colors.primary : colors.background,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              s.priceText,
+              {
+                color: recommended
+                  ? colors.primaryForeground
+                  : colors.foreground,
+                fontFamily: "Inter_700Bold",
+              },
+            ]}
+          >
             {plan.monthlyPrice}
           </Text>
         </View>
       </View>
       {recommended ? (
-        <View style={[s.recommendedPill, { backgroundColor: colors.sage + "14" }]}>
+        <View
+          style={[s.recommendedPill, { backgroundColor: colors.sage + "14" }]}
+        >
           <Ionicons name="checkmark-circle" size={15} color={colors.sage} />
-          <Text style={[s.recommendedText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Recommended for your current care setup</Text>
+          <Text
+            style={[
+              s.recommendedText,
+              { color: colors.sage, fontFamily: "Inter_700Bold" },
+            ]}
+          >
+            Recommended for your current care setup
+          </Text>
         </View>
       ) : null}
       <View style={s.featureList}>
         {plan.features.map((feature) => (
           <View key={feature} style={s.featureRow}>
             <Ionicons name="checkmark" size={15} color={colors.sage} />
-            <Text style={[s.featureText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{feature}</Text>
+            <Text
+              style={[
+                s.featureText,
+                { color: colors.foreground, fontFamily: "Inter_500Medium" },
+              ]}
+            >
+              {feature}
+            </Text>
           </View>
         ))}
       </View>
-      <Text style={[s.annualText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+      <Text
+        style={[
+          s.annualText,
+          { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+        ]}
+      >
         Annual target: {plan.annualPrice}
       </Text>
     </BoardCard>
@@ -702,11 +998,23 @@ const s = StyleSheet.create({
   premiumValueActionText: {
     fontSize: 12,
   },
-  notice: { flexDirection: "row", gap: 9, borderWidth: 1, borderRadius: 17, padding: 14, marginTop: 14 },
+  notice: {
+    flexDirection: "row",
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 17,
+    padding: 14,
+    marginTop: 14,
+  },
   noticeText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   paymentsProofCard: { marginTop: 14 },
   paymentsProofIntro: { fontSize: 12.5, lineHeight: 18, marginTop: -4 },
-  paymentsProofGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
+  paymentsProofGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
   paymentsProofCell: {
     width: "48.5%",
     borderWidth: 1,
@@ -714,7 +1022,11 @@ const s = StyleSheet.create({
     padding: 10,
     minHeight: 118,
   },
-  paymentsProofLabel: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  paymentsProofLabel: {
+    fontSize: 9.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
   paymentsProofValue: { fontSize: 11.5, marginTop: 4 },
   paymentsProofDetail: { fontSize: 10.5, lineHeight: 14, marginTop: 4 },
   paymentsProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
@@ -723,8 +1035,21 @@ const s = StyleSheet.create({
   // flexBasis + grow, not a fixed 48.5% width: 48.5% + 48.5% + 10px gap
   // exceeded 100%, so every second tile wrapped and the section rendered
   // as a single left-hand column with dead space beside it.
-  signalTile: { flexGrow: 1, flexBasis: "44%", borderWidth: 1, borderRadius: 16, padding: 14 },
-  signalIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  signalTile: {
+    flexGrow: 1,
+    flexBasis: "44%",
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+  },
+  signalIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
   signalLabel: { fontSize: 14 },
   signalDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 5 },
   planSection: { marginTop: 18, marginHorizontal: 2 },
@@ -733,9 +1058,23 @@ const s = StyleSheet.create({
   planTop: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
   planName: { fontSize: 20 },
   planSummary: { fontSize: 13, lineHeight: 19, marginTop: 4, maxWidth: 220 },
-  pricePill: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
+  pricePill: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+  },
   priceText: { fontSize: 12 },
-  recommendedPill: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, marginTop: 12, alignSelf: "flex-start" },
+  recommendedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginTop: 12,
+    alignSelf: "flex-start",
+  },
   recommendedText: { fontSize: 11.5 },
   featureList: { gap: 8, marginTop: 14 },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -746,14 +1085,41 @@ const s = StyleSheet.create({
   entitlementNote: { fontSize: 13, lineHeight: 19, marginTop: 12 },
   entitlementColumns: { gap: 14, marginTop: 16 },
   entitlementColumn: { gap: 10 },
-  entitlementColumnTitle: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.5 },
+  entitlementColumnTitle: {
+    fontSize: 11.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   entitlementRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  entitlementIcon: { width: 27, height: 27, borderRadius: 10, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  entitlementIcon: {
+    width: 27,
+    height: 27,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
   entitlementLabel: { fontSize: 13.5 },
   entitlementDetail: { fontSize: 12, lineHeight: 17, marginTop: 2 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 22 },
-  primaryBtn: { flex: 1, height: 52, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  primaryBtn: {
+    flex: 1,
+    height: 52,
+    borderRadius: 17,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
   primaryText: { color: "#FFFFFF", fontSize: 14.5 },
-  secondaryBtn: { minWidth: 112, height: 52, borderRadius: 17, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 14 },
+  secondaryBtn: {
+    minWidth: 112,
+    height: 52,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+  },
   secondaryText: { fontSize: 14 },
 });

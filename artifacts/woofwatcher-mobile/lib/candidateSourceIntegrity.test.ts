@@ -40,7 +40,9 @@ function run(
   });
 }
 
-function createCandidateFixture(): CandidateFixture {
+function createCandidateFixture(
+  emittedJavaScript = '"Search More destinations";\n',
+): CandidateFixture {
   const fixtureRoot = mkdtempSync(
     join(tmpdir(), "woofwatcher-candidate-integrity-"),
   );
@@ -67,7 +69,7 @@ const outputIndex = process.argv.indexOf("--output-dir");
 const outputRoot = path.resolve(process.cwd(), process.argv[outputIndex + 1]);
 fs.mkdirSync(path.join(outputRoot, "_expo", "static", "js", "web"), { recursive: true });
 fs.writeFileSync(path.join(outputRoot, "index.html"), '<html><head></head><body><script src="/_expo/static/js/web/entry-deadbeef1234.js"></script></body></html>');
-fs.writeFileSync(path.join(outputRoot, "_expo", "static", "js", "web", "entry-deadbeef1234.js"), "void 0;\\n");
+fs.writeFileSync(path.join(outputRoot, "_expo", "static", "js", "web", "entry-deadbeef1234.js"), ${JSON.stringify(emittedJavaScript)});
 `,
   );
   chmodSync(pnpmPath, 0o755);
@@ -164,3 +166,25 @@ test("candidate source integrity permits and replaces stale ignored smoke output
     rmSync(fixture.root, { recursive: true, force: true });
   }
 });
+
+for (const ownerOnlyMarker of [
+  "deriveLaunchProviderSetup",
+  "deriveSupportRunbookPlan",
+  "Open sprite QA cockpit",
+  "avatar-sprite-production-review",
+]) {
+  test(`candidate consumer boundary rejects bundled owner marker: ${ownerOnlyMarker}`, () => {
+    const fixture = createCandidateFixture(
+      `"Search More destinations";${JSON.stringify(ownerOnlyMarker)};\n`,
+    );
+    try {
+      const result = runCandidate(fixture);
+
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /owner-only QA implementation marker/);
+      assert.match(result.stderr, new RegExp(ownerOnlyMarker));
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+}

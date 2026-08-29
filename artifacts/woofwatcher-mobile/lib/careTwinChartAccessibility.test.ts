@@ -30,7 +30,7 @@ test("care-twin reactions and pet hearts become static under Reduce Motion", () 
   );
   const suppliedReaction = sourceSection(
     room,
-    "if (!reaction) return;",
+    "if (!routeMotionActive || !reaction) return;",
     "// Petting is affection-only feedback",
   );
   const petReaction = sourceSection(
@@ -47,17 +47,17 @@ test("care-twin reactions and pet hearts become static under Reduce Motion", () 
   assert.match(room, /const reduced = useReducedMotion\(\);/);
   assert.match(
     room,
-    /if \(!reduced\) return;[\s\S]{0,180}cancelAnimation\(reactionProgress\);[\s\S]{0,120}cancelAnimation\(tap\);/,
+    /if \(!reduced && routeMotionActive\) return;[\s\S]{0,120}cancelAnimation\(tap\);/,
   );
   assert.match(
     stagePose,
-    /if \(reduced\) \{[\s\S]*cancelAnimation\(stagePoseOpacity\)[\s\S]*stagePoseOpacity\.value = 1/,
+    /if \(reduced \|\| !routeMotionActive\) \{[\s\S]*cancelAnimation\(stagePoseOpacity\)[\s\S]*stagePoseOpacity\.value = 1/,
   );
   assert.match(
     suppliedReaction,
-    /reactionProgress\.value = reduced\s*\? 1\s*:/,
+    /if \(reduced\) \{[\s\S]*reactionProgress\.value = 1;[\s\S]*REDUCED_REACTION_HOLD_MS/,
   );
-  assert.match(petReaction, /reactionProgress\.value = reduced\s*\? 1\s*:/);
+  assert.doesNotMatch(petReaction, /withSequence|withTiming/);
   assert.match(petHeart, /const reduced = useReducedMotion\(\);/);
   assert.match(petHeart, /if \(reduced\) return;/);
   assert.match(petHeart, /opacity: reduced\s*\? 1\s*:/);

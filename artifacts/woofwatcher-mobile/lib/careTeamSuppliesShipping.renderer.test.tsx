@@ -460,6 +460,23 @@ function CareEntryBoundaryHarness({
   );
 }
 
+function CareContextIdentityHarness({
+  parentEpoch,
+}: {
+  parentEpoch: number;
+}): React.JSX.Element {
+  return (
+    <LocalDataResetProvider>
+      <QueryCacheLocalDataResetProvider>
+        <CareProvider>
+          <div aria-label={`care-context-parent-${parentEpoch}`} />
+          <Probe />
+        </CareProvider>
+      </QueryCacheLocalDataResetProvider>
+    </LocalDataResetProvider>
+  );
+}
+
 async function mountCareEntryBoundary(
   renderLog: string[],
   onRender?: (entryIds: string) => void,
@@ -497,6 +514,63 @@ function WalkRecorderHarness(): React.JSX.Element {
     </LocalDataResetProvider>
   );
 }
+
+test(
+  "an unrelated parent render preserves the settled Care context value identity",
+  { timeout: 10_000 },
+  async () => {
+    resetCareHouseholdRendererAuthStorage();
+    resetCareHouseholdRendererAppState();
+    resetCareHouseholdRendererLocation();
+    installHealthyApi();
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+    });
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container as never);
+
+    try {
+      await act(async () => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <CareContextIdentityHarness parentEpoch={0} />
+          </QueryClientProvider>,
+        );
+      });
+      await waitFor(
+        () => careProbe?.isInitialSyncSettled,
+        "the Care provider to settle before the identity comparison",
+      );
+
+      const before = careProbe;
+      assert.ok(before);
+
+      await act(async () => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <CareContextIdentityHarness parentEpoch={1} />
+          </QueryClientProvider>,
+        );
+      });
+
+      assert.equal(
+        careProbe,
+        before,
+        "a parent-only render must not fan out a new Care context value",
+      );
+    } finally {
+      await act(async () => root.unmount());
+      queryClient.clear();
+      container.parentNode?.removeChild(container);
+      careProbe = null;
+      resetCareHouseholdRendererAuthStorage();
+      resetCareHouseholdRendererAppState();
+      resetCareHouseholdRendererLocation();
+    }
+  },
+);
 
 async function seedFormerlySharedUserBCache(): Promise<string> {
   const staleRow = sharedRendererCareRow("formerly-shared-row");

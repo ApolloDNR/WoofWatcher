@@ -147,6 +147,7 @@ export function createCareAuthIdentityBoundary(): CareAuthIdentityBoundary {
     generation,
   );
   let currentKey = transitionKey(current);
+  let currentMutationOrigin: CareMutationOriginPermit | null = null;
 
   return {
     observe(input) {
@@ -156,6 +157,7 @@ export function createCareAuthIdentityBoundary(): CareAuthIdentityBoundary {
         generation += 1;
         current = deriveSnapshot(input, generation);
         currentKey = transitionKey(current);
+        currentMutationOrigin = null;
       }
       return current;
     },
@@ -188,12 +190,14 @@ export function createCareAuthIdentityBoundary(): CareAuthIdentityBoundary {
       ) {
         return null;
       }
-      return Object.freeze({
+      if (currentMutationOrigin) return currentMutationOrigin;
+      currentMutationOrigin = Object.freeze({
         generation: current.generation,
         dataScope: current.dataScope,
         phase: current.phase,
         identityKey: current.identityKey,
       });
+      return currentMutationOrigin;
     },
     canContinue(permit) {
       return (

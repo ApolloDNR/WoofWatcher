@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import type { CareReminderItem } from "@workspace/care-domain";
 
+import * as planReminderCenter from "./planReminderCenter.ts";
 import {
   buildPlanReminderFocusRequestKey,
   buildPlanReminderSections,
@@ -56,7 +57,9 @@ function frameScheduler() {
       },
     },
     runNext() {
-      const next = pending.entries().next().value as [number, () => void] | undefined;
+      const next = pending.entries().next().value as
+        | [number, () => void]
+        | undefined;
       if (!next) return false;
       pending.delete(next[0]);
       next[1]();
@@ -92,12 +95,10 @@ test("groups at most 50 reminders without inventing a date", () => {
   ];
   const sections = buildPlanReminderSections(items);
 
-  assert.deepEqual(sections.map((section) => section.label), [
-    "Today",
-    "Tomorrow",
-    "Later",
-    "No date",
-  ]);
+  assert.deepEqual(
+    sections.map((section) => section.label),
+    ["Today", "Tomorrow", "Later", "No date"],
+  );
   assert.equal(
     sections.reduce((count, section) => count + section.items.length, 0),
     PLAN_REMINDER_LIMIT,
@@ -107,16 +108,33 @@ test("groups at most 50 reminders without inventing a date", () => {
 
 test("focuses only a validated known row and never turns focus into an action", () => {
   const items = [reminder("record_known")];
-  assert.equal(resolvePlanReminderFocus({ item: "record_known" }, items), "record_known");
-  assert.equal(resolvePlanReminderFocus({ item: ["record_known", "ignored"] }, items), undefined);
+  assert.equal(
+    resolvePlanReminderFocus({ item: "record_known" }, items),
+    "record_known",
+  );
+  assert.equal(
+    resolvePlanReminderFocus({ item: ["record_known", "ignored"] }, items),
+    undefined,
+  );
   assert.deepEqual(
     resolvePlanReminderDestination({ item: ["record_known", "ignored"] }),
-    { parent: "plans", pathname: "/calendar", replace: true },
+    {
+      parent: "plans",
+      pathname: "/calendar",
+      params: { section: "reminders" },
+      replace: true,
+    },
   );
   assert.equal(resolvePlanReminderFocus({ item: "missing" }, items), undefined);
-  assert.equal(resolvePlanReminderFocus({ item: "bad value" }, items), undefined);
+  assert.equal(
+    resolvePlanReminderFocus({ item: "bad value" }, items),
+    undefined,
+  );
 
-  const inherited = Object.create({ item: "record_known" }) as Record<string, unknown>;
+  const inherited = Object.create({ item: "record_known" }) as Record<
+    string,
+    unknown
+  >;
   assert.equal(resolvePlanReminderFocus(inherited, items), undefined);
   assert.deepEqual(getPlanReminderAction(items[0]), {
     kind: "navigate",
@@ -125,26 +143,70 @@ test("focuses only a validated known row and never turns focus into an action", 
   });
 });
 
+test("targets the Reminder Center anchor when a canonical center link has no known row", () => {
+  const planReminderCenterFocusTarget = Reflect.get(
+    planReminderCenter,
+    "PLAN_REMINDER_CENTER_FOCUS_TARGET",
+  ) as unknown;
+  const resolvePlanReminderFocusTarget = Reflect.get(
+    planReminderCenter,
+    "resolvePlanReminderFocusTarget",
+  ) as unknown;
+  assert.equal(typeof planReminderCenterFocusTarget, "string");
+  assert.equal(typeof resolvePlanReminderFocusTarget, "function");
+  const resolveTarget = resolvePlanReminderFocusTarget as (
+    params: Readonly<Record<string, unknown>>,
+    items: readonly CareReminderItem[],
+  ) => string | undefined;
+  const items = [reminder("record_known")];
+
+  assert.equal(
+    resolveTarget({ section: "reminders", item: "record_known" }, items),
+    "record_known",
+  );
+  assert.equal(
+    resolveTarget({ section: "reminders" }, items),
+    planReminderCenterFocusTarget,
+  );
+  assert.equal(
+    resolveTarget({ section: "reminders", item: "missing" }, items),
+    planReminderCenterFocusTarget,
+  );
+  assert.equal(resolveTarget({}, items), undefined);
+  assert.equal(
+    resolveTarget({ section: "not-reminders", item: "record_known" }, items),
+    undefined,
+  );
+});
+
 test("routes canonical reminder actions by owner", () => {
   assert.deepEqual(
-    getPlanReminderAction(reminder("routine", { kind: "routine", sourceId: "dinner" })),
+    getPlanReminderAction(
+      reminder("routine", { kind: "routine", sourceId: "dinner" }),
+    ),
     { kind: "edit-routine", routineId: "dinner" },
   );
-  assert.deepEqual(getPlanReminderAction(reminder("med", { kind: "medication" })), {
-    kind: "navigate",
-    pathname: "/health",
-    params: { section: "medications" },
-  });
+  assert.deepEqual(
+    getPlanReminderAction(reminder("med", { kind: "medication" })),
+    {
+      kind: "navigate",
+      pathname: "/health",
+      params: { section: "medications" },
+    },
+  );
   assert.deepEqual(getPlanReminderAction(reminder("record")), {
     kind: "navigate",
     pathname: "/health",
     params: { section: "records" },
   });
-  assert.deepEqual(getPlanReminderAction(reminder("groom", { kind: "grooming" })), {
-    kind: "navigate",
-    pathname: "/log",
-    params: { type: "grooming", detail: "1" },
-  });
+  assert.deepEqual(
+    getPlanReminderAction(reminder("groom", { kind: "grooming" })),
+    {
+      kind: "navigate",
+      pathname: "/log",
+      params: { type: "grooming", detail: "1" },
+    },
+  );
 });
 
 test("subtracts route top padding exactly once from focused-row scroll geometry", () => {
@@ -153,7 +215,13 @@ test("subtracts route top padding exactly once from focused-row scroll geometry"
 });
 
 test("measures a nested row in ScrollView content coordinates and focus causes no care action", () => {
-  const effects = { measured: [] as string[], scrolled: [] as number[], navigated: 0, edited: 0, writes: 0 };
+  const effects = {
+    measured: [] as string[],
+    scrolled: [] as number[],
+    navigated: 0,
+    edited: 0,
+    writes: 0,
+  };
   const handled = runPlanReminderInteraction(
     { kind: "focus", itemId: "record_known", routeTopPadding: 72 },
     {
@@ -165,9 +233,15 @@ test("measures a nested row in ScrollView content coordinates and focus causes n
         return true;
       },
       scrollTo: (y) => effects.scrolled.push(y),
-      navigate: () => { effects.navigated += 1; },
-      editRoutine: () => { effects.edited += 1; },
-      writeCare: () => { effects.writes += 1; },
+      navigate: () => {
+        effects.navigated += 1;
+      },
+      editRoutine: () => {
+        effects.edited += 1;
+      },
+      writeCare: () => {
+        effects.writes += 1;
+      },
     },
   );
 
@@ -235,7 +309,9 @@ test("keys reminder focus by id, top padding, ordered rendered fields, and row c
       sections: sections.map((section) => ({
         ...section,
         items: section.items.map((item) =>
-          item.id === "record_known" ? { ...item, detail: "Due tomorrow" } : item,
+          item.id === "record_known"
+            ? { ...item, detail: "Due tomorrow" }
+            : item,
         ),
       })),
     }),
@@ -244,7 +320,10 @@ test("keys reminder focus by id, top padding, ordered rendered fields, and row c
   assert.notEqual(
     buildPlanReminderFocusRequestKey({
       ...baseRequest,
-      sections: sections.map((section) => ({ ...section, items: [...section.items].reverse() })),
+      sections: sections.map((section) => ({
+        ...section,
+        items: [...section.items].reverse(),
+      })),
     }),
     base,
   );
@@ -277,7 +356,10 @@ test("keys reminder focus by id, top padding, ordered rendered fields, and row c
     assert.notEqual(withChangedFocusedRow(patch), base);
   }
   assert.notEqual(
-    buildPlanReminderFocusRequestKey({ ...baseRequest, summary: "Summary changed." }),
+    buildPlanReminderFocusRequestKey({
+      ...baseRequest,
+      summary: "Summary changed.",
+    }),
     base,
   );
   assert.notEqual(
@@ -316,9 +398,15 @@ test("coordinates focus once, rejects stale callbacks, clears on absence, and re
       return true;
     },
     scrollTo: (y: number) => effects.scrolled.push(y),
-    navigate: () => { effects.navigated += 1; },
-    editRoutine: () => { effects.edited += 1; },
-    writeCare: () => { effects.writes += 1; },
+    navigate: () => {
+      effects.navigated += 1;
+    },
+    editRoutine: () => {
+      effects.edited += 1;
+    },
+    writeCare: () => {
+      effects.writes += 1;
+    },
   };
   const firstRequest = {
     itemId: "record_known",
@@ -330,7 +418,10 @@ test("coordinates focus once, rejects stale callbacks, clears on absence, and re
     totalCount: 2,
   } satisfies PlanReminderFocusRequest;
 
-  assert.equal(coordinatePlanReminderFocus(firstRequest, tracker, interactionEffects), true);
+  assert.equal(
+    coordinatePlanReminderFocus(firstRequest, tracker, interactionEffects),
+    true,
+  );
   assert.equal(
     coordinatePlanReminderFocus(
       { ...firstRequest, sections: structuredClone(sections) },
@@ -342,10 +433,17 @@ test("coordinates focus once, rejects stale callbacks, clears on absence, and re
   );
 
   const secondRequest = { ...firstRequest, itemId: "record_other" };
-  assert.equal(coordinatePlanReminderFocus(secondRequest, tracker, interactionEffects), true);
+  assert.equal(
+    coordinatePlanReminderFocus(secondRequest, tracker, interactionEffects),
+    true,
+  );
   failures.get("record_known")?.();
   callbacks.get("record_known")?.(712);
-  assert.deepEqual(effects.scrolled, [], "a superseded measurement callback must not scroll");
+  assert.deepEqual(
+    effects.scrolled,
+    [],
+    "a superseded measurement callback must not scroll",
+  );
   const secondRequestCallback = callbacks.get("record_other");
   secondRequestCallback?.(812);
   assert.deepEqual(effects.scrolled, [740]);
@@ -355,13 +453,18 @@ test("coordinates focus once, rejects stale callbacks, clears on absence, and re
     [740],
     "one successful measurement callback may consume and scroll only once",
   );
-  assert.equal(coordinatePlanReminderFocus(secondRequest, tracker, interactionEffects), false);
+  assert.equal(
+    coordinatePlanReminderFocus(secondRequest, tracker, interactionEffects),
+    false,
+  );
   assert.deepEqual(effects.measured, ["record_known", "record_other"]);
 
   const changedSections = sections.map((section) => ({
     ...section,
     items: section.items.map((item) =>
-      item.id === "record_other" ? { ...item, detail: "A meaningful content revision" } : item,
+      item.id === "record_other"
+        ? { ...item, detail: "A meaningful content revision" }
+        : item,
     ),
   }));
   assert.equal(
@@ -391,7 +494,10 @@ test("coordinates focus once, rejects stale callbacks, clears on absence, and re
     active: { current: null },
     consumed: { current: null },
   });
-  assert.equal(coordinatePlanReminderFocus(firstRequest, tracker, interactionEffects), true);
+  assert.equal(
+    coordinatePlanReminderFocus(firstRequest, tracker, interactionEffects),
+    true,
+  );
   coordinatePlanReminderFocus(undefined, tracker, interactionEffects);
   callbacks.get("record_known")?.(712);
   assert.deepEqual(
@@ -433,13 +539,27 @@ test("coordinates focus once, rejects stale callbacks, clears on absence, and re
       return false;
     },
   };
-  assert.equal(coordinatePlanReminderFocus(firstRequest, retryTracker, retryEffects), false);
-  assert.equal(coordinatePlanReminderFocus(firstRequest, retryTracker, retryEffects), false);
-  assert.equal(attempts, 2, "a measurement that did not start must remain retryable");
+  assert.equal(
+    coordinatePlanReminderFocus(firstRequest, retryTracker, retryEffects),
+    false,
+  );
+  assert.equal(
+    coordinatePlanReminderFocus(firstRequest, retryTracker, retryEffects),
+    false,
+  );
+  assert.equal(
+    attempts,
+    2,
+    "a measurement that did not start must remain retryable",
+  );
   assert.equal(retryTracker.active.current, null);
   assert.equal(retryTracker.consumed.current, null);
   assert.deepEqual(
-    { navigated: effects.navigated, edited: effects.edited, writes: effects.writes },
+    {
+      navigated: effects.navigated,
+      edited: effects.edited,
+      writes: effects.writes,
+    },
     { navigated: 0, edited: 0, writes: 0 },
   );
 });
@@ -448,7 +568,9 @@ test("focus lifecycle performs false-false-success retries without a rerender an
   const request = {
     itemId: "record_known",
     routeTopPadding: 72,
-    sections: buildPlanReminderSections([reminder("record_known", { daysUntil: 4 })]),
+    sections: buildPlanReminderSections([
+      reminder("record_known", { daysUntil: 4 }),
+    ]),
     summary: "1 reminder - 0 urgent, 0 watch.",
     alertCount: 0,
     watchCount: 0,
@@ -462,29 +584,49 @@ test("focus lifecycle performs false-false-success retries without a rerender an
   const measurementResults = [false, false, true];
   const successes: Array<(contentY: number) => void> = [];
   const failures: Array<() => void> = [];
-  const effects = { attempts: 0, scrolled: [] as number[], navigated: 0, edited: 0, writes: 0 };
+  const effects = {
+    attempts: 0,
+    scrolled: [] as number[],
+    navigated: 0,
+    edited: 0,
+    writes: 0,
+  };
 
   const lifecycle = createPlanReminderFocusLifecycle(frames.scheduler);
   const focusEffects = {
-      measureItemInScrollContent: (_itemId, onMeasured, onMeasureFailed) => {
-        effects.attempts += 1;
-        successes.push(onMeasured);
-        failures.push(onMeasureFailed ?? (() => undefined));
-        return measurementResults.shift() ?? true;
-      },
-      scrollTo: (y) => effects.scrolled.push(y),
-      navigate: () => { effects.navigated += 1; },
-      editRoutine: () => { effects.edited += 1; },
-      writeCare: () => { effects.writes += 1; },
+    measureItemInScrollContent: (_itemId, onMeasured, onMeasureFailed) => {
+      effects.attempts += 1;
+      successes.push(onMeasured);
+      failures.push(onMeasureFailed ?? (() => undefined));
+      return measurementResults.shift() ?? true;
+    },
+    scrollTo: (y) => effects.scrolled.push(y),
+    navigate: () => {
+      effects.navigated += 1;
+    },
+    editRoutine: () => {
+      effects.edited += 1;
+    },
+    writeCare: () => {
+      effects.writes += 1;
+    },
   };
   lifecycle.update({ request, tracker, effects: focusEffects });
 
   assert.equal(effects.attempts, 1);
   assert.equal(frames.pendingCount, 1);
-  assert.equal(frames.runNext(), true, "the scheduler itself must perform retry two");
+  assert.equal(
+    frames.runNext(),
+    true,
+    "the scheduler itself must perform retry two",
+  );
   assert.equal(effects.attempts, 2);
   assert.equal(frames.pendingCount, 1);
-  assert.equal(frames.runNext(), true, "the scheduler itself must perform retry three");
+  assert.equal(
+    frames.runNext(),
+    true,
+    "the scheduler itself must perform retry three",
+  );
   assert.equal(effects.attempts, 3);
   assert.equal(frames.pendingCount, 0);
   successes[2]?.(712);
@@ -498,9 +640,17 @@ test("focus lifecycle performs false-false-success retries without a rerender an
     tracker,
     effects: focusEffects,
   });
-  assert.equal(effects.attempts, 3, "the consumed semantic key must remain terminal");
+  assert.equal(
+    effects.attempts,
+    3,
+    "the consumed semantic key must remain terminal",
+  );
   assert.deepEqual(
-    { navigated: effects.navigated, edited: effects.edited, writes: effects.writes },
+    {
+      navigated: effects.navigated,
+      edited: effects.edited,
+      writes: effects.writes,
+    },
     { navigated: 0, edited: 0, writes: 0 },
   );
 
@@ -509,10 +659,14 @@ test("focus lifecycle performs false-false-success retries without a rerender an
   const preconsumedFrames = frameScheduler();
   const preconsumedTracker = {
     active: { current: null as { requestKey: string } | null },
-    consumed: { current: buildPlanReminderFocusRequestKey(request) as string | null },
+    consumed: {
+      current: buildPlanReminderFocusRequestKey(request) as string | null,
+    },
   };
   let preconsumedMeasures = 0;
-  const preconsumedLifecycle = createPlanReminderFocusLifecycle(preconsumedFrames.scheduler);
+  const preconsumedLifecycle = createPlanReminderFocusLifecycle(
+    preconsumedFrames.scheduler,
+  );
   preconsumedLifecycle.update({
     request,
     tracker: preconsumedTracker,
@@ -554,7 +708,11 @@ test("focus lifecycle performs false-false-success retries without a rerender an
       },
     },
   });
-  assert.equal(preconsumedMeasures, 1, "a changed semantic key must start a fresh attempt");
+  assert.equal(
+    preconsumedMeasures,
+    1,
+    "a changed semantic key must start a fresh attempt",
+  );
   assert.equal(preconsumedFrames.pendingCount, 1);
   preconsumedLifecycle.dispose();
 });
@@ -582,14 +740,14 @@ test("focus lifecycle exhausts at three attempts until the key changes or focus 
   let cappedAttempts = 0;
   const lifecycle = createPlanReminderFocusLifecycle(frames.scheduler);
   const focusEffects = {
-      measureItemInScrollContent: () => {
-        cappedAttempts += 1;
-        return false;
-      },
-      scrollTo: () => undefined,
-      navigate: () => undefined,
-      editRoutine: () => undefined,
-      writeCare: () => undefined,
+    measureItemInScrollContent: () => {
+      cappedAttempts += 1;
+      return false;
+    },
+    scrollTo: () => undefined,
+    navigate: () => undefined,
+    editRoutine: () => undefined,
+    writeCare: () => undefined,
   };
   lifecycle.update({ request: baseRequest, tracker, effects: focusEffects });
 
@@ -597,19 +755,38 @@ test("focus lifecycle exhausts at three attempts until the key changes or focus 
   assert.equal(cappedAttempts, 3);
   assert.equal(frames.pendingCount, 0);
   lifecycle.update({
-    request: { ...baseRequest, sections: structuredClone(baseRequest.sections) },
+    request: {
+      ...baseRequest,
+      sections: structuredClone(baseRequest.sections),
+    },
     tracker,
     effects: focusEffects,
   });
-  assert.equal(cappedAttempts, 3, "incidental same-key updates must not restart an exhausted budget");
+  assert.equal(
+    cappedAttempts,
+    3,
+    "incidental same-key updates must not restart an exhausted budget",
+  );
 
-  lifecycle.update({ request: { ...baseRequest, itemId: "record_other" }, tracker, effects: focusEffects });
-  assert.equal(cappedAttempts, 4, "a changed semantic key must restore a fresh attempt budget");
+  lifecycle.update({
+    request: { ...baseRequest, itemId: "record_other" },
+    tracker,
+    effects: focusEffects,
+  });
+  assert.equal(
+    cappedAttempts,
+    4,
+    "a changed semantic key must restore a fresh attempt budget",
+  );
   assert.equal(frames.pendingCount, 1);
   lifecycle.update({ request: undefined, tracker, effects: focusEffects });
   assert.equal(frames.pendingCount, 0);
   lifecycle.update({ request: baseRequest, tracker, effects: focusEffects });
-  assert.equal(cappedAttempts, 5, "an absent focus must reset the same key for a later visit");
+  assert.equal(
+    cappedAttempts,
+    5,
+    "an absent focus must reset the same key for a later visit",
+  );
   lifecycle.dispose();
 });
 
@@ -634,18 +811,36 @@ test("focus lifecycle cancels stale async work on key change, absence, and unmou
   const frames = frameScheduler();
   const successes: Array<(contentY: number) => void> = [];
   const failures: Array<() => void> = [];
-  const effects = { attempts: [] as string[], scrolls: 0, navigated: 0, edited: 0, writes: 0 };
+  const effects = {
+    attempts: [] as string[],
+    scrolls: 0,
+    navigated: 0,
+    edited: 0,
+    writes: 0,
+  };
   const focusEffects = {
-    measureItemInScrollContent: (itemId: string, onMeasured: (y: number) => void, onFailed?: () => void) => {
+    measureItemInScrollContent: (
+      itemId: string,
+      onMeasured: (y: number) => void,
+      onFailed?: () => void,
+    ) => {
       effects.attempts.push(itemId);
       successes.push(onMeasured);
       failures.push(onFailed ?? (() => undefined));
       return true;
     },
-    scrollTo: () => { effects.scrolls += 1; },
-    navigate: () => { effects.navigated += 1; },
-    editRoutine: () => { effects.edited += 1; },
-    writeCare: () => { effects.writes += 1; },
+    scrollTo: () => {
+      effects.scrolls += 1;
+    },
+    navigate: () => {
+      effects.navigated += 1;
+    },
+    editRoutine: () => {
+      effects.edited += 1;
+    },
+    writeCare: () => {
+      effects.writes += 1;
+    },
   };
   const lifecycle = createPlanReminderFocusLifecycle(frames.scheduler);
 
@@ -653,7 +848,11 @@ test("focus lifecycle cancels stale async work on key change, absence, and unmou
   failures[0]?.();
   assert.equal(frames.pendingCount, 1);
   const oldRetry = frames.scheduledCallbacks[0];
-  lifecycle.update({ request: { ...request, itemId: "record_other" }, tracker, effects: focusEffects });
+  lifecycle.update({
+    request: { ...request, itemId: "record_other" },
+    tracker,
+    effects: focusEffects,
+  });
   assert.equal(frames.pendingCount, 0);
   oldRetry?.();
   successes[0]?.(712);
@@ -677,7 +876,11 @@ test("focus lifecycle cancels stale async work on key change, absence, and unmou
   successes[2]?.(712);
   assert.equal(effects.scrolls, 0);
   assert.deepEqual(
-    { navigated: effects.navigated, edited: effects.edited, writes: effects.writes },
+    {
+      navigated: effects.navigated,
+      edited: effects.edited,
+      writes: effects.writes,
+    },
     { navigated: 0, edited: 0, writes: 0 },
   );
 });
@@ -686,7 +889,9 @@ test("focus lifecycle retries an asynchronous measurement failure without an ext
   const request = {
     itemId: "record_known",
     routeTopPadding: 72,
-    sections: buildPlanReminderSections([reminder("record_known", { daysUntil: 4 })]),
+    sections: buildPlanReminderSections([
+      reminder("record_known", { daysUntil: 4 }),
+    ]),
     summary: "1 reminder - 0 urgent, 0 watch.",
     alertCount: 0,
     watchCount: 0,
@@ -722,7 +927,11 @@ test("focus lifecycle retries an asynchronous measurement failure without an ext
   failures[0]?.();
   assert.equal(frames.pendingCount, 1);
   assert.equal(frames.runNext(), true);
-  assert.equal(attempts, 2, "the async failure must retry without another lifecycle update");
+  assert.equal(
+    attempts,
+    2,
+    "the async failure must retry without another lifecycle update",
+  );
   successes[1]?.(712);
   assert.deepEqual(scrolls, [640]);
   assert.equal(frames.pendingCount, 0);
@@ -733,7 +942,9 @@ test("focus lifecycle supports a scheduler that invokes retry callbacks synchron
   const request = {
     itemId: "record_known",
     routeTopPadding: 72,
-    sections: buildPlanReminderSections([reminder("record_known", { daysUntil: 4 })]),
+    sections: buildPlanReminderSections([
+      reminder("record_known", { daysUntil: 4 }),
+    ]),
     summary: "1 reminder - 0 urgent, 0 watch.",
     alertCount: 0,
     watchCount: 0,
@@ -783,7 +994,9 @@ test("focus lifecycle surfaces scheduler and measurement exceptions", () => {
   const request = {
     itemId: "record_known",
     routeTopPadding: 72,
-    sections: buildPlanReminderSections([reminder("record_known", { daysUntil: 4 })]),
+    sections: buildPlanReminderSections([
+      reminder("record_known", { daysUntil: 4 }),
+    ]),
     summary: "1 reminder - 0 urgent, 0 watch.",
     alertCount: 0,
     watchCount: 0,
@@ -800,7 +1013,9 @@ test("focus lifecycle surfaces scheduler and measurement exceptions", () => {
     writeCare: () => undefined,
   };
   const measureFrames = frameScheduler();
-  const measureThrowing = createPlanReminderFocusLifecycle(measureFrames.scheduler);
+  const measureThrowing = createPlanReminderFocusLifecycle(
+    measureFrames.scheduler,
+  );
   let measureAttempts = 0;
   const measureEffects = {
     ...inertEffects,
@@ -811,23 +1026,33 @@ test("focus lifecycle surfaces scheduler and measurement exceptions", () => {
     },
   };
   assert.throws(
-    () => measureThrowing.update({
-      request,
-      tracker,
-      effects: measureEffects,
-    }),
+    () =>
+      measureThrowing.update({
+        request,
+        tracker,
+        effects: measureEffects,
+      }),
     /measure exploded/,
   );
   measureThrowing.update({ request, tracker, effects: measureEffects });
-  assert.equal(measureAttempts, 2, "a measurement throw must invalidate the same-key lifecycle");
+  assert.equal(
+    measureAttempts,
+    2,
+    "a measurement throw must invalidate the same-key lifecycle",
+  );
   measureThrowing.dispose();
 
   const scrollCallbacks: Array<(contentY: number) => void> = [];
   let scrollAttempts = 0;
-  const scrollThrowing = createPlanReminderFocusLifecycle(frameScheduler().scheduler);
+  const scrollThrowing = createPlanReminderFocusLifecycle(
+    frameScheduler().scheduler,
+  );
   const scrollEffects = {
     ...inertEffects,
-    measureItemInScrollContent: (_itemId: string, onMeasured: (contentY: number) => void) => {
+    measureItemInScrollContent: (
+      _itemId: string,
+      onMeasured: (contentY: number) => void,
+    ) => {
       scrollCallbacks.push(onMeasured);
       return true;
     },
@@ -840,7 +1065,11 @@ test("focus lifecycle surfaces scheduler and measurement exceptions", () => {
   assert.throws(() => scrollCallbacks[0]?.(712), /scroll exploded/);
   scrollThrowing.update({ request, tracker, effects: scrollEffects });
   scrollCallbacks[1]?.(712);
-  assert.equal(scrollAttempts, 2, "a scroll throw must invalidate the same-key lifecycle");
+  assert.equal(
+    scrollAttempts,
+    2,
+    "a scroll throw must invalidate the same-key lifecycle",
+  );
   scrollThrowing.dispose();
 
   let schedulerAttempts = 0;
@@ -851,10 +1080,18 @@ test("focus lifecycle surfaces scheduler and measurement exceptions", () => {
     },
     cancel: () => undefined,
   });
-  const schedulerEffects = { ...inertEffects, measureItemInScrollContent: () => false };
+  const schedulerEffects = {
+    ...inertEffects,
+    measureItemInScrollContent: () => false,
+  };
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     assert.throws(
-      () => schedulerThrowing.update({ request, tracker, effects: schedulerEffects }),
+      () =>
+        schedulerThrowing.update({
+          request,
+          tracker,
+          effects: schedulerEffects,
+        }),
       /scheduler exploded/,
     );
     assert.equal(
@@ -866,20 +1103,38 @@ test("focus lifecycle surfaces scheduler and measurement exceptions", () => {
 });
 
 test("executes reminder row actions at their canonical navigation and editor boundaries", () => {
-  const navigations: Array<{ pathname: string; params: Readonly<Record<string, string>> }> = [];
+  const navigations: Array<{
+    pathname: string;
+    params: Readonly<Record<string, string>>;
+  }> = [];
   const edits: string[] = [];
   let writes = 0;
   const effects = {
     measureItemInScrollContent: () => false,
     scrollTo: () => undefined,
-    navigate: (pathname: string, params: Readonly<Record<string, string>>) => navigations.push({ pathname, params }),
+    navigate: (pathname: string, params: Readonly<Record<string, string>>) =>
+      navigations.push({ pathname, params }),
     editRoutine: (routineId: string) => edits.push(routineId),
-    writeCare: () => { writes += 1; },
+    writeCare: () => {
+      writes += 1;
+    },
   };
 
-  runPlanReminderInteraction({ kind: "activate", item: reminder("med", { kind: "medication" }) }, effects);
-  runPlanReminderInteraction({ kind: "activate", item: reminder("groom", { kind: "grooming" }) }, effects);
-  runPlanReminderInteraction({ kind: "activate", item: reminder("routine", { kind: "routine", sourceId: "dinner" }) }, effects);
+  runPlanReminderInteraction(
+    { kind: "activate", item: reminder("med", { kind: "medication" }) },
+    effects,
+  );
+  runPlanReminderInteraction(
+    { kind: "activate", item: reminder("groom", { kind: "grooming" }) },
+    effects,
+  );
+  runPlanReminderInteraction(
+    {
+      kind: "activate",
+      item: reminder("routine", { kind: "routine", sourceId: "dinner" }),
+    },
+    effects,
+  );
 
   assert.deepEqual(navigations, [
     { pathname: "/health", params: { section: "medications" } },

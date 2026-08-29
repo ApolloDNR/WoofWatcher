@@ -91,7 +91,6 @@ test("the full active QA manifest names only the five-tab shell and canonical ow
     ])
     .join("\n")
     .replaceAll("Today's Missions", "")
-    .replaceAll("Pack pending", "")
     .replaceAll("Story & Progress", "")
     .replaceAll("Story-Progress", "");
 
@@ -995,7 +994,7 @@ test("adds route-check proof to store screenshot QA surfaces", () => {
   assert.deepEqual(avatar.routeChecklist?.map((item) => item.label), ["Avatar Studio store frame"]);
   assert.equal(avatar.routeChecklist?.[0]?.route, "/more?section=avatar-studio");
   assert.match(avatar.routeChecklist?.[0]?.expected ?? "", /PixelLab template\/customization flow/);
-  assert.match(avatar.routeChecklist?.[0]?.expected ?? "", /Template-fitted/);
+  assert.match(avatar.routeChecklist?.[0]?.expected ?? "", /Tailored fit/);
   assert.match(avatar.routeChecklist?.[0]?.proof ?? "", /iOS and Android store screenshots/);
   assert.match(avatar.routeChecklist?.[0]?.proof ?? "", /store note/);
 
@@ -1279,7 +1278,7 @@ test("turns the store submission screenshot checklist into device QA surfaces", 
       },
       {
         screen: "Avatar Studio",
-        requirement: "Capture Template overlay readiness with Template-fitted and Pack pending accessory labels visible.",
+        requirement: "Capture How accessories fit with Tailored fit and Standard preview labels visible.",
         status: "needed",
       },
       {
@@ -1311,11 +1310,11 @@ test("turns the store submission screenshot checklist into device QA surfaces", 
   assert.match(surfaces[0].title, /Store: Phoenix Home/);
   assert.match(surfaces[0].devicePrompt, /App Store and Play Store/);
   assert.match(surfaces[0].setupSteps.join("\n"), /Use demo-safe or scrubbed household data/);
-  assert.match(surfaces[1].setupSteps.join("\n"), /Open Customize and keep Template overlay readiness visible/);
-  assert.match(surfaces[1].verificationSteps.join("\n"), /Template-fitted/);
-  assert.match(surfaces[1].verificationSteps.join("\n"), /Pack pending/);
-  assert.match(surfaces[1].acceptanceCriteria.join("\n"), /overlay-fit truth/);
-  assert.match(surfaces[1].requiredEvidence.join("\n"), /Template overlay readiness panel/);
+  assert.match(surfaces[1].setupSteps.join("\n"), /Open Customize and keep How accessories fit visible/);
+  assert.match(surfaces[1].verificationSteps.join("\n"), /Tailored fit/);
+  assert.match(surfaces[1].verificationSteps.join("\n"), /Standard preview/);
+  assert.match(surfaces[1].acceptanceCriteria.join("\n"), /tailored fits from standard previews/);
+  assert.match(surfaces[1].requiredEvidence.join("\n"), /How accessories fit panel/);
   assert.match(surfaces[2].setupSteps.join("\n"), /Open Health and keep Review packet visible/);
   assert.match(surfaces[2].verificationSteps.join("\n"), /Vet-share checklist/);
   assert.match(surfaces[2].verificationSteps.join("\n"), /Draft vet questions/);

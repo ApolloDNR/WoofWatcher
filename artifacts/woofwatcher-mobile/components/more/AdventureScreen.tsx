@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,7 +24,11 @@ import {
   type CareEventType,
   type AdventureQuest,
 } from "@workspace/care-domain";
-import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardPill,
+  BoardSectionHeader,
+} from "@/components/board/BoardPrimitives";
 import { DayPhaseWash } from "@/components/DayPhaseWash";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useCare, type Entry } from "@/context/CareContext";
@@ -36,7 +41,10 @@ import {
   findRecentQuickLogDuplicate,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
+import {
+  buildWalkSessionStartEntry,
+  findOpenWalkSession,
+} from "@/lib/walkSession";
 import {
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -68,14 +76,22 @@ function questIcon(id: string): keyof typeof Ionicons.glyphMap {
 function formatMemoryDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "Recently saved";
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-export interface AdventureScreenProps { onBack: () => void; }
+export interface AdventureScreenProps {
+  onBack: () => void;
+}
 
 export default function AdventureScreen({ onBack }: AdventureScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const usesLargeTextHeroLayout = fontScale >= 1.5;
   const router = useRouter();
   const adventureScreenMountedRef = useRef(true);
   useEffect(() => {
@@ -84,16 +100,14 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
       adventureScreenMountedRef.current = false;
     };
   }, []);
-  const {
-    state,
-    careMutationsBlocked,
-    addEntry,
-    deleteEntry,
-    updateCareDoc,
-  } = useCare();
+  const { state, careMutationsBlocked, addEntry, deleteEntry, updateCareDoc } =
+    useCare();
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
-  const [questFeedback, setQuestFeedback] = useState<{ id: string; title: string } | null>(null);
+  const [questFeedback, setQuestFeedback] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const questFeedbackUndoGateRef = useRef<ReturnType<
     typeof createExclusiveAsyncAction
   > | null>(null);
@@ -129,17 +143,27 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
     [state.entries, now],
   );
 
-  const openWalkSession = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
+  const openWalkSession = useMemo(
+    () => findOpenWalkSession(state.entries),
+    [state.entries],
+  );
   // A quest walk that has started but not finished. The shared adventure lib
   // grants walk XP from durationMinutes at completion, so an open walk still
   // reads "available" with 0 XP; the board must say "in progress" instead of
   // offering to start a second walk.
   const isWalkQuestInProgress = (quest: AdventureQuest) =>
-    quest.action === "start-walk" && quest.status === "available" && Boolean(openWalkSession);
+    quest.action === "start-walk" &&
+    quest.status === "available" &&
+    Boolean(openWalkSession);
 
   const availableQuest =
-    adventure.quests.find((quest) => quest.status === "available") ?? adventure.quests[0];
-  const availableQuestProofEntryId = findQuestProofEntryId(availableQuest, state.entries, now);
+    adventure.quests.find((quest) => quest.status === "available") ??
+    adventure.quests[0];
+  const availableQuestProofEntryId = findQuestProofEntryId(
+    availableQuest,
+    state.entries,
+    now,
+  );
   const availableQuestInProgress = isWalkQuestInProgress(availableQuest);
   const primaryQuestActionLabel =
     availableQuest.status === "complete"
@@ -151,11 +175,18 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
           : availableQuest.actionLabel;
 
   const caregiver = state.caregivers[0]?.name ?? "Care team";
-  const caregiverRole = state.caregivers.find((person) => person.name === caregiver)?.role;
+  const caregiverRole = state.caregivers.find(
+    (person) => person.name === caregiver,
+  )?.role;
 
-  const saveMemory = (quest: AdventureQuest | null | undefined = availableQuest) => {
+  const saveMemory = (
+    quest: AdventureQuest | null | undefined = availableQuest,
+  ) => {
     if (quest?.action === "save-memory" && quest.status === "locked") {
-      notifyDialog("Complete care first", "Log a walk, training win, or play reset before saving this quest memory.");
+      notifyDialog(
+        "Complete care first",
+        "Log a walk, training win, or play reset before saving this quest memory.",
+      );
       return;
     }
     if (careMutationsBlocked) {
@@ -171,17 +202,17 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
     });
     const updated = updateCareDoc((doc) => ({
       ...doc,
-      adventureMemories: [
-        memory,
-        ...(doc.adventureMemories ?? []),
-      ],
+      adventureMemories: [memory, ...(doc.adventureMemories ?? [])],
     }));
     if (!careMutationWasAccepted(updated)) {
       showCareReadOnly();
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    notifyDialog("Memory saved", "Saved as a private household memory on this device. Cloud photo backup isn't available yet.");
+    notifyDialog(
+      "Memory saved",
+      "Saved as a private household memory on this device. Cloud photo backup isn't available yet.",
+    );
   };
 
   // Double-tap safety, exactly like Home's quick log: the synchronous ref
@@ -196,8 +227,8 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
     const prev = recentQuestSave.current;
     return Boolean(
       prev &&
-        prev.type === type &&
-        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+      prev.type === type &&
+      Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
     );
   };
   const markQuestSave = (type: CareEventType) => {
@@ -230,7 +261,10 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
     if (quest.action === "start-walk") {
       if (openWalkSession?.id) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setQuestFeedback({ id: openWalkSession.id, title: "Walk already active" });
+        setQuestFeedback({
+          id: openWalkSession.id,
+          title: "Walk already active",
+        });
         // Land on the FINISH form, not the read-only record sheet: the
         // sheet says "In progress" with no way to end the walk.
         router.push("/log?walk=finish" as never);
@@ -239,7 +273,11 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
       // A rapid second tap lands before the open session exists in state;
       // it is the same intent, already answered by the first tap.
       if (isDuplicateQuestTap("walk")) return;
-      const entry = buildWalkSessionStartEntry({ caregiver, now, routineLabel: quest.title });
+      const entry = buildWalkSessionStartEntry({
+        caregiver,
+        now,
+        routineLabel: quest.title,
+      });
       const id = addEntry({
         ...entry,
         details: adventureDetails(quest, entry.details),
@@ -271,7 +309,11 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
     );
     const id = addEntry({
       ...entry,
-      ...(careType === "training" ? { durationMinutes: 8 } : careType === "play" ? { durationMinutes: 10 } : {}),
+      ...(careType === "training"
+        ? { durationMinutes: 8 }
+        : careType === "play"
+          ? { durationMinutes: 10 }
+          : {}),
       details: adventureDetails(quest, entry.details),
     });
     if (!careMutationWasAccepted(id)) {
@@ -322,9 +364,7 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
   const openQuestFeedbackDetails = () => {
     if (questFeedbackUndoGate.isBusy()) return;
     if (!questFeedback) return;
-    router.push(
-      `/log?entry=${encodeURIComponent(questFeedback.id)}` as never,
-    );
+    router.push(`/log?entry=${encodeURIComponent(questFeedback.id)}` as never);
   };
 
   const openProofLog = (entryId: string) => {
@@ -345,12 +385,19 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
       adventure.privacyBoundary,
     ].join("\n");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message, title: `WoofWatcher Adventure - ${adventure.petName}` });
+    void shareTextPayload({
+      message,
+      title: `WoofWatcher Adventure - ${adventure.petName}`,
+    });
   };
 
   const shareAdventureMemory = (memory: AdventureMemory) => {
-    const humans = memory.humans.length ? memory.humans.join(", ") : "Household";
-    const note = memory.note || `${memory.petName}'s care story grew from a real walk, training win, or play reset.`;
+    const humans = memory.humans.length
+      ? memory.humans.join(", ")
+      : "Household";
+    const note =
+      memory.note ||
+      `${memory.petName}'s care story grew from a real walk, training win, or play reset.`;
     const message = [
       `WoofWatcher Memory - ${memory.petName}`,
       "",
@@ -365,7 +412,10 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
       "Photos and memories stay private on this device - cloud backup isn't available yet.",
     ].join("\n");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message, title: `WoofWatcher Memory - ${memory.petName}` });
+    void shareTextPayload({
+      message,
+      title: `WoofWatcher Memory - ${memory.petName}`,
+    });
   };
 
   return (
@@ -377,7 +427,11 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
         showsVerticalScrollIndicator={false}
         // 16 matches the tab screens' shared side gutter (Home/Log/Records
         // all use 16), so modal routes stop sitting 4px narrower.
-        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 16, paddingBottom: bottomPadding }}
+        contentContainerStyle={{
+          paddingTop: topPadding,
+          paddingHorizontal: 16,
+          paddingBottom: bottomPadding,
+        }}
       >
         <ImageBackground
           source={ADVENTURE_STAGE_SCENE}
@@ -400,10 +454,17 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
               <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
             </Pressable>
             <View style={s.heroBadge}>
-              <Text style={[s.heroBadgeText, { fontFamily: "Inter_700Bold" }]}>Private RPG</Text>
+              <Text style={[s.heroBadgeText, { fontFamily: "Inter_700Bold" }]}>
+                Private RPG
+              </Text>
             </View>
           </View>
-          <View style={s.heroSpeech}>
+          <View
+            style={[
+              s.heroSpeech,
+              usesLargeTextHeroLayout && s.heroSpeechLargeText,
+            ]}
+          >
             <Text style={[s.heroSpeechText, { fontFamily: DISPLAY_SEMI }]}>
               {availableQuest.status === "locked"
                 ? "Care first, then memory."
@@ -411,10 +472,23 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                   ? "Walk in progress!"
                   : "Quest ready!"}
             </Text>
-            <Text style={[s.heroSpeechSub, { fontFamily: "Inter_700Bold" }]}>{availableQuest.title}</Text>
-            <View style={s.heroSpeechTail} />
+            <Text style={[s.heroSpeechSub, { fontFamily: "Inter_700Bold" }]}>
+              {availableQuest.title}
+            </Text>
+            <View
+              style={[
+                s.heroSpeechTail,
+                usesLargeTextHeroLayout && s.heroSpeechTailLargeText,
+              ]}
+            />
           </View>
-          <View pointerEvents="none" style={s.heroSpriteStage}>
+          <View
+            pointerEvents="none"
+            style={[
+              s.heroSpriteStage,
+              usesLargeTextHeroLayout && s.heroSpriteStageLargeText,
+            ]}
+          >
             <View style={s.heroSpriteShadow} />
             <SpriteSheetPlayer
               asset={ADVENTURE_STAGE_SPRITE}
@@ -424,9 +498,20 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
               testID="adventure-mode-walk-sprite"
             />
           </View>
-          <View style={s.heroCopy}>
-            <Text style={[s.kicker, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>REAL CARE ADVENTURE</Text>
-            <Text style={[s.title, { fontFamily: DISPLAY }]}>Adventure Mode</Text>
+          <View
+            style={[s.heroCopy, usesLargeTextHeroLayout && s.heroCopyLargeText]}
+          >
+            <Text
+              style={[
+                s.kicker,
+                { color: colors.amber, fontFamily: "Inter_700Bold" },
+              ]}
+            >
+              REAL CARE ADVENTURE
+            </Text>
+            <Text style={[s.title, { fontFamily: DISPLAY }]}>
+              Adventure Mode
+            </Text>
             <Text style={[s.subtitle, { fontFamily: "Inter_700Bold" }]}>
               Real walks become private quests, memories, and quest XP.
             </Text>
@@ -435,28 +520,60 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
               "Quest level"/"Quest XP" so they never read as the canonical
               care level ("Lv" + title) that More and Story & Progress show. */}
           <View
-            style={s.levelRow}
+            style={[s.levelRow, usesLargeTextHeroLayout && s.levelRowLargeText]}
             accessible
             accessibilityLabel={`Quest level ${adventure.level} today. ${adventure.todayXp} quest XP today. ${adventure.memoriesCount} ${adventure.memoriesCount === 1 ? "memory" : "memories"}. The quest track resets daily and is separate from ${petName}'s lifetime care level.`}
           >
-            <View style={s.levelTile}>
-              <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>{adventure.level}</Text>
-              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>Quest level</Text>
+            <View
+              style={[
+                s.levelTile,
+                usesLargeTextHeroLayout && s.levelTileLargeText,
+              ]}
+            >
+              <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>
+                {adventure.level}
+              </Text>
+              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>
+                Quest level
+              </Text>
             </View>
-            <View style={s.levelTile}>
-              <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>{adventure.todayXp}</Text>
-              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>Quest XP today</Text>
+            <View
+              style={[
+                s.levelTile,
+                usesLargeTextHeroLayout && s.levelTileLargeText,
+              ]}
+            >
+              <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>
+                {adventure.todayXp}
+              </Text>
+              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>
+                Quest XP today
+              </Text>
             </View>
-            <View style={s.levelTile}>
-              <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>{adventure.memoriesCount}</Text>
-              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>Memories</Text>
+            <View
+              style={[
+                s.levelTile,
+                usesLargeTextHeroLayout && s.levelTileLargeText,
+              ]}
+            >
+              <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>
+                {adventure.memoriesCount}
+              </Text>
+              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>
+                Memories
+              </Text>
             </View>
           </View>
         </ImageBackground>
 
         {/* Honest track note: quest numbers reset each day; the lifetime care
             level ("Lv" + title) appears in More and Story & Progress. */}
-        <Text style={[s.trackNote, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          style={[
+            s.trackNote,
+            { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+          ]}
+        >
           Quest level and quest XP track today's adventures and reset daily.{" "}
           {petName}'s lifetime care level appears in More and Story & Progress.
         </Text>
@@ -464,36 +581,97 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
         <BoardCard enter={0} style={s.board}>
           <BoardSectionHeader
             title="Next quest"
-            accessory={<BoardPill label={adventure.status === "needs-outing" ? "Start simple" : "Ready"} tone={colors.amber} />}
+            accessory={
+              <BoardPill
+                label={
+                  adventure.status === "needs-outing" ? "Start simple" : "Ready"
+                }
+                tone={colors.amber}
+              />
+            }
           />
-          <Text style={[s.boardTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{adventure.title}</Text>
-          <Text style={[s.boardCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            style={[
+              s.boardTitle,
+              { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+            ]}
+          >
+            {adventure.title}
+          </Text>
+          <Text
+            style={[
+              s.boardCopy,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {availableQuestInProgress
               ? "A walk is in progress. Finish it from the walk log (or Home) to complete this quest and earn its quest XP."
               : adventure.nextStep}
           </Text>
-          <View style={[s.boundary, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Ionicons name="lock-closed-outline" size={15} color={colors.sage} />
-            <Text style={[s.boundaryText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          <View
+            style={[
+              s.boundary,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Ionicons
+              name="lock-closed-outline"
+              size={15}
+              color={colors.sage}
+            />
+            <Text
+              style={[
+                s.boundaryText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                },
+              ]}
+            >
               {adventure.privacyBoundary}
             </Text>
           </View>
           <View style={s.actionRow}>
             <Pressable
-              onPress={() => startQuest(availableQuest, availableQuestProofEntryId)}
+              onPress={() =>
+                startQuest(availableQuest, availableQuestProofEntryId)
+              }
               accessibilityRole="button"
               accessibilityLabel={`Run next Adventure quest: ${availableQuest.title}. ${primaryQuestActionLabel}`}
               disabled={availableQuest.status === "locked"}
               style={({ pressed }) => [
                 s.primaryBtn,
                 {
-                  backgroundColor: availableQuest.status === "locked" ? colors.mutedForeground : colors.primary,
-                  opacity: availableQuest.status === "locked" ? 0.58 : pressed ? 0.82 : 1,
+                  backgroundColor:
+                    availableQuest.status === "locked"
+                      ? colors.mutedForeground
+                      : colors.primary,
+                  opacity:
+                    availableQuest.status === "locked"
+                      ? 0.58
+                      : pressed
+                        ? 0.82
+                        : 1,
                 },
               ]}
             >
-              <Ionicons name={questIcon(availableQuest.id)} size={16} color={colors.primaryForeground} />
-              <Text style={[s.primaryBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+              <Ionicons
+                name={questIcon(availableQuest.id)}
+                size={16}
+                color={colors.primaryForeground}
+              />
+              <Text
+                style={[
+                  s.primaryBtnText,
+                  {
+                    color: colors.primaryForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
                 {primaryQuestActionLabel}
               </Text>
             </Pressable>
@@ -501,9 +679,16 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
               onPress={shareAdventure}
               accessibilityRole="button"
               accessibilityLabel="Share Adventure summary"
-              style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.72 : 1 }]}
+              style={({ pressed }) => [
+                s.secondaryBtn,
+                { borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
+              ]}
             >
-              <Ionicons name="share-outline" size={16} color={colors.foreground} />
+              <Ionicons
+                name="share-outline"
+                size={16}
+                color={colors.foreground}
+              />
             </Pressable>
           </View>
         </BoardCard>
@@ -511,11 +696,20 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
         <BoardCard enter={1} style={s.board}>
           <BoardSectionHeader
             title="Quest board"
-            accessory={<BoardPill label={`${adventure.quests.length} quests`} tone={colors.primary} />}
+            accessory={
+              <BoardPill
+                label={`${adventure.quests.length} quests`}
+                tone={colors.primary}
+              />
+            }
           />
           <View style={s.questList}>
             {adventure.quests.map((quest) => {
-              const proofEntryId = findQuestProofEntryId(quest, state.entries, now);
+              const proofEntryId = findQuestProofEntryId(
+                quest,
+                state.entries,
+                now,
+              );
               return (
                 <QuestRow
                   key={quest.id}
@@ -529,13 +723,38 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
             })}
           </View>
           {questFeedback ? (
-            <View style={[s.questFeedback, { backgroundColor: colors.sage + "12", borderColor: colors.sage + "44" }]}>
+            <View
+              style={[
+                s.questFeedback,
+                {
+                  backgroundColor: colors.sage + "12",
+                  borderColor: colors.sage + "44",
+                },
+              ]}
+            >
               <View style={s.questFeedbackCopy}>
-                <Text style={[s.questFeedbackTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                <Text
+                  style={[
+                    s.questFeedbackTitle,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
+                  ]}
+                >
                   {questFeedback.title}
                 </Text>
-                <Text style={[s.questFeedbackSub, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  Quest proof saved. Undo it or add details to the exact care log.
+                <Text
+                  style={[
+                    s.questFeedbackSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  Quest proof saved. Undo it or add details to the exact care
+                  log.
                 </Text>
               </View>
               <View style={s.questFeedbackActions}>
@@ -557,7 +776,15 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                     },
                   ]}
                 >
-                  <Text style={[s.questFeedbackButtonText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.questFeedbackButtonText,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
                     Undo
                   </Text>
                 </Pressable>
@@ -579,7 +806,12 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                     },
                   ]}
                 >
-                  <Text style={[s.questFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.questFeedbackButtonText,
+                      { color: colors.ivory, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     Add details
                   </Text>
                 </Pressable>
@@ -610,16 +842,23 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                   accessibilityRole="button"
                   accessibilityLabel={`Start a walk at ${stop.name}. Visited ${stop.visits} ${stop.visits === 1 ? "time" : "times"}.`}
                   onPress={() =>
-                    router.push(`/log?type=walk&detail=1&intent=${Date.now()}` as never)
+                    router.push(
+                      `/log?type=walk&detail=1&intent=${Date.now()}` as never,
+                    )
                   }
-                  style={({ pressed }) => [s.trailRow, { opacity: pressed ? 0.72 : 1 }]}
+                  style={({ pressed }) => [
+                    s.trailRow,
+                    { opacity: pressed ? 0.72 : 1 },
+                  ]}
                 >
                   <View
                     style={[
                       s.trailDot,
                       {
-                        backgroundColor: index === 0 ? colors.copper : colors.secondary,
-                        borderColor: index === 0 ? colors.copper : colors.border,
+                        backgroundColor:
+                          index === 0 ? colors.copper : colors.secondary,
+                        borderColor:
+                          index === 0 ? colors.copper : colors.border,
                       },
                     ]}
                   >
@@ -638,27 +877,52 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                   <View style={s.trailCopy}>
                     <Text
                       numberOfLines={1}
-                      style={[s.trailName, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                      style={[
+                        s.trailName,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
                     >
                       {stop.name}
                     </Text>
                     <Text
                       numberOfLines={1}
-                      style={[s.trailMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                      style={[
+                        s.trailMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
                     >
                       {stop.visits} {stop.visits === 1 ? "visit" : "visits"}
-                      {stop.averageMinutes > 0 ? ` · ~${stop.averageMinutes} min` : ""}
-                      {stop.dogInteractions > 0 ? ` · ${stop.dogInteractions} dog friends` : ""}
+                      {stop.averageMinutes > 0
+                        ? ` · ~${stop.averageMinutes} min`
+                        : ""}
+                      {stop.dogInteractions > 0
+                        ? ` · ${stop.dogInteractions} dog friends`
+                        : ""}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={colors.mutedForeground}
+                  />
                 </Pressable>
               ))}
             </View>
           ) : (
-            <Text style={[s.trailEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              No places discovered yet. Log a walk with a route or place name and
-              it appears on the trail with real visit counts.
+            <Text
+              style={[
+                s.trailEmpty,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              No places discovered yet. Log a walk with a route or place name
+              and it appears on the trail with real visit counts.
             </Text>
           )}
         </BoardCard>
@@ -666,11 +930,25 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
         <BoardCard enter={3} style={s.board}>
           <BoardSectionHeader
             title="Care proof"
-            accessory={<BoardPill label={`${adventure.completedProof.length} today`} tone={colors.sage} />}
+            accessory={
+              <BoardPill
+                label={`${adventure.completedProof.length} today`}
+                tone={colors.sage}
+              />
+            }
           />
           {adventure.completedProof.length === 0 ? (
-            <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              Log a walk, training win, or play reset to give Adventure Mode real proof.
+            <Text
+              style={[
+                s.emptyText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              Log a walk, training win, or play reset to give Adventure Mode
+              real proof.
             </Text>
           ) : (
             <View style={s.proofList}>
@@ -686,14 +964,37 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                     s.proofRow,
                     {
                       borderColor: pressed ? colors.sage : colors.border,
-                      backgroundColor: pressed ? colors.sage + "12" : colors.background,
+                      backgroundColor: pressed
+                        ? colors.sage + "12"
+                        : colors.background,
                     },
                   ]}
                 >
-                  <Text style={[s.proofLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{proof.label}</Text>
+                  <Text
+                    style={[
+                      s.proofLabel,
+                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {proof.label}
+                  </Text>
                   <View style={s.proofMeta}>
-                    <Text style={[s.proofXp, { color: colors.copperBright, fontFamily: DISPLAY_SEMI }]}>+{proof.xp} quest XP</Text>
-                    <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                    <Text
+                      style={[
+                        s.proofXp,
+                        {
+                          color: colors.copperBright,
+                          fontFamily: DISPLAY_SEMI,
+                        },
+                      ]}
+                    >
+                      +{proof.xp} quest XP
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={15}
+                      color={colors.mutedForeground}
+                    />
                   </View>
                 </Pressable>
               ))}
@@ -704,11 +1005,25 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
         <BoardCard enter={4} style={s.board}>
           <BoardSectionHeader
             title="Memory shelf"
-            accessory={<BoardPill label={adventure.memories.length ? "Private" : "Empty"} tone={colors.copperBright} />}
+            accessory={
+              <BoardPill
+                label={adventure.memories.length ? "Private" : "Empty"}
+                tone={colors.copperBright}
+              />
+            }
           />
           {adventure.memories.length === 0 ? (
-            <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              Saved adventure memories will appear here. Photos stay on this device for now - cloud backup isn't available yet.
+            <Text
+              style={[
+                s.emptyText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              Saved adventure memories will appear here. Photos stay on this
+              device for now - cloud backup isn't available yet.
             </Text>
           ) : (
             <View style={s.memoryList}>
@@ -723,23 +1038,66 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                   style={({ pressed }) => [
                     s.memoryRow,
                     {
-                      backgroundColor: pressed ? colors.amber + "10" : colors.background,
+                      backgroundColor: pressed
+                        ? colors.amber + "10"
+                        : colors.background,
                       borderColor: pressed ? colors.amber : colors.border,
                     },
                   ]}
                 >
-                  <View style={[s.memoryIcon, { backgroundColor: colors.amber + "18" }]}>
-                    <Ionicons name="images-outline" size={16} color={colors.amber} />
+                  <View
+                    style={[
+                      s.memoryIcon,
+                      { backgroundColor: colors.amber + "18" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="images-outline"
+                      size={16}
+                      color={colors.amber}
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.memoryTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{memory.title}</Text>
-                    <Text style={[s.memoryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    <Text
+                      style={[
+                        s.memoryTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {memory.title}
+                    </Text>
+                    <Text
+                      style={[
+                        s.memoryMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
                       {memory.storageStatus} - {memory.mediaStatus}
                     </Text>
                   </View>
                   <View style={s.memoryAction}>
-                    <Text style={[s.memoryActionText, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>Share</Text>
-                    <Ionicons name="share-outline" size={14} color={colors.amber} />
+                    <Text
+                      style={[
+                        s.memoryActionText,
+                        {
+                          color: colors.amber,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      Share
+                    </Text>
+                    <Ionicons
+                      name="share-outline"
+                      size={14}
+                      color={colors.amber}
+                    />
                   </View>
                 </Pressable>
               ))}
@@ -772,23 +1130,63 @@ function QuestRow({
         : walkInProgress
           ? colors.amber
           : colors.copperBright;
-  const actionLabel = quest.status === "complete" ? "Open proof" : quest.status === "locked" ? "Locked" : walkInProgress ? "Finish walk" : quest.actionLabel;
+  const actionLabel =
+    quest.status === "complete"
+      ? "Open proof"
+      : quest.status === "locked"
+        ? "Locked"
+        : walkInProgress
+          ? "Finish walk"
+          : quest.actionLabel;
   const statusLabel = walkInProgress ? "in progress" : quest.status;
   const evidenceLabel = walkInProgress
     ? "Walk in progress - finish it from the walk log or Home to earn this quest XP."
     : quest.evidence;
   return (
-    <View style={[s.questRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
+    <View
+      style={[
+        s.questRow,
+        { borderColor: colors.border, backgroundColor: colors.background },
+      ]}
+    >
       <View style={[s.questIcon, { backgroundColor: tone + "18" }]}>
         <Ionicons name={questIcon(quest.id)} size={17} color={tone} />
       </View>
       <View style={s.questCopy}>
-        <Text style={[s.questTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{quest.title}</Text>
-        <Text style={[s.questPrompt, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{quest.prompt}</Text>
-        <Text style={[s.questEvidence, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{evidenceLabel}</Text>
+        <Text
+          style={[
+            s.questTitle,
+            { color: colors.foreground, fontFamily: "Inter_700Bold" },
+          ]}
+        >
+          {quest.title}
+        </Text>
+        <Text
+          style={[
+            s.questPrompt,
+            { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+          ]}
+        >
+          {quest.prompt}
+        </Text>
+        <Text
+          style={[
+            s.questEvidence,
+            { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+          ]}
+        >
+          {evidenceLabel}
+        </Text>
       </View>
       <View style={[s.questStatus, { backgroundColor: tone + "16" }]}>
-        <Text style={[s.questStatusText, { color: tone, fontFamily: "Inter_700Bold" }]}>{statusLabel}</Text>
+        <Text
+          style={[
+            s.questStatusText,
+            { color: tone, fontFamily: "Inter_700Bold" },
+          ]}
+        >
+          {statusLabel}
+        </Text>
       </View>
       <Pressable
         accessibilityRole="button"
@@ -806,16 +1204,28 @@ function QuestRow({
         style={({ pressed }) => [
           s.questActionButton,
           {
-            backgroundColor: quest.status === "locked" ? colors.muted : pressed ? tone + "28" : tone + "18",
+            backgroundColor:
+              quest.status === "locked"
+                ? colors.muted
+                : pressed
+                  ? tone + "28"
+                  : tone + "18",
             borderColor: tone + "55",
             opacity: quest.status === "locked" ? 0.62 : pressed ? 0.78 : 1,
           },
         ]}
       >
-        <Text style={[s.questActionText, { color: tone, fontFamily: "Inter_800ExtraBold" }]}>
+        <Text
+          style={[
+            s.questActionText,
+            { color: tone, fontFamily: "Inter_800ExtraBold" },
+          ]}
+        >
           {actionLabel}
         </Text>
-        {quest.status === "complete" && proofEntryId ? <Ionicons name="chevron-forward" size={13} color={tone} /> : null}
+        {quest.status === "complete" && proofEntryId ? (
+          <Ionicons name="chevron-forward" size={13} color={tone} />
+        ) : null}
       </Pressable>
     </View>
   );
@@ -826,12 +1236,46 @@ const s = StyleSheet.create({
   // Card-stack rhythm: the hero shares the BoardCard radius (20) so it reads
   // as part of the same stack; the pixel frame stays in the 2px border. The
   // image radius is concentric (20 - 2 border).
-  hero: { minHeight: 360, borderRadius: 20, padding: 16, marginBottom: 14, overflow: "hidden", borderWidth: 2, borderColor: "rgba(8,26,42,0.48)" },
+  hero: {
+    minHeight: 360,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 14,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "rgba(8,26,42,0.48)",
+  },
   heroImage: { borderRadius: 18 },
-  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(8, 26, 42, 0.22)" },
-  heroTop: { position: "relative", zIndex: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  heroIcon: { width: 38, height: 38, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(8,26,42,0.68)", borderWidth: 1, borderColor: "rgba(255,249,239,0.24)" },
-  heroBadge: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: "rgba(8,26,42,0.72)", borderWidth: 1, borderColor: "rgba(255,249,239,0.24)" },
+  heroShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8, 26, 42, 0.22)",
+  },
+  heroTop: {
+    position: "relative",
+    zIndex: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  heroIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(8,26,42,0.68)",
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.24)",
+  },
+  heroBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    backgroundColor: "rgba(8,26,42,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.24)",
+  },
   heroBadgeText: { color: "#FFFFFF", fontSize: 11.5 },
   heroSpeech: {
     position: "absolute",
@@ -847,8 +1291,22 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  heroSpeechLargeText: {
+    position: "relative",
+    top: 0,
+    left: 0,
+    maxWidth: "100%",
+    width: "100%",
+    alignSelf: "stretch",
+    marginBottom: 12,
+  },
   heroSpeechText: { color: "#081A2A", fontSize: 15, lineHeight: 18 },
-  heroSpeechSub: { color: "#C85A2A", fontSize: 11.5, lineHeight: 15, marginTop: 3 },
+  heroSpeechSub: {
+    color: "#C85A2A",
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 3,
+  },
   heroSpeechTail: {
     position: "absolute",
     right: 28,
@@ -861,6 +1319,7 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,249,239,0.94)",
     transform: [{ rotate: "-45deg" }],
   },
+  heroSpeechTailLargeText: { display: "none" },
   // The walking sprite stays under heroCopy (zIndex 5) and levelRow (zIndex 6),
   // and its bottom edge sits above the Level/XP tile band (tiles top out around
   // 72 from the hero bottom), so paws never dangle over the stat tiles.
@@ -874,6 +1333,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-end",
   },
+  heroSpriteStageLargeText: { opacity: 0.28 },
   heroSpriteShadow: {
     // At the feet line and strong enough to read over the busy path art -
     // at bottom:15/0.34 it hid behind the stat band and the trot looked
@@ -901,27 +1361,104 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  heroCopyLargeText: {
+    position: "relative",
+    marginTop: 0,
+    marginBottom: 12,
+    maxWidth: "100%",
+    width: "100%",
+    alignSelf: "stretch",
+  },
   kicker: { fontSize: 11, letterSpacing: 0.8 },
   title: { color: "#FFFFFF", fontSize: 31, letterSpacing: 0, marginTop: 4 },
-  subtitle: { color: "rgba(255,255,255,0.9)", fontSize: 13, lineHeight: 18, marginTop: 5, textShadowColor: "rgba(8,26,42,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  levelRow: { position: "absolute", zIndex: 6, left: 14, right: 14, bottom: 14, flexDirection: "row", gap: 8 },
-  levelTile: { flex: 1, minHeight: 58, borderRadius: 8, backgroundColor: "rgba(8,26,42,0.76)", borderWidth: 1, borderColor: "rgba(255,249,239,0.22)", alignItems: "center", justifyContent: "center", padding: 8 },
+  subtitle: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 5,
+    textShadowColor: "rgba(8,26,42,0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  levelRow: {
+    position: "absolute",
+    zIndex: 6,
+    left: 14,
+    right: 14,
+    bottom: 14,
+    flexDirection: "row",
+    gap: 8,
+  },
+  levelRowLargeText: {
+    position: "relative",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    flexWrap: "wrap",
+  },
+  levelTile: {
+    flex: 1,
+    minHeight: 58,
+    borderRadius: 8,
+    backgroundColor: "rgba(8,26,42,0.76)",
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+  },
+  levelTileLargeText: { flexBasis: "47%", minWidth: 120 },
   levelValue: { color: "#FFFFFF", fontSize: 23 },
   // Centered so the longer "Quest level"/"Quest XP today" labels stay tidy
   // when they wrap inside the narrow hero tiles on small phones.
-  levelLabel: { color: "rgba(255,255,255,0.76)", fontSize: 10.5, marginTop: 2, textAlign: "center" },
-  trackNote: { fontSize: 11.5, lineHeight: 16, marginTop: -6, marginBottom: 14, paddingHorizontal: 2 },
+  levelLabel: {
+    color: "rgba(255,255,255,0.76)",
+    fontSize: 10.5,
+    marginTop: 2,
+    textAlign: "center",
+  },
+  trackNote: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: -6,
+    marginBottom: 14,
+    paddingHorizontal: 2,
+  },
   board: { marginBottom: 12 },
   boardTitle: { fontSize: 17 },
   boardCopy: { fontSize: 13, lineHeight: 19, marginTop: 5 },
   // Rows, panels, and buttons inside BoardCards sit on the shared 12 chip
   // radius (the BoardMetricTile norm) instead of the old 8px one-off.
-  boundary: { flexDirection: "row", gap: 8, alignItems: "flex-start", borderRadius: 12, borderWidth: 1, padding: 11, marginTop: 12 },
+  boundary: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "flex-start",
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 11,
+    marginTop: 12,
+  },
   boundaryText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 13 },
-  primaryBtn: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
+  primaryBtn: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
   primaryBtnText: { color: "#FFFFFF", fontSize: 13.5 },
-  secondaryBtn: { width: 50, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  secondaryBtn: {
+    width: 50,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   questList: { gap: 10 },
   trailList: { gap: 4 },
   trailRow: {
@@ -944,16 +1481,35 @@ const s = StyleSheet.create({
   trailName: { fontSize: 15 },
   trailMeta: { fontSize: 11.5, marginTop: 1 },
   trailEmpty: { fontSize: 12.5, lineHeight: 18 },
-  questRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 12, padding: 11 },
+  questRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 11,
+  },
   // Keeps the copy column readable at phone widths: it never shrinks below
   // 160pt, so the status pill and action button wrap to a second line
   // instead of crushing the text into one-character columns.
   questCopy: { flexGrow: 1, flexShrink: 1, flexBasis: 180, minWidth: 160 },
-  questIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  questIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   questTitle: { fontSize: 13.5 },
   questPrompt: { fontSize: 12, lineHeight: 16, marginTop: 2 },
   questEvidence: { fontSize: 11.2, lineHeight: 15, marginTop: 5 },
-  questStatus: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12 },
+  questStatus: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
   questStatusText: { fontSize: 10, textTransform: "capitalize" },
   questActionButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -1004,8 +1560,22 @@ const s = StyleSheet.create({
   proofMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
   proofXp: { fontSize: 13 },
   memoryList: { gap: 8 },
-  memoryRow: { minHeight: MIN_MOBILE_TOUCH_TARGET, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, padding: 10 },
-  memoryIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  memoryRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  memoryIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   memoryTitle: { fontSize: 13 },
   memoryMeta: { fontSize: 11.5, marginTop: 1, textTransform: "capitalize" },
   memoryAction: { flexDirection: "row", alignItems: "center", gap: 4 },

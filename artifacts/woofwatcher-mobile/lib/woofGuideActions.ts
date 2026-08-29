@@ -82,7 +82,11 @@ export interface WoofGuideActionState {
   records?: readonly WoofGuideActionRecord[];
 }
 
-export type WoofGuideDraftKind = "log_entry" | "reminder" | "vet_note" | "care_pass";
+export type WoofGuideDraftKind =
+  | "log_entry"
+  | "reminder"
+  | "vet_note"
+  | "care_pass";
 
 export interface WoofGuideDraftEntry {
   type: string;
@@ -126,7 +130,10 @@ export interface WoofGuideActionCard {
 
 function isToday(iso: string, now: number): boolean {
   const d = new Date(iso);
-  return Number.isFinite(d.getTime()) && localDateKey(d) === todayLocalDateKey(new Date(now));
+  return (
+    Number.isFinite(d.getTime()) &&
+    localDateKey(d) === todayLocalDateKey(new Date(now))
+  );
 }
 
 function dogName(state: WoofGuideActionState): string {
@@ -134,11 +141,19 @@ function dogName(state: WoofGuideActionState): string {
 }
 
 function hasDietBaseline(diet?: WoofGuideActionDiet): boolean {
-  return Boolean(diet?.primaryFood?.trim() && diet.normalPortion?.trim() && diet.mealSchedule?.trim());
+  return Boolean(
+    diet?.primaryFood?.trim() &&
+    diet.normalPortion?.trim() &&
+    diet.mealSchedule?.trim(),
+  );
 }
 
 function caregiverName(state: WoofGuideActionState): string {
-  return state.caregivers?.map((caregiver) => caregiver.name?.trim()).find(Boolean) ?? "You";
+  return (
+    state.caregivers
+      ?.map((caregiver) => caregiver.name?.trim())
+      .find(Boolean) ?? "You"
+  );
 }
 
 function mealLogDraft(
@@ -146,7 +161,8 @@ function mealLogDraft(
   now: number,
 ): WoofGuideActionDraft {
   const name = dogName(state);
-  const expectedPortion = state.dietProfile?.normalPortion?.trim() || "normal portion";
+  const expectedPortion =
+    state.dietProfile?.normalPortion?.trim() || "normal portion";
   const caregiver = caregiverName(state);
   return {
     kind: "log_entry",
@@ -174,10 +190,17 @@ function vetNoteDraft(
   now: number,
 ): WoofGuideActionDraft {
   const name = dogName(state);
-  const health = deriveHealthWatch({ entries: state.entries, routines: state.routines, now });
+  const health = deriveHealthWatch({
+    entries: state.entries,
+    routines: state.routines,
+    now,
+  });
   const sourceEntryIds = health.patterns.flatMap((pattern) => pattern.entryIds);
   const patternLines = health.patterns
-    .map((pattern) => `- ${pattern.label} (${pattern.window}): ${pattern.evidence} Next: ${pattern.nextStep}`)
+    .map(
+      (pattern) =>
+        `- ${pattern.label} (${pattern.window}): ${pattern.evidence} Next: ${pattern.nextStep}`,
+    )
     .join("\n");
   const redFlags = health.redFlags.length
     ? `\nRed flags:\n${health.redFlags.map((flag) => `- ${flag.label}${flag.detail ? `: ${flag.detail}` : ""}`).join("\n")}`
@@ -195,12 +218,16 @@ function vetNoteDraft(
       patternLines,
       redFlags,
       "",
-      state.profile?.name ? `Owner note: This is owner-entered WoofWatcher context for ${name}.` : "Owner note: This is owner-entered WoofWatcher context.",
+      state.profile?.name
+        ? `Owner note: This is owner-entered WoofWatcher context for ${name}.`
+        : "Owner note: This is owner-entered WoofWatcher context.",
       "Safety boundary: This is not a diagnosis.",
       health.vetBoundary,
-    ].filter(Boolean).join("\n"),
+    ]
+      .filter(Boolean)
+      .join("\n"),
     cta: "Insert draft",
-    safety: "Owner-reviewed context only; not a diagnosis or emergency triage.",
+    safety: "Review before saving; not a diagnosis or emergency triage.",
     sourceEntryIds,
   };
 }
@@ -257,16 +284,16 @@ export interface WoofGuideAssistantGate {
   composerNote: string;
 }
 
-export const WOOFGUIDE_ASSISTANT_OFF_STATUS_LABEL = "Not in this build";
+export const WOOFGUIDE_ASSISTANT_OFF_STATUS_LABEL = "Unavailable";
 
 export const WOOFGUIDE_ASSISTANT_OFF_HEADLINE =
-  "WoofGuide's assistant isn't enabled in this build, so live answers are off.";
+  "Live questions aren't available.";
 
 export const WOOFGUIDE_ASSISTANT_OFF_PRIVACY_NOTE =
-  "Nothing you type here is sent anywhere, so the ask box is off until an assistant provider passes owner review.";
+  "Your saved care stays on this device. Use the available care shortcuts instead.";
 
 export const WOOFGUIDE_ASSISTANT_OFF_COMPOSER_NOTE =
-  "Assistant off in this build — nothing typed here would be sent.";
+  "Live questions are unavailable. Your saved care stays on this device.";
 
 /**
  * Mirrors the PWA rule from the decision log: WoofGuide never calls the live
@@ -311,29 +338,30 @@ export interface WoofGuideAssistantFallbackLink {
 }
 
 /** Honest, working destinations shown while the assistant is gated off. */
-export const WOOFGUIDE_ASSISTANT_FALLBACK_LINKS: readonly WoofGuideAssistantFallbackLink[] = [
-  {
-    id: "health",
-    label: "Health Watch patterns",
-    detail: "Non-diagnostic patterns from your own logs.",
-    route: canonicalHealthRoute("health-watch"),
-    icon: "heart",
-  },
-  {
-    id: "records",
-    label: "Records and Care Pass",
-    detail: "Vaccines, documents, and shareable care summaries.",
-    route: canonicalHealthRoute("records"),
-    icon: "records",
-  },
-  {
-    id: "home",
-    label: "Today's care",
-    detail: "Back to the room to log meals, potty, and walks.",
-    route: canonicalHomeRoute(),
-    icon: "paw",
-  },
-];
+export const WOOFGUIDE_ASSISTANT_FALLBACK_LINKS: readonly WoofGuideAssistantFallbackLink[] =
+  [
+    {
+      id: "health",
+      label: "Health Watch patterns",
+      detail: "Non-diagnostic patterns from your own logs.",
+      route: canonicalHealthRoute("health-watch"),
+      icon: "heart",
+    },
+    {
+      id: "records",
+      label: "Records and Care Pass",
+      detail: "Vaccines, documents, and shareable care summaries.",
+      route: canonicalHealthRoute("records"),
+      icon: "records",
+    },
+    {
+      id: "home",
+      label: "Today's care",
+      detail: "Back to the room to log meals, potty, and walks.",
+      route: canonicalHomeRoute(),
+      icon: "paw",
+    },
+  ];
 
 /**
  * Deterministic owner-reviewed vet-note draft for the Health Watch
@@ -348,12 +376,21 @@ export function deriveWoofGuideVetNoteAction(
     ...state,
     entries: selectSharedCareEvidence(state.entries, now),
   };
-  const health = deriveHealthWatch({ entries: sharedState.entries, routines: sharedState.routines, now });
+  const health = deriveHealthWatch({
+    entries: sharedState.entries,
+    routines: sharedState.routines,
+    now,
+  });
   return {
     id: "health-review-vet-note",
     label: "Draft vet note",
     detail: health.summary,
-    urgency: health.status === "alert" ? "alert" : health.status === "watch" ? "watch" : "normal",
+    urgency:
+      health.status === "alert"
+        ? "alert"
+        : health.status === "watch"
+          ? "watch"
+          : "normal",
     icon: "heart",
     draft: vetNoteDraft(sharedState, now),
   };
@@ -368,7 +405,11 @@ export function deriveWoofGuideActions(
     entries: selectSharedCareEvidence(state.entries, now),
   };
   const name = dogName(sharedState);
-  const health = deriveHealthWatch({ entries: sharedState.entries, routines: sharedState.routines, now });
+  const health = deriveHealthWatch({
+    entries: sharedState.entries,
+    routines: sharedState.routines,
+    now,
+  });
   const records = sharedState.records ?? [];
   const recordVault = summarizeRecordVault(records);
   const recordReminders = deriveRecordReminders(records, { now });
@@ -376,8 +417,12 @@ export function deriveWoofGuideActions(
     const status = getRecordDueStatus(record, now).status;
     return status === "expired" || status === "due_soon";
   });
-  const todaysEntries = sharedState.entries.filter((entry) => isToday(entry.occurredAt, now));
-  const mealsToday = todaysEntries.filter((entry) => normalizeCareEventType(entry.type, entry.details) === "meal");
+  const todaysEntries = sharedState.entries.filter((entry) =>
+    isToday(entry.occurredAt, now),
+  );
+  const mealsToday = todaysEntries.filter(
+    (entry) => normalizeCareEventType(entry.type, entry.details) === "meal",
+  );
   const actions: WoofGuideActionCard[] = [];
 
   if (health.status !== "good") {
@@ -400,9 +445,13 @@ export function deriveWoofGuideActions(
       detail: topReminder
         ? topReminder.detail
         : recordAttention.length
-        ? `${recordAttention.length} record needs date attention.`
-        : `Missing ${recordVault.missingCritical.join(", ").toLowerCase()}.`,
-      urgency: recordAttention.some((record) => getRecordDueStatus(record, now).status === "expired") ? "alert" : "watch",
+          ? `${recordAttention.length} record needs date attention.`
+          : `Missing ${recordVault.missingCritical.join(", ").toLowerCase()}.`,
+      urgency: recordAttention.some(
+        (record) => getRecordDueStatus(record, now).status === "expired",
+      )
+        ? "alert"
+        : "watch",
       icon: "records",
       route: canonicalHealthRoute("records"),
       draft: reminderDraft(sharedState, now),
@@ -413,7 +462,8 @@ export function deriveWoofGuideActions(
     actions.push({
       id: "diet-baseline",
       label: "Set diet baseline",
-      detail: "Food, portion, and meal schedule are needed for better feeding guidance.",
+      detail:
+        "Food, portion, and meal schedule are needed for better feeding guidance.",
       urgency: "watch",
       icon: "bowl",
       route: canonicalHealthRoute("diet"),
@@ -444,7 +494,8 @@ export function deriveWoofGuideActions(
   actions.push({
     id: "care-pass",
     label: "Preview Care Pass",
-    detail: "Review sitter, vet, trainer, or caregiver report sections before sharing.",
+    detail:
+      "Review sitter, vet, trainer, or caregiver report sections before sharing.",
     urgency: "normal",
     icon: "spark",
     route: canonicalHealthRoute("care-pass"),

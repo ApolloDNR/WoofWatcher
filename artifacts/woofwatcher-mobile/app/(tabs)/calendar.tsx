@@ -1,10 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   ImageBackground,
   KeyboardAvoidingView,
   Modal,
@@ -49,7 +48,11 @@ import {
   validateCalendarEventDraft,
   validateRoutineDraft,
 } from "@/lib/careWorkflowValidation";
-import { addLocalCalendarDays, localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
+import {
+  addLocalCalendarDays,
+  localDateKey,
+  todayLocalDateKey,
+} from "@/lib/localCalendar";
 import { resolvePetName } from "@/lib/petIdentity";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
@@ -87,8 +90,10 @@ import {
   buildPlanReminderFocusRequestKey,
   buildPlanReminderSections,
   createPlanReminderFocusLifecycle,
+  PLAN_REMINDER_CENTER_FOCUS_TARGET,
   reminderWhenLabel,
   resolvePlanReminderFocus,
+  resolvePlanReminderFocusTarget,
   runPlanReminderInteraction,
   type PlanReminderFocusAttempt,
 } from "@/lib/planReminderCenter";
@@ -187,7 +192,9 @@ const REMINDER_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   grooming: "sparkles-outline",
 };
 
-const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
+const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
+  : "";
 
 function routineMinutes(time: string): number {
   return parseClockTime(time)?.minutesSinceMidnight ?? Number.POSITIVE_INFINITY;
@@ -226,7 +233,11 @@ function dayLabel(iso: string): string {
   const tomorrow = addLocalCalendarDays(today, 1);
   if (iso === today) return "Today";
   if (iso === tomorrow) return "Tomorrow";
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function routineStatusLabel(status: RoutineBoardStatus): string {
@@ -241,9 +252,11 @@ function scheduleStatusPill(
   status: RoutineBoardStatus,
   isNextUpcoming: boolean,
 ): { label: string; tone: BoardStatusPillTone } {
-  if (status === "needs-correction") return { label: "Needs correction", tone: "neutral" };
+  if (status === "needs-correction")
+    return { label: "Needs correction", tone: "neutral" };
   if (status === "done") return { label: "Done", tone: "done" };
-  if (status === "overdue" || status === "due") return { label: "Due", tone: "due" };
+  if (status === "overdue" || status === "due")
+    return { label: "Due", tone: "due" };
   if (isNextUpcoming) return { label: "Up Next", tone: "upNext" };
   return { label: "Upcoming", tone: "upcoming" };
 }
@@ -256,7 +269,9 @@ function routineBoardPillTone(status: RoutineBoardStatus): BoardStatusPillTone {
 }
 
 /** Time-of-day band for grouping the schedule like a real day planner. */
-function scheduleBandForTime(time: string): "Morning" | "Afternoon" | "Evening" | "Anytime" {
+function scheduleBandForTime(
+  time: string,
+): "Morning" | "Afternoon" | "Evening" | "Anytime" {
   const parsed = parseClockTime(time);
   if (!parsed) return "Anytime";
   if (parsed.minutesSinceMidnight < 12 * 60) return "Morning";
@@ -317,6 +332,7 @@ export default function CalendarScreen() {
   const routeParams = useLocalSearchParams<Record<string, string | string[]>>();
   const scrollRef = useRef<ScrollView>(null);
   const scrollContentRef = useRef<View>(null!);
+  const reminderCenterRef = useRef<View>(null);
   const reminderRowRefs = useRef(new Map<string, View | null>());
   const activeReminderFocusRef = useRef<PlanReminderFocusAttempt | null>(null);
   const consumedReminderFocusKeyRef = useRef<string | null>(null);
@@ -331,13 +347,8 @@ export default function CalendarScreen() {
   const reminderFocusLifecycle = reminderFocusLifecycleRef.current;
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
-  const {
-    state,
-    careMutationsBlocked,
-    updateCareDoc,
-    addEntry,
-    deleteEntry,
-  } = useCare();
+  const { state, careMutationsBlocked, updateCareDoc, addEntry, deleteEntry } =
+    useCare();
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
 
@@ -373,7 +384,9 @@ export default function CalendarScreen() {
   });
   const now = useActiveCurrentTime();
   const today = todayLocalDateKey(new Date(now));
-  const [scheduleTab, setScheduleTab] = useState<"day" | "week" | "month">("day");
+  const [scheduleTab, setScheduleTab] = useState<"day" | "week" | "month">(
+    "day",
+  );
 
   // Add-event modal
   const [addOpen, setAddOpen] = useState(false);
@@ -397,8 +410,14 @@ export default function CalendarScreen() {
   const [rNote, setRNote] = useState("");
   const [rLabelError, setRLabelError] = useState<string | null>(null);
   const [rTimeError, setRTimeError] = useState<string | null>(null);
-  const [routineFeedback, setRoutineFeedback] = useState<{ id: string; title: string; type: string } | null>(null);
-  const routineFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [routineFeedback, setRoutineFeedback] = useState<{
+    id: string;
+    title: string;
+    type: string;
+  } | null>(null);
+  const routineFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const routineFeedbackUndoGateRef = useRef<ReturnType<
     typeof createExclusiveAsyncAction
   > | null>(null);
@@ -417,15 +436,26 @@ export default function CalendarScreen() {
   // Terminal state of the last event search: the Find button must never
   // resolve to silence - an unreachable endpoint or zero results without
   // feedback reads as a dead button.
-  const [discoverStatus, setDiscoverStatus] = useState<"idle" | "empty" | "error">("idle");
+  const [discoverStatus, setDiscoverStatus] = useState<
+    "idle" | "empty" | "error"
+  >("idle");
 
   const sortedRoutines = useMemo(
-    () => [...routines].sort((a, b) => routineMinutes(a.time) - routineMinutes(b.time)),
+    () =>
+      [...routines].sort(
+        (a, b) => routineMinutes(a.time) - routineMinutes(b.time),
+      ),
     [routines],
   );
 
   const routineBoard = useMemo(
-    () => deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now }),
+    () =>
+      deriveRoutineBoard({
+        routines: sortedRoutines,
+        entries,
+        caregivers,
+        now,
+      }),
     [sortedRoutines, entries, caregivers, now],
   );
   // Month segment: the current month's real logs bucketed into local days
@@ -440,10 +470,13 @@ export default function CalendarScreen() {
     });
   }, [now, entries]);
   const monthEntryDays = useMemo(
-    () => monthView.weeks.flat().filter((cell) => cell.inMonth && cell.hasEntries).length,
+    () =>
+      monthView.weeks.flat().filter((cell) => cell.inMonth && cell.hasEntries)
+        .length,
     [monthView],
   );
-  const monthEntryLabel = monthEntryDays === 0 ? "No logs yet" : `${monthEntryDays} active`;
+  const monthEntryLabel =
+    monthEntryDays === 0 ? "No logs yet" : `${monthEntryDays} active`;
   // Fresh installs have no routines yet, so the schedule falls back to a
   // hardcoded sample day. Those rows have no backing routine, so they must
   // render as clearly-labeled, non-interactive preview content.
@@ -459,13 +492,62 @@ export default function CalendarScreen() {
       owner?: string;
       correctionValue?: string;
     }[] = [
-      { id: "breakfast", label: "Breakfast", type: "meal", time: "7:00 AM", detail: "1 1/4 cups", status: "done" as RoutineBoardStatus },
-      { id: "walk-am", label: "Walk", type: "walk", time: "8:00 AM", detail: "45 min", status: "done" as RoutineBoardStatus },
-      { id: "training", label: "Training", type: "training", time: "10:00 AM", detail: "15 min", status: "done" as RoutineBoardStatus },
-      { id: "alone", label: "Alone Time", type: "alone", time: "12:30 PM", detail: "1h 30m", status: "due" as RoutineBoardStatus },
-      { id: "walk-pm", label: "Walk", type: "walk", time: "5:30 PM", detail: "30 min", status: "upcoming" as RoutineBoardStatus },
-      { id: "dinner", label: "Dinner", type: "meal", time: "7:00 PM", detail: "1 1/4 cups", status: "upcoming" as RoutineBoardStatus },
-      { id: "snack", label: "Bedtime Snack", type: "meal", time: "9:00 PM", detail: "small", status: "upcoming" as RoutineBoardStatus },
+      {
+        id: "breakfast",
+        label: "Breakfast",
+        type: "meal",
+        time: "7:00 AM",
+        detail: "1 1/4 cups",
+        status: "done" as RoutineBoardStatus,
+      },
+      {
+        id: "walk-am",
+        label: "Walk",
+        type: "walk",
+        time: "8:00 AM",
+        detail: "45 min",
+        status: "done" as RoutineBoardStatus,
+      },
+      {
+        id: "training",
+        label: "Training",
+        type: "training",
+        time: "10:00 AM",
+        detail: "15 min",
+        status: "done" as RoutineBoardStatus,
+      },
+      {
+        id: "alone",
+        label: "Alone Time",
+        type: "alone",
+        time: "12:30 PM",
+        detail: "1h 30m",
+        status: "due" as RoutineBoardStatus,
+      },
+      {
+        id: "walk-pm",
+        label: "Walk",
+        type: "walk",
+        time: "5:30 PM",
+        detail: "30 min",
+        status: "upcoming" as RoutineBoardStatus,
+      },
+      {
+        id: "dinner",
+        label: "Dinner",
+        type: "meal",
+        time: "7:00 PM",
+        detail: "1 1/4 cups",
+        status: "upcoming" as RoutineBoardStatus,
+      },
+      {
+        id: "snack",
+        label: "Bedtime Snack",
+        type: "meal",
+        time: "9:00 PM",
+        detail: "small",
+        status: "upcoming" as RoutineBoardStatus,
+      },
     ];
     const rows = routineBoard.items.length
       ? routineBoard.items.map((item) => {
@@ -474,14 +556,14 @@ export default function CalendarScreen() {
             "time",
           );
           return {
-          id: item.id,
-          label: item.label,
-          type: item.normalizedType,
-          time: correction?.label ?? item.time,
-          correctionValue: correction?.preservedValue,
-          owner: item.owner || "",
-          detail: item.note || "",
-          status: item.status,
+            id: item.id,
+            label: item.label,
+            type: item.normalizedType,
+            time: correction?.label ?? item.time,
+            correctionValue: correction?.preservedValue,
+            owner: item.owner || "",
+            detail: item.note || "",
+            status: item.status,
           };
         })
       : fallback;
@@ -499,7 +581,9 @@ export default function CalendarScreen() {
       return day;
     });
   }, [now]);
-  const todayWeekIndex = weekDays.findIndex((day) => localDateKey(day) === todayLocalDateKey(new Date(now)));
+  const todayWeekIndex = weekDays.findIndex(
+    (day) => localDateKey(day) === todayLocalDateKey(new Date(now)),
+  );
 
   // Week-board dot fills reuse the exact routine board derivation the Today
   // tab shows: deriveRoutineBoard scoped to each past day of this week marks
@@ -519,7 +603,12 @@ export default function CalendarScreen() {
         );
       }
       if (day.getTime() > now) return new Map<string, boolean>();
-      const dayBoard = deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now: day.getTime() });
+      const dayBoard = deriveRoutineBoard({
+        routines: sortedRoutines,
+        entries,
+        caregivers,
+        now: day.getTime(),
+      });
       return new Map(
         dayBoard.items
           .filter((item) => item.status !== "needs-correction")
@@ -540,27 +629,48 @@ export default function CalendarScreen() {
     }
     return weekDays.filter((day) => loggedDays.has(localDateKey(day))).length;
   }, [entries, weekDays, now]);
-  const careStreak = useMemo(() => deriveCareStreak(entries, now), [entries, now]);
+  const careStreak = useMemo(
+    () => deriveCareStreak(entries, now),
+    [entries, now],
+  );
 
   const householdResponsibility = useMemo(
-    () => deriveHouseholdResponsibility({ routines: sortedRoutines, entries, caregivers, now }),
+    () =>
+      deriveHouseholdResponsibility({
+        routines: sortedRoutines,
+        entries,
+        caregivers,
+        now,
+      }),
     [sortedRoutines, entries, caregivers, now],
   );
   const reminderNotificationPreferenceInput = useMemo(
-    () => buildReminderNotificationPreferencesForCenter(launchProviderProfile, reminderNotificationPreferences),
+    () =>
+      buildReminderNotificationPreferencesForCenter(
+        launchProviderProfile,
+        reminderNotificationPreferences,
+      ),
     [launchProviderProfile, reminderNotificationPreferences],
   );
   const careReminderCenter = useMemo(
-    () => deriveCareReminderCenter({
-      routines: sortedRoutines,
+    () =>
+      deriveCareReminderCenter({
+        routines: sortedRoutines,
+        entries,
+        records,
+        caregivers,
+        notificationPreferences: reminderNotificationPreferenceInput,
+        now,
+        limit: 50,
+      }),
+    [
+      sortedRoutines,
       entries,
       records,
       caregivers,
-      notificationPreferences: reminderNotificationPreferenceInput,
+      reminderNotificationPreferenceInput,
       now,
-      limit: 50,
-    }),
-    [sortedRoutines, entries, records, caregivers, reminderNotificationPreferenceInput, now],
+    ],
   );
   const reminderCount = careReminderCenter.total;
   const reminderSections = useMemo(
@@ -571,9 +681,13 @@ export default function CalendarScreen() {
     () => resolvePlanReminderFocus(routeParams, careReminderCenter.items),
     [careReminderCenter.items, routeParams],
   );
-  const reminderFocusRequest = focusedReminderId
+  const reminderFocusTarget = useMemo(
+    () => resolvePlanReminderFocusTarget(routeParams, careReminderCenter.items),
+    [careReminderCenter.items, routeParams],
+  );
+  const reminderFocusRequest = reminderFocusTarget
     ? {
-        itemId: focusedReminderId,
+        itemId: reminderFocusTarget,
         routeTopPadding: topPadding,
         sections: reminderSections,
         summary: careReminderCenter.summary,
@@ -592,35 +706,48 @@ export default function CalendarScreen() {
         ? colors.amber
         : colors.sage;
   const responsibility = householdResponsibility;
-  const assignedOwnerLoads = responsibility.members.filter((member) => member.assigned > 0);
+  const assignedOwnerLoads = responsibility.members.filter(
+    (member) => member.assigned > 0,
+  );
   const responsibilityTone =
     responsibility.status === "needs-care"
       ? colors.rose
       : responsibility.status === "needs-assignment"
         ? colors.amber
         : colors.sage;
-  const responsibilityIsCovered = responsibility.status === "balanced" || responsibility.status === "steady";
-  const scheduledRoutineCount = routineBoard.items.length - routineBoard.correctionCount;
-  const scheduledRows = scheduleRows.filter((row) => row.status !== "needs-correction");
-  const completedScheduleCount = scheduledRows.filter((row) => row.status === "done").length;
-  const openScheduleCount = Math.max(0, scheduledRows.length - completedScheduleCount);
+  const responsibilityIsCovered =
+    responsibility.status === "balanced" || responsibility.status === "steady";
+  const scheduledRoutineCount =
+    routineBoard.items.length - routineBoard.correctionCount;
+  const scheduledRows = scheduleRows.filter(
+    (row) => row.status !== "needs-correction",
+  );
+  const completedScheduleCount = scheduledRows.filter(
+    (row) => row.status === "done",
+  ).length;
+  const openScheduleCount = Math.max(
+    0,
+    scheduledRows.length - completedScheduleCount,
+  );
   const nextScheduleRow = isSampleSchedule
     ? scheduleRows[0]
-    : scheduledRows.find((row) => row.status !== "done") ?? null;
+    : (scheduledRows.find((row) => row.status !== "done") ?? null);
   const nextScheduleStatus = nextScheduleRow
     ? routineStatusLabel(nextScheduleRow.status)
     : routineBoard.correctionCount > 0
       ? "Needs correction"
       : "Ready";
-  const firstUpcomingScheduleIndex = scheduleRows.findIndex((row) => row.status === "upcoming");
+  const firstUpcomingScheduleIndex = scheduleRows.findIndex(
+    (row) => row.status === "upcoming",
+  );
   const commandDeckTone =
     !nextScheduleRow && routineBoard.correctionCount > 0
       ? colors.amber
       : nextScheduleRow?.status === "overdue"
-      ? colors.rose
-      : nextScheduleRow?.status === "due"
-        ? colors.amber
-        : colors.sage;
+        ? colors.rose
+        : nextScheduleRow?.status === "due"
+          ? colors.amber
+          : colors.sage;
   const commandDeckSpeech = isSampleSchedule
     ? "Here's a sample day. Add your first routine to make it yours."
     : nextScheduleRow
@@ -632,17 +759,18 @@ export default function CalendarScreen() {
     ? "neutral"
     : !nextScheduleRow && routineBoard.correctionCount > 0
       ? "due"
-    : nextScheduleRow?.status === "done"
-      ? "done"
-      : nextScheduleRow?.status === "overdue" || nextScheduleRow?.status === "due"
-        ? "due"
-        : "upcoming";
+      : nextScheduleRow?.status === "done"
+        ? "done"
+        : nextScheduleRow?.status === "overdue" ||
+            nextScheduleRow?.status === "due"
+          ? "due"
+          : "upcoming";
 
   // Group upcoming one-off events by date.
   const upcoming = useMemo(() => {
     const isCorrection = (event: CalendarEvent) =>
-        getCareCorrectionPresentation(event, "date") !== null ||
-        getCareCorrectionPresentation(event, "time") !== null;
+      getCareCorrectionPresentation(event, "date") !== null ||
+      getCareCorrectionPresentation(event, "time") !== null;
     const ordered = orderCareItemsCorrectionsLast(
       calendarEvents.filter(
         (event) => isCorrection(event) || event.date >= today,
@@ -665,7 +793,9 @@ export default function CalendarScreen() {
       showCareReadOnly();
       return false;
     }
-    const id = eventEditId ?? `event_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const id =
+      eventEditId ??
+      `event_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     return updateCareDoc((doc) => ({
       ...doc,
       calendarEvents: eventEditId
@@ -715,8 +845,14 @@ export default function CalendarScreen() {
     setEventEditId(event.id);
     setEvTitle(event.title);
     setEvType(event.type);
-    setEvDate(eventDateCorrection?.preservedValue ?? (typeof event.date === "string" ? event.date : ""));
-    setEvTime(eventTimeCorrection?.preservedValue ?? (typeof event.time === "string" ? event.time : ""));
+    setEvDate(
+      eventDateCorrection?.preservedValue ??
+        (typeof event.date === "string" ? event.date : ""),
+    );
+    setEvTime(
+      eventTimeCorrection?.preservedValue ??
+        (typeof event.time === "string" ? event.time : ""),
+    );
     setEvLocation(event.location ?? "");
     setEvTitleError(null);
     setDateError(null);
@@ -775,7 +911,10 @@ export default function CalendarScreen() {
     setRoutineEditId(r.id);
     setRLabel(r.label);
     setRType(r.type);
-    setRTime(routineTimeCorrection?.preservedValue ?? (typeof r.time === "string" ? r.time : ""));
+    setRTime(
+      routineTimeCorrection?.preservedValue ??
+        (typeof r.time === "string" ? r.time : ""),
+    );
     setROwner(r.owner ?? "");
     setRNote(r.note ?? "");
     setRLabelError(null);
@@ -784,15 +923,19 @@ export default function CalendarScreen() {
   };
 
   const openBoardRoutine = (routine: RoutineBoardItem) => {
-    const sourceRoutine = routines.find((candidate) => candidate.id === routine.id);
-    openEditRoutine(sourceRoutine ?? {
-      id: routine.id,
-      label: routine.label,
-      type: routine.type,
-      time: routine.time,
-      owner: routine.owner,
-      note: routine.note ?? "",
-    });
+    const sourceRoutine = routines.find(
+      (candidate) => candidate.id === routine.id,
+    );
+    openEditRoutine(
+      sourceRoutine ?? {
+        id: routine.id,
+        label: routine.label,
+        type: routine.type,
+        time: routine.time,
+        owner: routine.owner,
+        note: routine.note ?? "",
+      },
+    );
   };
 
   const saveReminderNotificationPreferences = (
@@ -825,13 +968,14 @@ export default function CalendarScreen() {
       {
         measureItemInScrollContent: () => false,
         scrollTo: () => undefined,
-        navigate: (pathname, params) => router.push({
-          pathname,
-          params:
-            pathname === "/log"
-              ? { ...params, intent: String(Date.now()) }
-              : { ...params },
-        }),
+        navigate: (pathname, params) =>
+          router.push({
+            pathname,
+            params:
+              pathname === "/log"
+                ? { ...params, intent: String(Date.now()) }
+                : { ...params },
+          }),
         editRoutine: (routineId) => {
           const routine = routineBoard.items.find(
             (candidate) => candidate.id === routineId,
@@ -839,7 +983,9 @@ export default function CalendarScreen() {
           if (routine) openBoardRoutine(routine);
         },
         writeCare: () => {
-          throw new Error("Reminder interactions must not write care directly.");
+          throw new Error(
+            "Reminder interactions must not write care directly.",
+          );
         },
       },
     );
@@ -900,9 +1046,7 @@ export default function CalendarScreen() {
       updated = updateCareDoc((doc) => ({
         ...doc,
         routines: doc.routines.map((r) =>
-          r.id === routineEditId
-            ? mergeValidatedRoutineEdit(r, draft)
-            : r,
+          r.id === routineEditId ? mergeValidatedRoutineEdit(r, draft) : r,
         ),
       }));
     } else {
@@ -927,7 +1071,11 @@ export default function CalendarScreen() {
     }
   };
 
-  const showRoutineFeedback = (feedback: { id: string; title: string; type: string }) => {
+  const showRoutineFeedback = (feedback: {
+    id: string;
+    title: string;
+    type: string;
+  }) => {
     clearRoutineFeedbackTimer();
     setRoutineFeedback(feedback);
     // The feedback card auto-dismisses in 9s - announce for screen readers.
@@ -1011,7 +1159,10 @@ export default function CalendarScreen() {
     note?: string | null;
   }) => {
     if (!parseClockTime(routine.time)) {
-      notifyDialog("Routine needs correction", "Correct this routine's time before logging it as done.");
+      notifyDialog(
+        "Routine needs correction",
+        "Correct this routine's time before logging it as done.",
+      );
       return;
     }
     if (careMutationsBlocked) {
@@ -1063,7 +1214,12 @@ export default function CalendarScreen() {
         },
         body: JSON.stringify({
           location: location.trim(),
-          profile: { name: profile.name, breed: profile.breed, careFocus: profile.careFocus, background: profile.background },
+          profile: {
+            name: profile.name,
+            breed: profile.breed,
+            careFocus: profile.careFocus,
+            background: profile.background,
+          },
         }),
       });
       const data = await res.json();
@@ -1118,14 +1274,18 @@ export default function CalendarScreen() {
               kind: "edit",
               title: nextScheduleRow.label,
               // No dangling "6:30 PM -" when the routine carries no note.
-              detail: [nextScheduleRow.time, nextScheduleRow.detail].filter(Boolean).join(" - "),
+              detail: [nextScheduleRow.time, nextScheduleRow.detail]
+                .filter(Boolean)
+                .join(" - "),
               actionLabel: "Open",
               routineId: nextScheduleRoutine.id,
             }
           : {
               kind: "status",
               title: nextScheduleRow.label,
-              detail: [nextScheduleRow.time, nextScheduleRow.detail].filter(Boolean).join(" - "),
+              detail: [nextScheduleRow.time, nextScheduleRow.detail]
+                .filter(Boolean)
+                .join(" - "),
               actionLabel: nextScheduleStatus,
             },
       {
@@ -1135,7 +1295,9 @@ export default function CalendarScreen() {
         },
         editRoutine: (routineId) => {
           Haptics.selectionAsync();
-          const routine = routineBoard.items.find((item) => item.id === routineId);
+          const routine = routineBoard.items.find(
+            (item) => item.id === routineId,
+          );
           if (routine) openBoardRoutine(routine);
         },
       },
@@ -1169,7 +1331,9 @@ export default function CalendarScreen() {
   planMissionRows.push({
     id: "household-sync",
     eyebrow: "Care team",
-    title: responsibilityIsCovered ? "Care board is covered" : "Needs owner attention",
+    title: responsibilityIsCovered
+      ? "Care board is covered"
+      : "Needs owner attention",
     detail: responsibility.nextStep,
     icon: "heart",
     tone: responsibilityTone,
@@ -1206,33 +1370,12 @@ export default function CalendarScreen() {
   const isAdded = (sug: SuggestedEvent) =>
     calendarEvents.some((e) => e.title === sug.title && e.date === sug.date);
 
-  // Mount animation
-  const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16)).current;
   useEffect(() => {
     return () => {
-      if (routineFeedbackTimer.current) clearTimeout(routineFeedbackTimer.current);
+      if (routineFeedbackTimer.current)
+        clearTimeout(routineFeedbackTimer.current);
     };
   }, []);
-  useEffect(() => {
-    if (isWebRoutePreview || reducedMotion) {
-      fade.stopAnimation();
-      slide.stopAnimation();
-      fade.setValue(1);
-      slide.setValue(0);
-      return;
-    }
-    fade.setValue(0);
-    slide.setValue(16);
-    const entrance = Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]);
-    entrance.start();
-    return () => entrance.stop();
-  }, [fade, isWebRoutePreview, reducedMotion, slide]);
-
   useEffect(() => {
     reminderFocusLifecycle.update({
       request: reminderFocusRequest,
@@ -1242,7 +1385,10 @@ export default function CalendarScreen() {
       },
       effects: {
         measureItemInScrollContent: (itemId, onMeasured, onMeasureFailed) => {
-          const row = reminderRowRefs.current.get(itemId);
+          const row =
+            itemId === PLAN_REMINDER_CENTER_FOCUS_TARGET
+              ? reminderCenterRef.current
+              : reminderRowRefs.current.get(itemId);
           const content = scrollContentRef.current;
           if (!row || !content) return false;
           row.measureLayout(
@@ -1261,9 +1407,16 @@ export default function CalendarScreen() {
       },
     });
   }, [reminderFocusRequestKey]);
-  useEffect(() => () => reminderFocusLifecycle.dispose(), [reminderFocusLifecycle]);
+  useEffect(
+    () => () => reminderFocusLifecycle.dispose(),
+    [reminderFocusLifecycle],
+  );
 
-  const dateLabel = new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  const dateLabel = new Date(now).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
   const H_PAD = 16;
 
   return (
@@ -1272,12 +1425,16 @@ export default function CalendarScreen() {
         ref={scrollRef}
         innerViewRef={scrollContentRef}
         style={s.container}
-        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{
+          paddingTop: topPadding,
+          paddingBottom: bottomPadding,
+          paddingHorizontal: H_PAD,
+        }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+        <View>
           <BoardRouteHeader
-            title="Plan"
+            title="Plans"
             subtitle={dateLabel}
             actionIcon="add"
             actionLabel="Add plan"
@@ -1291,10 +1448,23 @@ export default function CalendarScreen() {
             <View style={s.commandDeckStage} testID="plans-command-pixel-stage">
               <View style={s.commandDeckTop}>
                 <View style={s.commandDeckCopy}>
-                  <Text style={[s.commandDeckKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.commandDeckKicker,
+                      { color: colors.sage, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     Plans Command Deck
                   </Text>
-                  <Text style={[s.commandDeckSpeech, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <Text
+                    style={[
+                      s.commandDeckSpeech,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
                     {commandDeckSpeech}
                   </Text>
                   <BoardStatusPill
@@ -1306,7 +1476,11 @@ export default function CalendarScreen() {
                 <ImageBackground
                   source={PLANS_COMMAND_STAGE_ROOM}
                   resizeMode="cover"
-                  imageStyle={[stageImageFill, s.commandDeckSceneImage, pixelImageStyle]}
+                  imageStyle={[
+                    stageImageFill,
+                    s.commandDeckSceneImage,
+                    pixelImageStyle,
+                  ]}
                   style={[s.commandDeckScene, { borderColor: colors.border }]}
                 >
                   <SpriteSheetPlayer
@@ -1321,22 +1495,54 @@ export default function CalendarScreen() {
 
               <View style={s.commandDeckStats}>
                 {[
-                  { key: "done", label: "Done", value: isSampleSchedule ? "—" : `${completedScheduleCount}/${scheduledRoutineCount}` },
-                  { key: "open", label: "Open", value: isSampleSchedule ? "—" : `${openScheduleCount}` },
+                  {
+                    key: "done",
+                    label: "Done",
+                    value: isSampleSchedule
+                      ? "—"
+                      : `${completedScheduleCount}/${scheduledRoutineCount}`,
+                  },
+                  {
+                    key: "open",
+                    label: "Open",
+                    value: isSampleSchedule ? "—" : `${openScheduleCount}`,
+                  },
                   ...(routineBoard.correctionCount > 0
-                    ? [{ key: "correction", label: "Needs correction", value: `${routineBoard.correctionCount}` }]
+                    ? [
+                        {
+                          key: "correction",
+                          label: "Needs correction",
+                          value: `${routineBoard.correctionCount}`,
+                        },
+                      ]
                     : []),
                 ].map((stat) => (
                   <View
                     key={stat.key}
                     accessible
                     accessibilityLabel={`${stat.label}: ${stat.value}`}
-                    style={[s.commandDeckStatChip, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    style={[
+                      s.commandDeckStatChip,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
                   >
-                    <Text style={[s.commandDeckStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    <Text
+                      style={[
+                        s.commandDeckStatLabel,
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
                       {stat.label}
                     </Text>
-                    <Text style={[s.commandDeckStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    <Text
+                      style={[
+                        s.commandDeckStatValue,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
                       {stat.value}
                     </Text>
                   </View>
@@ -1344,12 +1550,27 @@ export default function CalendarScreen() {
                 <View
                   accessible
                   accessibilityLabel={`Signal: ${isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1))} of 5`}
-                  style={[s.commandDeckStatChip, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[
+                    s.commandDeckStatChip,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
-                  <Text style={[s.commandDeckStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Signal</Text>
+                  <Text
+                    style={[
+                      s.commandDeckStatLabel,
+                      { color: colors.sage, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    Signal
+                  </Text>
                   <View style={s.commandDeckSignalRow}>
                     {[0, 1, 2, 3, 4].map((bar) => {
-                      const activeBars = isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1));
+                      const activeBars = isSampleSchedule
+                        ? 1
+                        : Math.max(1, Math.min(5, openScheduleCount + 1));
                       const filled = bar < activeBars;
                       return (
                         <View
@@ -1377,13 +1598,32 @@ export default function CalendarScreen() {
           <BoardCard enter={1} style={s.scheduleCard}>
             <View style={s.scheduleCardHeader}>
               <View style={s.scheduleHeaderCopy}>
-                <Text style={[s.scheduleEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Mission Schedule</Text>
-                <Text style={[s.scheduleHeaderTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {scheduleTab === "day" ? "Today's care plan" : scheduleTab === "week" ? "This week's plan" : "This month"}
+                <Text
+                  style={[
+                    s.scheduleEyebrow,
+                    { color: colors.sage, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  Mission Schedule
+                </Text>
+                <Text
+                  style={[
+                    s.scheduleHeaderTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
+                  {scheduleTab === "day"
+                    ? "Today's care plan"
+                    : scheduleTab === "week"
+                      ? "This week's plan"
+                      : "This month"}
                 </Text>
               </View>
               {scheduleTab === "week" ? (
-                <BoardPill label={`${weeklyGoalDays}/7 days`} tone={colors.sage} />
+                <BoardPill
+                  label={`${weeklyGoalDays}/7 days`}
+                  tone={colors.sage}
+                />
               ) : scheduleTab === "month" ? (
                 <BoardPill label={monthEntryLabel} tone={colors.sage} />
               ) : isSampleSchedule ? (
@@ -1426,21 +1666,51 @@ export default function CalendarScreen() {
                 <View
                   accessible
                   accessibilityLabel={`Weekly goal: ${weeklyGoalDays} of 7 days with care logged this week. Current streak ${careStreak} ${careStreak === 1 ? "day" : "days"}.`}
-                  style={[s.weeklyGoalPanel, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[
+                    s.weeklyGoalPanel,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
                   <View style={s.weeklyGoalTop}>
                     <View style={s.weeklyGoalCopy}>
-                      <Text style={[s.weeklyGoalKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      <Text
+                        style={[
+                          s.weeklyGoalKicker,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
                         Weekly goal
                       </Text>
-                      <Text style={[s.weeklyGoalValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      <Text
+                        style={[
+                          s.weeklyGoalValue,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
                         {weeklyGoalDays}/7 days
                       </Text>
                     </View>
-                    <View style={[s.weeklyStreakChip, { backgroundColor: colors.sageSoft }]}>
+                    <View
+                      style={[
+                        s.weeklyStreakChip,
+                        { backgroundColor: colors.sageSoft },
+                      ]}
+                    >
                       <Ionicons name="flame" size={13} color={colors.forest} />
-                      <Text style={[s.weeklyStreakText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
-                        Current streak {careStreak} {careStreak === 1 ? "day" : "days"}
+                      <Text
+                        style={[
+                          s.weeklyStreakText,
+                          { color: colors.forest, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        Current streak {careStreak}{" "}
+                        {careStreak === 1 ? "day" : "days"}
                       </Text>
                     </View>
                   </View>
@@ -1451,22 +1721,46 @@ export default function CalendarScreen() {
                     height={8}
                     style={s.weeklyGoalBar}
                   />
-                  <Text style={[s.weeklyGoalHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <Text
+                    style={[
+                      s.weeklyGoalHint,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
                     Days with at least one care log count toward the goal.
                   </Text>
                 </View>
 
                 {routineBoard.items.length === 0 ? (
-                  <View style={[s.weekPlanEmpty, { backgroundColor: colors.background }]}>
+                  <View
+                    style={[
+                      s.weekPlanEmpty,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
                     <PixelIcon name="clock" size={26} />
-                    <Text style={[s.weekPlanEmptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      No routines yet. Add one below and this board fills in as real care gets logged.
+                    <Text
+                      style={[
+                        s.weekPlanEmptyText,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
+                    >
+                      No routines yet. Add one below and this board fills in as
+                      real care gets logged.
                     </Text>
                   </View>
                 ) : (
                   <View style={s.weekPlanList}>
                     {routineBoard.items.map((routine, index) => {
-                      const dotFills = weeklyRoutineDots.map((dayMap) => dayMap.get(routine.id) === true);
+                      const dotFills = weeklyRoutineDots.map(
+                        (dayMap) => dayMap.get(routine.id) === true,
+                      );
                       const doneDays = dotFills.filter(Boolean).length;
                       return (
                         <PressScale
@@ -1479,32 +1773,81 @@ export default function CalendarScreen() {
                             Haptics.selectionAsync();
                             openBoardRoutine(routine);
                           }}
-                          style={[s.weekPlanRow, index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 }]}
+                          style={[
+                            s.weekPlanRow,
+                            index > 0 && {
+                              borderTopColor: colors.border,
+                              borderTopWidth: 1,
+                            },
+                          ]}
                         >
-                          <View style={[s.scheduleIconChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                            <PixelIcon name={routinePixelIcon(routine.normalizedType)} size={20} />
+                          <View
+                            style={[
+                              s.scheduleIconChip,
+                              {
+                                backgroundColor: colors.background,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <PixelIcon
+                              name={routinePixelIcon(routine.normalizedType)}
+                              size={20}
+                            />
                           </View>
                           <View style={s.weekPlanCopy}>
                             <View style={s.weekPlanTitleLine}>
                               <Text
                                 numberOfLines={1}
-                                style={[s.weekPlanTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                                style={[
+                                  s.weekPlanTitle,
+                                  {
+                                    color: colors.foreground,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
                               >
                                 {routine.label}
                               </Text>
-                              <Text style={[s.weekPlanMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                                {routine.status === "needs-correction" ? "Needs correction" : routine.time}
+                              <Text
+                                style={[
+                                  s.weekPlanMeta,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                {routine.status === "needs-correction"
+                                  ? "Needs correction"
+                                  : routine.time}
                               </Text>
                             </View>
                             {getCareCorrectionPresentation(
-                              routines.find((candidate) => candidate.id === routine.id),
+                              routines.find(
+                                (candidate) => candidate.id === routine.id,
+                              ),
                               "time",
                             ) ? (
-                              <Text style={[s.scheduleDetail, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                                Saved value: {getCareCorrectionPresentation(
-                                  routines.find((candidate) => candidate.id === routine.id),
-                                  "time",
-                                )?.preservedValue}
+                              <Text
+                                style={[
+                                  s.scheduleDetail,
+                                  {
+                                    color: colors.amber,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                Saved value:{" "}
+                                {
+                                  getCareCorrectionPresentation(
+                                    routines.find(
+                                      (candidate) =>
+                                        candidate.id === routine.id,
+                                    ),
+                                    "time",
+                                  )?.preservedValue
+                                }
                               </Text>
                             ) : null}
                             <View style={s.weekDotRow}>
@@ -1517,14 +1860,25 @@ export default function CalendarScreen() {
                                     key={`${routine.id}-${WEEK_DAY_NAMES[dayIndex]}`}
                                     accessible
                                     accessibilityLabel={`${WEEK_DAY_NAMES[dayIndex]}${isToday ? ", today" : ""}: ${filled ? "done" : isFuture ? "upcoming" : "not done"}`}
-                                    style={[s.weekDotRing, { borderColor: isToday ? colors.forest : "transparent" }]}
+                                    style={[
+                                      s.weekDotRing,
+                                      {
+                                        borderColor: isToday
+                                          ? colors.forest
+                                          : "transparent",
+                                      },
+                                    ]}
                                   >
                                     <View
                                       style={[
                                         s.weekDot,
                                         {
-                                          backgroundColor: filled ? colors.forest : "transparent",
-                                          borderColor: filled ? colors.forest : colors.border,
+                                          backgroundColor: filled
+                                            ? colors.forest
+                                            : "transparent",
+                                          borderColor: filled
+                                            ? colors.forest
+                                            : colors.border,
                                           opacity: isFuture ? 0.5 : 1,
                                         },
                                       ]}
@@ -1550,7 +1904,11 @@ export default function CalendarScreen() {
                               })}
                             </View>
                           </View>
-                          <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                          <Ionicons
+                            name="chevron-forward"
+                            size={14}
+                            color={colors.mutedForeground}
+                          />
                         </PressScale>
                       );
                     })}
@@ -1563,7 +1921,14 @@ export default function CalendarScreen() {
                   {WEEKDAY_LABELS.map((label, i) => (
                     <Text
                       key={`${label}-${i}`}
-                      style={[s.monthWeekdayLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
+                      maxFontSizeMultiplier={1.3}
+                      style={[
+                        s.monthWeekdayLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
                     >
                       {label}
                     </Text>
@@ -1573,22 +1938,38 @@ export default function CalendarScreen() {
                   <View key={`month-week-${wi}`} style={s.monthWeekRow}>
                     {week.map((cell, di) => {
                       if (!cell.inMonth || cell.day === null) {
-                        return <View key={`blank-${wi}-${di}`} style={s.monthDayCell} />;
+                        return (
+                          <View
+                            key={`blank-${wi}-${di}`}
+                            style={s.monthDayCell}
+                          />
+                        );
                       }
                       return (
-                        <View key={cell.dateKey ?? `${wi}-${di}`} style={s.monthDayCell}>
+                        <View
+                          key={cell.dateKey ?? `${wi}-${di}`}
+                          style={s.monthDayCell}
+                        >
                           <View
                             style={[
                               s.monthDayCircle,
-                              cell.isToday && { borderWidth: 1.5, borderColor: colors.primary },
+                              cell.isToday && {
+                                borderWidth: 1.5,
+                                borderColor: colors.primary,
+                              },
                             ]}
                           >
                             <Text
+                              maxFontSizeMultiplier={1.3}
                               style={[
                                 s.monthDayNumber,
                                 {
-                                  color: cell.isToday ? colors.forest : colors.foreground,
-                                  fontFamily: cell.isToday ? "Inter_700Bold" : "Inter_600SemiBold",
+                                  color: cell.isToday
+                                    ? colors.forest
+                                    : colors.foreground,
+                                  fontFamily: cell.isToday
+                                    ? "Inter_700Bold"
+                                    : "Inter_600SemiBold",
                                 },
                               ]}
                             >
@@ -1596,7 +1977,14 @@ export default function CalendarScreen() {
                             </Text>
                           </View>
                           <View
-                            style={[s.monthDayDot, { backgroundColor: cell.hasEntries ? colors.forest : "transparent" }]}
+                            style={[
+                              s.monthDayDot,
+                              {
+                                backgroundColor: cell.hasEntries
+                                  ? colors.forest
+                                  : "transparent",
+                              },
+                            ]}
                           />
                         </View>
                       );
@@ -1615,186 +2003,384 @@ export default function CalendarScreen() {
                     { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
-                  <Ionicons name="calendar-outline" size={15} color={colors.forest} />
-                  <Text style={[s.monthOpenBtnText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={15}
+                    color={colors.forest}
+                  />
+                  <Text
+                    style={[
+                      s.monthOpenBtnText,
+                      { color: colors.forest, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     Open full month
                   </Text>
                 </Pressable>
               </View>
             ) : (
-            <View style={s.scheduleList}>
-              {scheduleRows.map((row, index) => {
-                const done = row.status === "done";
-                const needsCorrection = row.status === "needs-correction";
-                const pill = scheduleStatusPill(row.status, index === firstUpcomingScheduleIndex);
-                const showRowPill = pill.label !== "Upcoming";
-                const band = scheduleBandForTime(row.time);
-                const showBandHeader =
-                  index === 0 || scheduleBandForTime(scheduleRows[index - 1].time) !== band;
-                const showNowLine =
-                  scheduleTab === "day" && !isSampleSchedule && index === firstUpcomingScheduleIndex;
-                const bandHeader = showBandHeader ? (
-                  <View style={s.scheduleBand}>
-                    <Text style={[s.scheduleBandText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      {band.toUpperCase()}
-                    </Text>
-                    <View style={[s.scheduleBandRule, { backgroundColor: colors.border }]} />
-                  </View>
-                ) : null;
-                const nowLine = showNowLine ? (
-                  <View style={s.scheduleNowLine} accessible accessibilityLabel="Current time marker">
-                    <View style={[s.scheduleNowChip, { backgroundColor: colors.primary }]}>
-                      <Text style={[s.scheduleNowChipText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-                        NOW
+              <View style={s.scheduleList}>
+                {scheduleRows.map((row, index) => {
+                  const done = row.status === "done";
+                  const needsCorrection = row.status === "needs-correction";
+                  const pill = scheduleStatusPill(
+                    row.status,
+                    index === firstUpcomingScheduleIndex,
+                  );
+                  const showRowPill = pill.label !== "Upcoming";
+                  const band = scheduleBandForTime(row.time);
+                  const showBandHeader =
+                    index === 0 ||
+                    scheduleBandForTime(scheduleRows[index - 1].time) !== band;
+                  const showNowLine =
+                    scheduleTab === "day" &&
+                    !isSampleSchedule &&
+                    index === firstUpcomingScheduleIndex;
+                  const bandHeader = showBandHeader ? (
+                    <View style={s.scheduleBand}>
+                      <Text
+                        style={[
+                          s.scheduleBandText,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        {band.toUpperCase()}
                       </Text>
+                      <View
+                        style={[
+                          s.scheduleBandRule,
+                          { backgroundColor: colors.border },
+                        ]}
+                      />
                     </View>
-                    <View style={[s.scheduleNowBar, { backgroundColor: colors.primary }]} />
-                  </View>
-                ) : null;
-                if (isSampleSchedule) {
-                  // Preview-only sample rows: no backing routine exists, so no
-                  // Pressable wrappers and no mark-done toggles render here.
+                  ) : null;
+                  const nowLine = showNowLine ? (
+                    <View
+                      style={s.scheduleNowLine}
+                      accessible
+                      accessibilityLabel="Current time marker"
+                    >
+                      <View
+                        style={[
+                          s.scheduleNowChip,
+                          { backgroundColor: colors.primary },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.scheduleNowChipText,
+                            {
+                              color: colors.primaryForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          NOW
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          s.scheduleNowBar,
+                          { backgroundColor: colors.primary },
+                        ]}
+                      />
+                    </View>
+                  ) : null;
+                  if (isSampleSchedule) {
+                    // Preview-only sample rows: no backing routine exists, so no
+                    // Pressable wrappers and no mark-done toggles render here.
+                    return (
+                      <React.Fragment key={`${row.id}-${index}`}>
+                        {bandHeader}
+                        <View
+                          accessible
+                          accessibilityLabel={`Sample day preview: ${row.time} ${row.label}`}
+                          style={[
+                            s.scheduleRow,
+                            s.scheduleSampleRow,
+                            index > 0 &&
+                              !showBandHeader && {
+                                borderTopColor: colors.border,
+                                borderTopWidth: 1,
+                              },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.scheduleTime,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {row.time}
+                          </Text>
+                          <View
+                            style={[
+                              s.scheduleIconChip,
+                              {
+                                backgroundColor: colors.background,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <PixelIcon
+                              name={routinePixelIcon(row.type)}
+                              size={20}
+                            />
+                          </View>
+                          <View style={s.scheduleRowCopy}>
+                            <Text
+                              style={[
+                                s.scheduleTitle,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
+                              {row.label}
+                            </Text>
+                            <Text
+                              style={[
+                                s.scheduleDetail,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_500Medium",
+                                },
+                              ]}
+                            >
+                              {row.detail}
+                            </Text>
+                            {showRowPill ? (
+                              <BoardStatusPill
+                                label={pill.label}
+                                tone={pill.tone}
+                                style={s.scheduleRowPill}
+                              />
+                            ) : null}
+                          </View>
+                        </View>
+                      </React.Fragment>
+                    );
+                  }
+                  const sourceRoutine = routineBoard.items.find(
+                    (item) => item.id === row.id,
+                  );
                   return (
                     <React.Fragment key={`${row.id}-${index}`}>
-                    {bandHeader}
-                    <View
-                      accessible
-                      accessibilityLabel={`Sample day preview: ${row.time} ${row.label}`}
-                      style={[
-                        s.scheduleRow,
-                        s.scheduleSampleRow,
-                        index > 0 && !showBandHeader && { borderTopColor: colors.border, borderTopWidth: 1 },
-                      ]}
-                    >
-                      <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {row.time}
-                      </Text>
-                      <View style={[s.scheduleIconChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <PixelIcon name={routinePixelIcon(row.type)} size={20} />
+                      {bandHeader}
+                      {nowLine}
+                      <View
+                        style={[
+                          s.scheduleRow,
+                          index > 0 &&
+                            !showBandHeader &&
+                            !showNowLine && {
+                              borderTopColor: colors.border,
+                              borderTopWidth: 1,
+                            },
+                        ]}
+                      >
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit routine ${row.label}`}
+                          accessibilityHint={
+                            row.owner
+                              ? `Assigned to ${row.owner}. Opens the routine editor.`
+                              : "No caregiver assigned. Opens the routine editor."
+                          }
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            if (sourceRoutine) openBoardRoutine(sourceRoutine);
+                          }}
+                          style={({ pressed }) => [
+                            s.scheduleEditArea,
+                            { opacity: pressed ? 0.72 : 1 },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.scheduleTime,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {row.time}
+                          </Text>
+                          <View
+                            style={[
+                              s.scheduleIconChip,
+                              {
+                                backgroundColor: colors.background,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <PixelIcon
+                              name={routinePixelIcon(row.type)}
+                              size={20}
+                            />
+                          </View>
+                          <View style={s.scheduleRowCopy}>
+                            <Text
+                              style={[
+                                s.scheduleTitle,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
+                              {row.label}
+                            </Text>
+                            {row.owner ? (
+                              <View style={s.scheduleOwnerRow}>
+                                <Ionicons
+                                  name="person-outline"
+                                  size={11}
+                                  color={colors.mutedForeground}
+                                />
+                                <Text
+                                  style={[
+                                    s.scheduleOwnerText,
+                                    {
+                                      color: colors.mutedForeground,
+                                      fontFamily: "Inter_500Medium",
+                                    },
+                                  ]}
+                                >
+                                  {row.owner}
+                                </Text>
+                              </View>
+                            ) : row.detail ? (
+                              <Text
+                                style={[
+                                  s.scheduleDetail,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_500Medium",
+                                  },
+                                ]}
+                              >
+                                {row.detail}
+                              </Text>
+                            ) : null}
+                            {row.correctionValue ? (
+                              <Text
+                                style={[
+                                  s.scheduleDetail,
+                                  {
+                                    color: colors.amber,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                Saved value: {row.correctionValue}
+                              </Text>
+                            ) : null}
+                            {showRowPill ? (
+                              <BoardStatusPill
+                                label={pill.label}
+                                tone={pill.tone}
+                                style={s.scheduleRowPill}
+                              />
+                            ) : null}
+                          </View>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            done
+                              ? `View ${row.label} completion log`
+                              : needsCorrection
+                                ? `${row.label} needs a corrected time before it can be logged`
+                                : `Mark ${row.label} done`
+                          }
+                          onPress={() => {
+                            if (!sourceRoutine) return;
+                            if (done) {
+                              openRoutineCompletion(sourceRoutine);
+                              return;
+                            }
+                            if (!needsCorrection) logRoutineDone(sourceRoutine);
+                          }}
+                          disabled={needsCorrection}
+                          accessibilityState={{
+                            disabled: needsCorrection,
+                            selected: done,
+                          }}
+                          style={({ pressed }) => [
+                            s.scheduleStatus,
+                            {
+                              borderColor: done
+                                ? colors.sage
+                                : needsCorrection
+                                  ? colors.amber
+                                  : colors.primary,
+                              backgroundColor: done
+                                ? colors.sage
+                                : "transparent",
+                              opacity:
+                                pressed && !needsCorrection
+                                  ? 0.68
+                                  : needsCorrection
+                                    ? 0.58
+                                    : 1,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name={
+                              done
+                                ? "checkmark"
+                                : needsCorrection
+                                  ? "warning-outline"
+                                  : "checkmark"
+                            }
+                            size={13}
+                            color={
+                              done
+                                ? colors.brandNavy
+                                : needsCorrection
+                                  ? colors.amber
+                                  : colors.primary
+                            }
+                          />
+                        </Pressable>
                       </View>
-                      <View style={s.scheduleRowCopy}>
-                        <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                          {row.label}
-                        </Text>
-                        <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {row.detail}
-                        </Text>
-                        {showRowPill ? (
-                          <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
-                        ) : null}
-                      </View>
-                    </View>
                     </React.Fragment>
                   );
-                }
-                const sourceRoutine = routineBoard.items.find((item) => item.id === row.id);
-                return (
-                  <React.Fragment key={`${row.id}-${index}`}>
-                  {bandHeader}
-                  {nowLine}
-                  <View
-                    style={[
-                      s.scheduleRow,
-                      index > 0 && !showBandHeader && !showNowLine && { borderTopColor: colors.border, borderTopWidth: 1 },
-                    ]}
-                  >
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Edit routine ${row.label}`}
-                      accessibilityHint={
-                        row.owner
-                          ? `Assigned to ${row.owner}. Opens the routine editor.`
-                          : "No caregiver assigned. Opens the routine editor."
-                      }
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        if (sourceRoutine) openBoardRoutine(sourceRoutine);
-                      }}
-                      style={({ pressed }) => [s.scheduleEditArea, { opacity: pressed ? 0.72 : 1 }]}
-                    >
-                      <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {row.time}
-                      </Text>
-                      <View style={[s.scheduleIconChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <PixelIcon name={routinePixelIcon(row.type)} size={20} />
-                      </View>
-                      <View style={s.scheduleRowCopy}>
-                        <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                          {row.label}
-                        </Text>
-                        {row.owner ? (
-                          <View style={s.scheduleOwnerRow}>
-                            <Ionicons name="person-outline" size={11} color={colors.mutedForeground} />
-                            <Text
-                              style={[s.scheduleOwnerText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                            >
-                              {row.owner}
-                            </Text>
-                          </View>
-                        ) : row.detail ? (
-                          <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {row.detail}
-                          </Text>
-                        ) : null}
-                        {row.correctionValue ? (
-                          <Text style={[s.scheduleDetail, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                            Saved value: {row.correctionValue}
-                          </Text>
-                        ) : null}
-                        {showRowPill ? (
-                          <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
-                        ) : null}
-                      </View>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={done ? `View ${row.label} completion log` :
-                        needsCorrection
-                          ? `${row.label} needs a corrected time before it can be logged`
-                          : `Mark ${row.label} done`
-                      }
-                      onPress={() => {
-                        if (!sourceRoutine) return;
-                        if (done) {
-                          openRoutineCompletion(sourceRoutine);
-                          return;
-                        }
-                        if (!needsCorrection) logRoutineDone(sourceRoutine);
-                      }}
-                      disabled={needsCorrection}
-                      accessibilityState={{ disabled: needsCorrection, selected: done }}
-                      style={({ pressed }) => [
-                        s.scheduleStatus,
-                        {
-                          borderColor: done ? colors.sage : needsCorrection ? colors.amber : colors.primary,
-                          backgroundColor: done ? colors.sage : "transparent",
-                          opacity: pressed && !needsCorrection ? 0.68 : needsCorrection ? 0.58 : 1,
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={done ? "checkmark" : needsCorrection ? "warning-outline" : "checkmark"}
-                        size={13}
-                        color={done ? colors.brandNavy : needsCorrection ? colors.amber : colors.primary}
-                      />
-                    </Pressable>
-                  </View>
-                  </React.Fragment>
-                );
-              })}
-            </View>
+                })}
+              </View>
             )}
 
             {isSampleSchedule && scheduleTab === "day" ? (
-              <Text style={[s.scheduleSampleNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                This is a sample day to show how your plan will look. Add your first routine to make it real.
+              <Text
+                style={[
+                  s.scheduleSampleNote,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                This is a sample day to show how your plan will look. Add your
+                first routine to make it real.
               </Text>
             ) : null}
 
             <BoardActionButton
-              label={isSampleSchedule ? "Add your first routine" : "Add routine"}
+              label={
+                isSampleSchedule ? "Add your first routine" : "Add routine"
+              }
               icon="add"
-              accessibilityLabel={isSampleSchedule ? "Add your first routine" : "Add routine"}
+              accessibilityLabel={
+                isSampleSchedule ? "Add your first routine" : "Add routine"
+              }
               onPress={() => {
                 Haptics.selectionAsync();
                 openNewRoutine();
@@ -1821,27 +2407,82 @@ export default function CalendarScreen() {
               {planMissionRows.map((mission, index) => {
                 const content = (
                   <>
-                    <View style={[s.planMissionIcon, { backgroundColor: mission.tone + "18" }]}>
+                    <View
+                      style={[
+                        s.planMissionIcon,
+                        { backgroundColor: mission.tone + "18" },
+                      ]}
+                    >
                       <PixelIcon name={mission.icon} size={22} />
                     </View>
                     <View style={s.planMissionCopy}>
-                      <Text style={[s.planMissionEyebrow, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      <Text
+                        style={[
+                          s.planMissionEyebrow,
+                          {
+                            color: mission.tone,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
                         {mission.eyebrow}
                       </Text>
-                      <Text style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      <Text
+                        style={[
+                          s.planMissionTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
                         {mission.title}
                       </Text>
-                      <Text style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      <Text
+                        style={[
+                          s.planMissionDetail,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
                         {mission.detail}
                       </Text>
                     </View>
-                    <View style={[s.planMissionAction, { backgroundColor: mission.tone + "16" }]}>
-                      <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                    <View
+                      style={[
+                        s.planMissionAction,
+                        { backgroundColor: mission.tone + "16" },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.planMissionActionText,
+                          {
+                            color: mission.tone,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
                         {mission.actionLabel}
                       </Text>
-                      {mission.onPress ? <Ionicons name="chevron-forward" size={13} color={mission.tone} /> : null}
+                      {mission.onPress ? (
+                        <Ionicons
+                          name="chevron-forward"
+                          size={13}
+                          color={mission.tone}
+                        />
+                      ) : null}
                     </View>
-                    {index < planMissionRows.length - 1 ? <View style={[s.planMissionDivider, { backgroundColor: colors.border }]} /> : null}
+                    {index < planMissionRows.length - 1 ? (
+                      <View
+                        style={[
+                          s.planMissionDivider,
+                          { backgroundColor: colors.border },
+                        ]}
+                      />
+                    ) : null}
                   </>
                 );
 
@@ -1854,7 +2495,9 @@ export default function CalendarScreen() {
                     style={({ pressed }) => [
                       s.planMissionRow,
                       {
-                        backgroundColor: pressed ? mission.tone + "10" : colors.background,
+                        backgroundColor: pressed
+                          ? mission.tone + "10"
+                          : colors.background,
                         borderColor: colors.border,
                       },
                     ]}
@@ -1868,7 +2511,10 @@ export default function CalendarScreen() {
                     accessibilityLabel={`${mission.eyebrow}: ${mission.title}. Status: ${mission.actionLabel}`}
                     style={[
                       s.planMissionRow,
-                      { backgroundColor: colors.background, borderColor: colors.border },
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
                     ]}
                   >
                     {content}
@@ -1885,30 +2531,86 @@ export default function CalendarScreen() {
               <Pressable
                 accessibilityRole="button"
                 aria-expanded={discoverOpen}
-                onPress={() => { Haptics.selectionAsync(); setDiscoverOpen((v) => !v); }}
-                style={[s.discoverCard, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setDiscoverOpen((v) => !v);
+                }}
+                style={[
+                  s.discoverCard,
+                  {
+                    backgroundColor: colors.primary,
+                    shadowColor: colors.primary,
+                  },
+                ]}
               >
                 <View style={s.discoverIcon}>
-                  <Ionicons name="sparkles" size={20} color={colors.primaryForeground} />
+                  <Ionicons
+                    name="sparkles"
+                    size={20}
+                    color={colors.primaryForeground}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.discoverTitle, { color: colors.primaryForeground, fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
-                  <Text style={[s.discoverSub, { color: colors.primaryForeground, opacity: 0.85, fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
+                  <Text
+                    style={[
+                      s.discoverTitle,
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: DISPLAY_SEMI,
+                      },
+                    ]}
+                  >
+                    Discover nearby dog events
+                  </Text>
+                  <Text
+                    style={[
+                      s.discoverSub,
+                      {
+                        color: colors.primaryForeground,
+                        opacity: 0.85,
+                        fontFamily: "Inter_400Regular",
+                      },
+                    ]}
+                  >
+                    WoofGuide curates outings for {resolvePetName(profile.name)}
+                  </Text>
                 </View>
-                <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.primaryForeground} />
+                <Ionicons
+                  name={discoverOpen ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={colors.primaryForeground}
+                />
               </Pressable>
 
               {discoverOpen && (
-                <View style={[s.discoverPanel, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+                <View
+                  style={[
+                    s.discoverPanel,
+                    {
+                      backgroundColor: colors.card,
+                      shadowColor: colors.primary,
+                    },
+                  ]}
+                >
                   <View style={s.discoverInputRow}>
-                    <Ionicons name="location-outline" size={18} color={colors.mutedForeground} />
+                    <Ionicons
+                      name="location-outline"
+                      size={18}
+                      color={colors.mutedForeground}
+                    />
                     <TextInput
                       value={location}
                       onChangeText={setLocation}
                       accessibilityLabel="Dog event search location"
                       placeholder="Your city or area"
                       placeholderTextColor={colors.mutedForeground}
-                      style={[s.discoverInput, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                      style={[
+                        s.discoverInput,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
                       returnKeyType="search"
                       onSubmitEditing={discover}
                     />
@@ -1916,8 +2618,15 @@ export default function CalendarScreen() {
                       onPress={discover}
                       disabled={loadingEvents}
                       accessibilityRole="button"
-                      accessibilityLabel={loadingEvents ? "Finding nearby dog events" : "Find nearby dog events"}
-                      accessibilityState={{ disabled: loadingEvents, busy: loadingEvents }}
+                      accessibilityLabel={
+                        loadingEvents
+                          ? "Finding nearby dog events"
+                          : "Find nearby dog events"
+                      }
+                      accessibilityState={{
+                        disabled: loadingEvents,
+                        busy: loadingEvents,
+                      }}
                       style={({ pressed }) => [
                         s.discoverGo,
                         {
@@ -1926,14 +2635,38 @@ export default function CalendarScreen() {
                         },
                       ]}
                     >
-                      {loadingEvents ? <ActivityIndicator size="small" color={colors.brandNavy} /> : <Text style={[s.discoverGoText, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>Find</Text>}
+                      {loadingEvents ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.brandNavy}
+                        />
+                      ) : (
+                        <Text
+                          style={[
+                            s.discoverGoText,
+                            {
+                              color: colors.brandNavy,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Find
+                        </Text>
+                      )}
                     </Pressable>
                   </View>
 
                   {suggestions.length === 0 && discoverStatus !== "idle" && (
                     <Text
                       aria-live="polite"
-                      style={[s.discoverHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium", marginTop: 6 }]}
+                      style={[
+                        s.discoverHint,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                          marginTop: 6,
+                        },
+                      ]}
                     >
                       {discoverStatus === "empty"
                         ? `No dog events found near "${location.trim() || "your area"}" yet - try a nearby city, or plan your own outing below.`
@@ -1944,30 +2677,91 @@ export default function CalendarScreen() {
                   {suggestions.length > 0 && (
                     <View style={{ marginTop: 4 }}>
                       {discoverMode === "local" && (
-                        <Text style={[s.discoverHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                          Curated ideas to inspire outings - confirm details before you go.
+                        <Text
+                          style={[
+                            s.discoverHint,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          Curated ideas to inspire outings - confirm details
+                          before you go.
                         </Text>
                       )}
                       {suggestions.map((sug, i) => {
                         const icon = EVENT_ICON[sug.type] ?? "calendar";
                         const added = isAdded(sug);
                         return (
-                          <View key={`${sug.title}-${i}`} style={[s.sugRow, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                            <View style={[s.sugIcon, { backgroundColor: colors.sage + "16" }]}>
-                              <Ionicons name={icon} size={18} color={colors.sage} />
+                          <View
+                            key={`${sug.title}-${i}`}
+                            style={[
+                              s.sugRow,
+                              i < suggestions.length - 1 && {
+                                borderBottomWidth: 1,
+                                borderBottomColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <View
+                              style={[
+                                s.sugIcon,
+                                { backgroundColor: colors.sage + "16" },
+                              ]}
+                            >
+                              <Ionicons
+                                name={icon}
+                                size={18}
+                                color={colors.sage}
+                              />
                             </View>
                             <View style={{ flex: 1 }}>
-                              <Text style={[s.sugTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{sug.title}</Text>
-                              <Text style={[s.sugMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                                {dayLabel(sug.date)}{sug.time ? ` - ${sug.time}` : ""}
+                              <Text
+                                style={[
+                                  s.sugTitle,
+                                  {
+                                    color: colors.foreground,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                {sug.title}
+                              </Text>
+                              <Text
+                                style={[
+                                  s.sugMeta,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_500Medium",
+                                  },
+                                ]}
+                              >
+                                {dayLabel(sug.date)}
+                                {sug.time ? ` - ${sug.time}` : ""}
                               </Text>
                               {sug.note ? (
-                                <Text numberOfLines={2} style={[s.sugNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{sug.note}</Text>
+                                <Text
+                                  numberOfLines={2}
+                                  style={[
+                                    s.sugNote,
+                                    {
+                                      color: colors.mutedForeground,
+                                      fontFamily: "Inter_400Regular",
+                                    },
+                                  ]}
+                                >
+                                  {sug.note}
+                                </Text>
                               ) : null}
                             </View>
                             <Pressable
                               accessibilityRole="button"
-                              accessibilityLabel={added ? `${sug.title} added` : `Add ${sug.title}`}
+                              accessibilityLabel={
+                                added
+                                  ? `${sug.title} added`
+                                  : `Add ${sug.title}`
+                              }
                               accessibilityState={{ disabled: added }}
                               aria-disabled={added}
                               disabled={added}
@@ -1976,12 +2770,20 @@ export default function CalendarScreen() {
                               style={({ pressed }) => [
                                 s.sugAdd,
                                 {
-                                  backgroundColor: added ? colors.sage + "22" : colors.primary,
+                                  backgroundColor: added
+                                    ? colors.sage + "22"
+                                    : colors.primary,
                                   opacity: pressed && !added ? 0.68 : 1,
                                 },
                               ]}
                             >
-                              <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : colors.primaryForeground} />
+                              <Ionicons
+                                name={added ? "checkmark" : "add"}
+                                size={18}
+                                color={
+                                  added ? colors.sage : colors.primaryForeground
+                                }
+                              />
                             </Pressable>
                           </View>
                         );
@@ -1997,12 +2799,33 @@ export default function CalendarScreen() {
           <BoardCard enter={3} style={s.upcomingBoardCard}>
             <BoardSectionHeader
               title="Upcoming Events"
-              accessory={<BoardPill label={upcoming.length ? `${upcoming.length} days` : "Add one"} tone={colors.primary} />}
+              accessory={
+                <BoardPill
+                  label={
+                    upcoming.length ? `${upcoming.length} days` : "Add one"
+                  }
+                  tone={colors.primary}
+                />
+              }
             />
             {upcoming.length === 0 ? (
-              <View style={[s.emptyPanel, { backgroundColor: colors.background }]}>
-                <Ionicons name="calendar-outline" size={30} color={colors.mutedForeground} />
-                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              <View
+                style={[s.emptyPanel, { backgroundColor: colors.background }]}
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={30}
+                  color={colors.mutedForeground}
+                />
+                <Text
+                  style={[
+                    s.emptyText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                >
                   {consumerSurfacePolicy.discoverEvents
                     ? "No events planned. Add one or discover nearby outings above."
                     : "No outings planned. Add one to keep walks, appointments, and adventures in one place."}
@@ -2011,8 +2834,15 @@ export default function CalendarScreen() {
             ) : (
               upcoming.map((group) => (
                 <View key={group.date} style={{ marginBottom: 18 }}>
-                  <Text style={[s.dayHeading, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
-                    {group.date === "needs-correction" ? "Needs correction" : dayLabel(group.date)}
+                  <Text
+                    style={[
+                      s.dayHeading,
+                      { color: colors.primary, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {group.date === "needs-correction"
+                      ? "Needs correction"
+                      : dayLabel(group.date)}
                   </Text>
                   {group.events.map((e) => {
                     const icon = EVENT_ICON[e.type] ?? "calendar";
@@ -2021,43 +2851,132 @@ export default function CalendarScreen() {
                       getCareCorrectionPresentation(e, "time");
                     const daysUntil = correction
                       ? null
-                      : Math.round((new Date(`${e.date}T12:00:00`).getTime() - Date.now()) / 86400000);
-                    const countdownLabel = daysUntil === null
-                      ? null
-                      : daysUntil === 0
-                        ? "Today"
-                        : daysUntil === 1
-                          ? "Tomorrow"
-                          : daysUntil <= 7
-                            ? `${daysUntil}d away`
-                            : null;
+                      : Math.round(
+                          (new Date(`${e.date}T12:00:00`).getTime() -
+                            Date.now()) /
+                            86400000,
+                        );
+                    const countdownLabel =
+                      daysUntil === null
+                        ? null
+                        : daysUntil === 0
+                          ? "Today"
+                          : daysUntil === 1
+                            ? "Tomorrow"
+                            : daysUntil <= 7
+                              ? `${daysUntil}d away`
+                              : null;
                     return (
-                      <View key={e.id} style={[s.eventPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <View style={[s.eventIcon, { backgroundColor: colors.sage + "16" }]}>
+                      <View
+                        key={e.id}
+                        style={[
+                          s.eventPanel,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            s.eventIcon,
+                            { backgroundColor: colors.sage + "16" },
+                          ]}
+                        >
                           <Ionicons name={icon} size={20} color={colors.sage} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <View style={s.eventTitleLine}>
-                            <Text style={[s.eventTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.title}</Text>
+                            <Text
+                              style={[
+                                s.eventTitle,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              {e.title}
+                            </Text>
                             {e.source === "woofguide" && (
-                              <View style={[s.tag, { backgroundColor: colors.primary + "16" }]}>
-                                <Ionicons name="sparkles" size={9} color={colors.primary} />
-                                <Text style={[s.tagText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>WoofGuide</Text>
+                              <View
+                                style={[
+                                  s.tag,
+                                  { backgroundColor: colors.primary + "16" },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="sparkles"
+                                  size={9}
+                                  color={colors.primary}
+                                />
+                                <Text
+                                  style={[
+                                    s.tagText,
+                                    {
+                                      color: colors.primary,
+                                      fontFamily: "Inter_700Bold",
+                                    },
+                                  ]}
+                                >
+                                  WoofGuide
+                                </Text>
                               </View>
                             )}
                             {countdownLabel && (
-                              <View style={[s.tag, { backgroundColor: (daysUntil === 0 ? colors.copper : colors.sage) + "18" }]}>
-                                <Text style={[s.tagText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{countdownLabel}</Text>
+                              <View
+                                style={[
+                                  s.tag,
+                                  {
+                                    backgroundColor:
+                                      (daysUntil === 0
+                                        ? colors.copper
+                                        : colors.sage) + "18",
+                                  },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    s.tagText,
+                                    {
+                                      color: colors.foreground,
+                                      fontFamily: "Inter_700Bold",
+                                    },
+                                  ]}
+                                >
+                                  {countdownLabel}
+                                </Text>
                               </View>
                             )}
                           </View>
-                          <Text style={[s.eventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          <Text
+                            style={[
+                              s.eventMeta,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
                             {correction
                               ? `${correction.label} · Saved value: ${correction.preservedValue}`
-                              : [e.time, e.location].filter(Boolean).join(" - ") || "All day"}
+                              : [e.time, e.location]
+                                  .filter(Boolean)
+                                  .join(" - ") || "All day"}
                           </Text>
                           {e.note ? (
-                            <Text numberOfLines={2} style={[s.eventNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{e.note}</Text>
+                            <Text
+                              numberOfLines={2}
+                              style={[
+                                s.eventNote,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_400Regular",
+                                },
+                              ]}
+                            >
+                              {e.note}
+                            </Text>
                           ) : null}
                         </View>
                         <View style={s.eventActions}>
@@ -2067,10 +2986,18 @@ export default function CalendarScreen() {
                             onPress={() => openEditEvent(e)}
                             style={({ pressed }) => [
                               s.removeBtn,
-                              { backgroundColor: pressed ? colors.primary + "12" : "transparent" },
+                              {
+                                backgroundColor: pressed
+                                  ? colors.primary + "12"
+                                  : "transparent",
+                              },
                             ]}
                           >
-                            <Ionicons name="pencil" size={15} color={colors.primary} />
+                            <Ionicons
+                              name="pencil"
+                              size={15}
+                              color={colors.primary}
+                            />
                           </Pressable>
                           <Pressable
                             accessibilityRole="button"
@@ -2078,10 +3005,18 @@ export default function CalendarScreen() {
                             onPress={() => removeEvent(e.id)}
                             style={({ pressed }) => [
                               s.removeBtn,
-                              { backgroundColor: pressed ? colors.rose + "12" : "transparent" },
+                              {
+                                backgroundColor: pressed
+                                  ? colors.rose + "12"
+                                  : "transparent",
+                              },
                             ]}
                           >
-                            <Ionicons name="close" size={16} color={colors.mutedForeground} />
+                            <Ionicons
+                              name="close"
+                              size={16}
+                              color={colors.mutedForeground}
+                            />
                           </Pressable>
                         </View>
                       </View>
@@ -2093,192 +3028,495 @@ export default function CalendarScreen() {
           </BoardCard>
 
           {/* Reminder Center */}
-          <View>
-          <BoardCard enter={4} style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
-            <BoardSectionHeader
-              title="Reminder Center"
-              accessory={<BoardPill label={reminderCount === 0 ? "Clear" : `${reminderCount} active`} tone={reminderTone} />}
-            />
-            <View style={s.responsibilityTop}>
-              <View style={[s.responsibilityIcon, { backgroundColor: reminderTone + "18" }]}>
-                <Ionicons name="notifications-outline" size={18} color={reminderTone} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Owner Action List</Text>
-                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {careReminderCenter.summary}
-                </Text>
-              </View>
-            </View>
-            <View style={s.responsibilityMetrics}>
-              {[
-                { label: "Urgent", value: careReminderCenter.alertCount },
-                { label: "Watch", value: careReminderCenter.watchCount },
-                { label: "Total", value: careReminderCenter.total },
-              ].map((metric) => (
-                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
-                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
-                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+          <View ref={reminderCenterRef}>
+            <BoardCard
+              enter={4}
+              style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}
+            >
+              <BoardSectionHeader
+                title="Reminder Center"
+                accessory={
+                  <BoardPill
+                    label={
+                      reminderCount === 0 ? "Clear" : `${reminderCount} active`
+                    }
+                    tone={reminderTone}
+                  />
+                }
+              />
+              <View style={s.responsibilityTop}>
+                <View
+                  style={[
+                    s.responsibilityIcon,
+                    { backgroundColor: reminderTone + "18" },
+                  ]}
+                >
+                  <Ionicons
+                    name="notifications-outline"
+                    size={18}
+                    color={reminderTone}
+                  />
                 </View>
-              ))}
-            </View>
-
-            {careReminderCenter.items.length === 0 ? (
-              <View style={[s.reminderEmpty, { backgroundColor: colors.background }]}>
-                <Ionicons name="checkmark-circle-outline" size={19} color={colors.sage} />
-                <Text style={[s.reminderEmptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  No owner reminders need attention right now.
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      s.responsibilityTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    Owner Action List
+                  </Text>
+                  <Text
+                    style={[
+                      s.responsibilitySummary,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {careReminderCenter.summary}
+                  </Text>
+                </View>
               </View>
-            ) : (
-              <View style={s.reminderList}>
-                {reminderSections.map((section) => (
+              <View style={s.responsibilityMetrics}>
+                {[
+                  { label: "Urgent", value: careReminderCenter.alertCount },
+                  { label: "Watch", value: careReminderCenter.watchCount },
+                  { label: "Total", value: careReminderCenter.total },
+                ].map((metric) => (
                   <View
-                    key={section.key}
-                    style={s.reminderSection}
+                    key={metric.label}
+                    style={[
+                      s.responsibilityMetric,
+                      { backgroundColor: colors.background },
+                    ]}
                   >
                     <Text
                       style={[
-                        s.reminderSectionLabel,
-                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        s.responsibilityMetricValue,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
                       ]}
                     >
-                      {section.label}
+                      {metric.value}
                     </Text>
-                    {section.items.map((item, index) => {
-                      const rowTone = item.urgency === "alert" ? colors.rose : item.urgency === "watch" ? colors.amber : colors.sage;
-                      const focused = item.id === focusedReminderId;
-                      return (
-                        <Pressable
-                          key={item.id}
-                          ref={(row) => {
-                            reminderRowRefs.current.set(item.id, row);
-                          }}
-                          onPress={() => openReminderAction(item)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${reminderWhenLabel(item)}. Open reminder action: ${item.label}`}
-                          style={({ pressed }) => [
-                            s.reminderRow,
-                            focused && [
-                              s.focusedReminderRow,
-                              { borderColor: colors.copper, backgroundColor: colors.amberSoft },
-                            ],
-                            index < section.items.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
-                            { opacity: pressed ? 0.72 : 1 },
-                          ]}
-                        >
-                          <View style={[s.reminderIcon, { backgroundColor: rowTone + "16" }]}>
-                            <Ionicons name={REMINDER_ICON[item.kind] ?? "alarm-outline"} size={17} color={rowTone} />
-                          </View>
-                          <View style={s.reminderMain}>
-                            <Text style={[s.reminderWhen, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                              {reminderWhenLabel(item)}
-                            </Text>
-                            <View style={s.reminderTitleLine}>
-                              <Text style={[s.reminderTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
-                              <View style={[s.reminderPill, { backgroundColor: rowTone + "16" }]}>
-                                <Text style={[s.reminderPillText, { color: rowTone, fontFamily: "Inter_700Bold" }]}>{reminderUrgencyLabel(item.urgency)}</Text>
-                              </View>
-                            </View>
-                            <Text numberOfLines={2} style={[s.reminderDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
-                            <Text numberOfLines={2} style={[s.reminderAction, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{item.action}</Text>
-                          </View>
-                        </Pressable>
-                      );
-                    })}
+                    <Text
+                      style={[
+                        s.responsibilityMetricLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {metric.label}
+                    </Text>
                   </View>
                 ))}
-                {careReminderCenter.total > careReminderCenter.items.length ? (
-                  <Text style={[s.reminderMore, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    + {careReminderCenter.total - careReminderCenter.items.length} more reminder{careReminderCenter.total - careReminderCenter.items.length === 1 ? "" : "s"} in records and routines.
-                  </Text>
-                ) : null}
               </View>
-            )}
-            <Text style={[s.reminderNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{careReminderCenter.nextStep}</Text>
-            <Text style={[s.reminderReadiness, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              {careReminderCenter.notificationReadiness}
-            </Text>
-            {consumerSurfacePolicy.pushNotificationControls ? (
-              <View style={[s.reminderNotificationPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Text style={[s.reminderNotificationTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  Notification preferences
-                </Text>
-                <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {careReminderCenter.notificationPreferenceSummary}
-                </Text>
-                <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {careReminderCenter.notificationQuietHours}
-                </Text>
-                <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {careReminderCenter.notificationOptOut}
-                </Text>
-                <View style={s.reminderPreferenceActions}>
-                  <Pressable
-                    onPress={() => saveReminderNotificationPreferences({ pushEnabled: true, optOut: false })}
-                    accessibilityRole="button"
-                    accessibilityLabel="Allow reminders when they arrive in a future update"
-                    style={({ pressed }) => [
-                      s.reminderPreferenceButton,
-                      { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+
+              {careReminderCenter.items.length === 0 ? (
+                <View
+                  style={[
+                    s.reminderEmpty,
+                    { backgroundColor: colors.background },
+                  ]}
+                >
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={19}
+                    color={colors.sage}
+                  />
+                  <Text
+                    style={[
+                      s.reminderEmptyText,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
                     ]}
                   >
-                    <Ionicons name="notifications-outline" size={15} color={colors.primary} />
-                    <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      Allow future reminders
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => saveReminderNotificationPreferences({ optOut: true })}
-                    accessibilityRole="button"
-                    accessibilityLabel="Opt out of push reminders"
-                    style={({ pressed }) => [
-                      s.reminderPreferenceButton,
-                      { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
-                    ]}
-                  >
-                    <Ionicons name="notifications-off-outline" size={15} color={colors.rose} />
-                    <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      Opt out
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => saveReminderNotificationPreferences({ quietHoursStart: "9:00 PM", quietHoursEnd: "7:00 AM" })}
-                    accessibilityRole="button"
-                    accessibilityLabel="Save quiet hours from 9:00 PM to 7:00 AM"
-                    style={({ pressed }) => [
-                      s.reminderPreferenceButton,
-                      { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
-                    ]}
-                  >
-                    <Ionicons name="moon-outline" size={15} color={colors.amber} />
-                    <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      Save quiet hours
-                    </Text>
-                  </Pressable>
-                  {ownerOps ? (
-                    <Pressable
-                      onPress={openPushNotificationProofMission}
-                      accessibilityRole="button"
-                      accessibilityLabel="Open push notifications proof mission"
-                      style={({ pressed }) => [
-                        s.reminderPreferenceButton,
-                        { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                    No owner reminders need attention right now.
+                  </Text>
+                </View>
+              ) : (
+                <View style={s.reminderList}>
+                  {reminderSections.map((section) => (
+                    <View key={section.key} style={s.reminderSection}>
+                      <Text
+                        style={[
+                          s.reminderSectionLabel,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        {section.label}
+                      </Text>
+                      {section.items.map((item, index) => {
+                        const rowTone =
+                          item.urgency === "alert"
+                            ? colors.rose
+                            : item.urgency === "watch"
+                              ? colors.amber
+                              : colors.sage;
+                        const focused = item.id === focusedReminderId;
+                        return (
+                          <Pressable
+                            key={item.id}
+                            ref={(row) => {
+                              reminderRowRefs.current.set(item.id, row);
+                            }}
+                            onPress={() => openReminderAction(item)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${reminderWhenLabel(item)}. Open reminder action: ${item.label}`}
+                            style={({ pressed }) => [
+                              s.reminderRow,
+                              focused && [
+                                s.focusedReminderRow,
+                                {
+                                  borderColor: colors.copper,
+                                  backgroundColor: colors.amberSoft,
+                                },
+                              ],
+                              index < section.items.length - 1 && {
+                                borderBottomColor: colors.border,
+                                borderBottomWidth: 1,
+                              },
+                              { opacity: pressed ? 0.72 : 1 },
+                            ]}
+                          >
+                            <View
+                              style={[
+                                s.reminderIcon,
+                                { backgroundColor: rowTone + "16" },
+                              ]}
+                            >
+                              <Ionicons
+                                name={
+                                  REMINDER_ICON[item.kind] ?? "alarm-outline"
+                                }
+                                size={17}
+                                color={rowTone}
+                              />
+                            </View>
+                            <View style={s.reminderMain}>
+                              <Text
+                                style={[
+                                  s.reminderWhen,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
+                                {reminderWhenLabel(item)}
+                              </Text>
+                              <View style={s.reminderTitleLine}>
+                                <Text
+                                  style={[
+                                    s.reminderTitle,
+                                    {
+                                      color: colors.foreground,
+                                      fontFamily: "Inter_700Bold",
+                                    },
+                                  ]}
+                                >
+                                  {item.label}
+                                </Text>
+                                <View
+                                  style={[
+                                    s.reminderPill,
+                                    { backgroundColor: rowTone + "16" },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      s.reminderPillText,
+                                      {
+                                        color: rowTone,
+                                        fontFamily: "Inter_700Bold",
+                                      },
+                                    ]}
+                                  >
+                                    {reminderUrgencyLabel(item.urgency)}
+                                  </Text>
+                                </View>
+                              </View>
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.reminderDetail,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_500Medium",
+                                  },
+                                ]}
+                              >
+                                {item.detail}
+                              </Text>
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.reminderAction,
+                                  {
+                                    color: colors.foreground,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                {item.action}
+                              </Text>
+                            </View>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ))}
+                  {careReminderCenter.total >
+                  careReminderCenter.items.length ? (
+                    <Text
+                      style={[
+                        s.reminderMore,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
                       ]}
                     >
-                      <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
-                      <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        Open push proof
-                      </Text>
-                    </Pressable>
+                      +{" "}
+                      {careReminderCenter.total -
+                        careReminderCenter.items.length}{" "}
+                      more reminder
+                      {careReminderCenter.total -
+                        careReminderCenter.items.length ===
+                      1
+                        ? ""
+                        : "s"}{" "}
+                      in records and routines.
+                    </Text>
                   ) : null}
                 </View>
-                <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Your choice is saved on this device. Reminder delivery arrives in a future update.
-                </Text>
-              </View>
-            ) : null}
-          </BoardCard>
+              )}
+              <Text
+                style={[
+                  s.reminderNext,
+                  { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                ]}
+              >
+                {careReminderCenter.nextStep}
+              </Text>
+              <Text
+                style={[
+                  s.reminderReadiness,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                {careReminderCenter.notificationReadiness}
+              </Text>
+              {consumerSurfacePolicy.pushNotificationControls ? (
+                <View
+                  style={[
+                    s.reminderNotificationPanel,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.reminderNotificationTitle,
+                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    Notification preferences
+                  </Text>
+                  <Text
+                    style={[
+                      s.reminderNotificationText,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {careReminderCenter.notificationPreferenceSummary}
+                  </Text>
+                  <Text
+                    style={[
+                      s.reminderNotificationText,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {careReminderCenter.notificationQuietHours}
+                  </Text>
+                  <Text
+                    style={[
+                      s.reminderNotificationText,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {careReminderCenter.notificationOptOut}
+                  </Text>
+                  <View style={s.reminderPreferenceActions}>
+                    <Pressable
+                      onPress={() =>
+                        saveReminderNotificationPreferences({
+                          pushEnabled: true,
+                          optOut: false,
+                        })
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel="Allow reminders when they arrive in a future update"
+                      style={({ pressed }) => [
+                        s.reminderPreferenceButton,
+                        {
+                          borderColor: colors.border,
+                          backgroundColor: colors.card,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="notifications-outline"
+                        size={15}
+                        color={colors.primary}
+                      />
+                      <Text
+                        style={[
+                          s.reminderPreferenceButtonText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Allow future reminders
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() =>
+                        saveReminderNotificationPreferences({ optOut: true })
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel="Opt out of push reminders"
+                      style={({ pressed }) => [
+                        s.reminderPreferenceButton,
+                        {
+                          borderColor: colors.border,
+                          backgroundColor: colors.card,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="notifications-off-outline"
+                        size={15}
+                        color={colors.rose}
+                      />
+                      <Text
+                        style={[
+                          s.reminderPreferenceButtonText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Opt out
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() =>
+                        saveReminderNotificationPreferences({
+                          quietHoursStart: "9:00 PM",
+                          quietHoursEnd: "7:00 AM",
+                        })
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel="Save quiet hours from 9:00 PM to 7:00 AM"
+                      style={({ pressed }) => [
+                        s.reminderPreferenceButton,
+                        {
+                          borderColor: colors.border,
+                          backgroundColor: colors.card,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="moon-outline"
+                        size={15}
+                        color={colors.amber}
+                      />
+                      <Text
+                        style={[
+                          s.reminderPreferenceButtonText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Save quiet hours
+                      </Text>
+                    </Pressable>
+                    {ownerOps ? (
+                      <Pressable
+                        onPress={openPushNotificationProofMission}
+                        accessibilityRole="button"
+                        accessibilityLabel="Open push notifications proof mission"
+                        style={({ pressed }) => [
+                          s.reminderPreferenceButton,
+                          {
+                            borderColor: colors.border,
+                            backgroundColor: colors.card,
+                            opacity: pressed ? 0.72 : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="shield-checkmark-outline"
+                          size={15}
+                          color={colors.amber}
+                        />
+                        <Text
+                          style={[
+                            s.reminderPreferenceButtonText,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Open push proof
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  <Text
+                    style={[
+                      s.reminderNotificationText,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    Your choice is saved on this device. Reminder delivery
+                    arrives in a future update.
+                  </Text>
+                </View>
+              ) : null}
+            </BoardCard>
           </View>
 
           {/* Daily routine */}
@@ -2288,8 +3526,17 @@ export default function CalendarScreen() {
               accessory={
                 <View style={s.routineHeaderAccessory}>
                   {routineBoard.items.length > 0 && (
-                    <Text style={[s.routineProgress, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {routineBoard.doneCount}/{scheduledRoutineCount} scheduled done today
+                    <Text
+                      style={[
+                        s.routineProgress,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      {routineBoard.doneCount}/{scheduledRoutineCount} scheduled
+                      done today
                       {routineBoard.correctionCount > 0
                         ? ` · ${routineBoard.correctionCount} ${routineBoard.correctionCount === 1 ? "needs" : "need"} correction`
                         : ""}
@@ -2298,13 +3545,23 @@ export default function CalendarScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Add routine"
-                    onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      openNewRoutine();
+                    }}
                     style={({ pressed }) => [
                       s.sectionAddBtn,
-                      { backgroundColor: colors.primary, opacity: pressed ? 0.7 : 1 },
+                      {
+                        backgroundColor: colors.primary,
+                        opacity: pressed ? 0.7 : 1,
+                      },
                     ]}
                   >
-                    <Ionicons name="add" size={18} color={colors.primaryForeground} />
+                    <Ionicons
+                      name="add"
+                      size={18}
+                      color={colors.primaryForeground}
+                    />
                   </Pressable>
                 </View>
               }
@@ -2313,200 +3570,494 @@ export default function CalendarScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Add your first routine"
-                onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  openNewRoutine();
+                }}
                 style={({ pressed }) => [
                   s.emptyPanel,
-                  { backgroundColor: pressed ? colors.secondary : colors.background },
+                  {
+                    backgroundColor: pressed
+                      ? colors.secondary
+                      : colors.background,
+                  },
                 ]}
               >
                 <PulseIcon name="bowl" size={30} />
-                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                <Text
+                  style={[
+                    s.emptyText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                >
                   No routines yet. Tap to add feeding times, walks, and more.
                 </Text>
               </Pressable>
             ) : (
               <>
-              <View style={[s.responsibilityPanel, { backgroundColor: colors.background, borderColor: responsibilityTone + "44" }]}>
-                <View style={s.responsibilityTop}>
-                  <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
-                    <Ionicons name="people-outline" size={18} color={responsibilityTone} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Household Responsibility</Text>
-                    <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {householdResponsibility.summary}
-                    </Text>
-                  </View>
-                </View>
-                <View style={s.responsibilityMetrics}>
-                  {[
-                    { label: "Open", value: responsibility.openRoutines },
-                    { label: "Overdue", value: responsibility.overdueRoutines },
-                    { label: "Unassigned", value: responsibility.unassignedRoutines },
-                  ].map((metric) => (
-                    <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
-                      <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
-                      <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
-                    </View>
-                  ))}
-                </View>
-                <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                  {responsibility.nextStep}
-                </Text>
-              </View>
-
-              {(assignedOwnerLoads.length > 0 || routineBoard.unassignedCount > 0) && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={s.ownerLoadStrip}
-                  style={{ marginBottom: 12 }}
+                <View
+                  style={[
+                    s.responsibilityPanel,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: responsibilityTone + "44",
+                    },
+                  ]}
                 >
-                  {assignedOwnerLoads.map((load) => (
-                    <View key={load.name} style={[s.ownerLoadChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <View style={[s.ownerAvatar, { backgroundColor: colors.primary + "18" }]}>
-                        <Text style={[s.ownerAvatarText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
-                          {load.name.slice(0, 1).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View>
-                        <Text style={[s.ownerLoadName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{load.name}</Text>
-                        <Text style={[s.ownerLoadCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {load.done}/{load.assigned} done
-                        </Text>
-                      </View>
+                  <View style={s.responsibilityTop}>
+                    <View
+                      style={[
+                        s.responsibilityIcon,
+                        { backgroundColor: responsibilityTone + "18" },
+                      ]}
+                    >
+                      <Ionicons
+                        name="people-outline"
+                        size={18}
+                        color={responsibilityTone}
+                      />
                     </View>
-                  ))}
-                  {routineBoard.unassignedCount > 0 && (
-                    <View style={[s.ownerLoadChip, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "44" }]}>
-                      <Ionicons name="person-add-outline" size={18} color={colors.amber} />
-                      <View>
-                        <Text style={[s.ownerLoadName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Unassigned</Text>
-                        <Text style={[s.ownerLoadCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {routineBoard.unassignedCount} routine{routineBoard.unassignedCount === 1 ? "" : "s"}
-                        </Text>
-                      </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          s.responsibilityTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
+                        Household Responsibility
+                      </Text>
+                      <Text
+                        style={[
+                          s.responsibilitySummary,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {householdResponsibility.summary}
+                      </Text>
                     </View>
-                  )}
-                </ScrollView>
-              )}
-
-              <View style={s.timeline}>
-                {routineBoard.items.map((r, i) => {
-                  const icon = ROUTINE_ICON[r.normalizedType] ?? "heart";
-                  const tint = PULSE_COLORS[icon];
-                  const last = i === routineBoard.items.length - 1;
-                  const done = r.status === "done";
-                  const statusColor =
-                    r.status === "done"
-                      ? colors.sage
-                      : r.status === "overdue"
-                        ? colors.rose
-                        : r.status === "due"
-                          ? colors.amber
-                          : tint;
-                  return (
-                    <View key={r.id} style={s.timelineRow}>
-                      <View style={s.rail}>
-                        <View style={[s.railDot, { backgroundColor: statusColor, borderColor: statusColor }]} />
-                        {!last && <View style={[s.railLine, { backgroundColor: colors.border }]} />}
-                      </View>
-                      <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: done ? 0.72 : 1 }]}>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`Edit routine ${r.label}`}
-                          accessibilityHint={
-                            r.owner
-                              ? `Assigned to ${r.owner}. Opens the routine editor.`
-                              : "No caregiver assigned. Opens the routine editor."
-                          }
-                          onPress={() => { Haptics.selectionAsync(); openBoardRoutine(r); }}
-                          style={({ pressed }) => [s.routineEditArea, { opacity: pressed ? 0.72 : 1 }]}
+                  </View>
+                  <View style={s.responsibilityMetrics}>
+                    {[
+                      { label: "Open", value: responsibility.openRoutines },
+                      {
+                        label: "Overdue",
+                        value: responsibility.overdueRoutines,
+                      },
+                      {
+                        label: "Unassigned",
+                        value: responsibility.unassignedRoutines,
+                      },
+                    ].map((metric) => (
+                      <View
+                        key={metric.label}
+                        style={[
+                          s.responsibilityMetric,
+                          { backgroundColor: colors.background },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.responsibilityMetricValue,
+                            {
+                              color: colors.foreground,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
                         >
-                          <View style={[s.routineIconWrap, { backgroundColor: statusColor + "16" }]}>
-                            {r.normalizedType === "potty" ? (
-                              <PixelIcon name="pee" size={20} />
-                            ) : (
-                              <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
-                            )}
-                          </View>
-                          <View style={s.routineMain}>
-                            <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
-                            <View style={s.routineMetaRow}>
-                              <Text style={[s.routineOwner, { color: r.owner ? colors.mutedForeground : colors.amber, fontFamily: "Inter_500Medium" }]}>
-                                {r.owner ? `Assigned to ${r.owner}` : "Tap to assign owner"}
-                              </Text>
-                              {r.completedBy ? (
-                                <Text style={[s.routineOwner, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>Done by {r.completedBy}</Text>
-                              ) : null}
-                              {r.completion && r.completion !== "complete" ? (
-                                <Text style={[s.routineOwner, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>{r.completionLabel}</Text>
-                              ) : null}
-                            </View>
-                            {r.note ? (
-                              <Text numberOfLines={1} style={[s.routineNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{r.note}</Text>
-                            ) : null}
-                          </View>
-                        </Pressable>
-                        <View style={s.routineActions}>
-                          <BoardStatusPill
-                            label={routineStatusLabel(r.status)}
-                            tone={routineBoardPillTone(r.status)}
-                            style={s.routineRowPill}
-                          />
-                          <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                            {r.status === "needs-correction" ? "Needs correction" : r.time}
-                          </Text>
-                          {getCareCorrectionPresentation(
-                            routines.find((candidate) => candidate.id === r.id),
-                            "time",
-                          ) ? (
-                            <Text style={[s.routineTime, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                              Saved value: {getCareCorrectionPresentation(
-                                routines.find((candidate) => candidate.id === r.id),
-                                "time",
-                              )?.preservedValue}
-                            </Text>
-                          ) : null}
-                          <Pressable
-                            onPress={() => {
-                              if (done) {
-                                openRoutineCompletion(r);
-                                return;
-                              }
-                              if (r.status !== "needs-correction") logRoutineDone(r);
-                            }}
-                            disabled={r.status === "needs-correction"}
-                            hitSlop={MOBILE_INLINE_HIT_SLOP}
-                            accessibilityRole="button"
-                            accessibilityLabel={
-                              done
-                                ? `View ${r.label} completion log`
-                                : r.status === "needs-correction"
-                                  ? `${r.label} needs a corrected time before it can be logged`
-                                  : `Log ${r.label} as done`
-                            }
-                            accessibilityState={{ disabled: r.status === "needs-correction", selected: done }}
-                            style={({ pressed }) => [
-                              s.routineDoneBtn,
+                          {metric.value}
+                        </Text>
+                        <Text
+                          style={[
+                            s.responsibilityMetricLabel,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          {metric.label}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text
+                    style={[
+                      s.responsibilityNext,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {responsibility.nextStep}
+                  </Text>
+                </View>
+
+                {(assignedOwnerLoads.length > 0 ||
+                  routineBoard.unassignedCount > 0) && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.ownerLoadStrip}
+                    style={{ marginBottom: 12 }}
+                  >
+                    {assignedOwnerLoads.map((load) => (
+                      <View
+                        key={load.name}
+                        style={[
+                          s.ownerLoadChip,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            s.ownerAvatar,
+                            { backgroundColor: colors.primary + "18" },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.ownerAvatarText,
                               {
-                                backgroundColor: done ? colors.sage + "18" : colors.primary,
-                                opacity: pressed && r.status !== "needs-correction" ? 0.68 : 1,
+                                color: colors.primary,
+                                fontFamily: "Inter_700Bold",
                               },
                             ]}
                           >
-                            <Ionicons name={done ? "checkmark-circle" : "checkmark"} size={16} color={done ? colors.sage : "#fff"} />
-                          </Pressable>
+                            {load.name.slice(0, 1).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text
+                            style={[
+                              s.ownerLoadName,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {load.name}
+                          </Text>
+                          <Text
+                            style={[
+                              s.ownerLoadCount,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            {load.done}/{load.assigned} done
+                          </Text>
                         </View>
                       </View>
-                    </View>
-                  );
-                })}
-              </View>
+                    ))}
+                    {routineBoard.unassignedCount > 0 && (
+                      <View
+                        style={[
+                          s.ownerLoadChip,
+                          {
+                            backgroundColor: colors.amber + "12",
+                            borderColor: colors.amber + "44",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="person-add-outline"
+                          size={18}
+                          color={colors.amber}
+                        />
+                        <View>
+                          <Text
+                            style={[
+                              s.ownerLoadName,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            Unassigned
+                          </Text>
+                          <Text
+                            style={[
+                              s.ownerLoadCount,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            {routineBoard.unassignedCount} routine
+                            {routineBoard.unassignedCount === 1 ? "" : "s"}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </ScrollView>
+                )}
+
+                <View style={s.timeline}>
+                  {routineBoard.items.map((r, i) => {
+                    const icon = ROUTINE_ICON[r.normalizedType] ?? "heart";
+                    const tint = PULSE_COLORS[icon];
+                    const last = i === routineBoard.items.length - 1;
+                    const done = r.status === "done";
+                    const statusColor =
+                      r.status === "done"
+                        ? colors.sage
+                        : r.status === "overdue"
+                          ? colors.rose
+                          : r.status === "due"
+                            ? colors.amber
+                            : tint;
+                    return (
+                      <View key={r.id} style={s.timelineRow}>
+                        <View style={s.rail}>
+                          <View
+                            style={[
+                              s.railDot,
+                              {
+                                backgroundColor: statusColor,
+                                borderColor: statusColor,
+                              },
+                            ]}
+                          />
+                          {!last && (
+                            <View
+                              style={[
+                                s.railLine,
+                                { backgroundColor: colors.border },
+                              ]}
+                            />
+                          )}
+                        </View>
+                        <View
+                          style={[
+                            s.routineCard,
+                            {
+                              backgroundColor: colors.card,
+                              shadowColor: colors.primary,
+                              opacity: done ? 0.72 : 1,
+                            },
+                          ]}
+                        >
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Edit routine ${r.label}`}
+                            accessibilityHint={
+                              r.owner
+                                ? `Assigned to ${r.owner}. Opens the routine editor.`
+                                : "No caregiver assigned. Opens the routine editor."
+                            }
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              openBoardRoutine(r);
+                            }}
+                            style={({ pressed }) => [
+                              s.routineEditArea,
+                              { opacity: pressed ? 0.72 : 1 },
+                            ]}
+                          >
+                            <View
+                              style={[
+                                s.routineIconWrap,
+                                { backgroundColor: statusColor + "16" },
+                              ]}
+                            >
+                              {r.normalizedType === "potty" ? (
+                                <PixelIcon name="pee" size={20} />
+                              ) : (
+                                <PulseIcon
+                                  name={icon}
+                                  size={20}
+                                  color={done ? colors.sage : undefined}
+                                />
+                              )}
+                            </View>
+                            <View style={s.routineMain}>
+                              <Text
+                                style={[
+                                  s.routineLabel,
+                                  {
+                                    color: colors.foreground,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                {r.label}
+                              </Text>
+                              <View style={s.routineMetaRow}>
+                                <Text
+                                  style={[
+                                    s.routineOwner,
+                                    {
+                                      color: r.owner
+                                        ? colors.mutedForeground
+                                        : colors.amber,
+                                      fontFamily: "Inter_500Medium",
+                                    },
+                                  ]}
+                                >
+                                  {r.owner
+                                    ? `Assigned to ${r.owner}`
+                                    : "Tap to assign owner"}
+                                </Text>
+                                {r.completedBy ? (
+                                  <Text
+                                    style={[
+                                      s.routineOwner,
+                                      {
+                                        color: colors.sage,
+                                        fontFamily: "Inter_600SemiBold",
+                                      },
+                                    ]}
+                                  >
+                                    Done by {r.completedBy}
+                                  </Text>
+                                ) : null}
+                                {r.completion && r.completion !== "complete" ? (
+                                  <Text
+                                    style={[
+                                      s.routineOwner,
+                                      {
+                                        color: colors.amber,
+                                        fontFamily: "Inter_700Bold",
+                                      },
+                                    ]}
+                                  >
+                                    {r.completionLabel}
+                                  </Text>
+                                ) : null}
+                              </View>
+                              {r.note ? (
+                                <Text
+                                  numberOfLines={1}
+                                  style={[
+                                    s.routineNote,
+                                    {
+                                      color: colors.mutedForeground,
+                                      fontFamily: "Inter_400Regular",
+                                    },
+                                  ]}
+                                >
+                                  {r.note}
+                                </Text>
+                              ) : null}
+                            </View>
+                          </Pressable>
+                          <View style={s.routineActions}>
+                            <BoardStatusPill
+                              label={routineStatusLabel(r.status)}
+                              tone={routineBoardPillTone(r.status)}
+                              style={s.routineRowPill}
+                            />
+                            <Text
+                              style={[
+                                s.routineTime,
+                                {
+                                  color: done
+                                    ? colors.sage
+                                    : colors.mutedForeground,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              {r.status === "needs-correction"
+                                ? "Needs correction"
+                                : r.time}
+                            </Text>
+                            {getCareCorrectionPresentation(
+                              routines.find(
+                                (candidate) => candidate.id === r.id,
+                              ),
+                              "time",
+                            ) ? (
+                              <Text
+                                style={[
+                                  s.routineTime,
+                                  {
+                                    color: colors.amber,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                Saved value:{" "}
+                                {
+                                  getCareCorrectionPresentation(
+                                    routines.find(
+                                      (candidate) => candidate.id === r.id,
+                                    ),
+                                    "time",
+                                  )?.preservedValue
+                                }
+                              </Text>
+                            ) : null}
+                            <Pressable
+                              onPress={() => {
+                                if (done) {
+                                  openRoutineCompletion(r);
+                                  return;
+                                }
+                                if (r.status !== "needs-correction")
+                                  logRoutineDone(r);
+                              }}
+                              disabled={r.status === "needs-correction"}
+                              hitSlop={MOBILE_INLINE_HIT_SLOP}
+                              accessibilityRole="button"
+                              accessibilityLabel={
+                                done
+                                  ? `View ${r.label} completion log`
+                                  : r.status === "needs-correction"
+                                    ? `${r.label} needs a corrected time before it can be logged`
+                                    : `Log ${r.label} as done`
+                              }
+                              accessibilityState={{
+                                disabled: r.status === "needs-correction",
+                                selected: done,
+                              }}
+                              style={({ pressed }) => [
+                                s.routineDoneBtn,
+                                {
+                                  backgroundColor: done
+                                    ? colors.sage + "18"
+                                    : colors.primary,
+                                  opacity:
+                                    pressed && r.status !== "needs-correction"
+                                      ? 0.68
+                                      : 1,
+                                },
+                              ]}
+                            >
+                              <Ionicons
+                                name={done ? "checkmark-circle" : "checkmark"}
+                                size={16}
+                                color={done ? colors.sage : "#fff"}
+                              />
+                            </Pressable>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
               </>
             )}
           </BoardCard>
-        </Animated.View>
+        </View>
       </ScrollView>
 
       {routineFeedback ? (
@@ -2521,10 +4072,20 @@ export default function CalendarScreen() {
           ]}
         >
           <View style={s.routineFeedbackCopy}>
-            <Text style={[s.routineFeedbackTitle, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+            <Text
+              style={[
+                s.routineFeedbackTitle,
+                { color: colors.ivory, fontFamily: "Inter_800ExtraBold" },
+              ]}
+            >
               {routineFeedback.title} logged
             </Text>
-            <Text style={[s.routineFeedbackSub, { color: colors.ivory + "CC", fontFamily: "Inter_600SemiBold" }]}>
+            <Text
+              style={[
+                s.routineFeedbackSub,
+                { color: colors.ivory + "CC", fontFamily: "Inter_600SemiBold" },
+              ]}
+            >
               Routine board updated. Add details now or undo this care log.
             </Text>
           </View>
@@ -2538,13 +4099,23 @@ export default function CalendarScreen() {
               style={({ pressed }) => [
                 s.routineFeedbackButton,
                 {
-                  backgroundColor: pressed && !routineFeedbackUndoBusy ? "rgba(255,249,239,0.17)" : "rgba(255,249,239,0.1)",
+                  backgroundColor:
+                    pressed && !routineFeedbackUndoBusy
+                      ? "rgba(255,249,239,0.17)"
+                      : "rgba(255,249,239,0.1)",
                   borderColor: "rgba(255,249,239,0.34)",
                   opacity: routineFeedbackUndoBusy ? 0.5 : 1,
                 },
               ]}
             >
-              <Text style={[s.routineFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>Undo</Text>
+              <Text
+                style={[
+                  s.routineFeedbackButtonText,
+                  { color: colors.ivory, fontFamily: "Inter_800ExtraBold" },
+                ]}
+              >
+                Undo
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -2555,13 +4126,21 @@ export default function CalendarScreen() {
               style={({ pressed }) => [
                 s.routineFeedbackButton,
                 {
-                  backgroundColor: pressed && !routineFeedbackUndoBusy ? colors.copperBright + "DD" : colors.copperBright,
+                  backgroundColor:
+                    pressed && !routineFeedbackUndoBusy
+                      ? colors.copperBright + "DD"
+                      : colors.copperBright,
                   borderColor: colors.copperBright,
                   opacity: routineFeedbackUndoBusy ? 0.5 : 1,
                 },
               ]}
             >
-              <Text style={[s.routineFeedbackButtonText, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+              <Text
+                style={[
+                  s.routineFeedbackButtonText,
+                  { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" },
+                ]}
+              >
                 Add details
               </Text>
             </Pressable>
@@ -2570,13 +4149,31 @@ export default function CalendarScreen() {
       ) : null}
 
       {/* Routine editor modal */}
-      <Modal visible={routineOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setRoutineOpen(false)}>
-        <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
+      <Modal
+        visible={routineOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setRoutineOpen(false)}
+      >
+        <ModalBackdropPressable
+          style={s.modalBackdrop}
+          onPress={() => setRoutineOpen(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={keyboardOffset}
+            style={s.modalDock}
+          >
             <ModalSheetPressable
               visible={routineOpen}
               onRequestClose={() => setRoutineOpen(false)}
-              style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+              style={[
+                s.modalSheet,
+                {
+                  backgroundColor: colors.card,
+                  paddingBottom: modalSheetBottomPadding,
+                },
+              ]}
             >
               <ScrollView
                 keyboardShouldPersistTaps="handled"
@@ -2586,211 +4183,475 @@ export default function CalendarScreen() {
                 contentContainerStyle={s.modalFormContent}
               >
                 <View style={s.modalHandle} />
-                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                <Text
+                  accessibilityRole="header"
+                  style={[
+                    s.modalTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
                   {routineEditId ? "Edit Routine" : "New Routine"}
                 </Text>
 
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LABEL</Text>
-            <TextInput
-              accessibilityLabel="Routine label"
-              value={rLabel}
-              onChangeText={(value) => { setRLabel(value); setRLabelError(null); }}
-              placeholder="Morning walk"
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.field, { backgroundColor: colors.background, color: rLabelError ? colors.rose : colors.foreground, borderWidth: rLabelError ? 1 : 0, borderColor: rLabelError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
-            />
-            {rLabelError ? (
-              <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
-                {rLabelError}
-              </Text>
-            ) : null}
-            {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
-                {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).map((sug) => {
-                  const active = rLabel.trim() === sug;
-                  return (
-                    <Pressable
-                      key={sug}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Use label ${sug}`}
-                      accessibilityState={{ selected: active }}
-                      aria-selected={active}
-                      onPress={() => { Haptics.selectionAsync(); setRLabel(sug); setRLabelError(null); }}
-                      style={({ pressed }) => [
-                        s.ownerQuickChip,
+                <Text
+                  style={[
+                    s.fieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  LABEL
+                </Text>
+                <TextInput
+                  accessibilityLabel="Routine label"
+                  value={rLabel}
+                  onChangeText={(value) => {
+                    setRLabel(value);
+                    setRLabelError(null);
+                  }}
+                  placeholder="Morning walk"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    s.field,
+                    {
+                      backgroundColor: colors.background,
+                      color: rLabelError ? colors.rose : colors.foreground,
+                      borderWidth: rLabelError ? 1 : 0,
+                      borderColor: rLabelError ? colors.rose : "transparent",
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
+                {rLabelError ? (
+                  <Text
+                    aria-live="polite"
+                    style={[
+                      s.sheetSubmitHint,
+                      { color: colors.rose, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {rLabelError}
+                  </Text>
+                ) : null}
+                {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).length > 0 ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.ownerQuickRow}
+                  >
+                    {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).map((sug) => {
+                      const active = rLabel.trim() === sug;
+                      return (
+                        <Pressable
+                          key={sug}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Use label ${sug}`}
+                          accessibilityState={{ selected: active }}
+                          aria-selected={active}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setRLabel(sug);
+                            setRLabelError(null);
+                          }}
+                          style={({ pressed }) => [
+                            s.ownerQuickChip,
+                            {
+                              backgroundColor: active
+                                ? colors.primary
+                                : colors.background,
+                              borderColor: active
+                                ? colors.primary
+                                : colors.border,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.ownerQuickText,
+                              {
+                                color: active
+                                  ? colors.primaryForeground
+                                  : colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {sug}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                ) : null}
+
+                <Text
+                  style={[
+                    s.fieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  TYPE
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+                >
+                  {ROUTINE_TYPES.map((t) => {
+                    const active = rType === t.key;
+                    return (
+                      <Pressable
+                        key={t.key}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Select routine type ${t.label}`}
+                        accessibilityState={{ selected: active }}
+                        aria-selected={active}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setRType(t.key);
+                        }}
+                        style={({ pressed }) => [
+                          s.typeChip,
+                          {
+                            backgroundColor: active
+                              ? colors.primary
+                              : colors.background,
+                            borderColor: active
+                              ? colors.primary
+                              : colors.border,
+                            opacity: pressed ? 0.72 : 1,
+                          },
+                        ]}
+                      >
+                        {t.key === "potty" ? (
+                          <PixelIcon name="pee" size={14} />
+                        ) : (
+                          <PulseIcon
+                            name={t.icon}
+                            size={14}
+                            color={
+                              active ? colors.primaryForeground : undefined
+                            }
+                          />
+                        )}
+                        <Text
+                          style={[
+                            s.typeChipText,
+                            {
+                              color: active
+                                ? colors.primaryForeground
+                                : colors.foreground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          {t.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                <View style={s.fieldRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.fieldLabel,
                         {
-                          backgroundColor: active ? colors.primary : colors.background,
-                          borderColor: active ? colors.primary : colors.border,
-                          opacity: pressed ? 0.72 : 1,
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
                         },
                       ]}
                     >
-                      <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>{sug}</Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            ) : null}
-
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TYPE</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
-              {ROUTINE_TYPES.map((t) => {
-                const active = rType === t.key;
-                return (
-                  <Pressable
-                    key={t.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Select routine type ${t.label}`}
-                    accessibilityState={{ selected: active }}
-                    aria-selected={active}
-                    onPress={() => { Haptics.selectionAsync(); setRType(t.key); }}
-                    style={({ pressed }) => [
-                      s.typeChip,
-                      {
-                        backgroundColor: active ? colors.primary : colors.background,
-                        borderColor: active ? colors.primary : colors.border,
-                        opacity: pressed ? 0.72 : 1,
-                      },
-                    ]}
-                  >
-                    {t.key === "potty" ? (
-                      <PixelIcon name="pee" size={14} />
-                    ) : (
-                      <PulseIcon name={t.icon} size={14} color={active ? colors.primaryForeground : undefined} />
-                    )}
-                    <Text style={[s.typeChipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            <View style={s.fieldRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
-                <TextInput
-                  accessibilityLabel="Routine time"
-                  value={rTime}
-                  onChangeText={(v) => { setRTime(v); setRTimeError(null); }}
-                  placeholder="7:00 AM"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[s.field, { backgroundColor: colors.background, color: rTimeError ? colors.rose : colors.foreground, borderWidth: rTimeError ? 1 : 0, borderColor: rTimeError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
-                />
-                {rTimeError && (
-                  <Text style={{ color: colors.rose, fontSize: 12, marginTop: 4, fontFamily: "Inter_500Medium" }}>{rTimeError}</Text>
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>OWNER (OPTIONAL)</Text>
-                <TextInput
-                  accessibilityLabel="Routine owner, optional"
-                  value={rOwner}
-                  onChangeText={setROwner}
-                  placeholder="Caregiver name"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-                />
-              </View>
-            </View>
-
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>QUICK TIMES</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
-              {(ROUTINE_TIME_SUGGESTIONS[rType] ?? DEFAULT_TIME_SUGGESTIONS).map((t) => {
-                const active = rTime.trim() === t;
-                return (
-                  <Pressable
-                    key={t}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Set time ${t}`}
-                    accessibilityState={{ selected: active }}
-                    aria-selected={active}
-                    onPress={() => { Haptics.selectionAsync(); setRTime(t); setRTimeError(null); }}
-                    style={({ pressed }) => [
-                      s.ownerQuickChip,
-                      {
-                        backgroundColor: active ? colors.primary : colors.background,
-                        borderColor: active ? colors.primary : colors.border,
-                        opacity: pressed ? 0.72 : 1,
-                      },
-                    ]}
-                  >
-                    <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>{t}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            {caregivers.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
-                {caregivers.map((caregiver) => {
-                  const active = rOwner.trim().toLowerCase() === caregiver.name.trim().toLowerCase();
-                  return (
-                    <Pressable
-                      key={caregiver.name}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Assign ${caregiver.name} as caregiver`}
-                      accessibilityState={{ selected: active }}
-                      aria-selected={active}
-                      onPress={() => { Haptics.selectionAsync(); setROwner(caregiver.name); }}
-                      style={({ pressed }) => [
-                        s.ownerQuickChip,
+                      TIME
+                    </Text>
+                    <TextInput
+                      accessibilityLabel="Routine time"
+                      value={rTime}
+                      onChangeText={(v) => {
+                        setRTime(v);
+                        setRTimeError(null);
+                      }}
+                      placeholder="7:00 AM"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[
+                        s.field,
                         {
-                          backgroundColor: active ? colors.primary : colors.background,
-                          borderColor: active ? colors.primary : colors.border,
-                          opacity: pressed ? 0.72 : 1,
+                          backgroundColor: colors.background,
+                          color: rTimeError ? colors.rose : colors.foreground,
+                          borderWidth: rTimeError ? 1 : 0,
+                          borderColor: rTimeError ? colors.rose : "transparent",
+                          fontFamily: "Inter_500Medium",
                         },
                       ]}
-                    >
-                      <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {caregiver.name}
+                    />
+                    {rTimeError && (
+                      <Text
+                        style={{
+                          color: colors.rose,
+                          fontSize: 12,
+                          marginTop: 4,
+                          fontFamily: "Inter_500Medium",
+                        }}
+                      >
+                        {rTimeError}
                       </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.fieldLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      OWNER (OPTIONAL)
+                    </Text>
+                    <TextInput
+                      accessibilityLabel="Routine owner, optional"
+                      value={rOwner}
+                      onChangeText={setROwner}
+                      placeholder="Caregiver name"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[
+                        s.field,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.foreground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
 
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTE (OPTIONAL)</Text>
-            <TextInput
-              accessibilityLabel="Routine note, optional"
-              value={rNote}
-              onChangeText={setRNote}
-              placeholder="Any extra details..."
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
+                <Text
+                  style={[
+                    s.fieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  QUICK TIMES
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.ownerQuickRow}
+                >
+                  {(
+                    ROUTINE_TIME_SUGGESTIONS[rType] ?? DEFAULT_TIME_SUGGESTIONS
+                  ).map((t) => {
+                    const active = rTime.trim() === t;
+                    return (
+                      <Pressable
+                        key={t}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Set time ${t}`}
+                        accessibilityState={{ selected: active }}
+                        aria-selected={active}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setRTime(t);
+                          setRTimeError(null);
+                        }}
+                        style={({ pressed }) => [
+                          s.ownerQuickChip,
+                          {
+                            backgroundColor: active
+                              ? colors.primary
+                              : colors.background,
+                            borderColor: active
+                              ? colors.primary
+                              : colors.border,
+                            opacity: pressed ? 0.72 : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.ownerQuickText,
+                            {
+                              color: active
+                                ? colors.primaryForeground
+                                : colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {t}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={routineEditId ? "Save routine changes" : "Add routine"}
-              onPress={submitRoutine}
-              style={({ pressed }) => [
-                s.saveBtn,
-                { backgroundColor: colors.primary, opacity: pressed ? 0.76 : 1 },
-              ]}
-            >
-              <Text style={[s.saveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
-            </Pressable>
-            {/* Validation feedback lives next to the submit button so the
+                {caregivers.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.ownerQuickRow}
+                  >
+                    {caregivers.map((caregiver) => {
+                      const active =
+                        rOwner.trim().toLowerCase() ===
+                        caregiver.name.trim().toLowerCase();
+                      return (
+                        <Pressable
+                          key={caregiver.name}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Assign ${caregiver.name} as caregiver`}
+                          accessibilityState={{ selected: active }}
+                          aria-selected={active}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setROwner(caregiver.name);
+                          }}
+                          style={({ pressed }) => [
+                            s.ownerQuickChip,
+                            {
+                              backgroundColor: active
+                                ? colors.primary
+                                : colors.background,
+                              borderColor: active
+                                ? colors.primary
+                                : colors.border,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.ownerQuickText,
+                              {
+                                color: active
+                                  ? colors.primaryForeground
+                                  : colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {caregiver.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+
+                <Text
+                  style={[
+                    s.fieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  NOTE (OPTIONAL)
+                </Text>
+                <TextInput
+                  accessibilityLabel="Routine note, optional"
+                  value={rNote}
+                  onChangeText={setRNote}
+                  placeholder="Any extra details..."
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    s.field,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    routineEditId ? "Save routine changes" : "Add routine"
+                  }
+                  onPress={submitRoutine}
+                  style={({ pressed }) => [
+                    s.saveBtn,
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.76 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.saveBtnText,
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
+                    {routineEditId ? "Save Changes" : "Add Routine"}
+                  </Text>
+                </Pressable>
+                {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}
-            {rLabelError ? null : !rLabel.trim() ? (
-              <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Add a label above to save this routine.
-              </Text>
-            ) : rTimeError ? (
-              <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
-                {rTimeError}
-              </Text>
-            ) : null}
+                {rLabelError ? null : !rLabel.trim() ? (
+                  <Text
+                    style={[
+                      s.sheetSubmitHint,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    Add a label above to save this routine.
+                  </Text>
+                ) : rTimeError ? (
+                  <Text
+                    aria-live="polite"
+                    style={[
+                      s.sheetSubmitHint,
+                      { color: colors.rose, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {rTimeError}
+                  </Text>
+                ) : null}
 
                 {routineEditId && (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Delete routine"
                     onPress={() => deleteRoutine(routineEditId)}
-                    style={({ pressed }) => [s.deleteBtn, { opacity: pressed ? 0.62 : 1 }]}
+                    style={({ pressed }) => [
+                      s.deleteBtn,
+                      { opacity: pressed ? 0.62 : 1 },
+                    ]}
                   >
-                    <Ionicons name="trash-outline" size={15} color={colors.rose} />
-                    <Text style={[s.deleteBtnText, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>Delete Routine</Text>
+                    <Ionicons
+                      name="trash-outline"
+                      size={15}
+                      color={colors.rose}
+                    />
+                    <Text
+                      style={[
+                        s.deleteBtnText,
+                        { color: colors.rose, fontFamily: "Inter_600SemiBold" },
+                      ]}
+                    >
+                      Delete Routine
+                    </Text>
                   </Pressable>
                 )}
               </ScrollView>
@@ -2800,13 +4661,31 @@ export default function CalendarScreen() {
       </Modal>
 
       {/* Add-event modal */}
-      <Modal visible={addOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setAddOpen(false)}>
-        <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
+      <Modal
+        visible={addOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setAddOpen(false)}
+      >
+        <ModalBackdropPressable
+          style={s.modalBackdrop}
+          onPress={() => setAddOpen(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={keyboardOffset}
+            style={s.modalDock}
+          >
             <ModalSheetPressable
               visible={addOpen}
               onRequestClose={() => setAddOpen(false)}
-              style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+              style={[
+                s.modalSheet,
+                {
+                  backgroundColor: colors.card,
+                  paddingBottom: modalSheetBottomPadding,
+                },
+              ]}
             >
               <ScrollView
                 keyboardShouldPersistTaps="handled"
@@ -2816,121 +4695,307 @@ export default function CalendarScreen() {
                 contentContainerStyle={s.modalFormContent}
               >
                 <View style={s.modalHandle} />
-                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{eventEditId ? "Edit Event" : "New Event"}</Text>
+                <Text
+                  accessibilityRole="header"
+                  style={[
+                    s.modalTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
+                  {eventEditId ? "Edit Event" : "New Event"}
+                </Text>
 
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
-            <TextInput
-              accessibilityLabel="Event title"
-              value={evTitle}
-              onChangeText={(value) => { setEvTitle(value); setEvTitleError(null); }}
-              placeholder="Beach day, vet visit, hike..."
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.field, { backgroundColor: colors.background, color: evTitleError ? colors.rose : colors.foreground, borderWidth: evTitleError ? 1 : 0, borderColor: evTitleError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
-            />
-            {evTitleError ? (
-              <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
-                {evTitleError}
-              </Text>
-            ) : null}
+                <Text
+                  style={[
+                    s.fieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  TITLE
+                </Text>
+                <TextInput
+                  accessibilityLabel="Event title"
+                  value={evTitle}
+                  onChangeText={(value) => {
+                    setEvTitle(value);
+                    setEvTitleError(null);
+                  }}
+                  placeholder="Beach day, vet visit, hike..."
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    s.field,
+                    {
+                      backgroundColor: colors.background,
+                      color: evTitleError ? colors.rose : colors.foreground,
+                      borderWidth: evTitleError ? 1 : 0,
+                      borderColor: evTitleError ? colors.rose : "transparent",
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
+                {evTitleError ? (
+                  <Text
+                    aria-live="polite"
+                    style={[
+                      s.sheetSubmitHint,
+                      { color: colors.rose, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {evTitleError}
+                  </Text>
+                ) : null}
 
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TYPE</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
-              {EVENT_TYPES.map((t) => {
-                const active = evType === t.key;
-                return (
-                  <Pressable
-                    key={t.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Select event type ${t.label}`}
-                    accessibilityState={{ selected: active }}
-                    aria-selected={active}
-                    onPress={() => { Haptics.selectionAsync(); setEvType(t.key); }}
-                    style={({ pressed }) => [
-                      s.typeChip,
+                <Text
+                  style={[
+                    s.fieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  TYPE
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+                >
+                  {EVENT_TYPES.map((t) => {
+                    const active = evType === t.key;
+                    return (
+                      <Pressable
+                        key={t.key}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Select event type ${t.label}`}
+                        accessibilityState={{ selected: active }}
+                        aria-selected={active}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setEvType(t.key);
+                        }}
+                        style={({ pressed }) => [
+                          s.typeChip,
+                          {
+                            backgroundColor: active
+                              ? colors.primary
+                              : colors.background,
+                            borderColor: active
+                              ? colors.primary
+                              : colors.border,
+                            opacity: pressed ? 0.72 : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={EVENT_ICON[t.key] ?? "calendar"}
+                          size={14}
+                          color={
+                            active
+                              ? colors.primaryForeground
+                              : colors.mutedForeground
+                          }
+                        />
+                        <Text
+                          style={[
+                            s.typeChipText,
+                            {
+                              color: active
+                                ? colors.primaryForeground
+                                : colors.foreground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          {t.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                <View style={s.fieldRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.fieldLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      DATE
+                    </Text>
+                    <TextInput
+                      accessibilityLabel="Event date"
+                      value={evDate}
+                      onChangeText={(raw) => {
+                        setDateError(null);
+                        // Auto-insert dashes: 2026 -> 2026- -> 2026-06- -> 2026-06-15
+                        const digits = raw.replace(/\D/g, "").slice(0, 8);
+                        let fmt = digits;
+                        if (digits.length > 4)
+                          fmt = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+                        if (digits.length > 6)
+                          fmt = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
+                        setEvDate(fmt);
+                      }}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="number-pad"
+                      maxLength={10}
+                      style={[
+                        s.field,
+                        {
+                          backgroundColor: colors.background,
+                          color: dateError ? colors.rose : colors.foreground,
+                          borderWidth: dateError ? 1 : 0,
+                          borderColor: dateError ? colors.rose : "transparent",
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    />
+                    {dateError && (
+                      <Text
+                        style={{
+                          color: colors.rose,
+                          fontSize: 12,
+                          marginTop: 4,
+                          fontFamily: "Inter_500Medium",
+                        }}
+                      >
+                        {dateError}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        s.fieldLabel,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      TIME
+                    </Text>
+                    <TextInput
+                      accessibilityLabel="Event time"
+                      value={evTime}
+                      onChangeText={(value) => {
+                        setEvTime(value);
+                        setEvTimeError(null);
+                      }}
+                      placeholder="9:00 AM"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[
+                        s.field,
+                        {
+                          backgroundColor: colors.background,
+                          color: evTimeError ? colors.rose : colors.foreground,
+                          borderWidth: evTimeError ? 1 : 0,
+                          borderColor: evTimeError
+                            ? colors.rose
+                            : "transparent",
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    />
+                    {evTimeError ? (
+                      <Text
+                        style={{
+                          color: colors.rose,
+                          fontSize: 12,
+                          marginTop: 4,
+                          fontFamily: "Inter_500Medium",
+                        }}
+                      >
+                        {evTimeError}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+
+                <Text
+                  style={[
+                    s.fieldLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  LOCATION (OPTIONAL)
+                </Text>
+                <TextInput
+                  accessibilityLabel="Event location, optional"
+                  value={evLocation}
+                  onChangeText={setEvLocation}
+                  placeholder="Where?"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    s.field,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    eventEditId ? "Save event changes" : "Add event to calendar"
+                  }
+                  onPress={submitEvent}
+                  style={({ pressed }) => [
+                    s.saveBtn,
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.76 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.saveBtnText,
                       {
-                        backgroundColor: active ? colors.primary : colors.background,
-                        borderColor: active ? colors.primary : colors.border,
-                        opacity: pressed ? 0.72 : 1,
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_700Bold",
                       },
                     ]}
                   >
-                    <Ionicons name={EVENT_ICON[t.key] ?? "calendar"} size={14} color={active ? colors.primaryForeground : colors.mutedForeground} />
-                    <Text style={[s.typeChipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            <View style={s.fieldRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>DATE</Text>
-                <TextInput
-                  accessibilityLabel="Event date"
-                  value={evDate}
-                  onChangeText={(raw) => {
-                    setDateError(null);
-                    // Auto-insert dashes: 2026 -> 2026- -> 2026-06- -> 2026-06-15
-                    const digits = raw.replace(/\D/g, "").slice(0, 8);
-                    let fmt = digits;
-                    if (digits.length > 4) fmt = `${digits.slice(0, 4)}-${digits.slice(4)}`;
-                    if (digits.length > 6) fmt = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
-                    setEvDate(fmt);
-                  }}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="number-pad"
-                  maxLength={10}
-                  style={[s.field, { backgroundColor: colors.background, color: dateError ? colors.rose : colors.foreground, borderWidth: dateError ? 1 : 0, borderColor: dateError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
-                />
-                {dateError && (
-                  <Text style={{ color: colors.rose, fontSize: 12, marginTop: 4, fontFamily: "Inter_500Medium" }}>{dateError}</Text>
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
-                <TextInput
-                  accessibilityLabel="Event time"
-                  value={evTime}
-                  onChangeText={(value) => { setEvTime(value); setEvTimeError(null); }}
-                  placeholder="9:00 AM"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[s.field, { backgroundColor: colors.background, color: evTimeError ? colors.rose : colors.foreground, borderWidth: evTimeError ? 1 : 0, borderColor: evTimeError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
-                />
-                {evTimeError ? (
-                  <Text style={{ color: colors.rose, fontSize: 12, marginTop: 4, fontFamily: "Inter_500Medium" }}>{evTimeError}</Text>
-                ) : null}
-              </View>
-            </View>
-
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LOCATION (OPTIONAL)</Text>
-            <TextInput
-              accessibilityLabel="Event location, optional"
-              value={evLocation}
-              onChangeText={setEvLocation}
-              placeholder="Where?"
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={eventEditId ? "Save event changes" : "Add event to calendar"}
-              onPress={submitEvent}
-              style={({ pressed }) => [
-                s.saveBtn,
-                { backgroundColor: colors.primary, opacity: pressed ? 0.76 : 1 },
-              ]}
-            >
-              <Text style={[s.saveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{eventEditId ? "Save Changes" : "Add to Calendar"}</Text>
-            </Pressable>
-            {/* Validation feedback lives next to the submit button so the
+                    {eventEditId ? "Save Changes" : "Add to Calendar"}
+                  </Text>
+                </Pressable>
+                {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}
                 {evTitleError ? null : !evTitle.trim() ? (
-                  <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <Text
+                    style={[
+                      s.sheetSubmitHint,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
                     Add a title above to save this event.
                   </Text>
                 ) : dateError || evTimeError ? (
-                  <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    aria-live="polite"
+                    style={[
+                      s.sheetSubmitHint,
+                      { color: colors.rose, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
                     {dateError ?? evTimeError}
                   </Text>
                 ) : null}
@@ -2947,11 +5012,28 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
 
-  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
-  headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 18,
+  },
+  headerIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
-  addBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  addBtn: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   discoverCard: {
     flexDirection: "row",
@@ -2964,23 +5046,67 @@ const s = StyleSheet.create({
     shadowRadius: 18,
     elevation: 4,
   },
-  discoverIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  discoverIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   discoverTitle: { fontSize: 16 },
   discoverSub: { fontSize: 13, marginTop: 1 },
 
-  discoverPanel: { borderRadius: 20, padding: 14, marginTop: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
+  discoverPanel: {
+    borderRadius: 20,
+    padding: 14,
+    marginTop: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 2,
+  },
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   discoverInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
-  discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
+  discoverGo: {
+    paddingHorizontal: 18,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 64,
+  },
   discoverGoText: { fontSize: 14 },
-  discoverHint: { fontSize: 12, lineHeight: 17, marginTop: 10, marginBottom: 4 },
+  discoverHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 10,
+    marginBottom: 4,
+  },
 
-  sugRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
-  sugIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  sugRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+  },
+  sugIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   sugTitle: { fontSize: 14.5 },
   sugMeta: { fontSize: 12, marginTop: 2 },
   sugNote: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
-  sugAdd: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  sugAdd: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   commandDeckCard: {
     marginBottom: 10,
@@ -3042,11 +5168,12 @@ const s = StyleSheet.create({
   },
   commandDeckStats: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   commandDeckStatChip: {
     flex: 1,
-    minWidth: 0,
+    minWidth: 72,
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 10,
@@ -3172,10 +5299,21 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   monthWeekdayRow: { flexDirection: "row", marginBottom: 4 },
-  monthWeekdayLabel: { flex: 1, textAlign: "center", fontSize: 9.5, letterSpacing: 0.4 },
+  monthWeekdayLabel: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 9.5,
+    letterSpacing: 0.4,
+  },
   monthWeekRow: { flexDirection: "row" },
   monthDayCell: { flex: 1, alignItems: "center", paddingVertical: 3 },
-  monthDayCircle: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  monthDayCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   monthDayNumber: { fontSize: 13.5 },
   monthDayDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
   monthOpenBtn: {
@@ -3298,7 +5436,12 @@ const s = StyleSheet.create({
   },
   scheduleAddEventText: { fontSize: 13 },
   scheduleSampleRow: { opacity: 0.62 },
-  scheduleSampleNote: { fontSize: 11.5, lineHeight: 16, marginTop: 10, textAlign: "center" },
+  scheduleSampleNote: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 10,
+    textAlign: "center",
+  },
   scheduleStatus: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -3421,15 +5564,30 @@ const s = StyleSheet.create({
   },
 
   plansBoardCard: { marginTop: 14 },
-  routineHeaderAccessory: { flexDirection: "row", alignItems: "center", gap: 10 },
-  sectionAddBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  routineHeaderAccessory: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  sectionAddBtn: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   routineProgress: { fontSize: 12, marginTop: 1 },
 
   emptyPanel: { borderRadius: 14, padding: 24, alignItems: "center", gap: 12 },
   emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
   upcomingBoardCard: { marginTop: 28, marginBottom: 18 },
 
-  dayHeading: { fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  dayHeading: {
+    fontSize: 13,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
   eventPanel: {
     flexDirection: "row",
     alignItems: "center",
@@ -3439,37 +5597,96 @@ const s = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
-  eventIcon: { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  eventTitleLine: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  eventIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  eventTitleLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
   eventTitle: { fontSize: 15 },
-  tag: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
+  tag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 7,
+  },
   tagText: { fontSize: 9, letterSpacing: 0.3 },
   eventMeta: { fontSize: 12.5, marginTop: 3 },
   eventNote: { fontSize: 12.5, lineHeight: 17, marginTop: 4 },
   eventActions: { alignItems: "center" },
-  removeBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  removeBtn: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   reminderList: { marginTop: 8 },
   reminderSection: { marginTop: 10 },
-  reminderSectionLabel: { fontSize: 11, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 3 },
+  reminderSectionLabel: {
+    fontSize: 11,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    marginBottom: 3,
+  },
   reminderRow: { flexDirection: "row", gap: 11, paddingVertical: 11 },
-  focusedReminderRow: { borderWidth: 2, borderRadius: 13, paddingHorizontal: 9 },
-  reminderIcon: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  focusedReminderRow: {
+    borderWidth: 2,
+    borderRadius: 13,
+    paddingHorizontal: 9,
+  },
+  reminderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   reminderMain: { flex: 1, minWidth: 0 },
-  reminderTitleLine: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  reminderTitleLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
   reminderTitle: { fontSize: 14.5, flexShrink: 1 },
   reminderWhen: { fontSize: 11.5, lineHeight: 16, marginBottom: 2 },
   reminderPill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  reminderPillText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  reminderPillText: {
+    fontSize: 9.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
   reminderDetail: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
   reminderAction: { fontSize: 12.5, lineHeight: 18, marginTop: 4 },
   reminderMore: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
   reminderNext: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
   reminderReadiness: { fontSize: 11.5, lineHeight: 16, marginTop: 7 },
-  reminderNotificationPanel: { borderRadius: 13, borderWidth: 1, padding: 11, marginTop: 10, gap: 5 },
+  reminderNotificationPanel: {
+    borderRadius: 13,
+    borderWidth: 1,
+    padding: 11,
+    marginTop: 10,
+    gap: 5,
+  },
   reminderNotificationTitle: { fontSize: 12.5, lineHeight: 17 },
   reminderNotificationText: { fontSize: 11.5, lineHeight: 16 },
-  reminderPreferenceActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 7 },
+  reminderPreferenceActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 7,
+  },
   reminderPreferenceButton: {
     flexGrow: 1,
     flexBasis: "46%",
@@ -3483,7 +5700,14 @@ const s = StyleSheet.create({
     gap: 7,
   },
   reminderPreferenceButtonText: { flex: 1, fontSize: 11.5, lineHeight: 15 },
-  reminderEmpty: { flexDirection: "row", alignItems: "center", gap: 9, borderRadius: 14, padding: 12, marginTop: 12 },
+  reminderEmpty: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 12,
+  },
   reminderEmptyText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
 
   responsibilityPanel: {
@@ -3493,11 +5717,24 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   responsibilityTop: { flexDirection: "row", alignItems: "center", gap: 10 },
-  responsibilityIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  responsibilityIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   responsibilityTitle: { fontSize: 15.5 },
   responsibilitySummary: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
   responsibilityMetrics: { flexDirection: "row", gap: 8, marginTop: 12 },
-  responsibilityMetric: { flex: 1, minHeight: 58, borderRadius: 14, alignItems: "center", justifyContent: "center", padding: 8 },
+  responsibilityMetric: {
+    flex: 1,
+    minHeight: 58,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+  },
   responsibilityMetricValue: { fontSize: 16 },
   responsibilityMetricLabel: { fontSize: 10.5, marginTop: 2 },
   responsibilityNext: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
@@ -3514,7 +5751,13 @@ const s = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 8,
   },
-  ownerAvatar: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  ownerAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   ownerAvatarText: { fontSize: 13 },
   ownerLoadName: { fontSize: 12.5 },
   ownerLoadCount: { fontSize: 11.5, marginTop: 1 },
@@ -3522,7 +5765,13 @@ const s = StyleSheet.create({
   timeline: {},
   timelineRow: { flexDirection: "row", gap: 12 },
   rail: { width: 24, alignItems: "center" },
-  railDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, marginTop: 18 },
+  railDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    marginTop: 18,
+  },
   railLine: { width: 2, flex: 1, marginVertical: 2 },
   routineCard: {
     flex: 1,
@@ -3545,16 +5794,33 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  routineIconWrap: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  routineIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   routineMain: { flex: 1, minWidth: 0 },
   routineLabel: { fontSize: 15 },
   routineOwner: { fontSize: 12.5, marginTop: 2 },
-  routineMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  routineMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
   routineNote: { fontSize: 12, lineHeight: 16, marginTop: 3 },
   routineActions: { width: 82, alignItems: "flex-end", gap: 5 },
   routineRowPill: { alignSelf: "flex-end" },
   routineTime: { fontSize: 13 },
-  routineDoneBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  routineDoneBtn: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   routineFeedback: {
     position: "absolute",
     left: 16,
@@ -3575,7 +5841,12 @@ const s = StyleSheet.create({
   routineFeedbackCopy: { flex: 1, minWidth: 0 },
   routineFeedbackTitle: { fontSize: 14.5 },
   routineFeedbackSub: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
-  routineFeedbackActions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8 },
+  routineFeedbackActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
   routineFeedbackButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     minWidth: 72,
@@ -3589,22 +5860,79 @@ const s = StyleSheet.create({
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   modalDock: { flex: 1, justifyContent: "flex-end" },
-  modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, maxHeight: "92%" },
+  modalSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 22,
+    maxHeight: "92%",
+  },
   modalFormScroll: { flexShrink: 1 },
   modalFormContent: { paddingBottom: 4 },
-  modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
+  modalHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    marginBottom: 16,
+  },
   modalTitle: { fontSize: 22, marginBottom: 16 },
-  fieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
-  field: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  fieldLabel: {
+    fontSize: 11,
+    letterSpacing: 0.6,
+    marginBottom: 7,
+    marginTop: 14,
+  },
+  field: {
+    borderRadius: 13,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+  },
   fieldRow: { flexDirection: "row", gap: 12 },
-  typeChip: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
+  typeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
   typeChipText: { fontSize: 13 },
   ownerQuickRow: { gap: 8, paddingTop: 10, paddingRight: 20 },
-  ownerQuickChip: { borderWidth: 1, borderRadius: 11, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 12, paddingVertical: 8 },
+  ownerQuickChip: {
+    borderWidth: 1,
+    borderRadius: 11,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
   ownerQuickText: { fontSize: 12.5 },
-  saveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
+  saveBtn: {
+    marginTop: 24,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 15,
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   saveBtnText: { fontSize: 15.5 },
-  sheetSubmitHint: { fontSize: 12, lineHeight: 16, marginTop: 10, textAlign: "center" },
-  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingVertical: 10 },
+  sheetSubmitHint: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 10,
+    textAlign: "center",
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 14,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 10,
+  },
   deleteBtnText: { fontSize: 14 },
 });

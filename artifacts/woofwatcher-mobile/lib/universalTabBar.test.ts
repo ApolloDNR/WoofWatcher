@@ -74,6 +74,17 @@ test("focused Plans, Health, and More child presses replace exactly once with th
     },
     {
       input: {
+        tabName: "calendar",
+        focused: true,
+        pathname: "/calendar",
+        plansSection: "reminders",
+        healthSection: "overview",
+        moreSection: "root",
+      },
+      root: "/calendar",
+    },
+    {
+      input: {
         tabName: "health",
         focused: true,
         pathname: "/health",
@@ -247,6 +258,7 @@ test("maps the canonical model to Expo tabs with one bounded stateful-root liste
     /tab\.name === "more" \|\|[\s\S]{0,100}tab\.name === "calendar" \|\|[\s\S]{0,100}tab\.name === "health"[\s\S]{0,220}tabPress:[\s\S]{0,220}handleUniversalTabPress/,
   );
   assert.match(layout, /plansItem:\s*activePlansItem/);
+  assert.match(layout, /plansSection:\s*activePlansSection/);
   assert.match(layout, /healthSection:\s*activeHealthSection/);
   assert.match(layout, /moreSection:\s*activeMoreSection/);
   assert.match(layout, /focused:\s*navigation\.isFocused\(\)/);

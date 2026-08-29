@@ -110,7 +110,7 @@ test("all four Undo surfaces synchronously reject duplicate deletes and keep out
       new RegExp(`disabled=\\{${surface.busy}\\}`, "g"),
     )?.length ?? 0;
     const accessibilityCount = surface.source.match(
-      new RegExp(`accessibilityState=\\{\\{ disabled: ${surface.busy} \\}\\}`, "g"),
+      new RegExp(`accessibilityState=\\{\\{\\s*disabled:\\s*${surface.busy},?\\s*\\}\\}`, "g"),
     )?.length ?? 0;
     assert.ok(
       disabledCount >= 2,

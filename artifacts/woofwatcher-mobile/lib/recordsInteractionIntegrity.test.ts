@@ -46,8 +46,14 @@ test("Records admits every text and file share through one awaited exclusive gat
     "const openRecordsFileProofMission =",
   );
 
-  assert.match(records, /const recordsShareGate = recordsShareGateRef\.current/);
-  assert.match(records, /const \[recordsShareBusy, setRecordsShareBusy\] = useState\(false\)/);
+  assert.match(
+    records,
+    /const recordsShareGate = recordsShareGateRef\.current/,
+  );
+  assert.match(
+    records,
+    /const \[recordsShareBusy, setRecordsShareBusy\] = useState\(false\)/,
+  );
   assert.match(
     records,
     /const runRecordsShare = async[\s\S]*await recordsShareGate\.run/,
@@ -115,20 +121,21 @@ test("Care Pass Save and share confirms durable persistence before sharing or hi
   assert.match(carePassSave, /await runRecordsShare/);
   assert.match(records, /pendingCarePassArtifactId/);
   assert.match(records, /carePassSaveShareNotice/);
-  assert.match(records, /carePassSaveShareBusy \? "Saving & sharing/);
+  assert.match(records, /carePassSaveShareBusy\s*\?\s*"Saving & sharing/);
 });
 
 test("Report presets disclose current-data regeneration in visible, accessibility, and share copy", () => {
   const records = recordsSource();
   const history = sourceBetween(
     records,
-    "title=\"Saved Report Presets\"",
+    'title="Saved Report Presets"',
     "{/* Progress report */}",
   );
+  const normalizedHistory = history.replace(/\s+/g, " ");
 
-  assert.match(history, /not historical snapshots/i);
-  assert.match(history, /current household-visible data/i);
-  assert.match(history, /current-data preset/i);
+  assert.match(normalizedHistory, /not historical snapshots/i);
+  assert.match(normalizedHistory, /current household-visible data/i);
+  assert.match(normalizedHistory, /current-data preset/i);
   assert.match(history, /accessibilityLabel=\{`Share current/);
   assert.match(records, /REPORT_PRESET_REGENERATION_NOTE/);
   assert.match(
@@ -186,7 +193,10 @@ test("Records native controls expose explicit role, labels, and selected or disa
   ]) {
     const labelIndex = records.indexOf(`accessibilityLabel="${label}"`);
     assert.notEqual(labelIndex, -1, `missing accessibility label: ${label}`);
-    const controlSource = records.slice(Math.max(0, labelIndex - 180), labelIndex + 300);
+    const controlSource = records.slice(
+      Math.max(0, labelIndex - 180),
+      labelIndex + 300,
+    );
     assert.match(controlSource, /accessibilityRole="button"/, `${label} role`);
     assert.match(controlSource, /accessibilityState=/, `${label} state`);
   }
@@ -204,7 +214,7 @@ test("Records native controls expose explicit role, labels, and selected or disa
   );
   assert.match(
     records,
-    /accessibilityLabel=\{recordEditId \? "Save record changes" : "Save new record"\}/,
+    /accessibilityLabel=\{\s*recordEditId\s*\?\s*"Save record changes"\s*:\s*"Save new record"\s*\}/,
   );
   assert.match(
     records,

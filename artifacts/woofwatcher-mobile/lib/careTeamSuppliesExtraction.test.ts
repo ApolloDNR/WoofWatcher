@@ -338,7 +338,7 @@ test("Care Team prompts preserve the action name while a confirm operation is bu
 
   assert.match(
     promptModal,
-    /accessibilityLabel=\{busy\s*\?\s*`\$\{confirmLabel\} in progress`\s*:\s*confirmLabel\}/,
+    /accessibilityLabel=\{\s*busy\s*\?\s*`\$\{confirmLabel\} in progress`\s*:\s*confirmLabel\s*\}/,
   );
   assert.match(
     promptModal,

@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import { reloadAppAsync } from "expo";
 import React, { useState } from "react";
 import {
@@ -105,10 +105,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           ]}
         >
           <Text
-            style={[
-              styles.buttonText,
-              { color: colors.primaryForeground },
-            ]}
+            style={[styles.buttonText, { color: colors.primaryForeground }]}
           >
             Try Again
           </Text>
@@ -141,7 +138,10 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                   { borderBottomColor: colors.border },
                 ]}
               >
-                <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                <Text
+                  accessibilityRole="header"
+                  style={[styles.modalTitle, { color: colors.foreground }]}
+                >
                   Error Details
                 </Text>
               </View>

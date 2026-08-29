@@ -195,6 +195,11 @@ test("Privacy and WoofGuide owner actions keep 48-point frames", () => {
 
 test("Avatar Studio's compact editors remain real 48-point controls", () => {
   const avatar = read("components", "more", "AvatarStudioScreen.tsx");
+  const ownerSpritePanel = read(
+    "components",
+    "owner",
+    "AvatarSpriteProductionPanel.tsx",
+  );
 
   expectMinimumHeight(avatar, "tab");
   expectMinimumHeight(avatar, "referenceRemoveButton");
@@ -202,7 +207,7 @@ test("Avatar Studio's compact editors remain real 48-point controls", () => {
   expectMinimumHeight(avatar, "primaryBtn");
   expectMinimumSquare(avatar, "swatch");
   expectMinimumHeight(avatar, "optionPill");
-  expectMinimumHeight(avatar, "productionQaButton");
+  expectMinimumHeight(ownerSpritePanel, "qaButton");
   expectMinimumHeight(avatar, "moodChip");
 });
 

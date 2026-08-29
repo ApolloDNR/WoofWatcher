@@ -291,6 +291,6 @@ test("keeps the top-level Log tab header root-like and lets its instruction wrap
   assert.match(header, /title="Log"/);
   assert.doesNotMatch(header, /\bback(?:\s|=)/);
   assert.doesNotMatch(header, /\bonBack=/);
-  assert.match(source, /<Text style=\{\[s\.quickLogActionSub,/);
-  assert.doesNotMatch(source, /<Text numberOfLines=\{1\} style=\{\[s\.quickLogActionSub,/);
+  assert.match(source, /<Text\s+style=\{\[\s*s\.quickLogActionSub,/);
+  assert.doesNotMatch(source, /<Text\s+numberOfLines=\{1\}\s+style=\{\[\s*s\.quickLogActionSub,/);
 });

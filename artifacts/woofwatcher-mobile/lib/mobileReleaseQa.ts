@@ -1056,7 +1056,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         label: "Avatar Studio sprite stage",
         route: "/more?section=avatar-studio",
         expected:
-          "Switch through every live template and confirm crisp pixel scaling, one dog, visible idle/walk motion, and truthful Template-fitted or Pack pending labels.",
+          "Switch through every live template and confirm crisp pixel scaling, one dog, visible idle/walk motion, and truthful Tailored fit or Standard preview labels.",
         proof:
           "Attach iOS and Android Avatar Studio screenshots plus a gait/crop note before marking proof-backed.",
       },
@@ -1199,7 +1199,7 @@ function storeScreenshotEvidenceFor(item: StoreScreenshotChecklistItem): string[
   ];
 
   if (isAvatarStudioStoreScreen(item)) {
-    evidence.push("Avatar Studio Template overlay readiness panel with Template-fitted and Pack pending labels visible.");
+    evidence.push("Avatar Studio How accessories fit panel with Tailored fit and Standard preview labels visible.");
   }
 
   if (isHealthWatchStoreScreen(item)) {
@@ -1223,7 +1223,7 @@ function storeScreenshotRouteChecklistFor(
   ];
 
   if (isAvatarStudioStoreScreen(item)) {
-    expected.push("Keep Template-fitted and Pack pending readiness labels visible so the PixelLab overlay truth is clear.");
+    expected.push("Keep Tailored fit and Standard preview labels visible so each accessory preview is represented truthfully.");
   }
 
   if (isHealthWatchStoreScreen(item)) {
@@ -1259,8 +1259,8 @@ function storeScreenshotVerificationStepsFor(
   ];
 
   if (isAvatarStudioStoreScreen(item)) {
-    steps.push("Confirm Template-fitted labels are visible for Shepherd/Phoenix overlays.");
-    steps.push("Confirm Pack pending labels stay visible for accessories or templates whose overlay packs are not finished.");
+    steps.push("Confirm Tailored fit labels are visible for accessories shaped to the selected breed.");
+    steps.push("Confirm Standard preview labels stay visible wherever an accessory uses the shared preview treatment.");
   }
 
   if (isHealthWatchStoreScreen(item)) {
@@ -1282,7 +1282,7 @@ function storeScreenshotSetupStepsFor(item: StoreScreenshotChecklistItem): strin
   ];
 
   if (isAvatarStudioStoreScreen(item)) {
-    steps.push("Open Customize and keep Template overlay readiness visible before capturing the store screenshot.");
+    steps.push("Open Customize and keep How accessories fit visible before capturing the store screenshot.");
   }
 
   if (isHealthWatchStoreScreen(item)) {
@@ -1304,7 +1304,7 @@ function storeScreenshotAcceptanceCriteriaFor(item: StoreScreenshotChecklistItem
   ];
 
   if (isAvatarStudioStoreScreen(item)) {
-    criteria.push("Avatar Studio screenshot preserves overlay-fit truth instead of implying every accessory pack is finished.");
+    criteria.push("Avatar Studio screenshot distinguishes tailored fits from standard previews instead of implying every accessory is tailored.");
   }
 
   if (isHealthWatchStoreScreen(item)) {
@@ -1320,7 +1320,7 @@ function storeScreenshotAcceptanceCriteriaFor(item: StoreScreenshotChecklistItem
 
 function storeScreenshotFailureEscalationFor(item: StoreScreenshotChecklistItem): string {
   if (isAvatarStudioStoreScreen(item)) {
-    return `Mark Needs tune if ${item.screen} hides Template overlay readiness, blurs the pixel avatar, or implies unfinished accessory packs are store-ready.`;
+    return `Mark Needs tune if ${item.screen} hides How accessories fit, blurs the pixel avatar, or implies every accessory preview is tailored.`;
   }
 
   if (isHealthWatchStoreScreen(item)) {

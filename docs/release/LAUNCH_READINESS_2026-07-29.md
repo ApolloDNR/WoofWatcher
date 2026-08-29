@@ -1,13 +1,18 @@
 # WoofWatcher — Launch Readiness Scorecard (2026-07-29)
 
-Last verified: 2026-07-30.
+> **Historical snapshot — not the current release authority.** This scorecard
+> preserves the July 2026 audit context. For the current verified checkpoint,
+> exact test/export evidence, open native gates, and approval state, use
+> [`docs/release/STATUS.md`](./STATUS.md).
 
-The single, honest, production-standard answer to: *"Is this a solid, monetizable
-product ready for the App Store, and what exactly is left?"*
+Historical verification date: 2026-07-30. Current metrics in the production
+quality table have been refreshed where leaving the July values would conflict
+with the release status; the remaining product and business analysis is dated
+context.
 
-Every claim here was verified this session — code run, tests executed,
-screenshots rendered and inspected, materials read line by line, monetization
-path traced through the actual code. Nothing is assumed.
+This document originally answered: *"Is this a solid, monetizable product ready
+for the App Store, and what exactly is left?"* It does not supersede the current
+status file or constitute release approval.
 
 ---
 
@@ -36,12 +41,14 @@ date/jurisdiction confirmation, and Apollo's approval of the exact binary.
 
 | Check | Result |
 |---|---|
-| Workspace typecheck (all 5 packages) | **Clean** — 0 errors |
-| Focused test suite | **819 / 819 pass** on Node 24.14.0 with pnpm 10.24.0 |
-| Full CI build | **Passed** — all workspace typechecks/builds, Expo export, runtime smoke, and live-preview proof |
-| Web export smoke | **Passed** — 267 files exported |
-| Runtime route smoke | **Passed** — all 13 user routes |
-| Production routes / dead ends | **Passed** — production policy hides provider-only household, event, future-dog, sync, account, push, AI, and payment controls while preserving internal QA surfaces |
+| Workspace typecheck | **Clean** — full workspace typecheck and CI-safe builds pass locally |
+| Focused test suite | **Passed** — 35/35 mounted-renderer tests plus 2,279/2,279 repository tests; 2,314/2,314 total with zero failures or skips |
+| Candidate build gate | **Passed locally** — workspace builds, Expo compatibility, strict production export, runtime smoke, and live-preview proof |
+| Strict consumer web export | **Passed** — 212 files / 1,924 modules; 4.62 MB entry bundle |
+| Runtime route smoke | **Passed** — 50/50 routes |
+| Live-preview proof | **Passed** — 59/59 checks |
+| Production consumer boundary | **Passed** — provider-only features remain hidden, and owner-only QA, launch, avatar-production, records-provider, and privacy runtimes are excluded from the production consumer bundle |
+| Native export compile proof | **Passed** — production-profile iOS and Android Expo exports compile, but they are unsigned bundling proof, not signed binaries or physical-device evidence |
 | Store-material validation | **Passed** — six 1290×2796 iPhone shots, six 1080×1920 Play shots, 1024×500 feature graphic, and 512×512 Play icon |
 | Honesty of unavailable features | **Store rule locked** — no positive cloud sync, account, push, live AI, or purchase claim is allowed in free v1 |
 | Data-safety laws | **Held** — erase-generation guard, optimistic+reconciled writes, storage-health warnings surfaced, idempotent creates, and picked care photos copied to durable app storage before persistence |

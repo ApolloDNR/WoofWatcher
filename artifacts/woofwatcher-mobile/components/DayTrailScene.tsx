@@ -1,6 +1,18 @@
 import React, { useMemo, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type LayoutChangeEvent,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+import Animated, {
+  FadeInDown,
+  useReducedMotion,
+} from "react-native-reanimated";
 
 import { DayPhaseWash } from "@/components/DayPhaseWash";
 import { EntryTypeIcon, entryTypeColor } from "@/components/EntryTypeIcon";
@@ -64,12 +76,21 @@ function samplePath(width: number, height: number): { x: number; y: number }[] {
   const pts = ANCHORS.map((a) => ({ x: a.x * width, y: a.y * height }));
   const out: { x: number; y: number }[] = [pts[0]];
   for (let s = 0; s < pts.length - 2; s++) {
-    const p0 = s === 0 ? pts[0] : { x: (pts[s].x + pts[s + 1].x) / 2, y: (pts[s].y + pts[s + 1].y) / 2 };
+    const p0 =
+      s === 0
+        ? pts[0]
+        : {
+            x: (pts[s].x + pts[s + 1].x) / 2,
+            y: (pts[s].y + pts[s + 1].y) / 2,
+          };
     const c = pts[s + 1];
     const p1 =
       s === pts.length - 3
         ? pts[s + 2]
-        : { x: (pts[s + 1].x + pts[s + 2].x) / 2, y: (pts[s + 1].y + pts[s + 2].y) / 2 };
+        : {
+            x: (pts[s + 1].x + pts[s + 2].x) / 2,
+            y: (pts[s + 1].y + pts[s + 2].y) / 2,
+          };
     for (let k = 1; k <= SAMPLES_PER_SEGMENT; k++) {
       const t = k / SAMPLES_PER_SEGMENT;
       const mt = 1 - t;
@@ -89,9 +110,18 @@ const IDLE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 
 const MAX_STOPS = 6;
 
-export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props) {
+export function DayTrailScene({
+  stops,
+  petName,
+  now,
+  onPressStop,
+  style,
+}: Props) {
   const colors = useColors();
-  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const reduced = useReducedMotion();
+  const [size, setSize] = useState<{ width: number; height: number } | null>(
+    null,
+  );
 
   const shown = stops.slice(-MAX_STOPS);
 
@@ -105,11 +135,13 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
     // waiting" guidance card overlays the scene's bottom band on empty days
     // and was covering the twin's paws at the trailhead.
     const waypoints = shown.map((stop, index) => {
-      const t = shown.length === 1 ? 0.16 : 0.05 + (0.58 * index) / (shown.length - 1);
+      const t =
+        shown.length === 1 ? 0.16 : 0.05 + (0.58 * index) / (shown.length - 1);
       const p = path[Math.round(t * last)];
       return { stop, x: p.x, y: p.y };
     });
-    const twinT = shown.length === 0 ? 0.24 : shown.length === 1 ? 0.28 : 0.05 + 0.58 + 0.1;
+    const twinT =
+      shown.length === 0 ? 0.24 : shown.length === 1 ? 0.28 : 0.05 + 0.58 + 0.1;
     const twinPoint = path[Math.min(last, Math.round(twinT * last))];
     return { waypoints, twinPoint };
   }, [size, shown]);
@@ -122,7 +154,11 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
   const spriteAsset = shown.length > 0 ? WALK_SPRITE : IDLE_SPRITE;
   const spriteTrack = shown.length > 0 ? WALK_TRACK : IDLE_TRACK;
   // The trail climbs "into" the map: the farther along, the smaller the twin.
-  const spriteSize = layout ? Math.round(46 + 28 * (layout.twinPoint.y / Math.max(1, size?.height ?? 1))) : 64;
+  const spriteSize = layout
+    ? Math.round(
+        46 + 28 * (layout.twinPoint.y / Math.max(1, size?.height ?? 1)),
+      )
+    : 64;
 
   return (
     <View
@@ -134,7 +170,12 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
       }}
     >
       {/* The hand-painted world - the same stagecraft as the living room. */}
-      <Image source={MAP_ART} style={styles.mapArt} resizeMode="cover" fadeDuration={0} />
+      <Image
+        source={MAP_ART}
+        style={styles.mapArt}
+        resizeMode="cover"
+        fadeDuration={0}
+      />
 
       {/* Real care stops pinned along the painted trail, in the order they
           happened. A nested Pressable claims the touch, so tapping a stop
@@ -143,7 +184,14 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
         ? layout.waypoints.map(({ stop, x, y }, index) => (
             <Animated.View
               key={stop.id}
-              entering={FadeInDown.delay(Math.min(index, 6) * 70).springify().damping(20).stiffness(240)}
+              entering={
+                reduced
+                  ? undefined
+                  : FadeInDown.delay(Math.min(index, 6) * 70)
+                      .springify()
+                      .damping(20)
+                      .stiffness(240)
+              }
               style={{ position: "absolute", left: x - 15, top: y - 15 }}
             >
               <Pressable
@@ -186,7 +234,10 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
           <View
             style={[
               styles.twinShadow,
-              { width: spriteSize * 0.52, backgroundColor: "rgba(20, 26, 16, 0.3)" },
+              {
+                width: spriteSize * 0.52,
+                backgroundColor: "rgba(20, 26, 16, 0.3)",
+              },
             ]}
           />
           <SpriteSheetPlayer
@@ -203,8 +254,18 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
       <DayPhaseWash now={now} />
 
       {/* Day chip: honest stop count */}
-      <View style={[styles.dayChip, { backgroundColor: colors.card + "F0", borderColor: colors.border }]}>
-        <Text style={[styles.dayChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+      <View
+        style={[
+          styles.dayChip,
+          { backgroundColor: colors.card + "F0", borderColor: colors.border },
+        ]}
+      >
+        <Text
+          style={[
+            styles.dayChipText,
+            { color: colors.foreground, fontFamily: "Inter_700Bold" },
+          ]}
+        >
           {shown.length === 0
             ? "Today's trail starts here"
             : `Today's trail - ${shown.length} ${shown.length === 1 ? "stop" : "stops"}`}

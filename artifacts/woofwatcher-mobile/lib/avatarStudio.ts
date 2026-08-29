@@ -90,7 +90,7 @@ export type AvatarAccessoryFitStatus = "template-fitted" | "inventory-ready";
 
 export interface AvatarAccessoryFitModel {
   status: AvatarAccessoryFitStatus;
-  label: "Template-fitted" | "Pack pending";
+  label: "Tailored fit" | "Standard preview";
   detail: string;
   placementHint: string;
   needsDeviceQa: boolean;
@@ -260,12 +260,12 @@ const TEMPLATE_FITTED_ACCESSORY_IDS: Partial<Record<AvatarTemplateId, Set<string
 };
 
 const ACCESSORY_SLOT_COPY: Record<keyof AvatarAccessorySlots, string> = {
-  head: "head slot above ears",
-  face: "face slot across eyes and muzzle",
-  neck: "neck slot under the jaw and above the chest",
-  body: "body slot over shoulders and chest",
-  room: "room slot behind or beneath the avatar",
-  fx: "effect slot around the avatar silhouette",
+  head: "Sits above the ears",
+  face: "Fits across the eyes and muzzle",
+  neck: "Rests under the jaw and above the chest",
+  body: "Fits over the shoulders and chest",
+  room: "Appears behind or beneath your dog",
+  fx: "Surrounds your dog's silhouette",
 };
 
 export function getAvatarTemplate(templateId: AvatarTemplateId): AvatarTemplate {
@@ -283,8 +283,8 @@ export function deriveAvatarAccessoryFit(
   if (hasTemplateOverlay) {
     return {
       status: "template-fitted",
-      label: "Template-fitted",
-      detail: `${accessory.label} has a PixelLab ${template.label} overlay for the ${placementHint}. Confirm crop and motion on a real device before store screenshots.`,
+      label: "Tailored fit",
+      detail: `${accessory.label} is tailored to ${template.label}. ${placementHint}.`,
       placementHint,
       needsDeviceQa: true,
     };
@@ -292,8 +292,8 @@ export function deriveAvatarAccessoryFit(
 
   return {
     status: "inventory-ready",
-    label: "Pack pending",
-    detail: `${accessory.label} uses the shared inventory icon and procedural preview for ${template.label} until its template overlay pack ships.`,
+    label: "Standard preview",
+    detail: `${accessory.label} uses a standard ${template.label} preview. ${placementHint}.`,
     placementHint,
     needsDeviceQa: false,
   };
@@ -303,9 +303,9 @@ export function summarizeAvatarAccessoryFits(templateId: AvatarTemplateId): stri
   const template = getAvatarTemplate(templateId);
   const fittedCount = AVATAR_ACCESSORIES.filter((item) => deriveAvatarAccessoryFit(templateId, item).status === "template-fitted").length;
   const pendingCount = AVATAR_ACCESSORIES.length - fittedCount;
-  const pendingCopy = pendingCount === 1 ? "1 stays" : `${pendingCount} stay`;
+  const pendingCopy = pendingCount === 1 ? "1 uses" : `${pendingCount} use`;
 
-  return `${fittedCount}/${AVATAR_ACCESSORIES.length} accessories template-fitted for ${template.label}; ${pendingCopy} inventory-ready until their template overlay pack ships.`;
+  return `${fittedCount} of ${AVATAR_ACCESSORIES.length} accessories are tailored to ${template.label}. ${pendingCopy} a standard preview.`;
 }
 
 export function createDefaultAvatarConfig(

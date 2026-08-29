@@ -1,8 +1,14 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -13,6 +19,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -58,6 +65,7 @@ import { useCare, type Entry } from "@/context/CareContext";
 import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { announce } from "@/lib/announce";
 import { isClerkEnabledForBuild } from "@/lib/auth";
+import { useActiveCurrentTime } from "@/hooks/useActiveCurrentTime";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
@@ -134,6 +142,7 @@ import {
 import {
   canonicalHealthRoute,
   canonicalMoreRoute,
+  canonicalPlansReminderCenterRoute,
   canonicalPlansRoute,
 } from "@/lib/canonicalRouteBuilders";
 import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
@@ -399,8 +408,8 @@ export default function HomeScreen() {
       homeScreenMountedRef.current = false;
     };
   }, []);
-  const { width: viewportWidth, height: viewportHeight } =
-    useAppViewport();
+  const { width: viewportWidth, height: viewportHeight } = useAppViewport();
+  const { fontScale } = useWindowDimensions();
   const router = useRouter();
   const {
     state,
@@ -420,11 +429,17 @@ export default function HomeScreen() {
     if (storageWarning === "save-failed") {
       announce("Device storage is failing. Recent care logs may not be saved.");
     } else if (storageWarning === "read-failed") {
-      announce("Could not read saved care data. Saving is paused this session.");
+      announce(
+        "Could not read saved care data. Saving is paused this session.",
+      );
     } else if (storageWarning === "reset") {
-      announce("Saved care data could not be read and was reset. A recovery copy was kept.");
+      announce(
+        "Saved care data could not be read and was reset. A recovery copy was kept.",
+      );
     } else if (storageWarning === "newer-version") {
-      announce("This care data was created by a newer WoofWatcher version. This version will not overwrite it.");
+      announce(
+        "This care data was created by a newer WoofWatcher version. This version will not overwrite it.",
+      );
     }
   }, [storageWarning]);
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
@@ -456,11 +471,7 @@ export default function HomeScreen() {
       }),
     [bottomChromeClearance, topPadding, viewportHeight, viewportWidth],
   );
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useActiveCurrentTime();
 
   const petName = resolveConsumerPetName(state.profile.name);
   // Home is a household-shared surface. Private entries are removed once at
@@ -675,11 +686,10 @@ export default function HomeScreen() {
           hydrationRetry.reset();
         })
         .catch((error) => {
-          if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          if (cancelled || error instanceof LocalDataResetInProgressError)
+            return;
           deferWelcomeForSessionRef.current ||=
-            shouldDeferHomeWelcomeAfterReadFailure(
-              welcomeDismissedRef.current,
-            );
+            shouldDeferHomeWelcomeAfterReadFailure(welcomeDismissedRef.current);
           setWelcomePreferenceReadFailed(true);
           hydrationRetry.request(hydrateWelcomePreference);
         });
@@ -745,16 +755,12 @@ export default function HomeScreen() {
   };
   const dismissWelcome = () => {
     setWelcomeDismissed(true);
-    void store
-      .save(HOME_WELCOME_DISMISSED_KEY, "true")
-      .catch((error) => {
-        if (error instanceof LocalDataResetInProgressError) return;
-      });
+    void store.save(HOME_WELCOME_DISMISSED_KEY, "true").catch((error) => {
+      if (error instanceof LocalDataResetInProgressError) return;
+    });
   };
   const isFreshStart =
-    !hasCaregivers &&
-    homeEntries.length === 0 &&
-    !state.profile.breed?.trim();
+    !hasCaregivers && homeEntries.length === 0 && !state.profile.breed?.trim();
 
   // The welcome card leaves by folding shut (height + opacity, ~250ms)
   // instead of unmounting instantly - the first quick log used to yank the
@@ -1037,14 +1043,23 @@ export default function HomeScreen() {
     if (openWalkSession) return todayCommand.primaryAction.detail;
     const parts = nextUp.slice(0, 2).map((item, index) => {
       if (item.kind === "suggestion") return item.time;
-      if (index === 0 && item.kind === "routine" && status.minutesUntilNext !== null) {
+      if (
+        index === 0 &&
+        item.kind === "routine" &&
+        status.minutesUntilNext !== null
+      ) {
         return `${item.label} in ${formatDuration(status.minutesUntilNext)}`;
       }
       return `${item.label} ${item.time.includes(" - ") ? "" : "at "}${item.time}`;
     });
     if (!parts.length) return todayCommand.primaryAction.detail;
     return parts.join(" · ");
-  }, [nextUp, openWalkSession, status.minutesUntilNext, todayCommand.primaryAction.detail]);
+  }, [
+    nextUp,
+    openWalkSession,
+    status.minutesUntilNext,
+    todayCommand.primaryAction.detail,
+  ]);
   const careSenseSubline =
     todayHomeEntries.length === 0
       ? `${petName}: ${homeEvidenceCopy.summary}`
@@ -1462,9 +1477,9 @@ export default function HomeScreen() {
   // floats on top of a live Update button (and the reveal never jumps).
   const pendingMealChipSuppressed = Boolean(
     toast &&
-      quickFeedback &&
-      pendingMeal &&
-      quickFeedback.id === pendingMeal.id,
+    quickFeedback &&
+    pendingMeal &&
+    quickFeedback.id === pendingMeal.id,
   );
   const mealChipReveal = useSharedValue(0);
   useEffect(() => {
@@ -1540,7 +1555,9 @@ export default function HomeScreen() {
     if (!legacyImport || legacyImportShown.current) return;
     legacyImportShown.current = true;
     const logs =
-      legacyImport.entries === 1 ? "1 care log" : `${legacyImport.entries} care logs`;
+      legacyImport.entries === 1
+        ? "1 care log"
+        : `${legacyImport.entries} care logs`;
     showToast(
       legacyImport.entries
         ? `Welcome back. Brought over ${logs} from the earlier WoofWatcher.`
@@ -1673,8 +1690,8 @@ export default function HomeScreen() {
     const prev = recentQuickSave.current;
     return Boolean(
       prev &&
-        prev.type === type &&
-        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+      prev.type === type &&
+      Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
     );
   };
   const markQuickSave = (type: CareEventType) => {
@@ -1870,9 +1887,11 @@ export default function HomeScreen() {
     240,
     viewportWidth - routeHorizontalPadding * 2,
   );
-  const heroDesignHeight = Math.round(
-    heroStageWidth / homeFirstScreenLayout.heroAspectRatio,
-  );
+  const largeTextHeroHeight =
+    fontScale >= 1.5 ? Math.ceil(72 * (fontScale - 1)) : 0;
+  const heroDesignHeight =
+    Math.round(heroStageWidth / homeFirstScreenLayout.heroAspectRatio) +
+    largeTextHeroHeight;
   const heroStageScale = isShortViewport
     ? Math.max(0.72, Math.min(1, viewportHeight / 700))
     : 1;
@@ -1934,10 +1953,7 @@ export default function HomeScreen() {
         ]}
       >
         <View
-          style={[
-            s.heroWrap,
-            { height: heroStageHeight, overflow: "hidden" },
-          ]}
+          style={[s.heroWrap, { height: heroStageHeight, overflow: "hidden" }]}
         >
           <View
             style={
@@ -2015,7 +2031,10 @@ export default function HomeScreen() {
       />
       {colors.isDark ? (
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(9,17,32,0.16)" }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(9,17,32,0.16)" },
+          ]}
           pointerEvents="none"
         />
       ) : null}
@@ -2050,18 +2069,31 @@ export default function HomeScreen() {
               accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
               accessibilityHint={`Opens ${petName}'s profile.`}
               onPress={() => router.push(canonicalMoreRoute("dog-profile"))}
-              style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
+              style={({ pressed }) => [
+                s.identityWrap,
+                { opacity: pressed ? 0.75 : 1 },
+              ]}
             >
               <PetPortrait size={42} />
               <View style={s.identityCopy}>
                 <View style={s.identityNameRow}>
                   <Text
-                    numberOfLines={1}
-                    style={[s.identityName, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}
+                    numberOfLines={2}
+                    style={[
+                      s.identityName,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Fraunces_700Bold",
+                      },
+                    ]}
                   >
                     {petName}
                   </Text>
-                  <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="chevron-down"
+                    size={14}
+                    color={colors.mutedForeground}
+                  />
                 </View>
                 <View style={s.identityCareLine}>
                   <Ionicons
@@ -2070,8 +2102,15 @@ export default function HomeScreen() {
                     color={watchSignalCount > 0 ? colors.amber : colors.forest}
                   />
                   <Text
-                    numberOfLines={1}
-                    style={[s.identityCareText, { color: watchSignalCount > 0 ? colors.amber : colors.forest, fontFamily: "Inter_700Bold" }]}
+                    numberOfLines={2}
+                    style={[
+                      s.identityCareText,
+                      {
+                        color:
+                          watchSignalCount > 0 ? colors.amber : colors.forest,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
                   >
                     {careLine}
                   </Text>
@@ -2082,13 +2121,19 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open Care Team & Supplies"
               accessibilityHint="Opens caregivers, supply inventory, and travel checklists."
-              onPress={() => router.push(canonicalMoreRoute("care-team-supplies"))}
+              onPress={() =>
+                router.push(canonicalMoreRoute("care-team-supplies"))
+              }
               style={[
                 s.headerButton,
                 { borderColor: "transparent", backgroundColor: "transparent" },
               ]}
             >
-              <Ionicons name="people-outline" size={24} color={colors.foreground} />
+              <Ionicons
+                name="people-outline"
+                size={24}
+                color={colors.foreground}
+              />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -2098,7 +2143,7 @@ export default function HomeScreen() {
                   ? `${watchSignalCount} ${watchSignalCount === 1 ? "signal needs" : "signals need"} attention`
                   : "Upcoming care reminders"
               }
-              onPress={() => router.push(canonicalPlansRoute())}
+              onPress={() => router.push(canonicalPlansReminderCenterRoute())}
               style={[
                 s.headerButton,
                 { borderColor: "transparent", backgroundColor: "transparent" },
@@ -2139,56 +2184,117 @@ export default function HomeScreen() {
               }}
               style={[{ overflow: "hidden" }, welcomeCardAnimatedStyle]}
             >
-            <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Dismiss welcome"
-                onPress={dismissWelcome}
-                style={s.welcomeDismiss}
+              <View
+                style={[
+                  s.welcomeCard,
+                  s.softShadow,
+                  { backgroundColor: colors.forest },
+                ]}
               >
-                <View style={s.welcomeDismissVisual}>
-                  <Ionicons name="close" size={16} color={colors.primaryForeground} />
-                </View>
-              </Pressable>
-              <Text style={[s.welcomeKicker, { color: colors.amberSoft, fontFamily: "Fredoka_600SemiBold" }]}>
-                WELCOME TO WOOFWATCHER
-              </Text>
-              <Text style={[s.welcomeTitle, { color: colors.primaryForeground, fontFamily: "Fraunces_700Bold" }]}>
-                {petSetupCopy.title}
-              </Text>
-              <Text style={[s.welcomeBody, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
-                Add your dog's name, breed, and routines so Home, Log, and Health fit your real day. It takes a minute.
-              </Text>
-              <View style={s.welcomeActions}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={petSetupCopy.actionLabel}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    router.push("/setup" as never);
-                  }}
-                  style={({ pressed }) => [
-                    s.welcomePrimary,
-                    { backgroundColor: colors.primaryForeground, opacity: pressed ? 0.85 : 1 },
+                  accessibilityLabel="Dismiss welcome"
+                  onPress={dismissWelcome}
+                  style={s.welcomeDismiss}
+                >
+                  <View style={s.welcomeDismissVisual}>
+                    <Ionicons
+                      name="close"
+                      size={16}
+                      color={colors.primaryForeground}
+                    />
+                  </View>
+                </Pressable>
+                <Text
+                  style={[
+                    s.welcomeKicker,
+                    {
+                      color: colors.amberSoft,
+                      fontFamily: "Fredoka_600SemiBold",
+                    },
                   ]}
                 >
-                  <Text style={[s.welcomePrimaryText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    {petSetupCopy.actionLabel}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={15} color={colors.forest} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Explore first"
-                  onPress={dismissWelcome}
-                  style={({ pressed }) => [s.welcomeGhost, { opacity: pressed ? 0.7 : 1 }]}
+                  WELCOME TO WOOFWATCHER
+                </Text>
+                <Text
+                  style={[
+                    s.welcomeTitle,
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Fraunces_700Bold",
+                    },
+                  ]}
                 >
-                  <Text style={[s.welcomeGhostText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-                    Explore first
-                  </Text>
-                </Pressable>
+                  {petSetupCopy.title}
+                </Text>
+                <Text
+                  style={[
+                    s.welcomeBody,
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  Add your dog's name, breed, and routines so Home, Log, and
+                  Health fit your real day. It takes a minute.
+                </Text>
+                <View style={s.welcomeActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={petSetupCopy.actionLabel}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      router.push("/setup" as never);
+                    }}
+                    style={({ pressed }) => [
+                      s.welcomePrimary,
+                      {
+                        backgroundColor: colors.primaryForeground,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.welcomePrimaryText,
+                        {
+                          color: colors.forest,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {petSetupCopy.actionLabel}
+                    </Text>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={15}
+                      color={colors.forest}
+                    />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Explore first"
+                    onPress={dismissWelcome}
+                    style={({ pressed }) => [
+                      s.welcomeGhost,
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.welcomeGhostText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Explore first
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
-            </View>
             </Reanimated.View>
           ) : null}
 
@@ -2220,9 +2326,7 @@ export default function HomeScreen() {
             style={[
               s.heroBackdrop,
               { height: heroStageHeight, overflow: "hidden" },
-              heroDeferredForWelcome
-                ? welcomeHeroAnimatedStyle
-                : null,
+              heroDeferredForWelcome ? welcomeHeroAnimatedStyle : null,
             ]}
           >
             <Pressable
@@ -2252,7 +2356,11 @@ export default function HomeScreen() {
                 },
               ]}
             >
-              <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
+              <Ionicons
+                name="color-wand-outline"
+                size={17}
+                color={colors.forest}
+              />
             </Pressable>
           </Reanimated.View>
 
@@ -2266,18 +2374,26 @@ export default function HomeScreen() {
               aria-live="assertive"
               style={[
                 s.storageWarningCard,
-                { backgroundColor: colors.amberSoft, borderColor: colors.amber + "66" },
+                {
+                  backgroundColor: colors.amberSoft,
+                  borderColor: colors.amber + "66",
+                },
               ]}
             >
               <Ionicons name="warning-outline" size={17} color={colors.amber} />
-              <Text style={[s.storageWarningText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              <Text
+                style={[
+                  s.storageWarningText,
+                  { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                ]}
+              >
                 {storageWarning === "save-failed"
                   ? "Device storage is failing - new care logs may not survive an app restart."
                   : storageWarning === "read-failed"
                     ? "Couldn't read saved care data. Saving is paused this session to protect what's stored."
                     : storageWarning === "newer-version"
                       ? "This care data was created by a newer WoofWatcher version. This version will not overwrite it. Update WoofWatcher to safely open and edit this care plan."
-                    : "Saved care data couldn't be read and was reset. A recovery copy was kept on this device."}
+                      : "Saved care data couldn't be read and was reset. A recovery copy was kept on this device."}
               </Text>
             </View>
           ) : null}
@@ -2340,9 +2456,7 @@ export default function HomeScreen() {
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
               time as chunky pip meters. Missing evidence stays at zero with
               an explicit No data/No target label. */}
-          <Reanimated.View
-            entering={reducedMotion ? undefined : enterUp(0)}
-          >
+          <Reanimated.View entering={reducedMotion ? undefined : enterUp(0)}>
             <BoardCard style={s.careSenseCard}>
               <View style={s.careSenseHeader}>
                 <Text
@@ -2358,7 +2472,9 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Open Trends and Insights"
                     accessibilityHint="Charts these meters over time from real logged care."
-                    onPress={() => router.push(canonicalHealthRoute("trends") as never)}
+                    onPress={() =>
+                      router.push(canonicalHealthRoute("trends") as never)
+                    }
                     style={({ pressed }) => [
                       s.careSenseTrendsLink,
                       { opacity: pressed ? 0.6 : 1 },
@@ -2372,7 +2488,11 @@ export default function HomeScreen() {
                     >
                       Trends
                     </Text>
-                    <Ionicons name="chevron-forward" size={13} color={colors.sage} />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={13}
+                      color={colors.sage}
+                    />
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -2410,10 +2530,13 @@ export default function HomeScreen() {
               >
                 <View style={s.careSenseHeadlineCopy}>
                   <Text
-                    numberOfLines={1}
+                    numberOfLines={2}
                     style={[
                       s.careSenseHeadline,
-                      { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Fredoka_700Bold",
+                      },
                     ]}
                   >
                     {careSenseHeadline}
@@ -2448,7 +2571,9 @@ export default function HomeScreen() {
                     router.push(todayCommand.primaryAction.route as never)
                   }
                   accessibilityLabel={
-                    hasMoodEvidence ? `Mood ${status.meta.label}` : "Mood, no data"
+                    hasMoodEvidence
+                      ? `Mood ${status.meta.label}`
+                      : "Mood, no data"
                   }
                   accessibilityHint="Opens today's recommended care workflow."
                 />
@@ -2476,7 +2601,9 @@ export default function HomeScreen() {
                     status.counts.meals.done,
                     status.counts.meals.target,
                   )}
-                  tone={hasMealTarget ? colors.meterHunger : colors.mutedForeground}
+                  tone={
+                    hasMealTarget ? colors.meterHunger : colors.mutedForeground
+                  }
                   onPress={() =>
                     router.push(homeLogDetailRoute("meal", now) as never)
                   }
@@ -2523,15 +2650,16 @@ export default function HomeScreen() {
             {/* Mock-board Quick Log card: Meal · Potty · Walk · Meds · More
                 as springy medallion tiles inside one cream card. More opens
                 the fast-log sheet where Water, Note, and the rest live. */}
-            <Reanimated.View
-              entering={reducedMotion ? undefined : enterUp(1)}
-            >
+            <Reanimated.View entering={reducedMotion ? undefined : enterUp(1)}>
               <BoardCard style={s.quickHomeCard}>
                 <View style={s.quickSectionHeader}>
                   <Text
                     style={[
                       s.quickSectionTitle,
-                      { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Fredoka_700Bold",
+                      },
                     ]}
                   >
                     Quick Log
@@ -2570,7 +2698,11 @@ export default function HomeScreen() {
                       style={s.homeQuickTile}
                     >
                       {hasMedallion(item.icon) ? (
-                        <BoardMedallion name={item.icon} size={54} style={s.softShadow} />
+                        <BoardMedallion
+                          name={item.icon}
+                          size={54}
+                          style={s.softShadow}
+                        />
                       ) : (
                         <View
                           style={[
@@ -2589,7 +2721,10 @@ export default function HomeScreen() {
                         numberOfLines={1}
                         style={[
                           s.homeQuickText,
-                          { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                          {
+                            color: colors.navy,
+                            fontFamily: "Inter_600SemiBold",
+                          },
                         ]}
                       >
                         {item.label}
@@ -2600,10 +2735,12 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Log care"
                     accessibilityHint="Opens the fast log sheet with water, notes, and every other care lane."
-                    onPress={() => executePrimaryTabTaskPath("fast-log", {
-                      navigate: (route) => router.push(route as never),
-                      selectLogView: () => undefined,
-                    })}
+                    onPress={() =>
+                      executePrimaryTabTaskPath("fast-log", {
+                        navigate: (route) => router.push(route as never),
+                        selectLogView: () => undefined,
+                      })
+                    }
                     scaleTo={0.92}
                     containerStyle={s.homeQuickTileLayout}
                     style={s.homeQuickTile}
@@ -2672,16 +2809,27 @@ export default function HomeScreen() {
                     { opacity: pressed ? 0.6 : 1 },
                   ]}
                 >
-                  <Ionicons name="warning-outline" size={16} color={colors.amber} />
+                  <Ionicons
+                    name="warning-outline"
+                    size={16}
+                    color={colors.amber}
+                  />
                   <Text
                     style={[
                       s.nextMoreText,
-                      { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
                     ]}
                   >
                     {homeRoutinePlan.correctionSummary}
                   </Text>
-                  <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={13}
+                    color={colors.mutedForeground}
+                  />
                 </Pressable>
               ) : null}
               {pendingMealOpenLoop ? (
@@ -2689,64 +2837,67 @@ export default function HomeScreen() {
                   pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
                   style={[{ overflow: "hidden" }, mealChipAnimatedStyle]}
                 >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Update ${pendingMealOpenLoop.label}. Outcome pending.`}
-                  accessibilityHint="Opens the served meal log so the outcome can be confirmed."
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    router.push(pendingMealOpenLoop.route as never);
-                  }}
-                  style={({ pressed }) => [
-                    s.nextOpenLoopChip,
-                    {
-                      backgroundColor: pressed
-                        ? colors.secondary
-                        : colors.amberSoft,
-                      borderColor: colors.amber,
-                    },
-                  ]}
-                >
-                  <PixelIcon name={pendingMealOpenLoop.icon} size={20} />
-                  <View style={s.nextOpenLoopCopy}>
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        s.nextOpenLoopTitle,
-                        { color: colors.navy, fontFamily: "Inter_700Bold" },
-                      ]}
-                    >
-                      {pendingMealOpenLoop.label}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        s.nextOpenLoopMeta,
-                        {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      {pendingMealOpenLoop.time}
-                    </Text>
-                  </View>
-                  <View
-                    style={[s.nextButton, { backgroundColor: colors.primary }]}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Update ${pendingMealOpenLoop.label}. Outcome pending.`}
+                    accessibilityHint="Opens the served meal log so the outcome can be confirmed."
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      router.push(pendingMealOpenLoop.route as never);
+                    }}
+                    style={({ pressed }) => [
+                      s.nextOpenLoopChip,
+                      {
+                        backgroundColor: pressed
+                          ? colors.secondary
+                          : colors.amberSoft,
+                        borderColor: colors.amber,
+                      },
+                    ]}
                   >
-                    <Text
+                    <PixelIcon name={pendingMealOpenLoop.icon} size={20} />
+                    <View style={s.nextOpenLoopCopy}>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          s.nextOpenLoopTitle,
+                          { color: colors.navy, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        {pendingMealOpenLoop.label}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          s.nextOpenLoopMeta,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {pendingMealOpenLoop.time}
+                      </Text>
+                    </View>
+                    <View
                       style={[
-                        s.nextButtonText,
-                        {
-                          color: colors.primaryForeground,
-                          fontFamily: "Inter_700Bold",
-                        },
+                        s.nextButton,
+                        { backgroundColor: colors.primary },
                       ]}
                     >
-                      Update
-                    </Text>
-                  </View>
-                </Pressable>
+                      <Text
+                        style={[
+                          s.nextButtonText,
+                          {
+                            color: colors.primaryForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Update
+                      </Text>
+                    </View>
+                  </Pressable>
                 </Reanimated.View>
               ) : null}
               {nextPrimary ? (
@@ -2757,7 +2908,10 @@ export default function HomeScreen() {
                       numberOfLines={1}
                       style={[
                         s.nextPrimaryTitle,
-                        { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" },
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Fredoka_600SemiBold",
+                        },
                       ]}
                     >
                       {nextPrimary.label}
@@ -2766,7 +2920,10 @@ export default function HomeScreen() {
                       numberOfLines={2}
                       style={[
                         s.nextPrimaryMeta,
-                        { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
                       ]}
                     >
                       {nextPrimary.kind === "open-loop"
@@ -2833,7 +2990,15 @@ export default function HomeScreen() {
                           },
                         ]}
                       >
-                        <Text style={[s.nextButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.nextButtonText,
+                            {
+                              color: colors.primaryForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
                           {nextPrimary.meta ?? "Start"}
                         </Text>
                       </Pressable>
@@ -2847,11 +3012,21 @@ export default function HomeScreen() {
                               s.nextButton,
                               s.nextButtonSoft,
                               {
-                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                                backgroundColor: pressed
+                                  ? colors.muted
+                                  : colors.secondary,
                               },
                             ]}
                           >
-                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                            <Text
+                              style={[
+                                s.nextButtonText,
+                                {
+                                  color: colors.navy,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
                               Snooze
                             </Text>
                           </Pressable>
@@ -2864,11 +3039,21 @@ export default function HomeScreen() {
                               s.nextButton,
                               s.nextButtonSoft,
                               {
-                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                                backgroundColor: pressed
+                                  ? colors.muted
+                                  : colors.secondary,
                               },
                             ]}
                           >
-                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                            <Text
+                              style={[
+                                s.nextButtonText,
+                                {
+                                  color: colors.navy,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
                               Reassign
                             </Text>
                           </Pressable>
@@ -2881,7 +3066,10 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     s.nextEmptyText,
-                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
                   ]}
                 >
                   {homeRoutinePlan.correctionCount > 0
@@ -2894,17 +3082,27 @@ export default function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`View ${nextUp.length - 1} more planned ${nextUp.length - 1 === 1 ? "item" : "items"} in Plans`}
                   onPress={() => router.push("/calendar")}
-                  style={({ pressed }) => [s.nextMoreRow, { opacity: pressed ? 0.6 : 1 }]}
+                  style={({ pressed }) => [
+                    s.nextMoreRow,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
                 >
                   <Text
                     style={[
                       s.nextMoreText,
-                      { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
                     ]}
                   >
                     {nextUp.length - 1} more in Plans
                   </Text>
-                  <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={13}
+                    color={colors.mutedForeground}
+                  />
                 </Pressable>
               ) : null}
             </BoardCard>
@@ -2933,7 +3131,13 @@ export default function HomeScreen() {
               <Text
                 style={[
                   s.todayStoryKicker,
-                  { color: colors.sage, fontFamily: "Inter_700Bold", letterSpacing: 1.1, textTransform: "uppercase", fontSize: 9 },
+                  {
+                    color: colors.sage,
+                    fontFamily: "Inter_700Bold",
+                    letterSpacing: 1.1,
+                    textTransform: "uppercase",
+                    fontSize: 9,
+                  },
                 ]}
               >
                 Today's Story
@@ -2949,22 +3153,46 @@ export default function HomeScreen() {
               </Text>
               <View style={s.todayStoryChips}>
                 {careCareer.todayXp > 0 ? (
-                  <View style={[s.todayStoryChip, { backgroundColor: colors.amberSoft }]}>
-                    <Text style={[s.todayStoryChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                  <View
+                    style={[
+                      s.todayStoryChip,
+                      { backgroundColor: colors.amberSoft },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.todayStoryChipText,
+                        { color: colors.amber, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
                       +{careCareer.todayXp} XP
                     </Text>
                   </View>
                 ) : null}
                 {careStreak >= 2 ? (
-                  <View style={[s.todayStoryChip, { backgroundColor: colors.sageSoft }]}>
-                    <Text style={[s.todayStoryChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                  <View
+                    style={[
+                      s.todayStoryChip,
+                      { backgroundColor: colors.sageSoft },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.todayStoryChipText,
+                        { color: colors.forest, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
                       {careStreak}-day streak
                     </Text>
                   </View>
                 ) : null}
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.mutedForeground}
+            />
           </Pressable>
 
           {/* Presence panel: who Phoenix is with right now, still one tap
@@ -2972,74 +3200,74 @@ export default function HomeScreen() {
               Up already owns the live "Finish" CTA, so the panel steps aside
               instead of echoing the same walk status a second time. */}
           {openWalkSession ? null : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
-            accessibilityHint={presenceActionHint}
-            onPress={openPresencePanel}
-            style={[
-              s.presencePanel,
-              s.softShadow,
-              {
-                minHeight: homeFirstScreenLayout.presencePanelMinHeight,
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
+              accessibilityHint={presenceActionHint}
+              onPress={openPresencePanel}
               style={[
-                s.presenceAvatar,
+                s.presencePanel,
+                s.softShadow,
                 {
-                  backgroundColor: openAloneSession
-                    ? colors.amber
-                    : openWalkSession
-                      ? colors.sage
-                      : colors.copper,
+                  minHeight: homeFirstScreenLayout.presencePanelMinHeight,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
                 },
               ]}
             >
-              {openAloneSession ? (
-                <Ionicons name="home-outline" size={18} color="#FFFFFF" />
-              ) : openWalkSession ? (
-                <PixelIcon name="walk" size={21} />
-              ) : (
-                <Text
-                  style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}
-                >
-                  {caregiver.charAt(0).toUpperCase()}
-                </Text>
-              )}
-            </View>
-            <View style={s.presenceCopy}>
-              <Text
-                numberOfLines={1}
+              <View
                 style={[
-                  s.presenceText,
-                  { color: colors.navy, fontFamily: "Inter_700Bold" },
-                ]}
-              >
-                {openAloneSession
-                  ? `${petName} is home alone`
-                  : openWalkSession
-                    ? `${petName} is on a walk`
-                    : presenceLabel}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[
-                  s.presenceSub,
+                  s.presenceAvatar,
                   {
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_500Medium",
+                    backgroundColor: openAloneSession
+                      ? colors.amber
+                      : openWalkSession
+                        ? colors.sage
+                        : colors.copper,
                   },
                 ]}
               >
-                {presenceSub}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={17} color={colors.navy} />
-          </Pressable>
+                {openAloneSession ? (
+                  <Ionicons name="home-outline" size={18} color="#FFFFFF" />
+                ) : openWalkSession ? (
+                  <PixelIcon name="walk" size={21} />
+                ) : (
+                  <Text
+                    style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}
+                  >
+                    {caregiver.charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={s.presenceCopy}>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    s.presenceText,
+                    { color: colors.navy, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  {openAloneSession
+                    ? `${petName} is home alone`
+                    : openWalkSession
+                      ? `${petName} is on a walk`
+                      : presenceLabel}
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    s.presenceSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  {presenceSub}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={17} color={colors.navy} />
+            </Pressable>
           )}
 
           {/* Care Status keeps only what Care Sense doesn't already show:
@@ -3047,7 +3275,9 @@ export default function HomeScreen() {
           <BoardCard style={s.careStatusCard}>
             <BoardSectionHeader
               title="Care Status"
-              accessory={<BoardPill label={careStatusLabel} tone={careStatusTone} />}
+              accessory={
+                <BoardPill label={careStatusLabel} tone={careStatusTone} />
+              }
             />
             <CareRow
               icon="heart"
@@ -3083,11 +3313,32 @@ export default function HomeScreen() {
               accessibilityLabel={`Care level ${careCareer.level}, ${careCareer.title}. ${careCareer.levelXp} of ${careCareer.levelSpanXp} XP toward the next level.${careCareer.todayXp > 0 ? ` ${careCareer.todayXp} XP earned today.` : ""}`}
               style={s.careerRow}
             >
-              <View style={[s.careerBadge, { backgroundColor: colors.amberSoft, borderColor: colors.amber }]}>
-                <Text style={[s.careerBadgeKicker, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+              <View
+                style={[
+                  s.careerBadge,
+                  {
+                    backgroundColor: colors.amberSoft,
+                    borderColor: colors.amber,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.careerBadgeKicker,
+                    { color: colors.amber, fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
                   LV
                 </Text>
-                <Text style={[s.careerBadgeLevel, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}>
+                <Text
+                  style={[
+                    s.careerBadgeLevel,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Fraunces_700Bold",
+                    },
+                  ]}
+                >
                   {careCareer.level}
                 </Text>
               </View>
@@ -3095,12 +3346,23 @@ export default function HomeScreen() {
                 <View style={s.careerTitleRow}>
                   <Text
                     numberOfLines={1}
-                    style={[s.careerTitle, { color: colors.navy, fontFamily: "Fredoka_600SemiBold" }]}
+                    style={[
+                      s.careerTitle,
+                      { color: colors.navy, fontFamily: "Fredoka_600SemiBold" },
+                    ]}
                   >
                     {careCareer.title}
                   </Text>
                   {careCareer.todayXp > 0 ? (
-                    <Text style={[s.careerToday, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text
+                      style={[
+                        s.careerToday,
+                        {
+                          color: colors.sage,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
                       +{careCareer.todayXp} XP today
                     </Text>
                   ) : null}
@@ -3125,8 +3387,17 @@ export default function HomeScreen() {
                     />
                   ))}
                 </View>
-                <Text style={[s.careerXp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
+                <Text
+                  style={[
+                    s.careerXp,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  {careCareer.levelXp.toLocaleString()} /{" "}
+                  {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
                   {careStreak >= 2
                     ? `${careStreak}-day care streak`
                     : "every point from real care logs"}
@@ -3219,7 +3490,7 @@ export default function HomeScreen() {
                     <View style={s.missionCopy}>
                       <View style={s.missionCopyTop}>
                         <Text
-                          numberOfLines={1}
+                          numberOfLines={2}
                           style={[
                             s.missionLabel,
                             { fontFamily: "Inter_800ExtraBold" },
@@ -3233,7 +3504,7 @@ export default function HomeScreen() {
                             "Adventure" category label. */}
                         {mission.key === "adventure" ? null : (
                           <Text
-                            numberOfLines={1}
+                            numberOfLines={2}
                             style={[
                               s.missionStatus,
                               { color: tone, fontFamily: "Inter_800ExtraBold" },
@@ -3244,7 +3515,7 @@ export default function HomeScreen() {
                         )}
                       </View>
                       <Text
-                        numberOfLines={1}
+                        numberOfLines={2}
                         style={[
                           s.missionRowTitle,
                           { fontFamily: "Fredoka_700Bold" },
@@ -3253,7 +3524,7 @@ export default function HomeScreen() {
                         {mission.title}
                       </Text>
                       <Text
-                        numberOfLines={missionLayout.detailLines}
+                        numberOfLines={Math.max(2, missionLayout.detailLines)}
                         style={[
                           s.missionDetail,
                           { fontFamily: "Inter_600SemiBold" },
@@ -3527,7 +3798,13 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     s.questKicker,
-                    { color: colors.sage, fontFamily: "Inter_700Bold", letterSpacing: 1.1, textTransform: "uppercase", fontSize: 9 },
+                    {
+                      color: colors.sage,
+                      fontFamily: "Inter_700Bold",
+                      letterSpacing: 1.1,
+                      textTransform: "uppercase",
+                      fontSize: 9,
+                    },
                   ]}
                 >
                   Care quest
@@ -3679,7 +3956,9 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.adventureInline,
                 {
-                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  backgroundColor: pressed
+                    ? colors.secondary
+                    : colors.background,
                   borderColor: colors.border,
                   opacity: pressed ? 0.78 : 1,
                 },
@@ -3772,9 +4051,10 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   s.toastAction,
                   {
-                    backgroundColor: pressed && !quickFeedbackUndoBusy
-                      ? "rgba(255,249,239,0.16)"
-                      : "rgba(255,249,239,0.1)",
+                    backgroundColor:
+                      pressed && !quickFeedbackUndoBusy
+                        ? "rgba(255,249,239,0.16)"
+                        : "rgba(255,249,239,0.1)",
                     borderColor: "rgba(255,249,239,0.34)",
                     opacity: quickFeedbackUndoBusy ? 0.5 : 1,
                   },
@@ -3798,9 +4078,10 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   s.toastAction,
                   {
-                    backgroundColor: pressed && !quickFeedbackUndoBusy
-                      ? colors.copper + "DD"
-                      : colors.copper,
+                    backgroundColor:
+                      pressed && !quickFeedbackUndoBusy
+                        ? colors.copper + "DD"
+                        : colors.copper,
                     borderColor: colors.copper,
                     opacity: quickFeedbackUndoBusy ? 0.5 : 1,
                   },

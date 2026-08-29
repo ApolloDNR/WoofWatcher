@@ -28,7 +28,10 @@ function openingTagContaining(
   assert.notEqual(markerIndex, -1, `missing opening-tag marker: ${marker}`);
   const start = source.lastIndexOf("<", markerIndex);
   assert.notEqual(start, -1, `missing opening tag for: ${marker}`);
-  assert.match(source.slice(start, markerIndex), /^<(?:Pressable|PressScale)\b/);
+  assert.match(
+    source.slice(start, markerIndex),
+    /^<(?:Pressable|PressScale)\b/,
+  );
 
   let braceDepth = 0;
   let quote: '"' | "'" | "`" | null = null;
@@ -58,16 +61,13 @@ function openingTagContaining(
   assert.fail(`unterminated opening tag for: ${marker}`);
 }
 
-test("Plans skips its route entrance animation when Reduce Motion is enabled", () => {
+test("Plans gives card entrances one Reduce-Motion-aware owner", () => {
   const calendar = readSource(CALENDAR_PATH);
 
   assert.match(calendar, /useReducedMotion/);
   assert.match(calendar, /const reducedMotion = useReducedMotion\(\)/);
-  assert.match(
-    calendar,
-    /isWebRoutePreview \|\| reducedMotion[\s\S]*fade\.setValue\(1\)[\s\S]*slide\.setValue\(0\)/,
-  );
-  assert.match(calendar, /\[fade, isWebRoutePreview, reducedMotion, slide\]/);
+  assert.match(calendar, /<BoardCard enter=\{0\}/);
+  assert.doesNotMatch(calendar, /new Animated\.Value|opacity: fade/);
 });
 
 test("Plans presents an empty Reminder mission as an all-clear status, not a dead button", () => {
@@ -79,7 +79,7 @@ test("Plans presents an empty Reminder mission as an all-clear status, not a dea
   );
   const missionBoard = sourceBetween(
     calendar,
-    '<View style={s.planMissionList}>',
+    "<View style={s.planMissionList}>",
     "</BoardCard>",
   );
   const statusBranch = sourceBetween(
@@ -96,8 +96,14 @@ test("Plans presents an empty Reminder mission as an all-clear status, not a dea
     statusBranch,
     /accessible[\s\S]*accessibilityLabel=\{`\$\{mission\.eyebrow\}: \$\{mission\.title\}\. Status: \$\{mission\.actionLabel\}`\}/,
   );
-  assert.doesNotMatch(statusBranch, /<Pressable|accessibilityRole="button"|onPress=/);
-  assert.match(missionBoard, /mission\.onPress\s*\?\s*<Ionicons name="chevron-forward"/);
+  assert.doesNotMatch(
+    statusBranch,
+    /<Pressable|accessibilityRole="button"|onPress=/,
+  );
+  assert.match(
+    missionBoard,
+    /\{mission\.onPress\s*\?\s*\(\s*<Ionicons\b[\s\S]*?name="chevron-forward"[\s\S]*?\/>\s*\)\s*:\s*null\}/,
+  );
 });
 
 test("Plans routine and event sheets disable their slide transition for Reduce Motion", () => {
@@ -126,7 +132,7 @@ test("Today's Missions wraps large text and reflows its action without clipping"
   const calendar = readSource(CALENDAR_PATH);
   const missionBoard = sourceBetween(
     calendar,
-    '<View style={s.planMissionList}>',
+    "<View style={s.planMissionList}>",
     "</BoardCard>",
   );
   const rowStyle = sourceBetween(
@@ -190,7 +196,7 @@ test("Plans editor actions expose roles, names, selected state, and pressed feed
   );
   assert.match(
     routineEditor,
-    /accessibilityLabel=\{routineEditId \? "Save routine changes" : "Add routine"\}[\s\S]*style=\{\(\{ pressed \}\) =>/,
+    /accessibilityLabel=\{\s*routineEditId\s*\?\s*"Save routine changes"\s*:\s*"Add routine"\s*\}[\s\S]*style=\{\(\{ pressed \}\) =>/,
   );
   assert.match(
     routineEditor,
@@ -203,7 +209,7 @@ test("Plans editor actions expose roles, names, selected state, and pressed feed
   );
   assert.match(
     eventEditor,
-    /accessibilityLabel=\{eventEditId \? "Save event changes" : "Add event to calendar"\}[\s\S]*style=\{\(\{ pressed \}\) =>/,
+    /accessibilityLabel=\{\s*eventEditId\s*\?\s*"Save event changes"\s*:\s*"Add event to calendar"\s*\}[\s\S]*style=\{\(\{ pressed \}\) =>/,
   );
 
   assert.match(
@@ -250,19 +256,26 @@ test("every visible Plans editor field uses its visible label as its accessible 
 
 test("the Discover action uses the measured bright-copper and navy pair", () => {
   const calendar = readSource(CALENDAR_PATH);
-  const findAction = sourceBetween(calendar, 'placeholder="Your city or area"', "</Pressable>");
+  const findAction = sourceBetween(
+    calendar,
+    'placeholder="Your city or area"',
+    "</Pressable>",
+  );
 
   assert.match(findAction, /backgroundColor: colors\.copperBright/);
-  assert.match(findAction, /ActivityIndicator size="small" color=\{colors\.brandNavy\}/);
-  assert.match(findAction, /discoverGoText, \{ color: colors\.brandNavy/);
+  assert.match(
+    findAction,
+    /<ActivityIndicator\b[\s\S]*?size="small"[\s\S]*?color=\{colors\.brandNavy\}[\s\S]*?\/>/,
+  );
+  assert.match(findAction, /discoverGoText,\s*\{\s*color:\s*colors\.brandNavy/);
   assert.match(findAction, /accessibilityRole="button"/);
   assert.match(
     findAction,
-    /accessibilityLabel=\{loadingEvents\s*\?\s*"Finding nearby dog events"\s*:\s*"Find nearby dog events"\}/,
+    /accessibilityLabel=\{\s*loadingEvents\s*\?\s*"Finding nearby dog events"\s*:\s*"Find nearby dog events"\s*\}/,
   );
   assert.match(
     findAction,
-    /accessibilityState=\{\{ disabled: loadingEvents, busy: loadingEvents \}\}/,
+    /accessibilityState=\{\{\s*disabled:\s*loadingEvents,\s*busy:\s*loadingEvents,?\s*\}\}/,
   );
   assert.match(findAction, /style=\{\(\{ pressed \}\) =>/);
   assert.doesNotMatch(findAction, /color="#fff"/i);
@@ -287,31 +300,48 @@ test("routine edit and completion actions are siblings and completed routines ca
     "the routine container must be structural so its edit and completion buttons are siblings",
   );
   assert.ok(
-    scheduleEditClose > scheduleEdit.end && scheduleEditClose < scheduleCompletion.start,
+    scheduleEditClose > scheduleEdit.end &&
+      scheduleEditClose < scheduleCompletion.start,
     "the schedule completion action must begin only after the edit action closes",
   );
   assert.ok(
-    routineEditClose > routineEdit.end && routineEditClose < routineCompletion.start,
+    routineEditClose > routineEdit.end &&
+      routineEditClose < routineCompletion.start,
     "the routine completion action must begin only after the edit action closes",
   );
-  assert.match(scheduleEdit.text, /accessibilityLabel=\{`Edit routine \$\{row\.label\}`\}/);
-  assert.match(scheduleCompletion.text, /accessibilityLabel=\{done \? `View \$\{row\.label\} completion log`/);
+  assert.match(
+    scheduleEdit.text,
+    /accessibilityLabel=\{`Edit routine \$\{row\.label\}`\}/,
+  );
+  assert.match(
+    scheduleCompletion.text,
+    /accessibilityLabel=\{\s*done\s*\?\s*`View \$\{row\.label\} completion log`/,
+  );
   assert.match(
     scheduleCompletion.text,
     /borderColor:\s*done\s*\?\s*colors\.sage\s*:\s*needsCorrection\s*\?\s*colors\.amber\s*:\s*colors\.primary/,
   );
   assert.match(
     calendar,
-    /name=\{done \? "checkmark" : needsCorrection \? "warning-outline" : "checkmark"\}/,
+    /name=\{\s*done\s*\?\s*"checkmark"\s*:\s*needsCorrection\s*\?\s*"warning-outline"\s*:\s*"checkmark"\s*\}/,
   );
-  assert.match(routineEdit.text, /accessibilityLabel=\{`Edit routine \$\{r\.label\}`\}/);
-  assert.match(routineCompletion.text, /done[\s\S]*`View \$\{r\.label\} completion log`/);
+  assert.match(
+    routineEdit.text,
+    /accessibilityLabel=\{`Edit routine \$\{r\.label\}`\}/,
+  );
+  assert.match(
+    routineCompletion.text,
+    /done[\s\S]*`View \$\{r\.label\} completion log`/,
+  );
   assert.doesNotMatch(
     calendar,
     /<PressScale[\s\S]{0,280}accessibilityLabel=\{`\$\{row\.time\} \$\{row\.label\}`\}/,
     "the schedule row must not be an accessible parent around its completion button",
   );
-  assert.doesNotMatch(calendar, /disabled=\{done \|\| r\.status === "needs-correction"\}/);
+  assert.doesNotMatch(
+    calendar,
+    /disabled=\{done \|\| r\.status === "needs-correction"\}/,
+  );
   assert.match(
     calendar,
     /if \(done\) \{[\s\S]{0,180}openRoutineCompletion\(sourceRoutine\);[\s\S]{0,80}return;/,
@@ -320,20 +350,34 @@ test("routine edit and completion actions are siblings and completed routines ca
     calendar,
     /if \(done\) \{[\s\S]{0,180}openRoutineCompletion\(r\);[\s\S]{0,80}return;/,
   );
-  assert.match(calendar, /accessibilityLabel=\{done \? `View \$\{row\.label\} completion log`/);
+  assert.match(
+    calendar,
+    /accessibilityLabel=\{\s*done\s*\?\s*`View \$\{row\.label\} completion log`/,
+  );
 });
 
 test("assigned caregivers reflow without truncation and remain in the routine edit context", () => {
   const calendar = readSource(CALENDAR_PATH);
-  const scheduleEdit = sourceBetween(
+  const scheduleEditAction = openingTagContaining(
     calendar,
-    'accessibilityLabel={`Edit routine ${row.label}`}',
-    'accessibilityLabel={done ? `View ${row.label} completion log`',
+    "s.scheduleEditArea",
   );
-  const routineEdit = sourceBetween(
+  const scheduleCompletionAction = openingTagContaining(
     calendar,
-    'accessibilityLabel={`Edit routine ${r.label}`}',
-    'accessibilityState={{ disabled: r.status === "needs-correction", selected: done }}',
+    "s.scheduleStatus",
+  );
+  const routineEditAction = openingTagContaining(calendar, "s.routineEditArea");
+  const routineCompletionAction = openingTagContaining(
+    calendar,
+    "s.routineDoneBtn",
+  );
+  const scheduleEdit = calendar.slice(
+    scheduleEditAction.start,
+    scheduleCompletionAction.start,
+  );
+  const routineEdit = calendar.slice(
+    routineEditAction.start,
+    routineCompletionAction.start,
   );
   const ownerRowStyle = sourceBetween(
     calendar,
@@ -400,21 +444,35 @@ test("Plans opens the exact routine-board completion when legacy logs share a ti
     ["meal_first", "meal_second"],
   );
   assert.match(openCompletion, /entry\.id === routine\.completionEntryId/);
-  assert.doesNotMatch(openCompletion, /occurredAt|normalizedType|normalizeCareEventType/);
+  assert.doesNotMatch(
+    openCompletion,
+    /occurredAt|normalizedType|normalizeCareEventType/,
+  );
 });
 
 test("full-month day controls use a 48pt grid with a compact horizontal escape hatch", () => {
   const month = readSource(MONTH_PATH);
-  const gridSection = sourceBetween(month, "{/* Week grid */}", "{/* Selected day timeline */}");
+  const gridSection = sourceBetween(
+    month,
+    "{/* Week grid */}",
+    "{/* Selected day timeline */}",
+  );
   const dayCellStyle = sourceBetween(month, "dayCell: {", "dayCellInner: {");
-  const dayCellInnerStyle = sourceBetween(month, "dayCellInner: {", "dayCircle: {");
+  const dayCellInnerStyle = sourceBetween(
+    month,
+    "dayCellInner: {",
+    "dayCircle: {",
+  );
   const dayControl = openingTagContaining(month, "style={s.dayCellInner}").text;
 
   assert.match(gridSection, /<ScrollView\s+horizontal/);
-  assert.match(gridSection, /scrollEnabled=\{monthLayout\.requiresHorizontalScroll\}/);
   assert.match(
     gridSection,
-    /showsHorizontalScrollIndicator=\{monthLayout\.requiresHorizontalScroll\}/,
+    /scrollEnabled=\{monthLayout\.requiresHorizontalScroll\}/,
+  );
+  assert.match(
+    gridSection,
+    /showsHorizontalScrollIndicator=\{\s*monthLayout\.requiresHorizontalScroll\s*\}/,
   );
   assert.match(gridSection, /Swipe horizontally to see all seven days/);
   assert.match(gridSection, /<BoardCard\s+enter=\{0\}\s+padded=\{false\}/);
@@ -429,16 +487,21 @@ test("full-month day controls use a 48pt grid with a compact horizontal escape h
   assert.match(dayControl, /key=\{cell\.dateKey\}/);
   assert.match(dayControl, /accessibilityRole="button"/);
   assert.match(dayControl, /onPress=\{\(\) => selectDay\(cell\)\}/);
-  assert.match(dayControl, /containerStyle=\{\[s\.dayCell, \{ width: monthLayout\.cellSize \}\]\}/);
+  assert.match(
+    dayControl,
+    /containerStyle=\{\[\s*s\.dayCell,\s*\{\s*width:\s*monthLayout\.cellSize\s*\},?\s*\]\}/,
+  );
   assert.match(dayControl, /style=\{s\.dayCellInner\}/);
-  assert.doesNotMatch(dayControl, /hitSlop=/, "adjacent calendar cells must not use overlapping hit slop");
+  assert.doesNotMatch(
+    dayControl,
+    /hitSlop=/,
+    "adjacent calendar cells must not use overlapping hit slop",
+  );
 });
 
 test("month layout keeps seven distinct 48pt day regions at supported phone widths", async () => {
-  const {
-    CALENDAR_MONTH_DAY_TARGET,
-    getCalendarMonthGridLayout,
-  } = await import("./calendarMonthLayout.ts");
+  const { CALENDAR_MONTH_DAY_TARGET, getCalendarMonthGridLayout } =
+    await import("./calendarMonthLayout.ts");
 
   assert.equal(CALENDAR_MONTH_DAY_TARGET, 48);
   for (const viewportWidth of [320, 360, 390]) {
