@@ -30,6 +30,7 @@ import { PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useCare } from "@/context/CareContext";
+import { useActiveCurrentTime } from "@/hooks/useActiveCurrentTime";
 import { useColors } from "@/hooks/useColors";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
@@ -171,7 +172,7 @@ function HealthSummaryRow({
         <PixelIcon name={icon} size={22} />
       </View>
       <View style={s.summaryRowText}>
-        <Text numberOfLines={1} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
+        <Text numberOfLines={2} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
           {label}
         </Text>
         {detail ? (
@@ -184,7 +185,7 @@ function HealthSummaryRow({
         ) : null}
       </View>
       {accessory}
-      <Text numberOfLines={1} style={[s.summaryRowValue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+      <Text numberOfLines={2} style={[s.summaryRowValue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
         {value}
       </Text>
       <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
@@ -243,7 +244,7 @@ function HealthCoreScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state } = useCare();
-  const now = Date.now();
+  const now = useActiveCurrentTime();
   const healthWeek = useMemo(() => buildTrendWindow("week", now), [now]);
   const sharedEntries = useMemo(
     () => selectSharedCareEvidence(state.entries, now),
@@ -774,7 +775,7 @@ function HealthCoreScreen({
           kicker="Health"
           title="Health Watch"
           subtitle="Owner notes. No diagnosis."
-          back
+          back={section !== "overview"}
           onBack={onBack}
           actionIcon="folder-open-outline"
           actionLabel="Open Records from Health Watch"
@@ -1649,8 +1650,10 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
   },
   healthScoreToken: {
-    width: 78,
+    minWidth: 78,
+    maxWidth: "42%",
     minHeight: 84,
+    flexShrink: 0,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",

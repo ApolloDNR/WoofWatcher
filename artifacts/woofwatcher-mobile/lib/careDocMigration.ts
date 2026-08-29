@@ -106,7 +106,7 @@ function quarantineMessage(collection: CareDocMigratableCollection): string {
 function migrateCollection(
   value: unknown,
   collection: CareDocMigratableCollection,
-  migrateItem: (item: Record<string, unknown>) => Record<string, unknown>,
+  migrateItem: (item: Record<string, unknown>, index: number) => Record<string, unknown>,
 ): { items?: Array<Record<string, unknown>>; quarantined: CareDocMigrationQuarantineItem[] } {
   if (value === undefined) return { quarantined: [] };
   if (!Array.isArray(value)) {
@@ -120,7 +120,7 @@ function migrateCollection(
   const quarantined: CareDocMigrationQuarantineItem[] = [];
   value.forEach((rawValue, index) => {
     if (isRecord(rawValue)) {
-      items.push(migrateItem(rawValue));
+      items.push(migrateItem(rawValue, index));
     } else {
       quarantined.push({ collection, index, rawValue, message: quarantineMessage(collection) });
     }
@@ -147,6 +147,129 @@ function migrateRecord(item: Record<string, unknown>): Record<string, unknown> {
   );
 }
 
+function hasUsableId(item: Record<string, unknown>): item is Record<string, unknown> & { id: string } {
+  return typeof item.id === "string" && item.id.trim().length > 0;
+}
+
+function repairMissingRecordIds(
+  records: Array<Record<string, unknown>> | undefined,
+): Array<Record<string, unknown>> | undefined {
+  if (!records) return undefined;
+  const reservedIds = new Set(
+    records.filter(hasUsableId).map((record) => record.id),
+  );
+
+  return records.map((record, index) => {
+    if (hasUsableId(record)) return record;
+    const base = `record_migrated_${index + 1}`;
+    let id = base;
+    let suffix = 2;
+    while (reservedIds.has(id)) {
+      id = `${base}_${suffix}`;
+      suffix += 1;
+    }
+    reservedIds.add(id);
+    return { ...record, id };
+  });
+}
+
+const DEVICE_ONLY_RECORD_ATTACHMENT_FIELDS = [
+  "attachmentUri",
+  "attachmentName",
+  "attachmentMimeType",
+] as const;
+
+function withoutDeviceOnlyRecordAttachment(
+  record: Record<string, unknown>,
+): Record<string, unknown> {
+  if (
+    !DEVICE_ONLY_RECORD_ATTACHMENT_FIELDS.some((field) =>
+      Object.prototype.hasOwnProperty.call(record, field),
+    )
+  ) {
+    return record;
+  }
+  const {
+    attachmentUri: _attachmentUri,
+    attachmentName: _attachmentName,
+    attachmentMimeType: _attachmentMimeType,
+    ...shareable
+  } = record;
+  return shareable;
+}
+
+/**
+ * Provider state must never carry a device's private file URI or imply that
+ * another device has the same app-owned attachment. The record itself still
+ * syncs; its local attachment metadata does not.
+ */
+export function sanitizeCareDocForProviderSync<T extends object>(doc: T): T {
+  const records = (doc as { records?: unknown }).records;
+  if (!Array.isArray(records)) return doc;
+  let changed = false;
+  const shareableRecords = records.map((record) => {
+    if (!isRecord(record)) return record;
+    const shareable = withoutDeviceOnlyRecordAttachment(record);
+    if (shareable !== record) changed = true;
+    return shareable;
+  });
+  return changed ? ({ ...doc, records: shareableRecords } as T) : doc;
+}
+
+function localAttachmentFields(
+  record: Record<string, unknown> | undefined,
+): Record<string, unknown> | null {
+  if (
+    !record ||
+    typeof record.attachmentUri !== "string" ||
+    record.attachmentUri.trim().length === 0
+  ) {
+    return null;
+  }
+  return {
+    attachmentUri: record.attachmentUri,
+    ...(typeof record.attachmentName === "string" && record.attachmentName.trim()
+      ? { attachmentName: record.attachmentName }
+      : {}),
+    ...(typeof record.attachmentMimeType === "string" && record.attachmentMimeType.trim()
+      ? { attachmentMimeType: record.attachmentMimeType }
+      : {}),
+  };
+}
+
+/**
+ * Drops any URI received from a provider, then overlays only the attachment
+ * owned by this exact device when record identity matches.
+ */
+export function restoreDeviceOnlyRecordAttachments<
+  TProvider extends object,
+  TLocal extends object,
+>(providerDoc: TProvider, localDoc: TLocal): TProvider {
+  const providerRecords = (providerDoc as { records?: unknown }).records;
+  if (!Array.isArray(providerRecords)) return providerDoc;
+  const localRecords = (localDoc as { records?: unknown }).records;
+  const localById = new Map<string, Record<string, unknown>>();
+  if (Array.isArray(localRecords)) {
+    for (const record of localRecords) {
+      if (isRecord(record) && hasUsableId(record)) {
+        localById.set(record.id, record);
+      }
+    }
+  }
+
+  let changed = false;
+  const restoredRecords = providerRecords.map((record) => {
+    if (!isRecord(record)) return record;
+    const shareable = withoutDeviceOnlyRecordAttachment(record);
+    const local = hasUsableId(record) ? localById.get(record.id) : undefined;
+    const attachment = localAttachmentFields(local);
+    const restored = attachment ? { ...shareable, ...attachment } : shareable;
+    if (restored !== record) changed = true;
+    return restored;
+  });
+  return changed ? ({ ...providerDoc, records: restoredRecords } as TProvider) : providerDoc;
+}
+
 function migrateCalendarEvent(item: Record<string, unknown>): Record<string, unknown> {
   const withDateIssue = withFieldIssue(
     item,
@@ -171,6 +294,7 @@ export function migrateCareDoc<T extends object>(
   const migratable = doc as T & MigratableCareDoc;
   const routines = migrateCollection(migratable.routines, "routines", migrateRoutine);
   const records = migrateCollection(migratable.records, "records", migrateRecord);
+  const repairedRecords = repairMissingRecordIds(records.items);
   const calendarEvents = migrateCollection(
     migratable.calendarEvents,
     "calendarEvents",
@@ -190,7 +314,7 @@ export function migrateCareDoc<T extends object>(
     ...doc,
     dataVersion: CURRENT_CARE_DOC_DATA_VERSION,
     ...(routines.items ? { routines: routines.items } : {}),
-    ...(records.items ? { records: records.items } : {}),
+    ...(repairedRecords ? { records: repairedRecords } : {}),
     ...(calendarEvents.items ? { calendarEvents: calendarEvents.items } : {}),
     ...(migrationQuarantine.length > 0 ? { migrationQuarantine } : {}),
   } as T & { dataVersion: number };

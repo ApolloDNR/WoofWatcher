@@ -167,11 +167,13 @@ function MetricBarChart({
   buckets,
   labelStride,
   color,
+  accessibilityLabel,
 }: {
   values: number[];
   buckets: TrendBucket[];
   labelStride: number;
   color: string;
+  accessibilityLabel: string;
 }) {
   const colors = useColors();
   const reduced = useReducedMotion();
@@ -179,7 +181,11 @@ function MetricBarChart({
   const dense = buckets.length > 14;
   const cellPad = dense ? 1.5 : 4;
   return (
-    <View>
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={accessibilityLabel}
+    >
       <View style={[styles.barsRow, { height: BAR_HEIGHT }]}>
         {values.map((value, i) => (
           <View key={i} style={[styles.barCell, { paddingHorizontal: cellPad }]}>
@@ -202,10 +208,12 @@ function MoodLineChart({
   averages,
   buckets,
   labelStride,
+  accessibilityLabel,
 }: {
   averages: (number | null)[];
   buckets: TrendBucket[];
   labelStride: number;
+  accessibilityLabel: string;
 }) {
   const colors = useColors();
   const reduced = useReducedMotion();
@@ -247,7 +255,11 @@ function MoodLineChart({
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
 
   return (
-    <View>
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={accessibilityLabel}
+    >
       <View style={{ height: LINE_HEIGHT }} onLayout={onLayout}>
         {width > 0 ? (
           <Svg width={width} height={LINE_HEIGHT}>
@@ -410,6 +422,16 @@ export default function TrendsScreen({
   // plot; potty follows the same completed-count guard for consistency.
   const hasActivity = activityTotal > 0;
   const hasPotty = pottyTotal > 0;
+  const moodValues = moodAverages.filter((value): value is number => value != null);
+  const moodLow = moodValues.length ? Math.min(...moodValues) : 0;
+  const moodHigh = moodValues.length ? Math.max(...moodValues) : 0;
+  const activePeriods = activityValues.filter((value) => value > 0).length;
+  const peakActivity = Math.max(0, ...activityValues);
+  const pottyPeriods = pottyValues.filter((value) => value > 0).length;
+  const peakPotty = Math.max(0, ...pottyValues);
+  const moodChartSummary = `Mood check-ins chart for ${win.rangeLabel}. Average ${moodAvg.toFixed(1)} out of 5 from ${moodInWindow.length} ${moodInWindow.length === 1 ? "check-in" : "check-ins"}; period averages range from ${moodLow.toFixed(1)} to ${moodHigh.toFixed(1)}.`;
+  const activityChartSummary = `Active minutes chart for ${win.rangeLabel}. ${activityTotal} total minutes across ${activePeriods} active ${activePeriods === 1 ? "period" : "periods"}; peak ${peakActivity} minutes in one period.`;
+  const pottyChartSummary = `Potty logs chart for ${win.rangeLabel}. ${pottyTotal} total ${pottyTotal === 1 ? "log" : "logs"} across ${pottyPeriods} ${pottyPeriods === 1 ? "period" : "periods"}; peak ${peakPotty} ${peakPotty === 1 ? "log" : "logs"} in one period.`;
 
   // The summary card is always a weekly digest (matches the mock label), so it
   // stays honest even when the charts are windowed to Day / Month / Year.
@@ -450,7 +472,12 @@ export default function TrendsScreen({
           statTone={hasMood ? colors.forest : undefined}
         >
           {hasMood ? (
-            <MoodLineChart averages={moodAverages} buckets={win.buckets} labelStride={win.labelStride} />
+            <MoodLineChart
+              averages={moodAverages}
+              buckets={win.buckets}
+              labelStride={win.labelStride}
+              accessibilityLabel={moodChartSummary}
+            />
           ) : (
             <ChartEmpty message="No mood check-ins yet — they'll chart here." height={LINE_HEIGHT} />
           )}
@@ -469,6 +496,7 @@ export default function TrendsScreen({
               buckets={win.buckets}
               labelStride={win.labelStride}
               color={colors.forest}
+              accessibilityLabel={activityChartSummary}
             />
           ) : (
             <ChartEmpty
@@ -491,6 +519,7 @@ export default function TrendsScreen({
               buckets={win.buckets}
               labelStride={win.labelStride}
               color={colors.meterSleep}
+              accessibilityLabel={pottyChartSummary}
             />
           ) : (
             <ChartEmpty message="No potty logs yet — they'll chart here." height={BAR_HEIGHT} />

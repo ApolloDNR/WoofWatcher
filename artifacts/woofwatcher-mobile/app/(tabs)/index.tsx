@@ -4017,11 +4017,14 @@ const s = StyleSheet.create({
   },
   welcomeActions: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
+    flexWrap: "wrap",
     gap: 10,
   },
   welcomePrimary: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
+    maxWidth: "100%",
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -4031,9 +4034,12 @@ const s = StyleSheet.create({
   },
   welcomePrimaryText: {
     fontSize: 14,
+    flexShrink: 1,
   },
   welcomeGhost: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
+    maxWidth: "100%",
+    flexShrink: 1,
     paddingHorizontal: 10,
     paddingVertical: 11,
     justifyContent: "center",
@@ -4578,11 +4584,14 @@ const s = StyleSheet.create({
   },
   nextButtonRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginTop: 10,
   },
   nextButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
+    maxWidth: "100%",
+    flexShrink: 1,
     borderRadius: 999,
     paddingHorizontal: 15,
     alignItems: "center",

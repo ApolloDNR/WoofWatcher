@@ -18,6 +18,13 @@ const RECORDS_SCREEN_PATH = join(
   "health",
   "RecordsScreen.tsx",
 );
+const CARE_CONTEXT_PATH = join(
+  process.cwd(),
+  "artifacts",
+  "woofwatcher-mobile",
+  "context",
+  "CareContext.tsx",
+);
 
 function recordsSource(): string {
   return readFileSync(RECORDS_SCREEN_PATH, "utf8");
@@ -173,7 +180,8 @@ test("Records native controls expose explicit role, labels, and selected or disa
     "Edit diet on file",
     "Add first record",
     "Close Care Pass preview",
-    "Attach a photo or receipt",
+    "Choose a photo attachment",
+    "Choose a PDF or document attachment",
     "Cancel record editor",
   ]) {
     const labelIndex = records.indexOf(`accessibilityLabel="${label}"`);
@@ -201,5 +209,40 @@ test("Records native controls expose explicit role, labels, and selected or disa
   assert.match(
     records,
     /accessibilityLabel="Save Care Pass and share current data"[\s\S]{0,180}busy: carePassSaveShareBusy/,
+  );
+});
+
+test("record attachments are type-checked, device-only, shareable, and removable without deleting the record", () => {
+  const records = recordsSource();
+
+  assert.match(records, /DocumentPicker\.getDocumentAsync\(/);
+  assert.match(records, /copyToCacheDirectory: true/);
+  assert.match(records, /validateRecordAttachment/);
+  assert.match(records, /application\/pdf/);
+  assert.match(records, /Saved on this device only/);
+  assert.match(records, /Sharing\.shareAsync\(/);
+  assert.match(records, /const removeRecordAttachment =/);
+  assert.match(records, /Remove attachment from/);
+
+  const removal = sourceBetween(
+    records,
+    "const removeRecordAttachment =",
+    "const periodLabel =",
+  );
+  assert.match(removal, /records: doc\.records\.map/);
+  assert.match(removal, /attachmentUri: _attachmentUri/);
+  assert.doesNotMatch(removal, /doc\.records\.filter/);
+});
+
+test("every provider care-doc write strips local attachment paths and provider reads restore only local files", () => {
+  const careContext = readFileSync(CARE_CONTEXT_PATH, "utf8");
+
+  assert.equal(
+    (careContext.match(/doc: sanitizeCareDocForProviderSync\(/g) ?? []).length,
+    3,
+  );
+  assert.equal(
+    (careContext.match(/restoreDeviceOnlyRecordAttachments\(/g) ?? []).length,
+    3,
   );
 });

@@ -85,6 +85,8 @@ import {
   CURRENT_CARE_DOC_DATA_VERSION,
   isFutureCareDocDataVersion,
   migrateCareDoc,
+  restoreDeviceOnlyRecordAttachments,
+  sanitizeCareDocForProviderSync,
   type CareCorrectionIssue,
   type CareDocMigrationQuarantineItem,
 } from "../lib/careDocMigration";
@@ -303,6 +305,7 @@ export interface Record {
   note: string;
   attachmentUri?: string;
   attachmentName?: string;
+  attachmentMimeType?: string;
   correctionIssues?: CareCorrectionIssue[];
 }
 
@@ -2266,7 +2269,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         () => putCareState(
           {
             version: versionRef.current,
-            doc: next as unknown as CareStateEnvelope["doc"],
+            doc: sanitizeCareDocForProviderSync(next) as unknown as CareStateEnvelope["doc"],
           },
           expectedHouseholdHeaders(authPermit.householdId),
         ),
@@ -2292,7 +2295,10 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       }
       if (!canContinue()) return;
       const merged: CareDoc = {
-        ...mergeDoc(envelope.doc as Partial<CareDoc>),
+        ...restoreDeviceOnlyRecordAttachments(
+          mergeDoc(envelope.doc as Partial<CareDoc>),
+          docRef.current,
+        ),
         ...docRef.current,
         updatedAt: new Date().toISOString(),
       };
@@ -2309,7 +2315,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           () => putCareState(
             {
               version: envelope.version,
-              doc: merged as unknown as CareStateEnvelope["doc"],
+              doc: sanitizeCareDocForProviderSync(merged) as unknown as CareStateEnvelope["doc"],
             },
             expectedHouseholdHeaders(authPermit.householdId),
           ),
@@ -2875,7 +2881,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           () => putCareState(
             {
               version: plan.version,
-              doc: plan.doc as unknown as CareStateEnvelope["doc"],
+              doc: sanitizeCareDocForProviderSync(plan.doc) as unknown as CareStateEnvelope["doc"],
             },
             expectedHouseholdHeaders(authPermit.householdId),
           ),
@@ -2894,10 +2900,16 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         if (!canContinue()) return;
-        nextDoc = mergeDoc(res.doc as Partial<CareDoc>);
+        nextDoc = restoreDeviceOnlyRecordAttachments(
+          mergeDoc(res.doc as Partial<CareDoc>),
+          docRef.current,
+        );
         nextServerVersion = res.version;
       } else {
-        nextDoc = mergeDoc(plan.doc as Partial<CareDoc>);
+        nextDoc = restoreDeviceOnlyRecordAttachments(
+          mergeDoc(plan.doc as Partial<CareDoc>),
+          docRef.current,
+        );
         nextServerVersion = plan.version;
       }
       if (

@@ -63,6 +63,32 @@ test("builds a shareable pet credential from profile and records", () => {
   assert.match(credential.message, /Apollo/);
 });
 
+test("builds Dog ID fields from the newest current records before truncating vaccines", () => {
+  const credential = buildPetCredential({
+    profile: { name: "Phoenix" },
+    records: [
+      { id: "insurance-old", type: "insurance", title: "Old insurance", due: "2024-06-01" },
+      { id: "chip-old", type: "microchip", title: "Old registry", due: "111111111111111" },
+      { id: "vaccine-old", type: "vaccine", title: "Old vaccine", due: "2024-05-20" },
+      { id: "insurance-current", type: "insurance", title: "Current insurance", due: "2027-06-01" },
+      { id: "chip-current", type: "microchip", title: "Current registry", due: "222222222222222" },
+      { id: "vaccine-a", type: "vaccine", title: "Current vaccine A", due: "2027-01-01" },
+      { id: "vaccine-b", type: "vaccine", title: "Current vaccine B", due: "2027-02-01" },
+      { id: "vaccine-c", type: "vaccine", title: "Current vaccine C", due: "2027-03-01" },
+      { id: "vaccine-d", type: "vaccine", title: "Current vaccine D", due: "2027-04-01" },
+    ],
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+
+  assert.match(credential.insurance, /^Current insurance/);
+  assert.match(credential.microchip, /^Current registry/);
+  assert.match(credential.vaccines, /Current vaccine A/);
+  assert.match(credential.vaccines, /Current vaccine B/);
+  assert.match(credential.vaccines, /Current vaccine C/);
+  assert.match(credential.vaccines, /Current vaccine D/);
+  assert.doesNotMatch(credential.vaccines, /Old vaccine/);
+});
+
 test("uses dog profile credential fields when records are not uploaded yet", () => {
   const credential = buildPetCredential({
     profile: {
@@ -273,6 +299,46 @@ test("classifies date-backed records by due status", () => {
     getRecordDueStatus({ type: "insurance", title: "Lemonade", due: "2027-06-01" }, now).status,
     "current",
   );
+});
+
+test("treats historical record dates as recorded facts while renewable credentials can expire", () => {
+  const now = new Date("2026-06-06T12:00:00.000Z").getTime();
+  const historical = [
+    { id: "visit", type: "vet", title: "Wellness visit", due: "2025-01-15" },
+    { id: "receipt", type: "receipt", title: "Wellness receipt", due: "2025-01-15" },
+    { id: "registration", type: "microchip", title: "Chip registration", due: "2025-01-15" },
+    { id: "weigh-in", type: "weight", title: "Clinic weigh-in", due: "2025-01-15" },
+    { id: "document", type: "document", title: "Lab document", due: "2025-01-15" },
+  ];
+
+  for (const record of historical) {
+    const status = getRecordDueStatus(record, now);
+    assert.equal(status.status, "reference", `${record.type} dates are not expirations`);
+    assert.equal(status.label, "Recorded");
+    assert.equal(status.date, "Jan 15, 2025");
+  }
+
+  const reminders = deriveRecordReminders(historical, { now });
+  assert.ok(historical.every((record) => reminders.every((item) => item.recordId !== record.id)));
+
+  for (const record of [
+    { type: "vaccine", title: "Rabies", due: "2025-01-15" },
+    { type: "insurance", title: "Policy renewal", due: "2025-01-15" },
+    { type: "medication", title: "Prescription refill", due: "2025-01-15" },
+  ]) {
+    assert.equal(getRecordDueStatus(record, now).status, "expired");
+  }
+});
+
+test("orders each vault section newest first and reports its newest saved date", () => {
+  const vault = summarizeRecordVault([
+    { id: "visit-old", type: "vet", title: "Older visit", due: "2024-02-10" },
+    { id: "visit-current", type: "vet", title: "Newest visit", due: "2026-02-10" },
+  ]);
+  const visits = vault.sections.find((section) => section.kind === "vet");
+
+  assert.deepEqual(visits?.records.map((record) => record.id), ["visit-current", "visit-old"]);
+  assert.equal(visits?.latest, "2026-02-10");
 });
 
 test("treats non-date record references as reference values", () => {

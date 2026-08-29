@@ -7,7 +7,12 @@ import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveIncidentWatch, type IncidentWatchItem } from "./incident-watch.ts";
 import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
-import { recordDueNeedsCorrection } from "./record-vault.ts";
+import {
+  getRecordDueStatus,
+  isRenewableCareRecord,
+  orderCareRecordsCurrentFirst,
+  recordDueNeedsCorrection,
+} from "./record-vault.ts";
 import { DEFAULT_PET_DISPLAY_NAME, resolvePetName } from "./pet-identity.ts";
 import { derivePottyHealth } from "./potty-health.ts";
 import { isHouseholdVisibleCareEvidence, selectSharedCareEvidence } from "./shared-evidence.ts";
@@ -436,6 +441,21 @@ function section(title: string, lines: string[]): CarePassSection | null {
   return cleaned.length
     ? { title: boundedCarePassLine(title, 128), lines: cleaned }
     : null;
+}
+
+function carePassRecordLine(record: CarePassRecord, now: number): string {
+  let savedValue = "";
+  if (recordDueNeedsCorrection(record)) {
+    savedValue = " - date needs correction";
+  } else if (record.due) {
+    const hasHistoricalDate = getRecordDueStatus(record, now).date != null;
+    savedValue = isRenewableCareRecord(record)
+      ? ` due ${record.due}`
+      : hasHistoricalDate
+        ? ` date ${record.due}`
+        : ` - ${record.due}`;
+  }
+  return `${record.title}${savedValue}${record.note ? ` - ${record.note}` : ""}`;
 }
 
 function walkRouteTemplateLine(template: WalkRouteTemplate): string {
@@ -950,7 +970,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   // every exported section on the same observable evidence set.
   const entries = selectSharedCareEvidence(input.entries ?? [], now);
   const routines = input.routines ?? [];
-  const records = input.records ?? [];
+  const records = orderCareRecordsCurrentFirst(input.records ?? [], now);
   // The share artifact must agree with every app surface: the stored "My Dog"
   // placeholder (and an empty name) resolve to the same display name the rest
   // of the app shows, never a raw placeholder in the pass title or Dog card.
@@ -1178,9 +1198,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
         ])
       : null,
     input.audience === "vet"
-      ? section("Records", records.slice(0, 6).map((record) => (
-          `${record.title}${recordDueNeedsCorrection(record) ? " - date needs correction" : record.due ? ` due ${record.due}` : ""}${record.note ? ` - ${record.note}` : ""}`
-        )))
+      ? section("Records", records.slice(0, 6).map((record) => carePassRecordLine(record, now)))
       : null,
   ].filter((item): item is CarePassSection => item !== null);
 

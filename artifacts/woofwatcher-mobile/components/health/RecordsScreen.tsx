@@ -1,7 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -122,6 +125,7 @@ import {
   runRecordAttachmentPicker,
   settlePickedMediaDraftRelease,
   stagePickedMediaDraft,
+  type PickedMediaAsset,
   type PickedMediaDraft,
 } from "@/lib/pickedMediaLocalDataActions";
 import {
@@ -220,6 +224,44 @@ const RECORD_OPTIONS: {
   { kind: "document", label: "Document", detail: "Certificates and files", icon: "document-text-outline", dueLabel: "Document date (YYYY-MM-DD)" },
 ];
 
+const RECORD_DOCUMENT_PICKER_TYPES = [
+  "application/pdf",
+  "text/plain",
+  "text/csv",
+  "application/rtf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.oasis.opendocument.text",
+] as const;
+
+const RECORD_ATTACHMENT_MIME_BY_EXTENSION: Record<string, string> = {
+  csv: "text/csv",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  gif: "image/gif",
+  heic: "image/heic",
+  heif: "image/heif",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  odt: "application/vnd.oasis.opendocument.text",
+  pdf: "application/pdf",
+  png: "image/png",
+  rtf: "application/rtf",
+  txt: "text/plain",
+  webp: "image/webp",
+};
+
+const SUPPORTED_RECORD_ATTACHMENT_MIME_TYPES = new Set([
+  ...RECORD_DOCUMENT_PICKER_TYPES,
+  "image/gif",
+  "image/heic",
+  "image/heif",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+]);
+
 const MEDICATION_OUTCOME_FILTERS: { id: MedicationHistoryOutcomeFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "taken", label: "Taken" },
@@ -256,6 +298,43 @@ function sentenceCase(value: string): string {
 function hasAttachment(record: unknown): boolean {
   const attachment = (record as { attachmentUri?: unknown }).attachmentUri;
   return typeof attachment === "string" && attachment.trim().length > 0;
+}
+
+function recordAttachmentExtension(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const path = value.split(/[?#]/, 1)[0] ?? "";
+  return path.match(/\.([a-zA-Z0-9]{1,10})$/)?.[1]?.toLowerCase() ?? null;
+}
+
+function normalizeRecordAttachmentMimeType(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+  return normalized || null;
+}
+
+function inferRecordAttachmentMimeType(
+  mimeType: string | null | undefined,
+  fileNameOrUri: string | null | undefined,
+): string | null {
+  const normalized = normalizeRecordAttachmentMimeType(mimeType);
+  if (normalized && normalized !== "application/octet-stream") return normalized;
+  const extension = recordAttachmentExtension(fileNameOrUri);
+  return extension ? RECORD_ATTACHMENT_MIME_BY_EXTENSION[extension] ?? null : null;
+}
+
+function validateRecordAttachment(
+  asset: PickedMediaAsset,
+): { ok: true; mimeType: string } | { ok: false; message: string } {
+  const fileNameOrUri = asset.fileName?.trim() || asset.uri;
+  const mimeType = inferRecordAttachmentMimeType(asset.mimeType, fileNameOrUri);
+  if (mimeType && SUPPORTED_RECORD_ATTACHMENT_MIME_TYPES.has(mimeType)) {
+    return { ok: true, mimeType: mimeType === "image/jpg" ? "image/jpeg" : mimeType };
+  }
+  return {
+    ok: false,
+    message:
+      "Choose a PDF, Word, text, RTF, CSV, OpenDocument, JPEG, PNG, HEIC, GIF, or WebP file.",
+  };
 }
 
 function credentialFieldReady(value: string): boolean {
@@ -381,6 +460,7 @@ export default function RecordsScreen({
   const [recordNote, setRecordNote] = useState("");
   const [recordAttachmentUri, setRecordAttachmentUri] = useState("");
   const [recordAttachmentName, setRecordAttachmentName] = useState("");
+  const [recordAttachmentMimeType, setRecordAttachmentMimeType] = useState("");
   const recordAttachmentDraftRef = useRef<PickedMediaDraft>(
     createPickedMediaDraft(),
   );
@@ -699,6 +779,7 @@ export default function RecordsScreen({
     setRecordNote("");
     setRecordAttachmentUri("");
     setRecordAttachmentName("");
+    setRecordAttachmentMimeType("");
     recordAttachmentDraftRef.current = createPickedMediaDraft();
     recordFormOpenRef.current = true;
     setRecordOpen(true);
@@ -720,6 +801,12 @@ export default function RecordsScreen({
     setRecordNote(record.note);
     setRecordAttachmentUri(record.attachmentUri ?? "");
     setRecordAttachmentName(record.attachmentName ?? "");
+    setRecordAttachmentMimeType(
+      inferRecordAttachmentMimeType(
+        record.attachmentMimeType,
+        record.attachmentName ?? record.attachmentUri,
+      ) ?? "",
+    );
     recordAttachmentDraftRef.current = createPickedMediaDraft(
       record.attachmentUri,
     );
@@ -737,12 +824,13 @@ export default function RecordsScreen({
     openRecordForm(missingKind ?? "document");
   };
 
-  const pickRecordAttachment = async () => {
+  const pickRecordAttachment = async (source: "photo" | "document") => {
     if (recordPickerInFlightRef.current || recordSaveInFlightRef.current) return;
     recordPickerInFlightRef.current = true;
     setRecordPickerBusy(true);
     const formSession = recordFormSessionRef.current;
     const draftBeforePick = recordAttachmentDraftRef.current;
+    let rejectedAttachmentMessage: string | null = null;
     try {
       const action = await runRecordAttachmentPicker({
         appFileSystem,
@@ -750,11 +838,46 @@ export default function RecordsScreen({
           draftBeforePick.originalUri,
           ...draftBeforePick.stagedUris,
         ],
-        pick: () =>
-          ImagePicker.launchImageLibraryAsync({
-            quality: 0.8,
-            allowsEditing: false,
-          }),
+        pick: async () => {
+          let asset: PickedMediaAsset | null = null;
+          if (source === "photo") {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              quality: 0.8,
+              allowsEditing: false,
+            });
+            if (!result.canceled && result.assets[0]) {
+              asset = {
+                uri: result.assets[0].uri,
+                fileName: result.assets[0].fileName,
+                mimeType: result.assets[0].mimeType,
+              };
+            }
+          } else {
+            const result = await DocumentPicker.getDocumentAsync({
+              type: [...RECORD_DOCUMENT_PICKER_TYPES],
+              copyToCacheDirectory: true,
+              multiple: false,
+            });
+            if (!result.canceled && result.assets[0]) {
+              asset = {
+                uri: result.assets[0].uri,
+                fileName: result.assets[0].name,
+                mimeType: result.assets[0].mimeType,
+              };
+            }
+          }
+          if (!asset) return { canceled: true as const, assets: null };
+          const validation = validateRecordAttachment(asset);
+          if (!validation.ok) {
+            rejectedAttachmentMessage = validation.message;
+            return { canceled: true as const, assets: null };
+          }
+          return {
+            canceled: false as const,
+            assets: [{ ...asset, mimeType: validation.mimeType }],
+          };
+        },
         apply: ({ asset, uri }) => {
           if (
             !recordsScreenMountedRef.current ||
@@ -774,6 +897,7 @@ export default function RecordsScreen({
               uri.split(/[\\/]/).pop()?.split(/[?#]/, 1)[0] ||
               `${recordOption.label} attachment`,
           );
+          setRecordAttachmentMimeType(asset.mimeType?.trim() ?? "");
           return true;
         },
       });
@@ -782,7 +906,9 @@ export default function RecordsScreen({
         !recordFormOpenRef.current ||
         recordFormSessionRef.current !== formSession
       ) return;
-      if (action.status === "not-saved") {
+      if (rejectedAttachmentMessage) {
+        notifyDialog("Unsupported attachment", rejectedAttachmentMessage);
+      } else if (action.status === "not-saved") {
         notifyDialog(
           "Attachment not saved",
           action.cleanupFailed
@@ -835,7 +961,7 @@ export default function RecordsScreen({
         "Attachment unavailable",
         error instanceof PickedMediaLocalDataActionError && error.cleanupFailed
           ? "The attachment was not added, and one temporary local file could not be removed. Privacy & Data reset will retry cleanup."
-          : "Choose the file details manually for now.",
+          : "Try again or choose another supported photo or document.",
       );
     } finally {
       recordPickerInFlightRef.current = false;
@@ -873,6 +999,9 @@ export default function RecordsScreen({
         ? {
             attachmentUri: recordAttachmentUri,
             attachmentName: recordAttachmentName || `${recordOption.label} attachment`,
+            ...(recordAttachmentMimeType
+              ? { attachmentMimeType: recordAttachmentMimeType }
+              : {}),
           }
         : {}),
     };
@@ -881,7 +1010,12 @@ export default function RecordsScreen({
       records: recordEditId
         ? doc.records.map((record) =>
             record.id === recordEditId
-              ? mergeValidatedRecordEdit(record, draft)
+              ? {
+                  ...mergeValidatedRecordEdit(record, draft),
+                  ...(draft.attachmentMimeType
+                    ? { attachmentMimeType: draft.attachmentMimeType }
+                    : {}),
+                }
               : record,
           )
         : [...doc.records, draft],
@@ -976,6 +1110,65 @@ export default function RecordsScreen({
     );
   };
 
+  const removeRecordAttachment = (record: CareRecord) => {
+    if (!record.attachmentUri) return;
+    confirmThroughSteps(
+      [
+        {
+          title: "Remove attachment",
+          message: `Remove the device-only attachment from "${record.title}"? The record and its notes will stay in the vault.`,
+          confirmLabel: "Remove attachment",
+          destructive: true,
+        },
+      ],
+      async () => {
+        if (careMutationsBlocked) {
+          showCareReadOnly();
+          return;
+        }
+        const uri = record.attachmentUri;
+        const updated = updateCareDoc((doc) => ({
+          ...doc,
+          records: doc.records.map((candidate) => {
+            if (candidate.id !== record.id) return candidate;
+            const {
+              attachmentUri: _attachmentUri,
+              attachmentName: _attachmentName,
+              attachmentMimeType: _attachmentMimeType,
+              ...withoutAttachment
+            } = candidate;
+            return withoutAttachment;
+          }),
+        }));
+        const accepted = runAcceptedCareMutation(updated, () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        });
+        if (!accepted) {
+          showCareReadOnly();
+          return;
+        }
+        const result = await runCareFileCleanupAfterDurableSnapshot({
+          persistSnapshot: persistCurrentCareSnapshot,
+          cleanup: () =>
+            releasePickedMediaReferences({
+              appFileSystem,
+              uris: [uri],
+              protectedUris: carePickedMediaUris(record.id),
+            }),
+        });
+        if (!recordsScreenMountedRef.current) return;
+        if (result.status === "snapshot-not-confirmed") {
+          notifyDialog(
+            "Attachment retained for safety",
+            "WoofWatcher removed the attachment from this session but could not confirm the record change in device storage, so the local file was kept. Try again before relaunching.",
+          );
+        } else if (result.cleanup.status === "partial-failure") {
+          reportPickedMediaCleanupFailure(result.cleanup.failedUris.length);
+        }
+      },
+    );
+  };
+
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "Month";
 
   const runRecordsShare = async <T,>(work: () => Promise<T>) =>
@@ -985,6 +1178,42 @@ export default function RecordsScreen({
         return await work();
       } finally {
         if (recordsScreenMountedRef.current) setRecordsShareBusy(false);
+      }
+    });
+
+  const openOrShareRecordAttachment = async (record: CareRecord) =>
+    await runRecordsShare(async () => {
+      const uri = record.attachmentUri?.trim();
+      if (!uri) return;
+      const availability = await appFileSystem.inspect(uri);
+      if (availability === "missing") {
+        notifyDialog(
+          "Attachment missing",
+          "This device no longer has the saved file. Remove the attachment reference and choose the file again.",
+        );
+        return;
+      }
+      try {
+        if (Platform.OS === "web") {
+          const canOpen = await Linking.canOpenURL(uri);
+          if (!canOpen) throw new Error("The browser cannot open this local file.");
+          await Linking.openURL(uri);
+          return;
+        }
+        if (!(await Sharing.isAvailableAsync())) {
+          throw new Error("File sharing is unavailable on this device.");
+        }
+        await Sharing.shareAsync(uri, {
+          dialogTitle: `Open or share ${record.attachmentName?.trim() || record.title}`,
+          ...(record.attachmentMimeType
+            ? { mimeType: record.attachmentMimeType }
+            : {}),
+        });
+      } catch {
+        notifyDialog(
+          "Attachment unavailable",
+          "WoofWatcher could not open the saved file on this device. Try again or choose the file again from the record editor.",
+        );
       }
     });
 
@@ -1444,6 +1673,15 @@ export default function RecordsScreen({
   // Goal-distance math only exists once a real current weight and a real goal
   // are on file (the lib already returns 0 when no goal is set).
   const remaining = current > 0 ? weightTrend.remainingToGoal : 0;
+  const firstChartWeight = series[0] ?? 0;
+  const latestChartWeight = series[series.length - 1] ?? current;
+  const chartWeightDelta = Math.abs(latestChartWeight - firstChartWeight);
+  const formatChartWeight = (value: number) => Number(value.toFixed(1)).toString();
+  const weightChartDirection =
+    chartWeightDelta < 0.05
+      ? "no change"
+      : `${latestChartWeight > firstChartWeight ? "up" : "down"} ${formatChartWeight(chartWeightDelta)} ${unit}`;
+  const weightChartAccessibilityLabel = `Weight trend chart for the last 90 days. ${series.length} weigh-ins from ${formatChartWeight(firstChartWeight)} ${unit} to ${formatChartWeight(latestChartWeight)} ${unit}, ${weightChartDirection}.${goalWeight > 0 ? ` Goal ${formatChartWeight(goalWeight)} ${unit}.` : " No goal set."}`;
   const maxBar = Math.max(1, ...moodStats.bars.map((b) => b.count));
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
@@ -2216,6 +2454,11 @@ export default function RecordsScreen({
             ) : null}
 
             {hasWeightSeries ? (
+              <View
+                accessible
+                accessibilityRole="image"
+                accessibilityLabel={weightChartAccessibilityLabel}
+              >
               <Svg width={chartW} height={chartH}>
                 <Defs>
                   <SvgGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
@@ -2253,6 +2496,7 @@ export default function RecordsScreen({
                   </SvgText>
                 ))}
               </Svg>
+              </View>
             ) : (
               <View style={[s.weightEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons name="scale-outline" size={24} color={colors.mutedForeground} />
@@ -3679,6 +3923,9 @@ export default function RecordsScreen({
               recordList.map((r, i) => {
                 const option = RECORD_OPTIONS.find((item) => item.kind === r.type) ?? RECORD_OPTIONS[7];
                 const tone = r.type === "receipt" ? colors.copper : r.type === "insurance" || r.type === "microchip" ? colors.primary : colors.sage;
+                const sourceRecord = r.id
+                  ? state.records.find((record) => record.id === r.id)
+                  : undefined;
                 const correction = getCareCorrectionPresentation(r, "due");
                 const dueStatus = correction ? null : getRecordDueStatus(r, now);
                 const statusTone =
@@ -3701,8 +3948,13 @@ export default function RecordsScreen({
                       {r.note ? (
                         <Text numberOfLines={2} style={[s.rowNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{r.note}</Text>
                       ) : null}
-                      {hasAttachment(r) ? (
-                        <Text style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Attachment saved</Text>
+                      {sourceRecord && hasAttachment(sourceRecord) ? (
+                        <View style={s.recordAttachmentSummary}>
+                          <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+                            {sourceRecord.attachmentName?.trim() || "Saved attachment"}
+                          </Text>
+                          <Text style={[s.attachmentDeviceOnly, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Saved on this device only · not included in household sync</Text>
+                        </View>
                       ) : null}
                       {correction ? (
                         <Text style={[s.rowMeta, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
@@ -3721,6 +3973,29 @@ export default function RecordsScreen({
                       ) : null}
                     </View>
                     <View style={s.recordActions}>
+                      {sourceRecord && hasAttachment(sourceRecord) ? (
+                        <>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open or share attachment for ${r.title}`}
+                            accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
+                            disabled={recordsShareBusy}
+                            onPress={() => void openOrShareRecordAttachment(sourceRecord)}
+                            style={s.deleteRecordBtn}
+                          >
+                            <Ionicons name="open-outline" size={15} color={colors.copper} />
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remove attachment from ${r.title}`}
+                            accessibilityState={{ disabled: false }}
+                            onPress={() => removeRecordAttachment(sourceRecord)}
+                            style={s.deleteRecordBtn}
+                          >
+                            <Ionicons name="close-circle-outline" size={15} color={colors.rose} />
+                          </Pressable>
+                        </>
+                      ) : null}
                       {r.id ? (
                         <Pressable
                           accessibilityRole="button"
@@ -3943,25 +4218,55 @@ export default function RecordsScreen({
                 multiline
                 style={[s.recordInput, s.recordInputMulti, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, fontFamily: "Inter_400Regular" }]}
               />
-              <Pressable
-                onPress={pickRecordAttachment}
-                disabled={recordPickerBusy || recordSaveBusy}
-                accessibilityRole="button"
-                accessibilityLabel="Attach a photo or receipt"
-                accessibilityState={{
-                  disabled: recordPickerBusy || recordSaveBusy,
-                  busy: recordPickerBusy,
-                }}
-                style={({ pressed }) => [
-                  s.attachmentBtn,
-                  { borderColor: colors.border, backgroundColor: colors.background, opacity: recordPickerBusy || recordSaveBusy ? 0.5 : pressed ? 0.75 : 1 },
-                ]}
-              >
-                <Ionicons name={recordAttachmentUri ? "checkmark-circle" : "image-outline"} size={17} color={recordAttachmentUri ? colors.sage : colors.primary} />
-                <Text style={[s.attachmentText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                  {recordAttachmentUri ? "Attachment selected" : "Attach photo or receipt"}
-                </Text>
-              </Pressable>
+              <View style={s.attachmentPickerRow}>
+                <Pressable
+                  onPress={() => void pickRecordAttachment("photo")}
+                  disabled={recordPickerBusy || recordSaveBusy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose a photo attachment"
+                  accessibilityState={{
+                    disabled: recordPickerBusy || recordSaveBusy,
+                    busy: recordPickerBusy,
+                  }}
+                  style={({ pressed }) => [
+                    s.attachmentBtn,
+                    { borderColor: colors.border, backgroundColor: colors.background, opacity: recordPickerBusy || recordSaveBusy ? 0.5 : pressed ? 0.75 : 1 },
+                  ]}
+                >
+                  <Ionicons name="image-outline" size={17} color={colors.primary} />
+                  <Text style={[s.attachmentText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Photo</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => void pickRecordAttachment("document")}
+                  disabled={recordPickerBusy || recordSaveBusy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose a PDF or document attachment"
+                  accessibilityState={{
+                    disabled: recordPickerBusy || recordSaveBusy,
+                    busy: recordPickerBusy,
+                  }}
+                  style={({ pressed }) => [
+                    s.attachmentBtn,
+                    { borderColor: colors.border, backgroundColor: colors.background, opacity: recordPickerBusy || recordSaveBusy ? 0.5 : pressed ? 0.75 : 1 },
+                  ]}
+                >
+                  <Ionicons name="document-text-outline" size={17} color={colors.primary} />
+                  <Text style={[s.attachmentText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>PDF or document</Text>
+                </Pressable>
+              </View>
+              {recordAttachmentUri ? (
+                <View style={[s.selectedAttachment, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <Ionicons name="checkmark-circle" size={18} color={colors.sage} />
+                  <View style={{ flex: 1 }}>
+                    <Text numberOfLines={1} style={[s.attachmentText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      {recordAttachmentName || `${recordOption.label} attachment`}
+                    </Text>
+                    <Text style={[s.attachmentDeviceOnly, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Saved on this device only · not included in household sync</Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={[s.attachmentDeviceOnly, s.attachmentDeviceOnlyHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Attachments stay on this device and are not included in household sync.</Text>
+              )}
                 <View style={s.sheetActions}>
                   <Pressable
                     onPress={() => void closeRecordForm()}
@@ -4531,7 +4836,13 @@ const s = StyleSheet.create({
   duePill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   dueText: { fontSize: 11.5 },
   recordDueRef: { fontSize: 10.5, maxWidth: 96 },
-  recordActions: { flexDirection: "row", alignItems: "center" },
+  recordActions: {
+    width: MIN_MOBILE_TOUCH_TARGET * 2,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
   deleteRecordBtn: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -4638,7 +4949,11 @@ const s = StyleSheet.create({
   editFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
   recordInput: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14.5 },
   recordInputMulti: { minHeight: 76, textAlignVertical: "top" },
+  attachmentPickerRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   attachmentBtn: {
+    minWidth: 140,
+    flexGrow: 1,
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -4649,7 +4964,20 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 14,
   },
-  attachmentText: { fontSize: 13.5 },
+  attachmentText: { flexShrink: 1, fontSize: 13.5, textAlign: "center" },
+  selectedAttachment: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  attachmentDeviceOnly: { fontSize: 11.5, lineHeight: 16 },
+  attachmentDeviceOnlyHint: { marginTop: 8 },
+  recordAttachmentSummary: { gap: 2, marginTop: 3 },
   sheetActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
   sheetCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   sheetCancelText: { fontSize: 15 },

@@ -6482,7 +6482,7 @@ test("keeps every current care mutation surface truthful when future data is rea
     "app/(tabs)/more.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
     "components/more/CareTeamSuppliesScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 2, updateEntry: 0 },
     "components/more/DogProfileScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
-    "components/health/RecordsScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 3, updateEntry: 0 },
+    "components/health/RecordsScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 4, updateEntry: 0 },
     "components/health/DietScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
     "components/more/AdventureScreen.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 1, updateEntry: 0 },
     "app/fastlog.tsx": { addEntry: 2, deleteEntry: 0, updateCareDoc: 0, updateEntry: 0 },
@@ -6530,7 +6530,7 @@ test("keeps every current care mutation surface truthful when future data is rea
 
   assert.deepEqual(actualInventory, expectedInventory);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.addEntry, 0), 12);
-  assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateCareDoc, 0), 19);
+  assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateCareDoc, 0), 20);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateEntry, 0), 10);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.deleteEntry, 0), 5);
   assert.equal(
@@ -6538,14 +6538,14 @@ test("keeps every current care mutation surface truthful when future data is rea
       (sum, item) => sum + item.addEntry + item.updateCareDoc + item.updateEntry + item.deleteEntry,
       0,
     ),
-    46,
+    47,
   );
 
   for (const [path, source, expectedAcceptedCallbacks] of [
     [join("(tabs)", "more.tsx"), readAppFile(join("(tabs)", "more.tsx")), 1],
     ["components/more/CareTeamSuppliesScreen.tsx", readCareTeamSuppliesScreen(), 2],
     ["components/more/DogProfileScreen.tsx", readDogProfileScreen(), 1],
-    ["components/health/RecordsScreen.tsx", readRecordsScreen(), 3],
+    ["components/health/RecordsScreen.tsx", readRecordsScreen(), 4],
     ["components/health/DietScreen.tsx", readDietScreen(), 1],
     ["components/more/PrivacyDataScreen.tsx", readPrivacyDataScreen(), 1],
     ["setup.tsx", readAppFile("setup.tsx"), 0],

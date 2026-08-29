@@ -7,6 +7,8 @@ import {
   isFutureCareDocDataVersion,
   isSchedulableRoutine,
   migrateCareDoc,
+  restoreDeviceOnlyRecordAttachments,
+  sanitizeCareDocForProviderSync,
 } from "./careDocMigration.ts";
 import {
   deriveCareHandoff,
@@ -83,6 +85,78 @@ test("leaves valid and intentionally absent values unmarked", () => {
   }
   assert.equal(isSchedulableRoutine(migrated.routines?.[0] ?? {}), true);
   assert.equal(hasCorrectionIssue(migrated.records?.[0] ?? {}, "due"), false);
+});
+
+test("repairs missing record ids deterministically so record actions always have an identity", () => {
+  const legacy = {
+    records: [
+      { type: "vaccine", title: "Rabies", due: "2027-08-15" },
+      { id: "", type: "document", title: "Lab report", due: "" },
+      { id: "record_migrated_2", type: "receipt", title: "Receipt", due: "" },
+      { id: "existing", type: "insurance", title: "Policy", due: "" },
+    ],
+  };
+
+  const first = migrateCareDoc(legacy);
+  const second = migrateCareDoc(first);
+
+  assert.equal(first.records?.[0].id, "record_migrated_1");
+  assert.equal(first.records?.[1].id, "record_migrated_2_2");
+  assert.equal(first.records?.[2].id, "record_migrated_2");
+  assert.equal(first.records?.[3].id, "existing");
+  assert.deepEqual(second, first);
+});
+
+test("provider sync strips device-only record attachments and restores only this device's copy", () => {
+  const local = {
+    dataVersion: CURRENT_CARE_DOC_DATA_VERSION,
+    records: [
+      {
+        id: "rabies",
+        title: "Rabies certificate",
+        attachmentUri: "file:///device-a/woofwatcher-attachments/rabies.pdf",
+        attachmentName: "rabies.pdf",
+        attachmentMimeType: "application/pdf",
+      },
+    ],
+  };
+
+  const outgoing = sanitizeCareDocForProviderSync(local);
+  assert.deepEqual(outgoing.records, [{ id: "rabies", title: "Rabies certificate" }]);
+  assert.equal(local.records[0].attachmentUri, "file:///device-a/woofwatcher-attachments/rabies.pdf");
+
+  const provider = {
+    dataVersion: CURRENT_CARE_DOC_DATA_VERSION,
+    records: [
+      {
+        id: "rabies",
+        title: "Rabies certificate from provider",
+        attachmentUri: "file:///device-b/private/rabies.pdf",
+        attachmentName: "device-b-rabies.pdf",
+        attachmentMimeType: "application/pdf",
+      },
+      {
+        id: "insurance",
+        title: "Insurance card",
+        attachmentUri: "file:///device-b/private/card.jpg",
+        attachmentName: "card.jpg",
+        attachmentMimeType: "image/jpeg",
+      },
+    ],
+  };
+
+  const restored = restoreDeviceOnlyRecordAttachments(provider, local);
+  assert.deepEqual(restored.records, [
+    {
+      id: "rabies",
+      title: "Rabies certificate from provider",
+      attachmentUri: "file:///device-a/woofwatcher-attachments/rabies.pdf",
+      attachmentName: "rabies.pdf",
+      attachmentMimeType: "application/pdf",
+    },
+    { id: "insurance", title: "Insurance card" },
+  ]);
+  assert.equal(provider.records[0].attachmentUri, "file:///device-b/private/rabies.pdf");
 });
 
 test("is idempotent and does not duplicate existing matching correction issues", () => {

@@ -355,6 +355,7 @@ export function LivingPhoenixRoom({
   transparentScene = false,
 }: Props) {
   const colors = useColors();
+  const reduced = useReducedMotion();
   const theme = MOOD_THEME[mood];
   const scenePlan = useMemo(() => deriveCareTwinScene(motion), [motion]);
 
@@ -445,6 +446,24 @@ export function LivingPhoenixRoom({
   const stagePoseOpacity = useSharedValue(1);
   const stagePoseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (stagePoseTimer.current) {
+      clearTimeout(stagePoseTimer.current);
+      stagePoseTimer.current = null;
+    }
+    if (reduced) {
+      cancelAnimation(stagePoseOpacity);
+      stagePoseOpacity.value = 1;
+      if (
+        displayedStagePose.action !== stageSpriteAction ||
+        displayedStagePose.reactionKey !== stageReactionKey
+      ) {
+        setDisplayedStagePose({
+          action: stageSpriteAction,
+          reactionKey: stageReactionKey,
+        });
+      }
+      return;
+    }
     if (
       displayedStagePose.action === stageSpriteAction &&
       displayedStagePose.reactionKey === stageReactionKey
@@ -466,9 +485,12 @@ export function LivingPhoenixRoom({
       });
     }, POSE_SETTLE_OUT_MS);
     return () => {
-      if (stagePoseTimer.current) clearTimeout(stagePoseTimer.current);
+      if (stagePoseTimer.current) {
+        clearTimeout(stagePoseTimer.current);
+        stagePoseTimer.current = null;
+      }
     };
-  }, [displayedStagePose, stagePoseOpacity, stageReactionKey, stageSpriteAction]);
+  }, [displayedStagePose, reduced, stagePoseOpacity, stageReactionKey, stageSpriteAction]);
   const stagePoseAction = displayedStagePose.action;
   const stagePoseFadeStyle = useAnimatedStyle(() => ({
     opacity: stagePoseOpacity.value,
@@ -637,13 +659,29 @@ export function LivingPhoenixRoom({
   const zoneY = useSharedValue(zone.y);
   const zoneScale = useSharedValue(zone.scale);
   const reactionProgress = useSharedValue(0);
-  const reduced = useReducedMotion();
 
   useEffect(() => {
+    if (!reduced) return;
+    cancelAnimation(reactionProgress);
+    cancelAnimation(tap);
+    reactionProgress.value = activeReaction ? 1 : 0;
+    tap.value = 0;
+  }, [activeReaction, reactionProgress, reduced, tap]);
+
+  useEffect(() => {
+    if (reduced) {
+      cancelAnimation(zoneX);
+      cancelAnimation(zoneY);
+      cancelAnimation(zoneScale);
+      zoneX.value = zone.x;
+      zoneY.value = zone.y;
+      zoneScale.value = zone.scale;
+      return;
+    }
     zoneX.value = withSpring(zone.x, { damping: 17, stiffness: 72 });
     zoneY.value = withSpring(zone.y, { damping: 17, stiffness: 72 });
     zoneScale.value = withSpring(zone.scale, { damping: 17, stiffness: 82 });
-  }, [plan.zone, zone.x, zone.y, zone.scale, zoneScale, zoneX, zoneY]);
+  }, [plan.zone, reduced, zone.x, zone.y, zone.scale, zoneScale, zoneX, zoneY]);
 
   useEffect(() => {
     breath.value = 0;
@@ -693,10 +731,12 @@ export function LivingPhoenixRoom({
     setAmbientSpriteAction(null);
     setActiveReaction(reaction);
     reactionProgress.value = 0;
-    reactionProgress.value = withSequence(
-      withSpring(1, { damping: 9, stiffness: 120 }),
-      withDelay(1250, withTiming(0, { duration: 260 })),
-    );
+    reactionProgress.value = reduced
+      ? 1
+      : withSequence(
+          withSpring(1, { damping: 9, stiffness: 120 }),
+          withDelay(1250, withTiming(0, { duration: 260 })),
+        );
     reactionTimer.current = setTimeout(
       () => setActiveReaction(null),
       choreography.reactionDurationMs,
@@ -704,7 +744,7 @@ export function LivingPhoenixRoom({
     return () => {
       if (reactionTimer.current) clearTimeout(reactionTimer.current);
     };
-  }, [choreography.reactionDurationMs, reaction, reactionProgress]);
+  }, [choreography.reactionDurationMs, reaction, reactionProgress, reduced]);
 
   // Petting is affection-only feedback - hearts, a wag, a soft buzz. It never
   // touches care stats: every number in WoofWatcher stays earned by real care.
@@ -731,10 +771,12 @@ export function LivingPhoenixRoom({
       spriteAction: "tail-wag",
     });
     reactionProgress.value = 0;
-    reactionProgress.value = withSequence(
-      withSpring(1, { damping: 9, stiffness: 120 }),
-      withDelay(1250, withTiming(0, { duration: 260 })),
-    );
+    reactionProgress.value = reduced
+      ? 1
+      : withSequence(
+          withSpring(1, { damping: 9, stiffness: 120 }),
+          withDelay(1250, withTiming(0, { duration: 260 })),
+        );
     reactionTimer.current = setTimeout(() => setActiveReaction(null), 1900);
   };
 
@@ -934,36 +976,60 @@ export function LivingPhoenixRoom({
     };
   });
 
-  const reactionStyle = useAnimatedStyle(() => ({
-    opacity: reactionProgress.value,
-    transform: [
-      { translateY: interpolate(reactionProgress.value, [0, 1], [14, 0]) },
-      { scale: interpolate(reactionProgress.value, [0, 1], [0.9, 1]) },
-    ],
-  }));
+  const reactionStyle = useAnimatedStyle(
+    () => ({
+      opacity: reduced ? 1 : reactionProgress.value,
+      transform: [
+        {
+          translateY: reduced
+            ? 0
+            : interpolate(reactionProgress.value, [0, 1], [14, 0]),
+        },
+        {
+          scale: reduced
+            ? 1
+            : interpolate(reactionProgress.value, [0, 1], [0.9, 1]),
+        },
+      ],
+    }),
+    [reduced],
+  );
 
-  const burstStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(reactionProgress.value, [0, 0.25, 1], [0, 1, 0.72]),
-    transform: [
-      { translateY: interpolate(reactionProgress.value, [0, 1], [8, -15]) },
-      {
-        scale: interpolate(
-          reactionProgress.value,
-          [0, 0.35, 1],
-          [0.8, 1.15, 1],
-        ),
-      },
-    ],
-  }));
+  const burstStyle = useAnimatedStyle(
+    () => ({
+      opacity: reduced
+        ? 1
+        : interpolate(reactionProgress.value, [0, 0.25, 1], [0, 1, 0.72]),
+      transform: [
+        {
+          translateY: reduced
+            ? 0
+            : interpolate(reactionProgress.value, [0, 1], [8, -15]),
+        },
+        {
+          scale: reduced
+            ? 1
+            : interpolate(
+                reactionProgress.value,
+                [0, 0.35, 1],
+                [0.8, 1.15, 1],
+              ),
+        },
+      ],
+    }),
+    [reduced],
+  );
 
   const handlePress = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
-    tap.value = withSequence(
-      withSpring(1, { damping: 7, stiffness: 180 }),
-      withSpring(0, { damping: 10, stiffness: 120 }),
-    );
+    tap.value = reduced
+      ? 0
+      : withSequence(
+          withSpring(1, { damping: 7, stiffness: 180 }),
+          withSpring(0, { damping: 10, stiffness: 120 }),
+        );
     onPress?.();
   };
 
@@ -1565,21 +1631,38 @@ interface RoamingTwinRigProps {
 
 /** One floating heart of the petting burst: rises, blooms, and fades. */
 function PetHeart({ dx, delayMs, size }: { dx: number; delayMs: number; size: number }) {
+  const reduced = useReducedMotion();
   const progress = useSharedValue(0);
   useEffect(() => {
+    cancelAnimation(progress);
+    progress.value = 0;
+    if (reduced) return;
     progress.value = withDelay(
       delayMs,
       withTiming(1, { duration: 1150, easing: Easing.out(Easing.quad) }),
     );
-  }, [delayMs, progress]);
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 0.12, 0.75, 1], [0, 1, 0.85, 0]),
-    transform: [
-      { translateX: dx },
-      { translateY: interpolate(progress.value, [0, 1], [4, -40]) },
-      { scale: interpolate(progress.value, [0, 0.3, 1], [0.5, 1.05, 0.9]) },
-    ],
-  }));
+  }, [delayMs, progress, reduced]);
+  const style = useAnimatedStyle(
+    () => ({
+      opacity: reduced
+        ? 1
+        : interpolate(progress.value, [0, 0.12, 0.75, 1], [0, 1, 0.85, 0]),
+      transform: [
+        { translateX: dx },
+        {
+          translateY: reduced
+            ? -12
+            : interpolate(progress.value, [0, 1], [4, -40]),
+        },
+        {
+          scale: reduced
+            ? 1
+            : interpolate(progress.value, [0, 0.3, 1], [0.5, 1.05, 0.9]),
+        },
+      ],
+    }),
+    [dx, reduced],
+  );
   return (
     <Animated.View style={[styles.petHeart, style]}>
       <PixelIcon name="heart" size={size} />
@@ -1660,6 +1743,15 @@ function RoamingTwinRig({
     // cancels any stale walk tween from the previous plan.
     const anchorX = (plan.anchor.xPct / 100) * stageWidth;
     const anchorY = (plan.anchor.yPct / 100) * stageHeight;
+    if (reduced) {
+      cancelAnimation(xPx);
+      cancelAnimation(yPx);
+      cancelAnimation(depth);
+      xPx.value = anchorX;
+      yPx.value = anchorY;
+      depth.value = plan.anchor.scale;
+      return;
+    }
     const glide = {
       duration: roamGlideMs(
         Math.hypot(anchorX - xPx.value, anchorY - yPx.value),
@@ -1669,7 +1761,7 @@ function RoamingTwinRig({
     xPx.value = withTiming(anchorX, glide);
     yPx.value = withTiming(anchorY, glide);
     depth.value = withTiming(plan.anchor.scale, glide);
-  }, [depth, plan, stageHeight, stageWidth, xPx, yPx]);
+  }, [depth, plan, reduced, stageHeight, stageWidth, xPx, yPx]);
 
   useEffect(() => {
     if (paused || reduced) {
@@ -1714,6 +1806,11 @@ function RoamingTwinRig({
   }, [depth, legIndex, paused, plan, reduced, stageHeight, stageWidth, xPx, yPx]);
 
   useEffect(() => {
+    if (reduced) {
+      cancelAnimation(walkBob);
+      walkBob.value = 0;
+      return;
+    }
     if (moving && !paused && !reduced) {
       walkBob.value = 0;
       walkBob.value = withRepeat(

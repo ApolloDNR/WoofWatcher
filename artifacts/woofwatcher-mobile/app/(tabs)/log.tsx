@@ -141,9 +141,6 @@ import {
   careMutationWasAccepted,
   type CareStorageWarning,
 } from "@/lib/careWriteProtection";
-import {
-  canonicalHomeRoute,
-} from "@/lib/canonicalRouteBuilders";
 import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -379,6 +376,7 @@ const LOG_TYPES: LogType[] = [
       {
         key: "mood",
         label: "How are they feeling?",
+        noDefault: true,
         options: [
           { id: "happy", label: "Happy", suffix: "happy", mood: "happy" },
           { id: "excited", label: "Excited", suffix: "excited", mood: "excited" },
@@ -390,6 +388,7 @@ const LOG_TYPES: LogType[] = [
       {
         key: "energyLevel",
         label: "Energy level",
+        noDefault: true,
         options: [
           { id: "steady", label: "Steady", suffix: "steady energy" },
           { id: "low", label: "Low", suffix: "low energy", severity: "watch" },
@@ -446,6 +445,7 @@ const LOG_TYPES: LogType[] = [
       {
         key: "what",
         label: "What happened?",
+        noDefault: true,
         options: [
           { id: "vomit", label: "Vomit", suffix: "vomit" },
           { id: "diarrhea", label: "Diarrhea", suffix: "diarrhea" },
@@ -457,6 +457,7 @@ const LOG_TYPES: LogType[] = [
       {
         key: "severity",
         label: "Severity",
+        noDefault: true,
         options: [
           { id: "watch", label: "Watch", severity: "watch" },
           { id: "alert", label: "Alert", severity: "alert" },
@@ -537,6 +538,39 @@ const TYPE_BY_ID: Record<string, LogType> = LOG_TYPES.reduce(
   {} as Record<string, LogType>,
 );
 
+function initializeLogComposerChoices(
+  config: LogType | undefined,
+  preset: Record<string, string> | null,
+): Record<string, string> {
+  const initial: Record<string, string> = {};
+  config?.groups?.forEach((group) => {
+    if (group.noDefault) return;
+    initial[group.key] = group.options[0].id;
+  });
+  return { ...initial, ...(preset ?? {}) };
+}
+
+function getLogComposerValidationIssue(
+  type: CareEventType,
+  choices: Record<string, string>,
+): { label: string; message: string } | null {
+  if (type === "mood" && !choices.mood && !choices.energyLevel) {
+    return {
+      label: "Mood or energy",
+      message:
+        "Choose a mood or energy level before saving. WoofWatcher never guesses how your dog feels.",
+    };
+  }
+  if (type === "symptom" && !choices.what) {
+    return {
+      label: "What happened?",
+      message:
+        "Choose what happened before saving. Severity alone cannot create a symptom log.",
+    };
+  }
+  return null;
+}
+
 type LauncherTab = "favorites" | "all" | "health";
 
 interface LauncherAction {
@@ -545,6 +579,35 @@ interface LauncherAction {
   icon: PixelIconName;
   tab: LauncherTab | "household";
   preset?: Record<string, string>;
+}
+
+interface LogComposerIntent {
+  revision: number;
+  type: CareEventType;
+  preset: Record<string, string> | null;
+}
+
+type LogComposerIntentSource =
+  | { kind: "route" | "selection"; type: CareEventType }
+  | {
+      kind: "launcher";
+      type: CareEventType;
+      preset?: Record<string, string>;
+    };
+
+function advanceLogComposerIntent(
+  current: LogComposerIntent,
+  source: LogComposerIntentSource,
+): LogComposerIntent {
+  const preset =
+    source.kind === "launcher" && source.preset
+      ? { ...source.preset }
+      : null;
+  return {
+    revision: current.revision + 1,
+    type: source.type,
+    preset,
+  };
 }
 
 const LAUNCHER_TABS: { key: LauncherTab; label: string }[] = [
@@ -1184,7 +1247,18 @@ export default function LogScreen() {
     [caregiver, state.caregivers],
   );
 
-  const [selectedType, setSelectedType] = useState<string>(() => routeSelectedType ?? "meal");
+  const [composerIntent, setComposerIntent] = useState<LogComposerIntent>(() => ({
+    revision: 0,
+    type: routeSelectedType ?? "meal",
+    preset: null,
+  }));
+  const selectedType = composerIntent.type;
+  const beginComposerIntent = useCallback(
+    (source: LogComposerIntentSource) => {
+      setComposerIntent((current) => advanceLogComposerIntent(current, source));
+    },
+    [],
+  );
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [numeric, setNumeric] = useState("");
@@ -1223,7 +1297,6 @@ export default function LogScreen() {
   const [launcherTab, setLauncherTab] = useState<LauncherTab>("favorites");
   const [selectedLauncherKey, setSelectedLauncherKey] = useState<string | null>(() => launcherActionKey(LAUNCHER_ACTIONS[0]!));
   const [launcherDetailAction, setLauncherDetailAction] = useState<LauncherAction | null>(null);
-  const pendingChoicePreset = useRef<Record<string, string> | null>(null);
 
   const config = TYPE_BY_ID[selectedType];
   const medicationAdherence = useMemo(
@@ -1240,37 +1313,40 @@ export default function LogScreen() {
 
   useEffect(() => {
     if (!routeSelectedType) return;
-    if (routeSelectedType !== lastRouteSelectedType.current) {
-      setSelectedType(routeSelectedType);
+    if (!routeWantsDetailSheet) {
+      if (routeSelectedType === lastRouteSelectedType.current) return;
+      beginComposerIntent({ kind: "route", type: routeSelectedType });
       setSelectedLauncherKey(null);
       lastRouteSelectedType.current = routeSelectedType;
+      return;
     }
-    if (!routeWantsDetailSheet || !routeDetailIntentKey || routeDetailIntentKey === lastRouteDetailIntentKey.current) {
+    if (!routeDetailIntentKey || routeDetailIntentKey === lastRouteDetailIntentKey.current) {
       return;
     }
     const routeDetailAction = findLauncherActionForType(routeSelectedType);
     if (!routeDetailAction) return;
-    pendingChoicePreset.current = routeDetailAction.preset ?? null;
     setLauncherTab(routeDetailAction.tab === "health" ? "health" : routeDetailAction.tab === "all" ? "all" : "favorites");
-    setSelectedLauncherKey(launcherActionKey(routeDetailAction));
-    setSelectedType(routeDetailAction.type);
+    // A type-only route is generic even when the launcher has a more
+    // specific shortcut for that type (for example Anxious or Vomit).
+    // Do not highlight or apply that shortcut unless the caregiver chose it.
+    setSelectedLauncherKey(routeDetailAction.preset ? null : launcherActionKey(routeDetailAction));
+    beginComposerIntent({ kind: "route", type: routeSelectedType });
     // Detail intents land straight in the pre-focused composer - no
     // interstitial between "add details" and the real form. The composer
     // lives in the Log view, so make sure we're on it.
     setLogView("log");
     setTimeout(() => scrollToComposer(), 350);
+    lastRouteSelectedType.current = routeSelectedType;
     lastRouteDetailIntentKey.current = routeDetailIntentKey;
-  }, [routeDetailIntentKey, routeSelectedType, routeWantsDetailSheet]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [beginComposerIntent, routeDetailIntentKey, routeSelectedType, routeWantsDetailSheet]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset contextual controls whenever the type changes.
+  // Every new composer intent resets contextual controls, including a new
+  // intent for the already-selected type. This prevents abandoned form state
+  // from leaking into a later deep link or launcher action.
   useEffect(() => {
-    const init: Record<string, string> = {};
-    config?.groups?.forEach((g) => {
-      if (g.noDefault) return;
-      init[g.key] = g.options[0].id;
-    });
-    setChoices({ ...init, ...(pendingChoicePreset.current ?? {}) });
-    pendingChoicePreset.current = null;
+    setChoices(
+      initializeLogComposerChoices(config, composerIntent.preset),
+    );
     setStepIndex(config?.stepper ? Math.min(2, config.stepper.values.length - 1) : 0);
     setNumeric(selectedType === "weight" ? String(state.profile.weight.current ?? "") : "");
     setExpectedPortion(selectedType === "meal" ? state.dietProfile.normalPortion : "");
@@ -1300,7 +1376,7 @@ export default function LogScreen() {
     setIncidentFollowUp("");
     setHouseholdVisible(true);
     setNoteText("");
-  }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [composerIntent.revision]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (
@@ -1518,6 +1594,18 @@ export default function LogScreen() {
     let severity: Severity | undefined;
     let dogInteractions: number | undefined;
     const occurredAt = new Date().toISOString();
+
+    const composerValidationIssue = getLogComposerValidationIssue(
+      config.type,
+      choices,
+    );
+    if (composerValidationIssue) {
+      notifyDialog(
+        composerValidationIssue.label,
+        composerValidationIssue.message,
+      );
+      return null;
+    }
 
     for (const g of config.groups ?? []) {
       if (g.required && !g.options.some((o) => o.id === choices[g.key])) {
@@ -2560,9 +2648,10 @@ export default function LogScreen() {
   const selectedGuidance = (
     LOG_GUIDANCE[selectedType] ?? "Log care once and it becomes part of the shared household record."
   ).replace(/\{petName\}/g, petDisplayName);
-  // Safety-fact groups (incident "What happened?") gate the save button until
-  // the caregiver actively answers - one tap can never log an unverified claim.
+  // Neutral mood/symptom entry and safety-fact groups gate save until the
+  // caregiver supplies real evidence - one tap never invents a care fact.
   const missingRequiredGroup =
+    getLogComposerValidationIssue(selectedType, choices) ??
     config?.groups?.find(
       (g) => g.required && !g.options.some((o) => o.id === choices[g.key]),
     ) ?? null;
@@ -2699,12 +2788,12 @@ export default function LogScreen() {
 
   const selectLauncherAction = (action: LauncherAction) => {
     Haptics.selectionAsync();
-    pendingChoicePreset.current = action.preset ?? null;
     setSelectedLauncherKey(launcherActionKey(action));
-    setSelectedType(action.type);
-    if (selectedType === action.type && action.preset) {
-      setChoices((prev) => ({ ...prev, ...action.preset }));
-    }
+    beginComposerIntent({
+      kind: "launcher",
+      type: action.type,
+      preset: action.preset,
+    });
   };
 
   const scrollToComposer = useCallback(() => {
@@ -2756,7 +2845,7 @@ export default function LogScreen() {
   const handleLeavingHome = useCallback(() => {
     if (openAloneSession) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setSelectedType("alone");
+      beginComposerIntent({ kind: "selection", type: "alone" });
       setSelectedLauncherKey("alone:Alone Time");
       scrollRef.current?.scrollTo({ y: 360, animated: true });
       return;
@@ -2776,10 +2865,11 @@ export default function LogScreen() {
     markQuickSave("alone");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: `${petDisplayName} is home alone` });
-    setSelectedType("alone");
+    beginComposerIntent({ kind: "selection", type: "alone" });
     setSelectedLauncherKey("alone:Alone Time");
   }, [
     addEntry,
+    beginComposerIntent,
     caregiver,
     careMutationsBlocked,
     isDuplicateQuickTap,
@@ -2834,7 +2924,7 @@ export default function LogScreen() {
   const handleStartWalk = useCallback(() => {
     if (openWalkSession) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setSelectedType("walk");
+      beginComposerIntent({ kind: "selection", type: "walk" });
       setSelectedLauncherKey("walk:Walk");
       scrollRef.current?.scrollTo({ y: 360, animated: true });
       return;
@@ -2854,10 +2944,11 @@ export default function LogScreen() {
     markQuickSave("walk");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: "Walk started" });
-    setSelectedType("walk");
+    beginComposerIntent({ kind: "selection", type: "walk" });
     setSelectedLauncherKey("walk:Walk");
   }, [
     addEntry,
+    beginComposerIntent,
     caregiver,
     careMutationsBlocked,
     isDuplicateQuickTap,
@@ -2975,7 +3066,11 @@ export default function LogScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: entry.title });
     setSelectedLauncherKey(launcherActionKey(action));
-    setSelectedType(action.type);
+    beginComposerIntent({
+      kind: "launcher",
+      type: action.type,
+      preset: action.preset,
+    });
   };
 
   const undoLastQuickLog = async () => {
@@ -3023,12 +3118,12 @@ export default function LogScreen() {
 
   const selectMoodLauncher = (mood: (typeof MOOD_LAUNCHER)[number]) => {
     Haptics.selectionAsync();
-    pendingChoicePreset.current = { mood: mood.mood, moodTone: mood.key };
     setSelectedLauncherKey(null);
-    setSelectedType("mood");
-    if (selectedType === "mood") {
-      setChoices((prev) => ({ ...prev, mood: mood.mood, moodTone: mood.key }));
-    }
+    beginComposerIntent({
+      kind: "launcher",
+      type: "mood",
+      preset: { mood: mood.mood, moodTone: mood.key },
+    });
   };
 
   const H_PAD = 16;
@@ -3045,11 +3140,6 @@ export default function LogScreen() {
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
             title="Log"
-            back
-            onBack={() => {
-              if (router.canGoBack()) router.back();
-              else router.replace(canonicalHomeRoute());
-            }}
             actionIcon="flash-outline"
             actionLabel="Log care"
             onAction={() => {
@@ -3195,7 +3285,7 @@ export default function LogScreen() {
                   <Text style={[s.quickLogActionKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     QUICK LOG FLOW
                   </Text>
-                  <Text numberOfLines={1} style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <Text style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                     {narrowViewport ? "Tap saves. Hold: details." : "Tap saves. Hold opens details."}
                   </Text>
                 </View>
@@ -3923,7 +4013,7 @@ export default function LogScreen() {
                     onPress={() => {
                       Haptics.selectionAsync();
                       setSelectedLauncherKey(null);
-                      setSelectedType(q.type);
+                      beginComposerIntent({ kind: "selection", type: q.type });
                     }}
                     style={({ pressed }) => [
                       s.typeChip,

@@ -32,6 +32,7 @@ import {
 } from "@workspace/care-domain";
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
+import { useActiveCurrentTime } from "@/hooks/useActiveCurrentTime";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
@@ -370,7 +371,7 @@ export default function CalendarScreen() {
     topInset: insets.top,
     surface: "tabbed",
   });
-  const now = Date.now();
+  const now = useActiveCurrentTime();
   const today = todayLocalDateKey(new Date(now));
   const [scheduleTab, setScheduleTab] = useState<"day" | "week" | "month">("day");
 

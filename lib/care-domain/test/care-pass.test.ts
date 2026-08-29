@@ -386,6 +386,29 @@ test("builds a vet care pass with health signals and records", () => {
   assert.match(pass.message, /not a diagnosis/i);
 });
 
+test("vet care pass keeps current and newest records before truncating historical append order", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    records: [
+      { id: "visit-1", type: "vet", title: "Oldest visit", due: "2021-01-01" },
+      { id: "visit-2", type: "vet", title: "Visit 2022", due: "2022-01-01" },
+      { id: "visit-3", type: "vet", title: "Visit 2023", due: "2023-01-01" },
+      { id: "visit-4", type: "vet", title: "Visit 2024", due: "2024-01-01" },
+      { id: "visit-5", type: "vet", title: "Visit 2025", due: "2025-01-01" },
+      { id: "visit-6", type: "vet", title: "Newest visit", due: "2026-01-01" },
+      { id: "rabies-current", type: "vaccine", title: "Current rabies", due: "2027-01-01" },
+    ],
+  });
+  const records = pass.sections.find((section) => section.title === "Records");
+
+  assert.equal(records?.lines.length, 6);
+  assert.ok(records?.lines.some((line) => /Current rabies due 2027-01-01/.test(line)));
+  assert.ok(records?.lines.some((line) => /Newest visit date 2026-01-01/.test(line)));
+  assert.ok(records?.lines.every((line) => !/Oldest visit/.test(line)));
+  assert.ok(records?.lines.every((line) => !/Newest visit due /.test(line)));
+});
+
 test("vet care pass includes health pattern review next steps", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
 

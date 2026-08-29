@@ -276,6 +276,23 @@ function recordKind(type: string): RecordKind {
   return "document";
 }
 
+const RENEWABLE_RECORD_KINDS = new Set<RecordKind>([
+  "vaccine",
+  "insurance",
+  "medication",
+]);
+
+/**
+ * Only records whose saved date represents a renewal deadline participate in
+ * expiry and due-soon calculations. Other record forms intentionally store a
+ * historical event date in the legacy `due` field.
+ */
+export function isRenewableCareRecord(
+  record: Pick<CareRecord, "type">,
+): boolean {
+  return RENEWABLE_RECORD_KINDS.has(recordKind(record.type));
+}
+
 function recordValue(record: CareRecord | undefined): string {
   if (!record) return "Not on file";
   const title = clean(record.title);
@@ -376,7 +393,9 @@ export function recordDueNeedsCorrection(
 }
 
 export function getRecordDueStatus(
-  record: CareRecord | Pick<CareRecord, "due" | "correctionIssues">,
+  record:
+    | CareRecord
+    | (Pick<CareRecord, "due" | "correctionIssues"> & Partial<Pick<CareRecord, "type">>),
   now: number = Date.now(),
   dueSoonDays = 45,
 ): RecordDueStatus {
@@ -395,6 +414,19 @@ export function getRecordDueStatus(
   }
 
   const daysUntil = Math.ceil((dueMs - now) / 86400000);
+  // `due` predates the record-specific form labels and remains the persisted
+  // field for both deadlines and historical dates. Presence of a record type
+  // lets current clients distinguish those meanings without rewriting older
+  // documents. Callers holding the older due-only shape keep the legacy due
+  // behavior until they can supply the record type.
+  if (typeof record.type === "string" && !isRenewableCareRecord({ type: record.type })) {
+    return {
+      status: "reference",
+      label: "Recorded",
+      daysUntil,
+      date: formatDueDate(dueMs),
+    };
+  }
   if (daysUntil < 0) {
     return {
       status: "expired",
@@ -419,6 +451,49 @@ export function getRecordDueStatus(
   };
 }
 
+type CareRecordSelectionShape = Pick<CareRecord, "type" | "due" | "correctionIssues">;
+
+/**
+ * Orders saved records for bounded current-record surfaces. Renewable records
+ * prefer current deadlines over expired copies; historical records prefer the
+ * newest saved event date (and newest append as the migration-safe fallback).
+ */
+export function orderCareRecordsCurrentFirst<T extends CareRecordSelectionShape>(
+  records: readonly T[],
+  now: number = Date.now(),
+): T[] {
+  const indexed = records.map((record, index) => {
+    const status = getRecordDueStatus(record, now);
+    const rank = status.status === "current" || status.status === "due_soon"
+      ? 0
+      : status.status === "expired"
+        ? 2
+        : 1;
+    return {
+      record,
+      index,
+      kind: recordKind(record.type),
+      rank,
+      dateMs: parseDueDateMs(record.due),
+    };
+  });
+
+  indexed.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    if (
+      a.kind === b.kind &&
+      a.dateMs != null &&
+      b.dateMs != null &&
+      a.dateMs !== b.dateMs
+    ) {
+      return b.dateMs - a.dateMs;
+    }
+    return b.index - a.index;
+  });
+
+  return indexed.map((item) => item.record);
+}
+
 export function summarizeRecordVault(records: readonly CareRecord[] = []): RecordVaultSummary {
   const normalized = records.map((record) => ({
     ...record,
@@ -429,7 +504,9 @@ export function summarizeRecordVault(records: readonly CareRecord[] = []): Recor
   }));
 
   const sections = SECTION_DEFS.map((def) => {
-    const sectionRecords = normalized.filter((record) => record.type === def.kind);
+    const sectionRecords = orderCareRecordsCurrentFirst(
+      normalized.filter((record) => record.type === def.kind),
+    );
     const latest = sectionRecords.find((record) => record.due)?.due;
     return {
       kind: def.kind,
@@ -446,8 +523,8 @@ export function summarizeRecordVault(records: readonly CareRecord[] = []): Recor
     .map((section) => section.label);
 
   const priorityKinds: RecordKind[] = ["vaccine", "microchip", "insurance", "vet", "receipt", "document", "medication", "weight"];
-  const priorityRecords = [...normalized].sort(
-    (a, b) => priorityKinds.indexOf(recordKind(a.type)) - priorityKinds.indexOf(recordKind(b.type)),
+  const priorityRecords = priorityKinds.flatMap(
+    (kind) => sections.find((section) => section.kind === kind)?.records ?? [],
   );
 
   return {
@@ -522,6 +599,11 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
   const profile = input.profile ?? {};
   const records = input.records ?? [];
   const generatedAt = input.generatedAt ?? new Date().toISOString();
+  const generatedAtMs = new Date(generatedAt).getTime();
+  const currentRecords = orderCareRecordsCurrentFirst(
+    records,
+    Number.isFinite(generatedAtMs) ? generatedAtMs : Date.now(),
+  );
   const name = resolvePetName(
     boundedClean(profile.name, PET_CREDENTIAL_IDENTITY_MAX_CHARS),
   );
@@ -537,8 +619,8 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
     input.caregivers
       ?.map((caregiver) => boundedClean(caregiver.name, PET_CREDENTIAL_FIELD_MAX_CHARS))
       .find(Boolean) ?? "Household";
-  const microchipRecord = records.find((record) => recordKind(record.type) === "microchip");
-  const insuranceRecord = records.find((record) => recordKind(record.type) === "insurance");
+  const microchipRecord = currentRecords.find((record) => recordKind(record.type) === "microchip");
+  const insuranceRecord = currentRecords.find((record) => recordKind(record.type) === "insurance");
   const microchip = boundedClean(
     microchipRecord ? recordValue(microchipRecord) : profile.microchipNumber,
     PET_CREDENTIAL_FIELD_MAX_CHARS,
@@ -551,7 +633,7 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
           PET_CREDENTIAL_FIELD_MAX_CHARS,
         ) || "Not on file";
   const vaccines =
-    records
+    currentRecords
       .filter((record) => recordKind(record.type) === "vaccine")
       .slice(0, 4)
       .map((record) => recordValue(record))

@@ -182,7 +182,7 @@ test("adds inert Records section props and stable owner anchors without thinning
   assert.match(records, /title="Care Pass"/);
   assert.match(records, /runRecordAttachmentPicker/);
   assert.match(records, /useAppFileSystem/);
-  assert.equal((records.match(/\bupdateCareDoc\(/g) ?? []).length, 3);
+  assert.equal((records.match(/\bupdateCareDoc\(/g) ?? []).length, 4);
 });
 
 test("removes More's Health-owned Diet and Care Pass duplicates", () => {

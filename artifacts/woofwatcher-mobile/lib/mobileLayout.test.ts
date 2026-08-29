@@ -21,11 +21,11 @@ test("derives iOS tabbed route padding from the floating paw and safe area", () 
   const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
 
   assert.equal(metrics.tabBarHeight, 72);
-  assert.equal(metrics.tabBarBottom, 12);
+  assert.equal(metrics.tabBarBottom, 42);
   assert.equal(metrics.centerFabBottom, 52);
   assert.equal(metrics.centerFabSize, 56);
-  assert.equal(metrics.contentBottomPadding, 124);
-  assert.equal(getTabbedRouteBottomPadding({ platform: "ios", bottomInset: 34 }), 124);
+  assert.equal(metrics.contentBottomPadding, 130);
+  assert.equal(getTabbedRouteBottomPadding({ platform: "ios", bottomInset: 34 }), 130);
 });
 
 test("keeps Android and web tabbed routes clear of the floating nav without wasting space", () => {
@@ -57,7 +57,7 @@ test("keeps the floating paw chrome compact enough for first-screen command card
     iosMetrics.centerFabBottom + iosMetrics.centerFabSize,
   );
 
-  assert.ok(iosBottomChromeClearance <= 110);
+  assert.ok(iosBottomChromeClearance <= 114);
   assert.ok(iosMetrics.centerFabSize >= MIN_MOBILE_TOUCH_TARGET);
 });
 
@@ -138,7 +138,7 @@ test("switches a five-tab phone dock to accessible icon-only labels before text 
   assert.equal(firstOverflowingScale.visualLabelLineCount, 0);
   assert.equal(accessibilityScale.showVisualLabels, false);
   assert.equal(accessibilityScale.tabBarHeight, 72);
-  assert.equal(accessibilityScale.contentBottomPadding, 124);
+  assert.equal(accessibilityScale.contentBottomPadding, 130);
   assert.deepEqual(aboveCeiling, accessibilityScale);
   assert.equal(
     getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34, fontScale: 0 }).tabBarHeight,
@@ -146,7 +146,7 @@ test("switches a five-tab phone dock to accessible icon-only labels before text 
   );
 });
 
-test("derives a wide dock height from the rendered icon, scaled label line, margins, and padding", () => {
+test("keeps a wide accessibility dock stable by switching to accessible icon-only tabs", () => {
   const wideAccessibilityScale = getFloatingTabChromeMetrics({
     platform: "ios",
     bottomInset: 34,
@@ -154,8 +154,8 @@ test("derives a wide dock height from the rendered icon, scaled label line, marg
     fontScale: MAX_TAB_LABEL_FONT_SCALE,
   });
 
-  assert.equal(wideAccessibilityScale.showVisualLabels, true);
-  assert.equal(wideAccessibilityScale.visualLabelLineCount, 1);
-  assert.equal(wideAccessibilityScale.tabBarHeight, 105);
-  assert.equal(wideAccessibilityScale.contentBottomPadding, 133);
+  assert.equal(wideAccessibilityScale.showVisualLabels, false);
+  assert.equal(wideAccessibilityScale.visualLabelLineCount, 0);
+  assert.equal(wideAccessibilityScale.tabBarHeight, 72);
+  assert.equal(wideAccessibilityScale.contentBottomPadding, 130);
 });

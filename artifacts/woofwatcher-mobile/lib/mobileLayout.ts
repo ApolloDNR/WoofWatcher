@@ -41,6 +41,7 @@ const TAB_ITEM_HORIZONTAL_MARGIN = 3;
 const DEFAULT_TAB_VIEWPORT_WIDTH = 390;
 const TAB_BAR_NATIVE_BOTTOM = 12;
 const TAB_BAR_WEB_BOTTOM = 12;
+const TAB_BAR_SAFE_AREA_GUTTER = 8;
 const TAB_BAR_HORIZONTAL_INSET = 16;
 const TAB_BAR_RADIUS = 26;
 const CENTER_FAB_SIZE = 56;
@@ -100,7 +101,9 @@ function normalizeViewportWidth(viewportWidth = DEFAULT_TAB_VIEWPORT_WIDTH): num
 export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingTabChromeMetrics {
   const web = isWebPlatform(input.platform);
   const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
-  const tabBarBottom = web ? TAB_BAR_WEB_BOTTOM : TAB_BAR_NATIVE_BOTTOM;
+  const tabBarBottom = web
+    ? TAB_BAR_WEB_BOTTOM
+    : Math.max(TAB_BAR_NATIVE_BOTTOM, bottomInset + TAB_BAR_SAFE_AREA_GUTTER);
   const baseTabBarHeight = web ? TAB_BAR_WEB_HEIGHT : TAB_BAR_NATIVE_HEIGHT;
   const labelFontScale = normalizeTabLabelFontScale(input.fontScale);
   const viewportWidth = normalizeViewportWidth(input.viewportWidth);
@@ -110,8 +113,21 @@ export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingT
       TAB_COUNT -
       TAB_ITEM_HORIZONTAL_MARGIN * 2,
   );
+  const scaledLabelLineHeight = Math.ceil(TAB_LABEL_LINE_HEIGHT * labelFontScale);
+  const labeledTabBarHeight =
+    TAB_BAR_PADDING_TOP +
+    TAB_BAR_PADDING_BOTTOM +
+    TAB_ITEM_VERTICAL_MARGIN * 2 +
+    TAB_ICON_HEIGHT +
+    TAB_ICON_LABEL_GAP +
+    scaledLabelLineHeight;
+  // At accessibility text sizes, keep the floating dock a stable height and
+  // expose each tab through its icon plus accessible name. Growing the dock on
+  // a tablet while route padding still reflects phone chrome can cover the
+  // final controls; hiding only the visual label avoids that mismatch.
   const showVisualLabels =
-    TAB_WIDEST_LABEL_BASE_WIDTH * labelFontScale <= tabItemContentWidth;
+    TAB_WIDEST_LABEL_BASE_WIDTH * labelFontScale <= tabItemContentWidth &&
+    labeledTabBarHeight <= baseTabBarHeight;
   const visualLabelLineCount = showVisualLabels ? 1 : 0;
   const requiredTabBarHeight =
     TAB_BAR_PADDING_TOP +
@@ -120,7 +136,7 @@ export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingT
     TAB_ICON_HEIGHT +
     (showVisualLabels
       ? TAB_ICON_LABEL_GAP +
-        Math.ceil(TAB_LABEL_LINE_HEIGHT * labelFontScale) * visualLabelLineCount
+        scaledLabelLineHeight * visualLabelLineCount
       : 0);
   const tabBarHeight = Math.max(baseTabBarHeight, requiredTabBarHeight);
   const centerFabBottom =
