@@ -362,7 +362,11 @@ test("assigned caregivers reflow without truncation and remain in the routine ed
 
 test("Plans opens the exact routine-board completion when legacy logs share a timestamp and type", async () => {
   const { deriveRoutineBoard } = await import("@workspace/care-domain");
-  const now = new Date("2026-06-06T14:00:00-07:00").getTime();
+  // Routine times are local wall-clock values, so keep the entire fixture in
+  // the runner's local timezone. This exercises the same 7:30/7:50 pairing in
+  // UTC CI and on Pacific-time development machines.
+  const now = new Date(2026, 5, 6, 14).getTime();
+  const sharedCompletionTime = new Date(2026, 5, 6, 7, 50).toISOString();
   const board = deriveRoutineBoard({
     now,
     routines: [
@@ -374,13 +378,13 @@ test("Plans opens the exact routine-board completion when legacy logs share a ti
         id: "meal_first",
         type: "meal",
         title: "Meal",
-        occurredAt: "2026-06-06T07:50:00-07:00",
+        occurredAt: sharedCompletionTime,
       },
       {
         id: "meal_second",
         type: "meal",
         title: "Meal",
-        occurredAt: "2026-06-06T07:50:00-07:00",
+        occurredAt: sharedCompletionTime,
       },
     ],
   });
