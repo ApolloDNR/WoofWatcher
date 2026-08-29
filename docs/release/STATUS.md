@@ -1,35 +1,40 @@
 # WoofWatcher V1 Release Status
 
 - Integration branch: `release/woofwatcher-v1`
-- Engineering implementation checkpoint: `57c5926ce844bef38c798069c602bc19dc09ad3c`
-- Verified implementation tree: `98742050003dd59976073b4d0718ca21c1153b95`
-- Exact-head GitHub CI: [WoofWatcher Verify #1028 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/32691610467). The workflow checked out and tested exact head `57c5926ce844bef38c798069c602bc19dc09ad3c`; 1,528/1,528 focused tests passed with zero failures and zero skips, followed by successful typecheck, CI-safe builds, candidate packaging, and artifact upload.
-- Exact-head web candidate artifact: ID `9507485215`, `woofwatcher-web-candidate-57c5926ce844bef38c798069c602bc19dc09ad3c`, 22,852,367 bytes, digest `sha256:01d9b839919354c4a885f15575956762062358d5c472f5e47e991de76bfbb081`. This is a web candidate preview, not a signed native binary.
-- Local focused adversarial reset/deletion suite: 277/277 PASS on the verified implementation tree.
-- Status identity rule: this tracked file names its exact verified predecessor, but cannot contain the SHA of its own containing commit because that text would change the commit. The resulting documentation-only head SHA and its CI evidence are recorded in PR #12 and the release handoff.
+- Engineering implementation checkpoint: `f28e3221869e3a70bee5cae3beca19ef14717519`
+- Verified implementation tree: `a8de05d02d25e9b3a70235e8bac1e0f3464df482`
+- Exact-head GitHub CI: [WoofWatcher Verify #1036 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33239358687). The workflow explicitly checked out and tested exact head `f28e3221869e3a70bee5cae3beca19ef14717519`; 34/34 mounted-renderer tests and 2,207/2,207 repository tests passed (2,241/2,241 total) with zero failures and zero skips, followed by successful typecheck, CI-safe builds, candidate packaging, and artifact upload.
+- Exact-head web candidate artifact: [ID `9710912336`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33239358687/artifacts/9710912336), `woofwatcher-web-candidate-f28e3221869e3a70bee5cae3beca19ef14717519`, 22,888,309 bytes, digest `sha256:166420c25478c724921b4b4cf9023990d694c01712abcb1efc731d539ea5db41`. This is a downloadable static web candidate archive retained by Actions for 7 days, not a hosted preview or signed native binary.
+- Independent review-session evidence from ad hoc file selections, not checked-in aggregate scripts: whole privacy/authority 509/509 PASS; owner/concurrency subset 281/281 PASS.
+- Independent review-session source/test UI and accessibility evidence from an ad hoc file selection, not a checked-in aggregate script: 241/241 PASS. This is not rendered-browser or physical-device visual proof.
+- Status identity rule: this tracked file names its exact verified predecessor, but cannot contain the SHA of its own containing commit because that text would change the commit. The resulting documentation-only head SHA and its CI evidence are recorded in PR #12.
 - Durable baseline: `0f1107b170b0a9c89548a51f5cdeb664ba98246f`
 - Baseline code commit: `b6934f7a`
 - Main at recovery start: `47234396`
 - Scope: free, local-first V1
-- Browser/engineering verdict: PASS at the exact implementation checkpoint; resulting documentation-only head evidence is recorded externally
+- Automated engineering verdict: PASS at the exact implementation checkpoint; rendered-browser and physical-device review remain required
 - Native verdict: BLOCKED — NATIVE CANDIDATE AND PHYSICAL-DEVICE QA UNPROVED
 - Production/App Store/Play status: **NOT APPROVED / NOT SUBMITTED / NOT PUBLISHED**
 
 ## Current milestone
 
-M2B2 — Coordinated Local-Data Reset and Deletion Integrity: **COMPLETE AT THE ENGINEERING / AUTOMATED-PROOF BOUNDARY at `57c5926ce844bef38c798069c602bc19dc09ad3c`**
+V1 engineering closeout — privacy, household authority, coordinated reset/deletion integrity, and source-level product-quality gates: **COMPLETE AT THE ENGINEERING / AUTOMATED-PROOF BOUNDARY at `f28e3221869e3a70bee5cae3beca19ef14717519`**
 
-Next: N1 — Signed Native Candidate and Physical-Device QA
+Next: N1 — Signed Native Candidate and Physical-Device QA, plus owner/legal metadata closure
 
 This milestone is complete at the exact implementation checkpoint above. It is
-not native-device proof, owner approval, permission to merge PR #12, or
-permission to submit or publish. Exact-head GitHub CI passed the complete
-dependency-installed suite and preserved the exact-head web candidate artifact;
-the resulting documentation-only head is recorded externally under the identity
-rule above.
+not rendered-browser review, native-device proof, owner approval, permission to
+merge PR #12, or permission to submit or publish. Exact-head GitHub CI passed the
+complete dependency-installed suite and uploaded the exact-head web candidate
+archive; the resulting documentation-only head is recorded externally under
+the identity rule above.
 
-## M2B2 engineering checkpoint
+## V1 engineering closeout checkpoint
 
+- Care-entry privacy is creator- and household-scoped across create, list, update, delete, idempotency, tombstones, migration, and generated clients: PASS
+- Household capability, invitation, join, role, membership, active-identity, server-clock expiry, and transaction-serialization boundaries fail closed: PASS
+- Auth and household identity transitions revoke stale queries, permits, mutation callbacks, cached personal UI, and live walk capture before replacement identity admission: PASS
+- Source/test anti-slop checks cover accessible names and roles, 48pt controls, large-text reflow, reduced motion, modal/dialog focus, route ownership, truthful empty/error states, and removal of deceptive or dead actions: PASS. Rendered visual and native-device inspection remain N1 work.
 - All eight required production owners are attached: `auth-credentials`, `avatar`, `care`, `device-preferences`, `files`, `query-cache`, `walk-capture`, and `web-runtime`: PASS
 - Accepted removable-storage and app-file work is admission-controlled and drained before destructive commits: PASS
 - Successful file-owner commit removes `WoofWatcherReports`, `WoofWatcherCredentials`, `woofwatcher-attachments`, and exact legacy root avatar files; every target is attempted and deletion errors remain exact `files` partial failures: PASS
@@ -38,14 +43,14 @@ rule above.
 - Picked-media and generated report/credential writers use the reset-aware file facade; revoked writers and late share fallbacks cannot recreate or apply deleted data: PASS
 - Privacy export uses immutable synchronous capture through `runExport`; deletion uses only `runReset`; export/reset mutual exclusion is enforced by the root operation lane: PASS
 - Query-cache deletion waits for the real personal-screen React shield's post-unmount acknowledgement, then cancels, identity-checks, clears, and rechecks before completion: PASS
-- The rendered shield stays closed through deletion, partial failure, retry, and complete. Exact failed-owner/generic labels are accessible, Retry starts a fresh root reset, and only Return/Continue remounts personal screens: PASS
+- The shipping shield under mounted React lifecycle tests stays closed through deletion, partial failure, retry, and complete. Exact failed-owner/generic labels are accessible, Retry starts a fresh root reset, and only Return/Continue remounts personal screens: PASS
 - Complete success copy is reserved for a complete coordinator result; partial failure/rejection remains visible and actionable: PASS
 - Unsafe legacy Care wipe and direct Privacy/file/share bypasses are absent; Avatar Studio's legitimate feature reset remains: PASS
-- Focused adversarial reset/deletion tests: 277/277 PASS on the exact implementation tree
-- Full focused repository tests: 1,528/1,528 PASS with zero failures and zero skips in exact-head CI #1028
-- TypeScript and CI-safe builds: PASS for libraries, scripts, API server, web app, mockup sandbox, and mobile in exact-head CI #1028
+- Review-session ad hoc selections passed 509/509 whole privacy/authority checks, including a 281/281 owner/concurrency subset; the reproducible durable aggregate gate is the exact-head 2,241-test CI suite below
+- Full focused tests: 34/34 mounted-renderer plus 2,207/2,207 repository tests, 2,241/2,241 total, with zero failures and zero skips in exact-head CI #1036
+- TypeScript and CI-safe builds: PASS for libraries, scripts, API server, web app, mockup sandbox, and mobile in exact-head CI #1036
 - Candidate proof: production-profile web export 260 files PASS; runtime 47/47 routes PASS; live-preview 56/56 checks PASS; exact-head artifact upload PASS
-- Independent scoped code and security reviews: APPROVED; zero findings at all severities
+- Independent review-session whole privacy, owner/concurrency, UI/accessibility, scope, generated-client, and final timezone-portability reviews: APPROVED; zero findings at all severities after fixes. Their evidence is recorded in the final PR #12 closeout comment.
 
 Automated integrity proof uses controlled native adapters. Physical Expo
 filesystem deletion, location-watch teardown, native sharing, offline/relaunch,
@@ -62,6 +67,7 @@ engineering verdict.
 - Native screenshots/video: **NONE**. Existing store screenshots and historical Chromium navigation evidence are web evidence, not native or physical-device proof.
 - Expo/EAS tooling: no global or workspace-local EAS CLI, no authenticated EAS query, no Expo/EAS credential environment, and no committed `extra.eas.projectId`.
 - Account/signing inputs: Expo project ownership/access is unproved. Apple Developer team, certificate, provisioning profile, registered internal device, App Store Connect app/TestFlight access, and Google Play Console, Play App Signing/upload-key, and internal-test access are unavailable or unproved. Release metadata still has null EAS project ID, Apple Team ID, App Store Connect Apple ID, and App Review phone.
+- Owner/legal inputs: legal effective date, governing law, and rights to all shipped art/fonts remain unconfirmed.
 - Native proof metadata remains false for signed TestFlight installation, the physical-iPhone matrix, and Apollo approval of the exact build.
 - Safe areas, touch targets, VoiceOver/TalkBack, large text, haptics, permissions, native sharing/files, offline/background/relaunch, navigation/back/deep links, active walk capture, export, and reset remain unproved on a physical-device binary.
 
@@ -73,7 +79,7 @@ Apollo must personally approve the exact tested binary before release.
 
 The sections below preserve prior checkpoint evidence. Their then-current
 limitations and next-step statements are historical and are superseded by the
-M2B2 and N1 status above.
+V1 engineering closeout and N1 status above.
 
 ### M2B1 durable checkpoint
 
