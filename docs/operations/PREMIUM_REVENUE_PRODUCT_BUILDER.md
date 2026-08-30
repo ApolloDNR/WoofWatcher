@@ -4,7 +4,9 @@
 
 The shared talk-to-log builder now resolves Dog Profile identity before producing its normal-care owner-review prompt, and the canonical product contract supplies the resolved dog name. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed. Talk-to-log remains a local, unsaved, owner-reviewed draft; live AI, automatic actions, providers, diagnosis, payments, native/store proof, and Apollo approval remain gated.
 
-Red-first coverage failed because renamed Mochi still received Phoenix review copy, then focused PWA behavior passed `36/36` after the minimal implementation. Broad partial-checkout execution passed `829/831`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Local TypeScript retained the established missing `@tanstack/react-query` and `zod` dependency blockers. JSON doctor source guards passed while local readiness remained blocked on pnpm `11.19.0` versus pinned `10.24.0` and missing Expo. Dependency-complete branch CI remains to be recorded.
+Red-first coverage failed because renamed Mochi still received Phoenix review copy, then focused PWA behavior passed `36/36` after the minimal implementation. Broad partial-checkout execution passed `829/831`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Local TypeScript retained the established missing `@tanstack/react-query` and `zod` dependency blockers. JSON doctor source guards passed while local readiness remained blocked on pnpm `11.19.0` versus pinned `10.24.0` and missing Expo.
+
+Dependency-complete `WoofWatcher Verify` run `33340212255`, job `99334355466`, passed implementation/docs commit `211a2e7a` through checkout, pinned dependency setup/install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job.
 
 ## 2026-08-14 PWA Household Pulse presence identity slice
 

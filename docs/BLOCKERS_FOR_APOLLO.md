@@ -4,6 +4,8 @@
 
 Source/tests clear the renamed-dog identity leak in normal-care talk-to-log review prompts. Live browser/native draft review, screen-reader traversal, provider-backed AI/action proof, store evidence, and Apollo approval remain open; drafts remain owner-reviewed and unsaved.
 
+Dependency-complete `WoofWatcher Verify` run `33340212255`, job `99334355466`, passed implementation/docs commit `211a2e7a` end to end.
+
 ## 2026-08-14 PWA Household Pulse presence identity boundary
 
 Source/tests clear raw placeholder and padded renamed identity from supervised and home-alone Household Pulse status. Live browser/native interaction, provider-backed household refresh, VoiceOver/TalkBack review, store evidence, and Apollo approval remain open.
