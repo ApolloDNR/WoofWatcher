@@ -1,5 +1,8 @@
 export type QaScreenshotEvidenceSource = "library" | "camera";
 export type QaScreenshotEvidencePlatform = "ios" | "android" | "web" | "unknown";
+export type QaScreenshotEvidenceVerification =
+  | "manual-self-attested"
+  | "exact-binary-device";
 
 export interface QaScreenshotEvidence {
   uri: string;
@@ -7,6 +10,9 @@ export interface QaScreenshotEvidence {
   source: QaScreenshotEvidenceSource;
   targetPlatform: QaScreenshotEvidencePlatform;
   capturedAtIso: string;
+  verification?: QaScreenshotEvidenceVerification;
+  nativeBuildIdentifier?: string;
+  deviceIdentifier?: string;
 }
 
 export interface QaScreenshotEvidenceInput {
@@ -15,6 +21,9 @@ export interface QaScreenshotEvidenceInput {
   source?: QaScreenshotEvidenceSource | null;
   targetPlatform?: QaScreenshotEvidencePlatform | null;
   capturedAtIso?: string | null;
+  verification?: QaScreenshotEvidenceVerification | null;
+  nativeBuildIdentifier?: string | null;
+  deviceIdentifier?: string | null;
 }
 
 function isSource(value: unknown): value is QaScreenshotEvidenceSource {
@@ -51,6 +60,12 @@ function cleanIso(value: unknown): string | null {
   return Number.isNaN(new Date(trimmed).getTime()) ? null : trimmed;
 }
 
+function cleanOptionalText(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
 export function buildQaScreenshotEvidence(
   input: QaScreenshotEvidenceInput,
   fallbackFileName = "qa-screenshot.png",
@@ -58,13 +73,40 @@ export function buildQaScreenshotEvidence(
   const uri = typeof input.uri === "string" ? input.uri.trim() : "";
   if (!uri) return null;
 
+  const source = isSource(input.source) ? input.source : "library";
+  const requestedVerification =
+    input.verification === "exact-binary-device"
+      ? "exact-binary-device"
+      : "manual-self-attested";
+  const verification =
+    source === "library" ? "manual-self-attested" : requestedVerification;
+
   return {
     uri,
     fileName: cleanFileName(input.fileName, fallbackFileName),
-    source: isSource(input.source) ? input.source : "library",
+    source,
     targetPlatform: isPlatform(input.targetPlatform) ? input.targetPlatform : "unknown",
     capturedAtIso: cleanIso(input.capturedAtIso) ?? new Date().toISOString(),
+    verification,
+    ...(verification === "exact-binary-device"
+      ? {
+          nativeBuildIdentifier: cleanOptionalText(input.nativeBuildIdentifier),
+          deviceIdentifier: cleanOptionalText(input.deviceIdentifier),
+        }
+      : {}),
   };
+}
+
+export function qaScreenshotEvidenceIsExactDeviceProof(
+  evidence: QaScreenshotEvidence,
+): boolean {
+  return Boolean(
+    evidence.source === "camera" &&
+      evidence.verification === "exact-binary-device" &&
+      (evidence.targetPlatform === "ios" || evidence.targetPlatform === "android") &&
+      cleanOptionalText(evidence.nativeBuildIdentifier) &&
+      cleanOptionalText(evidence.deviceIdentifier),
+  );
 }
 
 export function cleanQaScreenshotEvidence(
@@ -84,6 +126,9 @@ export function cleanQaScreenshotEvidence(
           source: candidate.source,
           targetPlatform: candidate.targetPlatform,
           capturedAtIso: candidate.capturedAtIso,
+          verification: candidate.verification,
+          nativeBuildIdentifier: candidate.nativeBuildIdentifier,
+          deviceIdentifier: candidate.deviceIdentifier,
         },
         fallbackFileName,
       );
@@ -93,6 +138,11 @@ export function cleanQaScreenshotEvidence(
 
 export function qaScreenshotEvidenceNames(evidence: readonly QaScreenshotEvidence[]): string {
   return evidence
-    .map((item) => `${item.fileName} (${qaScreenshotEvidencePlatformLabel(item.targetPlatform)})`)
+    .map((item) => {
+      const verification = qaScreenshotEvidenceIsExactDeviceProof(item)
+        ? "exact binary/device"
+        : "manual self-attested";
+      return `${item.fileName} (${qaScreenshotEvidencePlatformLabel(item.targetPlatform)}, ${verification})`;
+    })
     .join(", ");
 }

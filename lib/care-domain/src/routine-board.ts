@@ -1,6 +1,8 @@
 import { normalizeCareEventType, type CareEventDetails, type CareEventType } from "./events.ts";
+import { parseClockTime } from "./clock-time.ts";
+import { selectSharedCareEvidence } from "./shared-evidence.ts";
 
-export type RoutineBoardStatus = "done" | "pending" | "overdue" | "due" | "upcoming";
+export type RoutineBoardStatus = "done" | "pending" | "overdue" | "due" | "upcoming" | "needs-correction";
 export type RoutineCompletion = "complete" | "partial" | "skipped" | "pending";
 
 export interface RoutineBoardRoutine {
@@ -33,17 +35,28 @@ export interface RoutineBoardInput {
   now?: number;
 }
 
-export interface RoutineBoardItem extends RoutineBoardRoutine {
+interface RoutineBoardItemBase extends RoutineBoardRoutine {
   id: string;
   normalizedType: CareEventType;
   owner: string;
-  status: RoutineBoardStatus;
   completion: RoutineCompletion | null;
   completionLabel: string | null;
   completedBy: string | null;
   completedAt: string | null;
-  minutesFromNow: number;
+  completionEntryId: string | null;
 }
+
+export type RoutineBoardScheduledItem = RoutineBoardItemBase & {
+  status: Exclude<RoutineBoardStatus, "needs-correction">;
+  minutesFromNow: number;
+};
+
+export type RoutineBoardCorrectionItem = RoutineBoardItemBase & {
+  status: "needs-correction";
+  minutesFromNow: null;
+};
+
+export type RoutineBoardItem = RoutineBoardScheduledItem | RoutineBoardCorrectionItem;
 
 export interface RoutineOwnerLoad {
   owner: string;
@@ -56,9 +69,10 @@ export interface RoutineBoard {
   items: RoutineBoardItem[];
   doneCount: number;
   openCount: number;
+  correctionCount: number;
   unassignedCount: number;
   ownerLoads: RoutineOwnerLoad[];
-  next: RoutineBoardItem | null;
+  next: RoutineBoardScheduledItem | null;
   summary: string;
 }
 
@@ -79,16 +93,11 @@ function isSameLocalDay(iso: string, now: number): boolean {
   );
 }
 
-function routineDateMs(routine: RoutineBoardRoutine, now: number): number {
-  const [time, periodRaw] = clean(routine.time).split(/\s+/);
-  const [hStr, mStr] = (time || "0:00").split(":");
-  const period = periodRaw?.toUpperCase();
-  let h = Number.parseInt(hStr, 10);
-  if (!Number.isFinite(h)) h = 0;
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
+function routineDateMs(routine: RoutineBoardRoutine, now: number): number | null {
+  const parsed = parseClockTime(routine.time);
+  if (!parsed) return null;
   const d = new Date(now);
-  d.setHours(h, Number.parseInt(mStr || "0", 10) || 0, 0, 0);
+  d.setHours(0, parsed.minutesSinceMidnight, 0, 0);
   return d.getTime();
 }
 
@@ -96,10 +105,6 @@ function entryRoutineId(entry: RoutineBoardEntry): string {
   const details = entry.details;
   const id = details?.routineId;
   return typeof id === "string" ? id : "";
-}
-
-function entryIsHouseholdVisible(entry: RoutineBoardEntry): boolean {
-  return entry.details?.householdVisible !== false;
 }
 
 function detailText(details: CareEventDetails, key: string): string {
@@ -138,7 +143,11 @@ function entryTitleMatches(entry: RoutineBoardEntry, routine: RoutineBoardRoutin
   return Boolean(title && label && (title.includes(label) || label.includes(title)));
 }
 
-function statusFor(routineMs: number, completed: boolean, now: number): RoutineBoardStatus {
+function statusFor(
+  routineMs: number,
+  completed: boolean,
+  now: number,
+): Exclude<RoutineBoardStatus, "needs-correction"> {
   if (completed) return "done";
   const diffMinutes = Math.round((routineMs - now) / 60000);
   if (diffMinutes < -DUE_WINDOW_MINUTES) return "overdue";
@@ -146,10 +155,16 @@ function statusFor(routineMs: number, completed: boolean, now: number): RoutineB
   return "upcoming";
 }
 
+export function isRoutineBoardScheduledItem(
+  item: RoutineBoardItem,
+): item is RoutineBoardScheduledItem {
+  return item.status !== "needs-correction" && item.minutesFromNow !== null;
+}
+
 export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
   const now = input.now ?? Date.now();
-  const todays = input.entries
-    .filter((entry) => isSameLocalDay(entry.occurredAt, now) && entryIsHouseholdVisible(entry))
+  const todays = selectSharedCareEvidence(input.entries, now)
+    .filter((entry) => isSameLocalDay(entry.occurredAt, now))
     .map((entry, index) => ({
       entry,
       key: entry.id ? `id:${entry.id}` : `index:${index}`,
@@ -159,19 +174,40 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
     .sort((a, b) => a.ms - b.ms);
   const usedEntryKeys = new Set<string>();
 
-  const sortedRoutines = [...input.routines].sort((a, b) => routineDateMs(a, now) - routineDateMs(b, now));
+  const sortedRoutines = input.routines
+    .map((routine, index) => ({ routine, index, routineMs: routineDateMs(routine, now) }))
+    .sort((a, b) => {
+      if (a.routineMs == null) return b.routineMs == null ? a.index - b.index : 1;
+      if (b.routineMs == null) return -1;
+      return a.routineMs - b.routineMs || a.index - b.index;
+    });
 
-  const items = sortedRoutines.map((routine, index): RoutineBoardItem => {
+  const items = sortedRoutines.map(({ routine, routineMs }, index): RoutineBoardItem => {
     const id = clean(routine.id) || `routine_${index}`;
     const normalizedType = normalizeCareEventType(routine.type);
-    const routineMs = routineDateMs(routine, now);
+    const owner = clean(routine.owner);
+    if (routineMs == null) {
+      return {
+        ...routine,
+        id,
+        owner,
+        normalizedType,
+        status: "needs-correction",
+        completion: null,
+        completionLabel: null,
+        completedBy: null,
+        completedAt: null,
+        completionEntryId: null,
+        minutesFromNow: null,
+      };
+    }
+
     const exact = todays.find(
       (candidate) =>
         !usedEntryKeys.has(candidate.key) &&
         entryRoutineId(candidate.entry) === id,
     );
-    const fuzzy =
-      exact ??
+    const fuzzy = exact ??
       todays.find((candidate) => {
         if (usedEntryKeys.has(candidate.key)) return false;
         const linkedRoutineId = entryRoutineId(candidate.entry);
@@ -190,7 +226,6 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
 
     if (fuzzy) usedEntryKeys.add(fuzzy.key);
 
-    const owner = clean(routine.owner);
     const completion = fuzzy ? entryCompletion(fuzzy.entry, normalizedType) : null;
     const pendingOutcome = completion === "pending";
     return {
@@ -203,18 +238,21 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
       completionLabel: completion ? completionLabel(completion) : null,
       completedBy: fuzzy ? clean(fuzzy.entry.caregiver) || null : null,
       completedAt: fuzzy?.entry.occurredAt ?? null,
+      completionEntryId: fuzzy?.entry.id ?? null,
       minutesFromNow: Math.round((routineMs - now) / 60000),
     };
   });
 
+  const scheduledItems = items.filter(isRoutineBoardScheduledItem);
+  const correctionCount = items.length - scheduledItems.length;
   const ownerNames = new Set<string>(
     [
       ...(input.caregivers ?? []).map((caregiver) => clean(caregiver.name)),
-      ...items.map((item) => item.owner),
+      ...scheduledItems.map((item) => item.owner),
     ].filter(Boolean),
   );
   const ownerLoads = [...ownerNames].map((owner) => {
-    const assignedItems = items.filter((item) => item.owner === owner);
+    const assignedItems = scheduledItems.filter((item) => item.owner === owner);
     const done = assignedItems.filter((item) => item.status === "done").length;
     return {
       owner,
@@ -223,21 +261,25 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
       open: assignedItems.length - done,
     };
   });
-  const doneCount = items.filter((item) => item.status === "done").length;
-  const openItems = items.filter((item) => item.status !== "done");
+  const doneCount = scheduledItems.filter((item) => item.status === "done").length;
+  const scheduledOpenItems = scheduledItems.filter((item) => item.status !== "done");
+  const correctionSummary = correctionCount
+    ? `. ${correctionCount} routine${correctionCount === 1 ? "" : "s"} ${correctionCount === 1 ? "needs" : "need"} correction.`
+    : "";
 
   return {
     items,
     doneCount,
-    openCount: openItems.length,
-    unassignedCount: items.filter((item) => !item.owner).length,
+    openCount: scheduledOpenItems.length,
+    correctionCount,
+    unassignedCount: scheduledItems.filter((item) => !item.owner).length,
     ownerLoads,
     next:
-      openItems.find((item) => item.status === "pending") ??
-      openItems.find((item) => item.status === "due") ??
-      openItems.find((item) => item.status === "overdue") ??
-      openItems.find((item) => item.status === "upcoming") ??
+      scheduledOpenItems.find((item) => item.status === "pending") ??
+      scheduledOpenItems.find((item) => item.status === "due") ??
+      scheduledOpenItems.find((item) => item.status === "overdue") ??
+      scheduledOpenItems.find((item) => item.status === "upcoming") ??
       null,
-    summary: `${doneCount}/${items.length} routines done today`,
+    summary: `${doneCount}/${scheduledItems.length} routines done today${correctionSummary}`,
   };
 }

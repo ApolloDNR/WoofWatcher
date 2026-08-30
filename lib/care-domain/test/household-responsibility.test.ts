@@ -93,3 +93,121 @@ test("prompts setup when there is no care team or routine board", () => {
   assert.equal(responsibility.members.length, 0);
   assert.match(responsibility.nextStep, /Add the first caregiver/i);
 });
+
+test("future and private same-day logs cannot become household activity", () => {
+  let privateTimestampRead = false;
+  const responsibility = deriveHouseholdResponsibility({
+    now: NOW,
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    routines: [],
+    entries: [
+      {
+        id: "future_note",
+        type: "note",
+        title: "Later update",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-11T10:30:00-07:00",
+        details: { householdVisible: true },
+      },
+      {
+        id: "private_note",
+        type: "note",
+        title: "Private update",
+        caregiver: "Apollo",
+        get occurredAt(): string {
+          privateTimestampRead = true;
+          throw new Error("private household evidence timestamp must stay unread");
+        },
+        details: { householdVisible: false },
+      },
+    ],
+  });
+
+  const apollo = responsibility.members.find((member) => member.name === "Apollo");
+  assert.equal(privateTimestampRead, false);
+  assert.equal(apollo?.todayLogs, 0);
+  assert.equal(apollo?.latestLogTitle, null);
+  assert.equal(apollo?.latestLogAt, null);
+});
+
+test("assigned correction-only array values stay outside household care metrics", () => {
+  const responsibility = deriveHouseholdResponsibility({
+    now: NOW,
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    routines: [
+      {
+        id: "bad-breakfast",
+        label: "Breakfast",
+        type: "meal",
+        time: ["7:30 AM"] as unknown as string,
+        owner: "Apollo",
+      },
+    ],
+    entries: [],
+  });
+
+  assert.equal(responsibility.status, "needs-care");
+  assert.equal(responsibility.title, "Routine time needs correction");
+  assert.equal(
+    responsibility.summary,
+    "1 saved routine needs a valid time before it can be scheduled.",
+  );
+  assert.equal(
+    responsibility.nextStep,
+    "Correct the saved routine time in Plans. It is not due or handled care yet.",
+  );
+  assert.equal(responsibility.totalRoutines, 0);
+  assert.equal(responsibility.assignedRoutines, 0);
+  assert.equal(responsibility.unassignedRoutines, 0);
+  assert.equal(responsibility.doneRoutines, 0);
+  assert.equal(responsibility.openRoutines, 0);
+  assert.equal(responsibility.overdueRoutines, 0);
+  assert.equal(responsibility.dueRoutines, 0);
+  assert.equal(responsibility.correctionRoutines, 1);
+  assert.deepEqual(responsibility.unassignedItems, []);
+  assert.deepEqual(
+    responsibility.members.map(({ name, assigned, done, open }) => ({ name, assigned, done, open })),
+    [{ name: "Apollo", assigned: 0, done: 0, open: 0 }],
+  );
+  assert.equal(responsibility.nextAction?.kind, "correct-routine");
+  assert.equal(responsibility.nextAction?.routineId, "bad-breakfast");
+});
+
+test("unassigned correction-only whitespace stays correction copy, not handled care", () => {
+  const responsibility = deriveHouseholdResponsibility({
+    now: NOW,
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    routines: [
+      {
+        id: "bad-walk",
+        label: "Walk",
+        type: "walk",
+        time: "8:30  AM",
+        owner: "",
+      },
+    ],
+    entries: [],
+  });
+
+  assert.equal(responsibility.status, "needs-care");
+  assert.equal(responsibility.title, "Routine time needs correction");
+  assert.equal(
+    responsibility.summary,
+    "1 saved routine needs a valid time before it can be scheduled.",
+  );
+  assert.equal(
+    responsibility.nextStep,
+    "Correct the saved routine time in Plans. It is not due or handled care yet.",
+  );
+  assert.equal(responsibility.totalRoutines, 0);
+  assert.equal(responsibility.assignedRoutines, 0);
+  assert.equal(responsibility.unassignedRoutines, 0);
+  assert.equal(responsibility.doneRoutines, 0);
+  assert.equal(responsibility.openRoutines, 0);
+  assert.equal(responsibility.overdueRoutines, 0);
+  assert.equal(responsibility.dueRoutines, 0);
+  assert.equal(responsibility.correctionRoutines, 1);
+  assert.deepEqual(responsibility.unassignedItems, []);
+  assert.equal(responsibility.nextAction?.kind, "correct-routine");
+  assert.equal(responsibility.nextAction?.routineId, "bad-walk");
+});

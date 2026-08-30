@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type WaterHydrationStatus = "logged" | "watch";
 
@@ -80,7 +81,7 @@ function sameLocalDay(iso: string | null | undefined, now: number): boolean {
 }
 
 function visible(entry: WaterHydrationEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function slug(value: string): string {

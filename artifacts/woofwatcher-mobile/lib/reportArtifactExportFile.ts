@@ -94,6 +94,7 @@ export const RECORDS_LOCAL_FILE_HANDOFF_PROOF_SUMMARY =
 export interface ReportArtifactPrintableSource {
   fileName: string;
   html: string;
+  fallbackText: string;
   mimeType?: ReportArtifactExportMimeType;
   formatLabel?: string;
   boundary?: string;
@@ -111,6 +112,7 @@ export interface ReportArtifactExportFilePlan {
   fileName: string;
   fileUri: string | null;
   html: string;
+  fallbackText: string;
   mimeType: ReportArtifactExportMimeType;
   shareTitle: string;
   message: string;
@@ -300,11 +302,9 @@ export function buildReportArtifactExportFilePlan(
   const directoryName = normalizeExportDirectoryName(options.directoryName);
   const printableLabel = options.printableLabel?.trim() || "report source";
   const formatLabel = printable.formatLabel?.trim() || "HTML file";
-  const boundary = [
+  const boundary =
     printable.boundary?.trim() ||
-      "PDF generation is still pending native or provider-backed setup.",
-    "cloud storage is not enabled by this export.",
-  ].join(" ");
+    "This file stays inside WoofWatcher unless you share it. WoofWatcher cloud backup is not included.";
   const documentDirectory = typeof options.documentDirectory === "string" && options.documentDirectory.trim().length
     ? withTrailingSlash(options.documentDirectory.trim())
     : null;
@@ -314,22 +314,25 @@ export function buildReportArtifactExportFilePlan(
   const fallbackReason = canWriteLocalFile
     ? null
     : "Local file export is unavailable because this runtime does not expose a document directory.";
+  const fallbackText =
+    typeof printable.fallbackText === "string"
+      ? printable.fallbackText.trim()
+      : "";
 
   return {
     directoryUri,
     fileName,
     fileUri,
     html: printable.html,
+    fallbackText:
+      fallbackText ||
+      `${options.title}. The printable file could not be included as readable text.`,
     mimeType,
     shareTitle: `${options.title} printable source`,
     canWriteLocalFile,
     fallbackReason,
     message: canWriteLocalFile
-      ? // "Saved to your device", not "attached": the file write always
-        // succeeds on native, but RN Share.share only attaches the url file
-        // on iOS - on Android it shares text only, so "attached" would
-        // over-claim there. The saved local file is the honest guarantee.
-        `WoofWatcher printable ${printableLabel} is saved to your device as a local ${formatLabel}. ${boundary}`
+      ? `WoofWatcher printable ${printableLabel} is saved inside WoofWatcher as a local ${formatLabel}. ${boundary}`
       : `WoofWatcher printable ${printableLabel} is included below because local file export is unavailable in this runtime. ${boundary}`,
   };
 }
@@ -349,7 +352,7 @@ export function buildReportArtifactShareContent(
 
   return {
     title: plan.shareTitle,
-    message: `${plan.message}\n\n${plan.html}`,
+    message: `${plan.message}\n\n${plan.fallbackText}`,
   };
 }
 

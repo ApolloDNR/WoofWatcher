@@ -170,7 +170,7 @@ export function buildHouseholdSharingCleanupCandidates(
         householdId: clean(member.householdId),
         title: `Expired ${role} Access Pass`,
         detail:
-          "Access Pass has expired and request-time writes are blocked. Review whether to renew access or revoke helper membership.",
+          "Access Pass has expired and household access is blocked. Review whether to renew access or revoke helper membership.",
         role,
         displayName: nullableClean(member.displayName),
         invitedEmail: null,

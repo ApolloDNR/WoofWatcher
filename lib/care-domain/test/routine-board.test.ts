@@ -63,6 +63,27 @@ test("marks overdue, due, upcoming, and unassigned routine states", () => {
   assert.equal(board.next?.id, "snack");
 });
 
+test("keeps invalid legacy times visible for correction but out of routine scheduling", () => {
+  const board = deriveRoutineBoard({
+    now: NOW,
+    routines: [
+      { id: "dinner", label: "Dinner", type: "meal", time: "6:00 PM", owner: "Emma" },
+      { id: "bad-walk", label: "Legacy walk", type: "walk", time: "6x:30 PM", owner: "Apollo" },
+      { id: "snack", label: "Bedtime snack", type: "meal", time: "8:00 PM", owner: "Emma" },
+    ],
+    entries: [],
+  });
+
+  assert.deepEqual(board.items.map((item) => item.id), ["dinner", "snack", "bad-walk"]);
+  assert.equal(board.items[2].status, "needs-correction");
+  assert.equal(board.items[2].minutesFromNow, null);
+  assert.equal(board.next?.id, "dinner");
+  assert.equal(board.doneCount, 0);
+  assert.equal(board.openCount, 2);
+  assert.equal(board.correctionCount, 1);
+  assert.equal(board.summary, "0/2 routines done today. 1 routine needs correction.");
+});
+
 test("fuzzy matching consumes each same-type entry once", () => {
   const board = deriveRoutineBoard({
     now: NOW,
@@ -111,7 +132,7 @@ test("id-less routine logs still match exactly and only count once", () => {
 
 test("meal logs record partial and skipped completion while satisfying the matching routine", () => {
   const board = deriveRoutineBoard({
-    now: NOW,
+    now: new Date("2026-06-06T19:00:00-07:00").getTime(),
     routines: [
       { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM", owner: "Emma" },
       { id: "dinner", label: "Dinner", type: "meal", time: "6:00 PM", owner: "Apollo" },
@@ -237,4 +258,51 @@ test("private logs do not satisfy household routines", () => {
   assert.equal(board.doneCount, 0);
   assert.equal(board.openCount, 1);
   assert.equal(board.items.find((item) => item.id === "breakfast")?.status, "overdue");
+});
+
+test("private routine evidence is removed before its timestamp is read", () => {
+  let privateTimestampRead = false;
+  const privateEntry = {
+    id: "private_meal",
+    type: "meal",
+    title: "Breakfast",
+    details: { householdVisible: false, routineId: "breakfast" },
+    get occurredAt(): string {
+      privateTimestampRead = true;
+      throw new Error("private routine evidence timestamp must stay unread");
+    },
+  };
+
+  const board = deriveRoutineBoard({
+    now: NOW,
+    routines: [
+      { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM" },
+    ],
+    entries: [privateEntry],
+  });
+
+  assert.equal(privateTimestampRead, false);
+  assert.equal(board.items[0]?.status, "overdue");
+  assert.equal(board.items[0]?.completionEntryId, null);
+});
+
+test("future same-day entries cannot satisfy a routine", () => {
+  const board = deriveRoutineBoard({
+    now: NOW,
+    routines: [
+      { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM" },
+    ],
+    entries: [
+      {
+        id: "future_meal",
+        type: "meal",
+        title: "Breakfast",
+        occurredAt: "2026-06-06T20:00:00-07:00",
+        details: { householdVisible: true, routineId: "breakfast" },
+      },
+    ],
+  });
+
+  assert.equal(board.items[0]?.status, "overdue");
+  assert.equal(board.items[0]?.completionEntryId, null);
 });

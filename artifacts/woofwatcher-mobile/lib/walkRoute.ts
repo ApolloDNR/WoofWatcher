@@ -35,6 +35,7 @@ export type WalkRouteCaptureStatus =
   | "idle"
   | "starting"
   | "recording"
+  | "paused"
   | "denied"
   | "unavailable";
 
@@ -352,14 +353,30 @@ export function projectRoutePoint(
 /* Platform-safe recorder (singleton)                                  */
 /* ------------------------------------------------------------------ */
 
-type StopWatchFn = () => void;
+export type WalkRouteStopWatch = () => void;
+
+export interface WalkRouteWatchStartControl {
+  /** Synchronously revoked when this exact capture generation is cancelled. */
+  readonly signal: AbortSignal;
+  /** Exact Care/reset authority plus capture-generation check. */
+  readonly isCurrent: () => boolean;
+}
+
+export interface WalkRouteWatchAdapter {
+  start(
+    onPoint: (point: WalkRoutePoint) => void,
+    onDenied: () => void,
+    control: WalkRouteWatchStartControl,
+  ): Promise<WalkRouteStopWatch | null>;
+}
 
 interface CaptureState {
   status: WalkRouteCaptureStatus;
   sessionKey: string | null;
   points: WalkRoutePoint[];
   generation: number;
-  stopWatch: StopWatchFn | null;
+  stopWatch: WalkRouteStopWatch | null;
+  startController: AbortController | null;
 }
 
 const capture: CaptureState = {
@@ -368,9 +385,17 @@ const capture: CaptureState = {
   points: [],
   generation: 0,
   stopWatch: null,
+  startController: null,
 };
 
 const listeners = new Set<() => void>();
+const pendingCaptureStarts = new Set<Promise<void>>();
+// Once watchPositionAsync is invoked, native capture may already be live even
+// before Expo returns its removal handle. Aborting releases UI admission, but
+// reset must remain truthfully retryable until that late liability either
+// rejects or yields a subscription that is physically stopped.
+const pendingNativeWatchLiabilities = new Set<object>();
+const retainedStopHandles = new Set<WalkRouteStopWatch>();
 let snapshot: WalkRouteCaptureSnapshot = {
   status: "idle",
   sessionKey: null,
@@ -406,24 +431,56 @@ function setStatus(status: WalkRouteCaptureStatus): void {
   publish();
 }
 
-function stopActiveWatch(): void {
+function attemptStopWatch(stop: WalkRouteStopWatch): void {
+  retainedStopHandles.add(stop);
+  stop();
+  retainedStopHandles.delete(stop);
+}
+
+function stopActiveWatch(reportFailure = false): void {
   const stop = capture.stopWatch;
   capture.stopWatch = null;
   if (stop) {
     try {
-      stop();
-    } catch {
-      // Ignore teardown failures; nothing else to release.
+      attemptStopWatch(stop);
+    } catch (error) {
+      if (reportFailure) throw error;
+      // Best-effort cancellation outside destructive reset cannot block UI.
     }
   }
 }
 
+function abortPendingWatchStart(): void {
+  const controller = capture.startController;
+  capture.startController = null;
+  controller?.abort();
+}
+
 function resetCapture(): void {
+  abortPendingWatchStart();
   stopActiveWatch();
   capture.generation += 1;
   capture.sessionKey = null;
   capture.points = [];
   setStatus("idle");
+}
+
+/**
+ * Best-effort retry for native stop handles whose first teardown threw.
+ *
+ * Identity changes cannot leave a previous household's location subscription
+ * live merely because a platform adapter failed once. Permanent failures stay
+ * retained so the destructive reset owner can still report them truthfully.
+ */
+export function retryRetainedWalkRouteStopHandles(): void {
+  for (const stop of [...retainedStopHandles]) {
+    try {
+      attemptStopWatch(stop);
+    } catch {
+      // Keep the handle retained for the next identity cancellation or for the
+      // reset owner's fail-closed prepare barrier.
+    }
+  }
 }
 
 /* --- Web: navigator.geolocation, feature-detected at call time --- */
@@ -468,7 +525,7 @@ function isReactNativeRuntime(): boolean {
 function startWebWatch(
   onPoint: (point: WalkRoutePoint) => void,
   onDenied: () => void,
-): StopWatchFn | null {
+): WalkRouteStopWatch | null {
   const geolocation = getWebGeolocation();
   if (!geolocation) return null;
   try {
@@ -498,41 +555,238 @@ function startWebWatch(
 
 /* --- Native: expo-location, loaded lazily so absence degrades to no-op --- */
 
-async function startNativeWatch(
+export interface WalkRouteNativeLocationModule {
+  readonly Accuracy: { readonly Balanced: unknown };
+  requestForegroundPermissionsAsync(): Promise<{ granted: boolean }>;
+  watchPositionAsync(
+    options: {
+      accuracy: unknown;
+      timeInterval: number;
+      distanceInterval: number;
+    },
+    onPosition: (position: {
+      coords: { latitude: number; longitude: number };
+      timestamp?: number;
+    }) => void,
+  ): Promise<{ remove(): void }>;
+}
+
+type CurrentStartupStage<T> =
+  | { readonly status: "current"; readonly value: T }
+  | { readonly status: "revoked" };
+
+function startupControlIsCurrent(
+  control: WalkRouteWatchStartControl,
+): boolean {
+  return (
+    !control.signal.aborted &&
+    control.isCurrent() &&
+    !control.signal.aborted
+  );
+}
+
+/**
+ * Release logical admission as soon as this exact generation is aborted,
+ * even when a platform import/permission promise never answers. The original
+ * promise keeps a rejection handler but cannot progress to another native
+ * side effect after revocation.
+ */
+function awaitCurrentStartupStage<T>(
+  operation: Promise<T>,
+  control: WalkRouteWatchStartControl,
+  onRevokedValue?: (value: T) => void,
+  onOperationSettled?: () => void,
+): Promise<CurrentStartupStage<T>> {
+  const disposeRevokedValue = (value: T) => {
+    try {
+      onRevokedValue?.(value);
+    } catch {
+      // Native stop failures retain their handle through attemptStopWatch;
+      // logical revocation must still settle immediately.
+    }
+  };
+  const settleUnderlyingOperation = () => {
+    try {
+      onOperationSettled?.();
+    } catch {
+      // Ownership callbacks are bookkeeping-only and must not mask the
+      // platform result. The reset-side liability remains fail closed.
+    }
+  };
+  if (!startupControlIsCurrent(control)) {
+    void operation.then(
+      (value) => {
+        disposeRevokedValue(value);
+        settleUnderlyingOperation();
+      },
+      settleUnderlyingOperation,
+    );
+    return Promise.resolve({ status: "revoked" });
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (result: CurrentStartupStage<T>) => {
+      if (settled) return;
+      settled = true;
+      control.signal.removeEventListener("abort", onAbort);
+      resolve(result);
+    };
+    const onAbort = () => finish({ status: "revoked" });
+    control.signal.addEventListener("abort", onAbort, { once: true });
+    operation.then(
+      (value) => {
+        if (settled) {
+          disposeRevokedValue(value);
+          settleUnderlyingOperation();
+          return;
+        }
+        if (startupControlIsCurrent(control)) {
+          settleUnderlyingOperation();
+          finish({ status: "current", value });
+          return;
+        }
+        disposeRevokedValue(value);
+        settleUnderlyingOperation();
+        finish({ status: "revoked" });
+      },
+      (error) => {
+        settleUnderlyingOperation();
+        if (settled) return;
+        control.signal.removeEventListener("abort", onAbort);
+        settled = true;
+        if (!startupControlIsCurrent(control)) {
+          resolve({ status: "revoked" });
+          return;
+        }
+        reject(error);
+      },
+    );
+  });
+}
+
+export async function startNativeWalkRouteWatchWithLoader(
+  loadLocation: () => Promise<WalkRouteNativeLocationModule>,
+  control: WalkRouteWatchStartControl,
   onPoint: (point: WalkRoutePoint) => void,
   onDenied: () => void,
-): Promise<StopWatchFn | null> {
-  if (!isReactNativeRuntime()) return null;
+): Promise<WalkRouteStopWatch | null> {
   try {
-    const Location = await import("expo-location");
-    const permission = await Location.requestForegroundPermissionsAsync();
+    if (!startupControlIsCurrent(control)) return null;
+    const loaded = await awaitCurrentStartupStage(
+      Promise.resolve(loadLocation()),
+      control,
+    );
+    if (loaded.status === "revoked") return null;
+    const Location = loaded.value;
+    if (!startupControlIsCurrent(control)) return null;
+    const permissionResult = await awaitCurrentStartupStage(
+      Promise.resolve(Location.requestForegroundPermissionsAsync()),
+      control,
+    );
+    if (permissionResult.status === "revoked") return null;
+    const permission = permissionResult.value;
+    if (!startupControlIsCurrent(control)) return null;
     if (!permission.granted) {
       onDenied();
       return null;
     }
-    const subscription = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.Balanced,
-        timeInterval: 5_000,
-        distanceInterval: 5,
-      },
-      (position) => {
-        onPoint({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-          t:
-            typeof position.timestamp === "number"
-              ? position.timestamp
-              : Date.now(),
-        });
+    // This final exact-authority check is intentionally adjacent to the OS
+    // side effect: neither a late module nor permission result may start a
+    // location subscription for a revoked Care/reset generation.
+    if (!startupControlIsCurrent(control)) return null;
+    const stopSubscription = (subscription: { remove(): void }) => {
+      try {
+        attemptStopWatch(() => subscription.remove());
+      } catch {
+        // cancelWalkRouteCapture may have already performed its ordinary
+        // retained-handle retry before this late handle existed. Retry once
+        // now so a fail-once A teardown closes without touching B's watch;
+        // permanent failures remain retained for the reset owner.
+        retryRetainedWalkRouteStopHandles();
+      }
+    };
+    const nativeWatchLiability = Object.freeze({});
+    pendingNativeWatchLiabilities.add(nativeWatchLiability);
+    let watchOperation: Promise<{ remove(): void }>;
+    try {
+      watchOperation = Promise.resolve(
+        Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 5_000,
+            distanceInterval: 5,
+          },
+          (position) => {
+            onPoint({
+              lat: position.coords.latitude,
+              lon: position.coords.longitude,
+              t:
+                typeof position.timestamp === "number"
+                  ? position.timestamp
+                  : Date.now(),
+            });
+          },
+        ),
+      );
+    } catch (error) {
+      pendingNativeWatchLiabilities.delete(nativeWatchLiability);
+      throw error;
+    }
+    const subscriptionResult = await awaitCurrentStartupStage(
+      watchOperation,
+      control,
+      stopSubscription,
+      () => {
+        pendingNativeWatchLiabilities.delete(nativeWatchLiability);
       },
     );
-    return () => subscription.remove();
+    if (subscriptionResult.status === "revoked") return null;
+    const subscription = subscriptionResult.value;
+    const stopWatch = () => subscription.remove();
+    if (!startupControlIsCurrent(control)) {
+      stopSubscription(subscription);
+      return null;
+    }
+    return stopWatch;
   } catch {
     // expo-location missing or the platform refused the watch: no-op.
     return null;
   }
 }
+
+async function startNativeWatch(
+  control: WalkRouteWatchStartControl,
+  onPoint: (point: WalkRoutePoint) => void,
+  onDenied: () => void,
+): Promise<WalkRouteStopWatch | null> {
+  if (!isReactNativeRuntime() || !startupControlIsCurrent(control)) {
+    return null;
+  }
+  return startNativeWalkRouteWatchWithLoader(
+    () =>
+      import("expo-location") as unknown as Promise<WalkRouteNativeLocationModule>,
+    control,
+    onPoint,
+    onDenied,
+  );
+}
+
+const defaultWalkRouteWatchAdapter: WalkRouteWatchAdapter = Object.freeze({
+  async start(
+    onPoint: (point: WalkRoutePoint) => void,
+    onDenied: () => void,
+    control: WalkRouteWatchStartControl,
+  ) {
+    if (!startupControlIsCurrent(control)) return null;
+    const webStop = startWebWatch(onPoint, onDenied);
+    if (webStop) {
+      if (startupControlIsCurrent(control)) return webStop;
+      attemptStopWatch(webStop);
+      return null;
+    }
+    return startNativeWatch(control, onPoint, onDenied);
+  },
+});
 
 /**
  * Start capturing a route for the given walk session key (its
@@ -540,23 +794,41 @@ async function startNativeWatch(
  * discards the previous capture. Resolves once the platform watch is
  * established (or determined to be denied/unavailable).
  */
-export async function startWalkRouteCapture(sessionKey: string): Promise<void> {
-  if (!sessionKey) return;
+async function establishWalkRouteCapture(
+  sessionKey: string,
+  adapter: WalkRouteWatchAdapter,
+  isCurrent: () => boolean,
+): Promise<void> {
+  if (!sessionKey || !isCurrent()) return;
   if (
     capture.sessionKey === sessionKey &&
     (capture.status === "recording" || capture.status === "starting")
   ) {
     return;
   }
+  const preservedPoints =
+    capture.sessionKey === sessionKey && capture.status === "paused"
+      ? [...capture.points]
+      : [];
+  abortPendingWatchStart();
   stopActiveWatch();
   capture.generation += 1;
   const generation = capture.generation;
+  const startController = new AbortController();
+  capture.startController = startController;
+  const startControl = Object.freeze({
+    signal: startController.signal,
+    isCurrent: () =>
+      !startController.signal.aborted &&
+      capture.generation === generation &&
+      isCurrent(),
+  });
   capture.sessionKey = sessionKey;
-  capture.points = [];
+  capture.points = preservedPoints;
   setStatus("starting");
 
   const onPoint = (point: WalkRoutePoint) => {
-    if (capture.generation !== generation) return;
+    if (!isCurrent() || capture.generation !== generation) return;
     const last = capture.points[capture.points.length - 1] ?? null;
     if (!shouldAppendRoutePoint(last, point)) return;
     capture.points.push(point);
@@ -564,33 +836,54 @@ export async function startWalkRouteCapture(sessionKey: string): Promise<void> {
     publish();
   };
   const onDenied = () => {
-    if (capture.generation !== generation) return;
+    if (!isCurrent() || capture.generation !== generation) return;
     stopActiveWatch();
     setStatus("denied");
   };
 
-  const webStop = startWebWatch(onPoint, onDenied);
-  if (webStop) {
-    if (capture.generation !== generation) {
-      webStop();
-      return;
+  let stopWatch: WalkRouteStopWatch | null;
+  try {
+    stopWatch = await adapter.start(onPoint, onDenied, startControl);
+  } finally {
+    if (capture.startController === startController) {
+      capture.startController = null;
     }
-    capture.stopWatch = webStop;
-    publish();
+  }
+  if (!isCurrent() || capture.generation !== generation) {
+    if (stopWatch) attemptStopWatch(stopWatch);
     return;
   }
-
-  const nativeStop = await startNativeWatch(onPoint, onDenied);
-  if (capture.generation !== generation) {
-    if (nativeStop) nativeStop();
-    return;
-  }
-  if (nativeStop) {
-    capture.stopWatch = nativeStop;
+  if (stopWatch) {
+    capture.stopWatch = stopWatch;
     publish();
     return;
   }
   if (capture.status !== "denied") setStatus("unavailable");
+}
+
+export function startWalkRouteCaptureWithAdapter(
+  sessionKey: string,
+  adapter: WalkRouteWatchAdapter,
+  isCurrent: () => boolean,
+): Promise<void> {
+  const operation = establishWalkRouteCapture(sessionKey, adapter, isCurrent);
+  pendingCaptureStarts.add(operation);
+  void operation.then(
+    () => pendingCaptureStarts.delete(operation),
+    () => pendingCaptureStarts.delete(operation),
+  );
+  return operation;
+}
+
+export function startWalkRouteCapture(
+  sessionKey: string,
+  isCurrent: () => boolean,
+): Promise<void> {
+  return startWalkRouteCaptureWithAdapter(
+    sessionKey,
+    defaultWalkRouteWatchAdapter,
+    isCurrent,
+  );
 }
 
 /**
@@ -626,4 +919,64 @@ export function finishWalkRouteCapture(
 /** Discard any in-flight capture without persisting anything. */
 export function cancelWalkRouteCapture(): void {
   resetCapture();
+  retryRetainedWalkRouteStopHandles();
 }
+
+/**
+ * Reset-owner barrier: revoke callbacks, stop the live watch, and drain starts.
+ * Captured points remain staged until commit. If another owner cannot prepare,
+ * the bridge can resume this paused session without losing the route.
+ */
+export async function cancelAndDrainWalkRouteCapture(): Promise<void> {
+  abortPendingWatchStart();
+  const activeStop = capture.stopWatch;
+  capture.stopWatch = null;
+  capture.generation += 1;
+  setStatus(capture.sessionKey ? "paused" : "idle");
+
+  const failures: unknown[] = [];
+  const attempted = new Set<WalkRouteStopWatch>();
+  const attempt = (stop: WalkRouteStopWatch) => {
+    attempted.add(stop);
+    try {
+      attemptStopWatch(stop);
+    } catch (error) {
+      failures.push(error);
+    }
+  };
+
+  if (activeStop) attempt(activeStop);
+  for (const stop of [...retainedStopHandles]) {
+    if (!attempted.has(stop)) attempt(stop);
+  }
+
+  while (pendingCaptureStarts.size > 0) {
+    const startResults = await Promise.allSettled([...pendingCaptureStarts]);
+    for (const result of startResults) {
+      if (result.status === "rejected") failures.push(result.reason);
+    }
+  }
+  if (pendingNativeWatchLiabilities.size > 0) {
+    failures.push(
+      new Error(
+        "A native walk subscription is still being established. Retry after it finishes stopping.",
+      ),
+    );
+  }
+  if (retainedStopHandles.size > 0 && failures.length === 0) {
+    failures.push(new Error("A walk capture subscription remains active."));
+  }
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures,
+      "Walk capture could not be fully stopped.",
+    );
+  }
+}
+
+export const walkRouteLocalDataResetParticipant = Object.freeze({
+  prepare: cancelAndDrainWalkRouteCapture,
+  async commit() {
+    resetCapture();
+  },
+});

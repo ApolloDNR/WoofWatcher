@@ -1,10 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { replaceWithCanonicalHome } from "@/lib/canonicalRouteBuilders";
 import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 /**
@@ -13,7 +14,7 @@ import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
  * never expose launch tooling to households or store reviewers.
  */
 export function OwnerOpsUnavailableScreen({
-  title = "Not part of this release",
+  title = "Page unavailable",
 }: {
   title?: string;
 }) {
@@ -51,20 +52,14 @@ export function OwnerOpsUnavailableScreen({
             { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
           ]}
         >
-          This area holds internal owner tooling and is not included in the
-          store release. Everything for your dog's day lives in Today, Log,
-          Plan, Pack, and Story.
+          This page isn't available in this version of WoofWatcher. Everything
+          for your dog's day is available from Home, Log, Plans, Health, and
+          More.
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back to Today"
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace("/");
-            }
-          }}
+          accessibilityLabel="Back to Home"
+          onPress={() => replaceWithCanonicalHome(router)}
           style={({ pressed }) => [
             styles.button,
             {
@@ -78,7 +73,7 @@ export function OwnerOpsUnavailableScreen({
               { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
             ]}
           >
-            Back to Today
+            Back to Home
           </Text>
         </Pressable>
       </View>

@@ -5,8 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { AvatarEmotionsResponseErrors } from './avatarEmotionsResponseErrors';
-import type { AvatarEmotionsResponseImages } from './avatarEmotionsResponseImages';
+import type { AvatarEmotionsResponseErrors } from "./avatarEmotionsResponseErrors";
+import type { AvatarEmotionsResponseImages } from "./avatarEmotionsResponseImages";
 
 export interface AvatarEmotionsResponse {
   images: AvatarEmotionsResponseImages;

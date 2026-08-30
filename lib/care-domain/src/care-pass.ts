@@ -7,8 +7,15 @@ import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveIncidentWatch, type IncidentWatchItem } from "./incident-watch.ts";
 import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
-import { resolvePetName } from "./pet-identity.ts";
+import {
+  getRecordDueStatus,
+  isRenewableCareRecord,
+  orderCareRecordsCurrentFirst,
+  recordDueNeedsCorrection,
+} from "./record-vault.ts";
+import { DEFAULT_PET_DISPLAY_NAME, resolvePetName } from "./pet-identity.ts";
 import { derivePottyHealth } from "./potty-health.ts";
+import { isHouseholdVisibleCareEvidence, selectSharedCareEvidence } from "./shared-evidence.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
@@ -55,6 +62,7 @@ export interface CarePassRecord {
   title: string;
   due?: string;
   note?: string;
+  correctionIssues?: readonly unknown[];
 }
 
 export interface CarePassInput {
@@ -116,11 +124,17 @@ export interface CarePassArtifactExportView {
   formatLabel: "Printable HTML";
   sourceStatus: CarePassArtifactPrintView["status"];
   byteSize: number;
-  pdfStatus: "not-generated";
+  pdfStatus: "not-generated" | "generated-local";
   pdfDetail: string;
   storage: CarePassArtifactStorageView;
   providerBacked: boolean;
   manifestRows: CarePassArtifactExportManifestRow[];
+}
+
+export interface CarePassGeneratedPdfProof {
+  fileName: string;
+  mimeType: "application/pdf";
+  byteSize: number;
 }
 
 export type CarePassArtifactStorageStatus = "local-only" | "upload-ready" | "uploaded" | "failed";
@@ -158,19 +172,46 @@ export interface CarePassArtifactStorageOptions {
   storageProviderEvidence?: CarePassStorageProviderEvidence | null;
 }
 
+export interface CarePassArtifactExportOptions
+  extends CarePassArtifactStorageOptions {
+  generatedPdf?: CarePassGeneratedPdfProof | null;
+}
+
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
   caregiver: "Caregiver",
   sitter: "Sitter",
   vet: "Vet",
   trainer: "Trainer",
 };
+const CARE_PASS_TITLE_MAX_CHARS = 192;
+const CARE_PASS_SUMMARY_MAX_CHARS = 1_024;
+const CARE_PASS_LINE_MAX_CHARS = 2_048;
+const CARE_PASS_MESSAGE_MAX_CHARS = 65_536;
+const CARE_PASS_MAX_SECTIONS = 32;
+const CARE_PASS_MAX_LINES_PER_SECTION = 64;
+const CARE_PASS_TEXT_TRUNCATION_MARKER = " ... [content shortened] ... ";
+
+function boundCarePassText(value: unknown, maxChars: number): string {
+  const text = String(value ?? "");
+  if (text.length <= maxChars) return text;
+  if (maxChars <= CARE_PASS_TEXT_TRUNCATION_MARKER.length) {
+    return text.slice(0, maxChars);
+  }
+  const remaining = maxChars - CARE_PASS_TEXT_TRUNCATION_MARKER.length;
+  const headLength = Math.ceil(remaining * 0.6);
+  return `${text.slice(0, headLength)}${CARE_PASS_TEXT_TRUNCATION_MARKER}${text.slice(-(remaining - headLength))}`;
+}
+
+function boundedCarePassLine(value: unknown, maxChars = CARE_PASS_LINE_MAX_CHARS): string {
+  return clean(boundCarePassText(value, maxChars));
+}
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
 function escapeHtml(value: unknown): string {
-  return clean(value)
+  return boundedCarePassLine(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -179,7 +220,7 @@ function escapeHtml(value: unknown): string {
 }
 
 function escapeHtmlBlock(value: unknown): string {
-  return String(value ?? "")
+  return boundCarePassText(value, CARE_PASS_MESSAGE_MAX_CHARS)
     .replace(/\r\n/g, "\n")
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
@@ -191,12 +232,45 @@ function escapeHtmlBlock(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
+const CARE_PASS_FILE_NAME_MAX_CHARS = 96;
+const CARE_PASS_FILE_STEM_MAX_CHARS = 80;
+const CARE_PASS_FILE_TRUNCATION_MARKER = "---";
+
+function capCarePassFileStem(stem: string, maxChars = CARE_PASS_FILE_STEM_MAX_CHARS): string {
+  if (stem.length <= maxChars) return stem;
+  const remaining = maxChars - CARE_PASS_FILE_TRUNCATION_MARKER.length;
+  const headLength = Math.ceil(remaining * 0.65);
+  return `${stem.slice(0, headLength)}${CARE_PASS_FILE_TRUNCATION_MARKER}${stem.slice(-(remaining - headLength))}`;
+}
+
 function slugify(value: string): string {
-  return clean(value)
+  const raw = String(value ?? "");
+  const bounded = raw.length <= 512
+    ? raw
+    : `${raw.slice(0, 300)} content shortened ${raw.slice(-190)}`;
+  const stem = clean(bounded)
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "") || "care-pass";
+  return capCarePassFileStem(stem);
+}
+
+function normalizeStoredCarePassHtmlFileName(value: unknown, fallback: string): string {
+  const rawValue = String(value ?? "");
+  const boundedValue = rawValue.length <= 512
+    ? rawValue
+    : `${rawValue.slice(0, 300)} content shortened ${rawValue.slice(-190)}`;
+  const raw = clean(boundedValue);
+  if (!raw) return fallback;
+  const withoutExtension = raw.replace(/\.[a-z0-9]+$/i, "");
+  const normalized = withoutExtension
+    .replace(/[\\/:*?"<>|#%{}^[\]`]+/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[.-]+|[.-]+$/g, "") || "care-pass";
+  const maxStemChars = CARE_PASS_FILE_NAME_MAX_CHARS - ".html".length;
+  return `${capCarePassFileStem(normalized, maxStemChars)}.html`;
 }
 
 function notEmpty(value: string): boolean {
@@ -279,8 +353,8 @@ export function isCarePassStorageProviderProofReady(options: CarePassArtifactSto
 }
 
 function entryLabel(entry: CareHealthEntry): string {
-  const title = clean(entry.title) || normalizeCareEventType(entry.type, entry.details);
-  const caregiver = clean(entry.caregiver);
+  const title = boundedCarePassLine(entry.title) || normalizeCareEventType(entry.type, entry.details);
+  const caregiver = boundedCarePassLine(entry.caregiver, 256);
   const time = new Date(entry.occurredAt).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -312,7 +386,7 @@ function lower(value: unknown): string {
 }
 
 function isHouseholdVisible(entry: CareHealthEntry): boolean {
-  return detailRecord(entry).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isPendingMeal(entry: CareHealthEntry): boolean {
@@ -360,8 +434,28 @@ function mealFollowUpLines(entries: readonly CareHealthEntry[], limit = 6): stri
 }
 
 function section(title: string, lines: string[]): CarePassSection | null {
-  const cleaned = lines.map(clean).filter(notEmpty);
-  return cleaned.length ? { title, lines: cleaned } : null;
+  const cleaned = lines
+    .slice(0, CARE_PASS_MAX_LINES_PER_SECTION)
+    .map((line) => boundedCarePassLine(line))
+    .filter(notEmpty);
+  return cleaned.length
+    ? { title: boundedCarePassLine(title, 128), lines: cleaned }
+    : null;
+}
+
+function carePassRecordLine(record: CarePassRecord, now: number): string {
+  let savedValue = "";
+  if (recordDueNeedsCorrection(record)) {
+    savedValue = " - date needs correction";
+  } else if (record.due) {
+    const hasHistoricalDate = getRecordDueStatus(record, now).date != null;
+    savedValue = isRenewableCareRecord(record)
+      ? ` due ${record.due}`
+      : hasHistoricalDate
+        ? ` date ${record.due}`
+        : ` - ${record.due}`;
+  }
+  return `${record.title}${savedValue}${record.note ? ` - ${record.note}` : ""}`;
 }
 
 function walkRouteTemplateLine(template: WalkRouteTemplate): string {
@@ -452,11 +546,33 @@ function renderMessage(pass: Omit<CarePass, "message">): string {
       "",
     ]),
   ];
-  return parts.join("\n").trim();
+  return boundCarePassText(parts.join("\n").trim(), CARE_PASS_MESSAGE_MAX_CHARS);
+}
+
+function normalizeCarePassForOutput(pass: CarePass): CarePass {
+  const sections = (Array.isArray(pass.sections) ? pass.sections : [])
+    .slice(0, CARE_PASS_MAX_SECTIONS)
+    .map((item) => ({
+      title: boundedCarePassLine(item?.title, 128),
+      lines: (Array.isArray(item?.lines) ? item.lines : [])
+        .slice(0, CARE_PASS_MAX_LINES_PER_SECTION)
+        .map((line) => boundedCarePassLine(line))
+        .filter(notEmpty),
+    }))
+    .filter((item) => item.title && item.lines.length > 0);
+  return {
+    ...pass,
+    title: boundedCarePassLine(pass.title, CARE_PASS_TITLE_MAX_CHARS),
+    summary: boundedCarePassLine(pass.summary, CARE_PASS_SUMMARY_MAX_CHARS),
+    generatedAt: boundedCarePassLine(pass.generatedAt, 128),
+    sections,
+    message: boundCarePassText(pass.message, CARE_PASS_MESSAGE_MAX_CHARS),
+  };
 }
 
 export function renderCarePassPrintHtml(pass: CarePass): string {
-  const sections = pass.sections
+  const safePass = normalizeCarePassForOutput(pass);
+  const sections = safePass.sections
     .map((item) => `
       <section class="section">
         <h2>${escapeHtml(item.title)}</h2>
@@ -471,7 +587,7 @@ export function renderCarePassPrintHtml(pass: CarePass): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(pass.title)}</title>
+  <title>${escapeHtml(safePass.title)}</title>
   <style>
     :root {
       color-scheme: light;
@@ -562,9 +678,9 @@ export function renderCarePassPrintHtml(pass: CarePass): string {
   <main>
     <header>
       <div class="brand">WoofWatcher Care Pass</div>
-      <h1>${escapeHtml(pass.title)}</h1>
-      <p class="summary">${escapeHtml(pass.summary)}</p>
-      <div class="generated">Generated ${escapeHtml(pass.generatedAt)}</div>
+      <h1>${escapeHtml(safePass.title)}</h1>
+      <p class="summary">${escapeHtml(safePass.summary)}</p>
+      <div class="generated">Generated ${escapeHtml(safePass.generatedAt)}</div>
     </header>
 ${sections}
     <footer>
@@ -701,8 +817,12 @@ ${sections}
 
 export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePassArtifactPrintView {
   const storedHtml = typeof artifact.printHtml === "string" && artifact.printHtml.trim().length > 0;
+  const fallbackFileName = `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`;
   return {
-    fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
+    fileName: normalizeStoredCarePassHtmlFileName(
+      artifact.printFileName,
+      fallbackFileName,
+    ),
     html: storedHtml ? artifact.printHtml as string : renderLegacyArtifactPrintHtml(artifact),
     status: storedHtml ? "ready" : "restored",
   };
@@ -758,20 +878,29 @@ export function describeCarePassArtifactStorage(
 
 export function describeCarePassArtifactExport(
   artifact: CarePassArtifact,
-  options: CarePassArtifactStorageOptions = {},
+  options: CarePassArtifactExportOptions = {},
 ): CarePassArtifactExportView {
   const printable = getCarePassArtifactPrintView(artifact);
   const storage = describeCarePassArtifactStorage(artifact, options);
   const sourceLabel = printable.status === "ready" ? "Print-ready" : "Print restored";
   const byteSize = utf8ByteLength(printable.html);
-  const pdfDetail = "PDF export still needs native or provider-backed generation; share the printable HTML source until that is configured.";
+  const generatedPdf =
+    options.generatedPdf?.mimeType === "application/pdf" &&
+    clean(options.generatedPdf.fileName) &&
+    Number.isFinite(options.generatedPdf.byteSize) &&
+    options.generatedPdf.byteSize > 0
+      ? options.generatedPdf
+      : null;
+  const pdfDetail = generatedPdf
+    ? `${generatedPdf.fileName} was generated locally (${Math.round(generatedPdf.byteSize).toLocaleString("en-US")} bytes); native share and reopen proof still required on iOS and Android. ${storage.providerBacked ? "Provider-backed storage proof is attached." : "Provider storage is not enabled for this artifact."}`
+    : "No generated local PDF is attached to this export view; the printable HTML source remains available without claiming PDF readiness.";
   return {
     fileName: printable.fileName,
     mimeType: "text/html",
     formatLabel: "Printable HTML",
     sourceStatus: printable.status,
     byteSize,
-    pdfStatus: "not-generated",
+    pdfStatus: generatedPdf ? "generated-local" : "not-generated",
     pdfDetail,
     storage,
     providerBacked: storage.providerBacked,
@@ -788,7 +917,7 @@ export function describeCarePassArtifactExport(
       },
       {
         label: "PDF",
-        value: "PDF pending",
+        value: generatedPdf ? "PDF generated locally" : "PDF not generated",
         detail: pdfDetail,
       },
       {
@@ -802,25 +931,55 @@ export function describeCarePassArtifactExport(
 
 export function buildCarePass(input: CarePassInput): CarePass {
   const now = input.now ?? Date.now();
-  const profile = input.profile ?? {};
-  const diet = input.dietProfile ?? {};
-  // Privacy chokepoint: the Care Pass is a SHARED artifact, so private
-  // (household-hidden) logs are excluded here, before any section derives
-  // from them. Filtering once at the entrance guarantees no downstream
-  // helper - including sibling modules that do not self-filter - can leak a
-  // private entry into the pass, and keeps every section consistent with
-  // the Care Trends section, which already honored the flag.
-  const entries = (input.entries ?? []).filter(isHouseholdVisible);
+  const sourceProfile = input.profile ?? {};
+  const profile: CarePassProfile = {
+    ...sourceProfile,
+    name: boundedCarePassLine(sourceProfile.name, 128),
+    breed: boundedCarePassLine(sourceProfile.breed, 512),
+    careFocus: boundedCarePassLine(sourceProfile.careFocus, 512),
+    vetBoundary: boundedCarePassLine(sourceProfile.vetBoundary, 512),
+    ...(sourceProfile.weight
+      ? {
+          weight: {
+            ...sourceProfile.weight,
+            goal: boundedCarePassLine(sourceProfile.weight.goal, 256),
+            unit: ["lb", "kg"].includes(
+              boundedCarePassLine(sourceProfile.weight.unit, 8).toLowerCase(),
+            )
+              ? boundedCarePassLine(sourceProfile.weight.unit, 8).toLowerCase()
+              : "lb",
+          },
+        }
+      : {}),
+  };
+  const sourceDiet = input.dietProfile ?? {};
+  const diet: CarePassDietProfile = {
+    primaryFood: boundedCarePassLine(sourceDiet.primaryFood, 512),
+    normalPortion: boundedCarePassLine(sourceDiet.normalPortion, 512),
+    mealSchedule: boundedCarePassLine(sourceDiet.mealSchedule, 512),
+    bedtimeSnack: boundedCarePassLine(sourceDiet.bedtimeSnack, 512),
+    avoid: boundedCarePassLine(sourceDiet.avoid, 512),
+    sensitivities: boundedCarePassLine(sourceDiet.sensitivities, 512),
+    appetiteQuirks: boundedCarePassLine(sourceDiet.appetiteQuirks, 512),
+    vetNotes: boundedCarePassLine(sourceDiet.vetNotes, 512),
+  };
+  // Privacy/truthfulness chokepoint: the Care Pass is a shared artifact, so
+  // private logs are rejected before their timestamp or content is observed,
+  // and future/malformed logs are rejected before any section derives from
+  // them. Filtering once at the entrance keeps every downstream helper and
+  // every exported section on the same observable evidence set.
+  const entries = selectSharedCareEvidence(input.entries ?? [], now);
   const routines = input.routines ?? [];
-  const records = input.records ?? [];
+  const records = orderCareRecordsCurrentFirst(input.records ?? [], now);
   // The share artifact must agree with every app surface: the stored "My Dog"
   // placeholder (and an empty name) resolve to the same display name the rest
   // of the app shows, never a raw placeholder in the pass title or Dog card.
   const name = resolvePetName(clean(profile.name));
+  const isNeutralPetName = name === DEFAULT_PET_DISPLAY_NAME;
   const audienceLabel = AUDIENCE_LABEL[input.audience];
   const generatedAt = formatDateTime(now);
   // Every derive helper that writes dog-name copy gets the same resolved name,
-  // so a renamed dog never reads "Phoenix" anywhere in the shared pass.
+  // so the shared pass uses the current name or a neutral fresh-install fallback.
   const health = deriveHealthWatch({ entries, routines, now, petName: name });
   const handoff = deriveCareHandoff({
     entries,
@@ -854,12 +1013,17 @@ export function buildCarePass(input: CarePassInput): CarePass {
     )
     .slice(0, 4);
 
-  const summary =
-    input.audience === "vet"
+  const summary = isNeutralPetName
+    ? input.audience === "vet"
+      ? "Your dog's health and care context for veterinarian review."
+      : input.audience === "trainer"
+        ? "Your dog's behavior, routine, and activity context for training."
+        : `Care handoff for your dog with ${audienceLabel.toLowerCase()} support.`
+    : input.audience === "vet"
       ? `${name} health and care context for veterinarian review.`
       : input.audience === "trainer"
         ? `${name} behavior, routine, and activity context for training.`
-      : `${name} care handoff for ${audienceLabel.toLowerCase()} support.`;
+        : `${name} care handoff for ${audienceLabel.toLowerCase()} support.`;
   const mealAmountNotes = [
     dietProgress.pendingMealCount
       ? `${dietProgress.pendingMealCount} outcome${dietProgress.pendingMealCount === 1 ? "" : "s"} pending`
@@ -1034,18 +1198,21 @@ export function buildCarePass(input: CarePassInput): CarePass {
         ])
       : null,
     input.audience === "vet"
-      ? section("Records", records.slice(0, 6).map((record) => (
-          `${record.title}${record.due ? ` due ${record.due}` : ""}${record.note ? ` - ${record.note}` : ""}`
-        )))
+      ? section("Records", records.slice(0, 6).map((record) => carePassRecordLine(record, now)))
       : null,
   ].filter((item): item is CarePassSection => item !== null);
 
   const passWithoutMessage = {
     audience: input.audience,
-    title: `${name} ${audienceLabel} Care Pass`,
+    title: boundedCarePassLine(
+      isNeutralPetName
+        ? `${audienceLabel} Care Pass for your dog`
+        : `${name} ${audienceLabel} Care Pass`,
+      CARE_PASS_TITLE_MAX_CHARS,
+    ),
     generatedAt,
-    summary,
-    sections,
+    summary: boundedCarePassLine(summary, CARE_PASS_SUMMARY_MAX_CHARS),
+    sections: sections.slice(0, CARE_PASS_MAX_SECTIONS),
   };
 
   return {
@@ -1058,20 +1225,21 @@ export function createCarePassArtifact(
   pass: CarePass,
   createdAt: string = new Date().toISOString(),
 ): CarePassArtifact {
+  const safePass = normalizeCarePassForOutput(pass);
   const safeStamp = clean(createdAt).replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "");
   const dateStamp = new Date(createdAt).toISOString().slice(0, 10);
   return {
-    id: `care_pass_${pass.audience}_${safeStamp}`,
+    id: `care_pass_${safePass.audience}_${safeStamp}`,
     kind: "care_pass",
-    audience: pass.audience,
-    title: pass.title,
-    generatedAt: pass.generatedAt,
+    audience: safePass.audience,
+    title: safePass.title,
+    generatedAt: safePass.generatedAt,
     createdAt,
-    summary: pass.summary,
-    sectionTitles: pass.sections.map((section) => section.title),
-    message: pass.message,
-    printFileName: `${slugify(pass.title)}-${dateStamp}.html`,
-    printHtml: renderCarePassPrintHtml(pass),
+    summary: safePass.summary,
+    sectionTitles: safePass.sections.map((section) => section.title),
+    message: safePass.message,
+    printFileName: `${slugify(safePass.title)}-${dateStamp}.html`,
+    printHtml: renderCarePassPrintHtml(safePass),
     storageStatus: "local-only",
   };
 }

@@ -108,7 +108,7 @@ test("prompts a weight baseline when neither profile nor logs have usable weight
   assert.equal(trend.status, "needs-baseline");
   assert.equal(trend.currentWeight, 0);
   assert.match(trend.summary, /No shared weight baseline/);
-  assert.match(trend.nextStep, /Add Phoenix's current weight/);
+  assert.match(trend.nextStep, /Add your dog's current weight/);
 
   // A renamed dog reads their own name in the baseline prompt, never Phoenix.
   const renamed = deriveWeightTrend({

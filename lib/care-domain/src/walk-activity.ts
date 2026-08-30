@@ -1,5 +1,6 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
 import { resolvePetName } from "./pet-identity.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type WalkActivityStatus = "active" | "light" | "needs-walk";
 
@@ -21,8 +22,8 @@ export interface WalkActivityInput {
   targetMinutes?: number;
   /**
    * Display name used in owner-facing copy (nextStep). Resolved through
-   * resolvePetName so renamed dogs never see "Phoenix" in Care Pass or
-   * app surfaces; omitted/placeholder names keep the Phoenix default.
+   * resolvePetName so configured names stay consistent across Care Pass and
+   * app surfaces; omitted/placeholder names use the neutral consumer fallback.
    */
   petName?: string | null;
 }
@@ -126,7 +127,7 @@ function isInLookback(iso: string | null | undefined, now: number, lookbackDays:
 }
 
 function isVisible(entry: WalkActivityEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isWalk(entry: WalkActivityEntry): boolean {

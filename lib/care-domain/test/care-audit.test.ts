@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 
 import {
   appendCareAuditEvent,
-  buildCareLogDeletionAuditEntry,
   getCareAuditTrail,
 } from "../src/index.ts";
 
@@ -67,51 +66,6 @@ test("ignores malformed audit events", () => {
       caregiver: "Apollo",
       occurredAt: "2026-06-11T08:00:00.000Z",
       summary: "Added a sticky note.",
-    },
-  ]);
-});
-
-test("builds a non-health audit note when a care log is deleted", () => {
-  const auditEntry = buildCareLogDeletionAuditEntry({
-    id: "audit_delete_1",
-    caregiver: "Apollo",
-    occurredAt: "2026-06-11T09:00:00.000Z",
-    entry: {
-      id: "entry_1",
-      type: "meal",
-      title: "Breakfast - ate half",
-      caregiver: "Emma",
-      occurredAt: "2026-06-11T07:30:00.000Z",
-      note: "Picky start.",
-      details: { mealCompletion: "partial", householdVisible: true },
-    },
-  });
-
-  assert.equal(auditEntry.type, "note");
-  assert.equal(auditEntry.title, "Deleted log - Breakfast - ate half");
-  assert.equal(auditEntry.caregiver, "Apollo");
-  assert.equal(auditEntry.details.auditAction, "deleted");
-  assert.equal(auditEntry.details.auditSubjectId, "entry_1");
-  assert.equal(auditEntry.details.householdVisible, true);
-  assert.deepEqual(auditEntry.details.deletedEntrySnapshot, {
-    id: "entry_1",
-    type: "meal",
-    title: "Breakfast - ate half",
-    caregiver: "Emma",
-    occurredAt: "2026-06-11T07:30:00.000Z",
-    note: "Picky start.",
-  });
-  assert.deepEqual(getCareAuditTrail(auditEntry.details), [
-    {
-      id: "audit_delete_1",
-      action: "deleted",
-      caregiver: "Apollo",
-      occurredAt: "2026-06-11T09:00:00.000Z",
-      summary: "Apollo deleted \"Breakfast - ate half\" from the shared care log.",
-      entryId: "entry_1",
-      entryTitle: "Breakfast - ate half",
-      entryType: "meal",
-      entryOccurredAt: "2026-06-11T07:30:00.000Z",
     },
   ]);
 });

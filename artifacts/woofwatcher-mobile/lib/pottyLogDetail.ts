@@ -1,14 +1,39 @@
-import { appendCareAuditEvent, normalizeCareEventType, type CareAuditEvent } from "../../../lib/care-domain/src/index.ts";
+import {
+  appendCareAuditEvent,
+  normalizeCareEventType,
+  type CareAuditEvent,
+} from "../../../lib/care-domain/src/index.ts";
 
-export type PottyDetailOutcome = "pee" | "poop" | "both" | "tried-nothing" | "accident";
+export type PottyDetailOutcome =
+  | "pee"
+  | "poop"
+  | "both"
+  | "tried-nothing"
+  | "accident";
 export type PottyLocation = "outside" | "inside";
-export type PottyPeeDetail = "normal" | "frequent" | "dark" | "straining" | "accident" | "not-sure";
-export type PottyStoolCondition = "normal" | "soft" | "diarrhea" | "hard" | "mucus" | "blood" | "unusual-color" | "not-sure";
+export type PottyPeeDetail =
+  | "normal"
+  | "frequent"
+  | "dark"
+  | "straining"
+  | "accident"
+  | "not-sure";
+export type PottyStoolCondition =
+  | "normal"
+  | "soft"
+  | "diarrhea"
+  | "hard"
+  | "mucus"
+  | "blood"
+  | "unusual-color"
+  | "not-sure";
 export type PottyContext = "routine" | "accident" | "urgent" | "straining";
 
 export interface PottyOption<TId extends string> {
   id: TId;
   label: string;
+  suffix?: string;
+  severity?: "watch" | "alert";
 }
 
 export interface PottyLogDetailEntryLike {
@@ -60,22 +85,28 @@ export const POTTY_PEE_DETAIL_OPTIONS: PottyOption<PottyPeeDetail>[] = [
   { id: "not-sure", label: "Not sure" },
 ];
 
-export const POTTY_STOOL_CONDITION_OPTIONS: PottyOption<PottyStoolCondition>[] = [
-  { id: "normal", label: "Normal" },
-  { id: "soft", label: "Soft" },
-  { id: "diarrhea", label: "Diarrhea" },
-  { id: "hard", label: "Hard" },
-  { id: "mucus", label: "Mucus" },
-  { id: "blood", label: "Blood" },
-  { id: "unusual-color", label: "Unusual color" },
-  { id: "not-sure", label: "Not sure" },
-];
+export const POTTY_STOOL_CONDITION_OPTIONS: PottyOption<PottyStoolCondition>[] =
+  [
+    { id: "normal", label: "Normal" },
+    { id: "soft", label: "Soft" },
+    { id: "diarrhea", label: "Diarrhea" },
+    { id: "hard", label: "Hard" },
+    { id: "mucus", label: "Mucus" },
+    { id: "blood", label: "Blood" },
+    { id: "unusual-color", label: "Unusual color" },
+    { id: "not-sure", label: "Not sure" },
+  ];
 
 export const POTTY_CONTEXT_OPTIONS: PottyOption<PottyContext>[] = [
   { id: "routine", label: "Routine" },
-  { id: "accident", label: "Accident" },
-  { id: "urgent", label: "Urgent" },
-  { id: "straining", label: "Straining" },
+  { id: "accident", label: "Accident", suffix: "accident", severity: "watch" },
+  { id: "urgent", label: "Urgent", suffix: "urgent", severity: "alert" },
+  {
+    id: "straining",
+    label: "Straining",
+    suffix: "straining",
+    severity: "alert",
+  },
 ];
 
 const STALE_POTTY_DETAIL_KEYS = [
@@ -89,15 +120,28 @@ const STALE_POTTY_DETAIL_KEYS = [
   "outcomeAt",
 ];
 
-const REVIEW_STOOL_CONDITIONS = new Set<PottyStoolCondition>(["soft", "diarrhea", "hard", "mucus", "blood", "unusual-color"]);
-const REVIEW_PEE_DETAILS = new Set<PottyPeeDetail>(["frequent", "dark", "straining", "accident"]);
-const REVIEW_CONTEXTS = new Set<PottyContext>(["accident", "urgent", "straining"]);
-
+const REVIEW_STOOL_CONDITIONS = new Set<PottyStoolCondition>([
+  "soft",
+  "diarrhea",
+  "hard",
+  "mucus",
+  "blood",
+  "unusual-color",
+]);
+const REVIEW_PEE_DETAILS = new Set<PottyPeeDetail>([
+  "frequent",
+  "dark",
+  "straining",
+  "accident",
+]);
 function clean(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function optionLabel<TId extends string>(options: PottyOption<TId>[], id: TId): string {
+function optionLabel<TId extends string>(
+  options: PottyOption<TId>[],
+  id: TId,
+): string {
   return options.find((option) => option.id === id)?.label ?? id;
 }
 
@@ -118,16 +162,28 @@ function baseTitle(title: string): string {
 }
 
 function severityFor(options: PottyLogDetailOptions): string | undefined {
+  const contextSeverity = POTTY_CONTEXT_OPTIONS.find(
+    (option) => option.id === options.context,
+  )?.severity;
+  if (contextSeverity) return contextSeverity;
   if (options.outcome === "accident") return "watch";
-  if (options.context && REVIEW_CONTEXTS.has(options.context)) return options.context === "straining" ? "alert" : "watch";
-  if (options.peeDetail && REVIEW_PEE_DETAILS.has(options.peeDetail)) return options.peeDetail === "straining" ? "alert" : "watch";
-  if (options.stoolCondition && REVIEW_STOOL_CONDITIONS.has(options.stoolCondition)) {
-    return options.stoolCondition === "blood" || options.stoolCondition === "diarrhea" ? "alert" : "watch";
+  if (options.peeDetail && REVIEW_PEE_DETAILS.has(options.peeDetail))
+    return options.peeDetail === "straining" ? "alert" : "watch";
+  if (
+    options.stoolCondition &&
+    REVIEW_STOOL_CONDITIONS.has(options.stoolCondition)
+  ) {
+    return options.stoolCondition === "blood" ||
+      options.stoolCondition === "diarrhea"
+      ? "alert"
+      : "watch";
   }
   return undefined;
 }
 
-function withCleanPottyDetails(details: Record<string, unknown>): Record<string, unknown> {
+function withCleanPottyDetails(
+  details: Record<string, unknown>,
+): Record<string, unknown> {
   const next = { ...details };
   STALE_POTTY_DETAIL_KEYS.forEach((key) => {
     delete next[key];
@@ -139,7 +195,12 @@ export function buildPottyLogDetailPatch(
   entry: PottyLogDetailEntryLike,
   options: PottyLogDetailOptions,
 ): PottyLogDetailPatch {
-  const existing = entry.details && typeof entry.details === "object" && !Array.isArray(entry.details) ? entry.details : {};
+  const existing =
+    entry.details &&
+    typeof entry.details === "object" &&
+    !Array.isArray(entry.details)
+      ? entry.details
+      : {};
   const outcomeLabel = optionLabel(POTTY_DETAIL_OUTCOMES, options.outcome);
   const existingTitle = clean(entry.title) || "Potty";
   const nextDetails: Record<string, unknown> = {
@@ -150,17 +211,20 @@ export function buildPottyLogDetailPatch(
   };
 
   if (options.location) nextDetails.pottyWhere = options.location;
-  if (hasPee(options.outcome) && options.peeDetail) nextDetails.peeDetail = options.peeDetail;
+  if (hasPee(options.outcome) && options.peeDetail)
+    nextDetails.peeDetail = options.peeDetail;
   if (hasStool(options.outcome)) {
     if (options.stoolCondition) nextDetails.condition = options.stoolCondition;
-    if (clean(options.stoolColor)) nextDetails.stoolColor = clean(options.stoolColor).toLowerCase();
+    if (clean(options.stoolColor))
+      nextDetails.stoolColor = clean(options.stoolColor).toLowerCase();
   }
   if ((options.outcome === "accident" && !options.context) || options.context) {
     nextDetails.pottyContext = options.context ?? "accident";
   }
 
   const changes = ["pottyOutcome", "pottyWhere"];
-  if (hasStool(options.outcome) && options.stoolCondition) changes.push("condition");
+  if (hasStool(options.outcome) && options.stoolCondition)
+    changes.push("condition");
   if (hasPee(options.outcome) && options.peeDetail) changes.push("peeDetail");
   changes.push("outcomeAt");
 

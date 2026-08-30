@@ -1,4 +1,5 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React from "react";
 import { useColors } from "@/hooks/useColors";
 
@@ -8,7 +9,10 @@ interface Props {
   color?: string;
 }
 
-export function entryTypeColor(type: string, colors: ReturnType<typeof useColors>) {
+export function entryTypeColor(
+  type: string,
+  colors: ReturnType<typeof useColors>,
+) {
   switch (type) {
     case "meal":
     case "treat":
@@ -48,25 +52,41 @@ export function EntryTypeIcon({ type, size = 18, color }: Props) {
       return <MaterialCommunityIcons name="tree" size={size} color={c} />;
     case "potty":
     case "pee":
-      return <MaterialCommunityIcons name="water-outline" size={size} color={c} />;
+      return (
+        <MaterialCommunityIcons name="water-outline" size={size} color={c} />
+      );
     case "poop":
-      return <MaterialCommunityIcons name="emoticon-poop-outline" size={size} color={c} />;
+      return (
+        <MaterialCommunityIcons
+          name="emoticon-poop-outline"
+          size={size}
+          color={c}
+        />
+      );
     case "play":
-      return <MaterialCommunityIcons name="tennis-ball" size={size} color={c} />;
+      return (
+        <MaterialCommunityIcons name="tennis-ball" size={size} color={c} />
+      );
     case "training":
       return <MaterialCommunityIcons name="school" size={size} color={c} />;
     case "social":
-      return <MaterialCommunityIcons name="account-group" size={size} color={c} />;
+      return (
+        <MaterialCommunityIcons name="account-group" size={size} color={c} />
+      );
     case "mood":
       return <Ionicons name="happy-outline" size={size} color={c} />;
     case "alone":
-      return <MaterialCommunityIcons name="home-account" size={size} color={c} />;
+      return (
+        <MaterialCommunityIcons name="home-account" size={size} color={c} />
+      );
     case "vomit":
       return <Ionicons name="warning-outline" size={size} color={c} />;
     case "health":
       return <Ionicons name="medkit-outline" size={size} color={c} />;
     case "vet":
-      return <MaterialCommunityIcons name="stethoscope" size={size} color={c} />;
+      return (
+        <MaterialCommunityIcons name="stethoscope" size={size} color={c} />
+      );
     case "weight":
       return <MaterialCommunityIcons name="scale" size={size} color={c} />;
     case "medication":

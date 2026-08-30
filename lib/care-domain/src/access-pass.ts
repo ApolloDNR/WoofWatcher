@@ -1,10 +1,11 @@
-import { type RoutineBoardEntry, type RoutineBoardItem, type RoutineBoardRoutine, deriveRoutineBoard } from "./routine-board.ts";
+import { isRoutineBoardScheduledItem, type RoutineBoardEntry, type RoutineBoardItem, type RoutineBoardRoutine, deriveRoutineBoard } from "./routine-board.ts";
+import { resolvePetName } from "./pet-identity.ts";
 
 export type AccessPassKind = "sitter" | "trainer" | "vet" | "emergency" | "temporary-helper";
 export type AccessPassStatus = "draft" | "upcoming" | "active" | "expired" | "revoked";
 export type AccessPassPlanStatus = "none" | "draft" | "upcoming" | "active" | "expired";
 export type AccessPassStorageStatus = "local-draft" | "provider-ready" | "provider-shared";
-export type MyCareTodayStatus = "empty" | "steady" | "needs-care" | "complete";
+export type MyCareTodayStatus = "empty" | "steady" | "needs-care" | "complete" | "needs-correction";
 
 export interface AccessPass {
   id: string;
@@ -79,7 +80,7 @@ export interface MyCareTodayItem {
   status: RoutineBoardItem["status"];
   completionLabel: string | null;
   completedAt: string | null;
-  minutesFromNow: number;
+  minutesFromNow: number | null;
 }
 
 export interface MyCareToday {
@@ -90,6 +91,7 @@ export interface MyCareToday {
   personName: string;
   petName: string;
   assignedCount: number;
+  correctionCount: number;
   doneCount: number;
   openCount: number;
   overdueCount: number;
@@ -193,7 +195,7 @@ export function buildAccessPassDraft(input: AccessPassDraftInput): AccessPass {
     startsAt,
     endsAt,
     status: "draft",
-    petName: clean(input.petName) || "Phoenix",
+    petName: resolvePetName(clean(input.petName)),
     permissions: permissionsFor(kind),
     blockedPermissions: blockedPermissionsFor(kind),
     responsibilities: [],
@@ -205,7 +207,7 @@ export function buildAccessPassDraft(input: AccessPassDraftInput): AccessPass {
 
 export function deriveAccessPassPlan(input: AccessPassInput): AccessPassPlan {
   const now = input.now ?? Date.now();
-  const petName = clean(input.petName) || "Phoenix";
+  const petName = resolvePetName(clean(input.petName));
   const passes = (input.passes ?? [])
     .map((pass): AccessPassView => {
       const kind = pass.kind ?? "sitter";
@@ -215,7 +217,7 @@ export function deriveAccessPassPlan(input: AccessPassInput): AccessPassPlan {
         role: clean(pass.role) || kindLabel(kind),
         kind,
         holderName: clean(pass.holderName) || "Temporary helper",
-        petName: clean(pass.petName) || petName,
+        petName: resolvePetName(clean(pass.petName), petName),
         status,
         permissions: [...(pass.permissions?.length ? pass.permissions : permissionsFor(kind))],
         blockedPermissions: [...(pass.blockedPermissions?.length ? pass.blockedPermissions : blockedPermissionsFor(kind))],
@@ -276,10 +278,11 @@ export function deriveAccessPassPlan(input: AccessPassInput): AccessPassPlan {
   };
 }
 
-function careStatus(items: readonly RoutineBoardItem[]): MyCareTodayStatus {
+function careStatus(items: readonly RoutineBoardItem[], correctionCount: number): MyCareTodayStatus {
   if (items.length === 0) return "empty";
-  if (items.every((item) => item.status === "done")) return "complete";
   if (items.some((item) => item.status === "overdue" || item.status === "due")) return "needs-care";
+  if (correctionCount > 0) return "needs-correction";
+  if (items.every((item) => item.status === "done")) return "complete";
   return "steady";
 }
 
@@ -294,8 +297,10 @@ function nextOpen(items: readonly RoutineBoardItem[]): RoutineBoardItem | null {
 
 export function deriveMyCareToday(input: MyCareTodayInput): MyCareToday {
   const now = input.now ?? Date.now();
-  const personName = clean(input.personName) || "You";
-  const petName = clean(input.petName) || "Phoenix";
+  const namedPerson = clean(input.personName);
+  const personName = namedPerson || "You";
+  const personObject = namedPerson || "you";
+  const petName = resolvePetName(clean(input.petName));
   const board = deriveRoutineBoard({
     routines: input.routines,
     entries: input.entries,
@@ -303,31 +308,41 @@ export function deriveMyCareToday(input: MyCareTodayInput): MyCareToday {
     now,
   });
   const assigned = board.items.filter((item) => item.owner.toLowerCase() === personName.toLowerCase());
-  const status = careStatus(assigned);
-  const next = nextOpen(assigned);
-  const doneCount = assigned.filter((item) => item.status === "done").length;
-  const overdueCount = assigned.filter((item) => item.status === "overdue").length;
-  const dueCount = assigned.filter((item) => item.status === "due").length;
-  const upcomingCount = assigned.filter((item) => item.status === "upcoming").length;
+  const scheduledAssigned = assigned.filter(isRoutineBoardScheduledItem);
+  const correctionCount = assigned.length - scheduledAssigned.length;
+  const status = scheduledAssigned.length === 0 && correctionCount > 0
+    ? "needs-correction"
+    : careStatus(scheduledAssigned, correctionCount);
+  const next = nextOpen(scheduledAssigned);
+  const doneCount = scheduledAssigned.filter((item) => item.status === "done").length;
+  const overdueCount = scheduledAssigned.filter((item) => item.status === "overdue").length;
+  const dueCount = scheduledAssigned.filter((item) => item.status === "due").length;
+  const upcomingCount = scheduledAssigned.filter((item) => item.status === "upcoming").length;
+  const correctionSummary = `${correctionCount} routine${correctionCount === 1 ? "" : "s"} ${correctionCount === 1 ? "needs" : "need"} correction.`;
 
   return {
     status,
-    title: `${personName}'s care today`,
+    title: namedPerson ? `${personName}'s care today` : "Your care today",
     summary:
       assigned.length === 0
-        ? `No routines are assigned to ${personName} today.`
-        : `${doneCount}/${assigned.length} assigned routines handled for ${petName}. ${assigned.length - doneCount} open.`,
+        ? `No routines are assigned to ${personObject} today.`
+        : scheduledAssigned.length === 0
+          ? `0 schedulable routines assigned to ${personObject}. ${correctionSummary}`
+          : `${doneCount}/${scheduledAssigned.length} assigned routines handled for ${petName}. ${scheduledAssigned.length - doneCount} open.${correctionCount ? ` ${correctionSummary}` : ""}`,
     nextStep:
       assigned.length === 0
         ? "Assign routines by owner so each human sees their own care list."
         : next
-          ? `${next.label} is ${next.status} for ${personName}. Log it, update it, or reassign it if plans changed.`
-          : `Everything assigned to ${personName} is handled today.`,
+          ? `${next.label} is ${next.status} for ${personObject}. Log it, update it, or reassign it if plans changed.`
+          : correctionCount > 0
+            ? `Correct ${assigned.find((item) => item.status === "needs-correction")?.label ?? "the routine"}'s saved time before it can be scheduled for ${personObject}.`
+          : `Everything assigned to ${personObject} is handled today.`,
     personName,
     petName,
-    assignedCount: assigned.length,
+    assignedCount: scheduledAssigned.length,
+    correctionCount,
     doneCount,
-    openCount: assigned.length - doneCount,
+    openCount: scheduledAssigned.length - doneCount,
     overdueCount,
     dueCount,
     upcomingCount,

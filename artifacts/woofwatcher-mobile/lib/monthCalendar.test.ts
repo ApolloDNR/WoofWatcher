@@ -14,9 +14,12 @@ import {
   weekdayOfFirst,
 } from "./monthCalendar.ts";
 
-// Entry timestamps carry explicit offsets and the runner is pinned to a fixed
-// zone, so local-day bucketing is deterministic regardless of host settings.
-process.env.TZ = "America/Los_Angeles";
+function localIso(year: number, month: number, day: number, hour: number, minute: number): string {
+  const value = new Date(0);
+  value.setFullYear(year, month, day);
+  value.setHours(hour, minute, 0, 0);
+  return value.toISOString();
+}
 
 test("weekdayOfFirst matches known Gregorian dates", () => {
   assert.equal(weekdayOfFirst(2025, 4), 4); // May 1 2025 is a Thursday
@@ -71,9 +74,9 @@ test("buildMonthView places days under the right weekday columns", () => {
 
 test("buildMonthView buckets real entries and flags today", () => {
   const entries = [
-    { occurredAt: "2025-05-08T07:45:00-07:00" }, // May 8, 07:45 PDT
-    { occurredAt: "2025-05-08T21:30:00-07:00" }, // May 8, 21:30 PDT
-    { occurredAt: "2025-05-20T09:15:00-07:00" }, // May 20
+    { occurredAt: localIso(2025, 4, 8, 7, 45) },
+    { occurredAt: localIso(2025, 4, 8, 21, 30) },
+    { occurredAt: localIso(2025, 4, 20, 9, 15) },
     { occurredAt: "not-a-date" }, // ignored
   ];
   const view = buildMonthView({
@@ -102,22 +105,22 @@ test("buildMonthView buckets real entries and flags today", () => {
 
 test("entryCountsByDay and dateKeyOf agree on local day keys", () => {
   const counts = entryCountsByDay([
-    { occurredAt: "2025-05-08T07:45:00-07:00" },
-    { occurredAt: "2025-05-08T23:59:00-07:00" },
+    { occurredAt: localIso(2025, 4, 8, 7, 45) },
+    { occurredAt: localIso(2025, 4, 8, 23, 59) },
   ]);
-  const key = dateKeyOf(new Date("2025-05-08T12:00:00-07:00"));
-  assert.equal(key, "2025-4-8");
+  const key = dateKeyOf(new Date(localIso(2025, 4, 8, 12, 0)));
+  assert.equal(key, "2025-05-08");
   assert.equal(counts.get(key), 2);
 });
 
 test("entriesForDayKey returns only that day, sorted ascending by time", () => {
   const entries = [
-    { id: "late", occurredAt: "2025-05-08T21:30:00-07:00" },
-    { id: "other-day", occurredAt: "2025-05-09T08:00:00-07:00" },
-    { id: "early", occurredAt: "2025-05-08T07:45:00-07:00" },
-    { id: "mid", occurredAt: "2025-05-08T13:20:00-07:00" },
+    { id: "late", occurredAt: localIso(2025, 4, 8, 21, 30) },
+    { id: "other-day", occurredAt: localIso(2025, 4, 9, 8, 0) },
+    { id: "early", occurredAt: localIso(2025, 4, 8, 7, 45) },
+    { id: "mid", occurredAt: localIso(2025, 4, 8, 13, 20) },
   ];
-  const timeline = entriesForDayKey(entries, "2025-4-8");
+  const timeline = entriesForDayKey(entries, "2025-05-08");
   assert.deepEqual(
     timeline.map((entry) => entry.id),
     ["early", "mid", "late"],
@@ -133,7 +136,9 @@ test("shiftMonth rolls the year over in both directions", () => {
 });
 
 test("parseDateKey round-trips buildMonthView keys and formats titles", () => {
-  assert.deepEqual(parseDateKey("2025-4-8"), { year: 2025, month: 4, day: 8 });
+  assert.equal(dateKeyForYmd(2025, 4, 8), "2025-05-08");
+  assert.deepEqual(parseDateKey("2025-05-08"), { year: 2025, month: 4, day: 8 });
+  assert.equal(parseDateKey("2025-5-8"), null);
   assert.equal(parseDateKey("nonsense"), null);
   assert.equal(formatMonthTitle(2025, 4), "May 2025");
   assert.equal(formatMonthTitle(2026, 0), "January 2026");

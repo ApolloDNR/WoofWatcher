@@ -5,17 +5,22 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { HouseholdMemberRole } from "./householdMemberRole";
 
 export interface Member {
   id: string;
   userId: string;
-  role: string;
+  role: HouseholdMemberRole;
   /** @nullable */
   displayName?: string | null;
   /** @nullable */
   email?: string | null;
   isSelf: boolean;
-  /** @nullable */
+  /**
+   * Active Access Pass expiry for a temporary helper. At this instant all household access ends until an owner grants a new pass.
+   * @nullable
+   */
   accessPassExpiresAt?: string | null;
+  /** True when a temporary helper's Access Pass has lapsed and writes should be blocked until renewed. */
   accessPassExpired?: boolean;
 }

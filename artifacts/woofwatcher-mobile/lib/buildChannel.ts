@@ -14,12 +14,19 @@ export type BuildChannel = "development" | "internal" | "production";
 export interface BuildChannelInput {
   isDev: boolean;
   buildProfile?: string | null;
+  consumerPreview?: boolean;
 }
 
 export function resolveBuildChannel(input: BuildChannelInput): BuildChannel {
+  if (input.consumerPreview) return "production";
   if (input.isDev) return "development";
   const profile = (input.buildProfile ?? "").trim().toLowerCase();
-  if (profile === "production" || profile === "store") return "production";
+  if (
+    profile === "production" ||
+    profile === "store" ||
+    profile === "candidate"
+  )
+    return "production";
   return "internal";
 }
 
@@ -47,6 +54,7 @@ export function getBuildChannel(): BuildChannel {
   return resolveBuildChannel({
     isDev,
     buildProfile: process.env.EXPO_PUBLIC_BUILD_PROFILE ?? null,
+    consumerPreview: process.env.EXPO_PUBLIC_CONSUMER_PREVIEW === "1",
   });
 }
 

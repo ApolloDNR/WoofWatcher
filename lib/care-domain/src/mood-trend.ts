@@ -1,5 +1,6 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
 import { resolvePetName } from "./pet-identity.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type MoodTrendStatus = "needs-log" | "steady" | "watch";
 export type MoodEnergyLevel = "low" | "steady" | "high";
@@ -20,7 +21,7 @@ export interface MoodTrendInput {
   now?: number;
   lookbackDays?: number;
   limit?: number;
-  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  /** Display name for owner-facing copy; resolved to the current name or neutral fresh-install fallback. */
   petName?: string | null;
 }
 
@@ -79,7 +80,7 @@ function asObject(value: CareEventDetails | undefined): Record<string, unknown> 
 }
 
 function isVisible(entry: MoodTrendEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isInLookback(iso: string | null | undefined, now: number, lookbackDays: number): boolean {

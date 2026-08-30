@@ -92,7 +92,7 @@ function buildScreenshotChecklist(submissionReady: boolean): StoreScreenshotChec
     {
       screen: "Avatar Studio",
       requirement:
-        "Capture the PixelLab avatar template/customization flow with Template overlay readiness, Template-fitted, and Pack pending accessory labels visible.",
+        "Capture the avatar template/customization flow with the How accessories fit panel and Tailored fit and Standard preview labels visible.",
       status,
     },
     {

@@ -9,6 +9,10 @@ const {
   buildLivePreviewHandoffProof,
   formatLivePreviewHandoffProofText,
 } = require("../scripts/live-preview-handoff-proof.js");
+const {
+  UNIVERSAL_NAVIGATION_MANIFEST,
+  UNIVERSAL_NAVIGATION_QA_ROUTES,
+} = require("../scripts/universal-navigation-manifest.js");
 
 test("builds preview-only handoff proof from served route results", () => {
   const routeResults = LIVE_PREVIEW_HANDOFF_ROUTES.map((route: string) => ({
@@ -32,33 +36,20 @@ test("builds preview-only handoff proof from served route results", () => {
   assert.equal(proof.baseUrl, "http://127.0.0.1:4194/");
   assert.equal(proof.commit, "89857dc");
   assert.ok(proof.routeChecks.every((check: { status: string }) => check.status === "PASS"));
-  assert.deepEqual(
-    proof.routes,
-    [
-      "/",
-      "/sign-in",
-      "/setup",
-      "/log",
-      "/calendar",
-      "/health",
-      "/records",
-      "/more",
-      "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
-      "/care-twin-qa?qaSurface=records-local-file-handoff",
-      "/care-twin-qa?qaSurface=report-binary-export-proof",
-      "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
-      "/care-twin-qa?qaSurface=woofguide-ai-provider-proof",
-      "/care-twin-qa?qaSurface=push-notifications-proof",
-      "/care-twin-qa?qaSurface=payments-provider-proof",
-      "/care-twin-qa?qaSurface=store-accounts-proof",
-      "/care-twin-qa?qaSurface=account-deletion-proof",
-      "/care-twin-qa?qaSurface=support-legal-readiness-proof",
-      "/care-twin-qa?qaSurface=route-visual-consistency",
-    ],
-  );
+  assert.deepEqual(proof.routes, [
+    ...new Set([
+      ...UNIVERSAL_NAVIGATION_QA_ROUTES,
+      ...UNIVERSAL_NAVIGATION_MANIFEST.livePreviewSupplementalRoutes,
+    ]),
+  ]);
   assert.ok(
     proof.truthBoundaries.some((boundary: string) =>
       boundary.includes("web preview only") && boundary.includes("does not replace native iOS/Android proof"),
+    ),
+  );
+  assert.ok(
+    proof.truthBoundaries.some((boundary: string) =>
+      boundary.includes("shell availability only") && boundary.includes("Back") && boundary.includes("history"),
     ),
   );
   assert.match(text, /WoofWatcher Live Preview Handoff Proof/);

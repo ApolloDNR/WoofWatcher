@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type TrainingProgressStatus = "needs-log" | "building" | "steady" | "needs-practice";
 export type TrainingOutcome = "win" | "practice" | "struggle";
@@ -74,7 +75,7 @@ function asNumber(value: unknown): number {
 }
 
 function isVisible(entry: TrainingProgressEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isInLookback(iso: string | null | undefined, now: number, lookbackDays: number): boolean {

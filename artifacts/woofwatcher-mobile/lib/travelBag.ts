@@ -1,7 +1,6 @@
 /**
- * Travel bag session: the lifecycle that turns the Pack tab's travel-gear
- * checklist into an activatable "package" the owner sets up, activates, and
- * redoes for the next trip.
+ * Travel bag session: the lifecycle behind More > Care Team & Supplies' travel
+ * checklist, which the owner sets up, activates, and redoes for the next trip.
  *
  * Honesty rule (same as packSupplies): nothing here fabricates progress. The
  * packed/unpacked truth stays in the SupplyItem checklist (packSupplies.ts);
@@ -13,6 +12,8 @@
  */
 
 import type { SupplyItem } from "./packSupplies";
+
+export { TRAVEL_BAG_KEY } from "./devicePreferences.ts";
 
 export type TravelBagPhase = "packing" | "active" | "complete";
 
@@ -113,8 +114,8 @@ function parseStamp(value: unknown): string | null | undefined {
 /**
  * Strict parse of a stored payload. Anything malformed - unparseable JSON,
  * wrong version, an unknown phase, a bad timestamp - silently falls back to a
- * fresh default bag. It never throws, so a corrupted key can never crash the
- * Pack tab. An existing user with no key parses to the default (packing): an
+ * fresh default bag. It never throws, so a corrupted key can never crash Care
+ * Team & Supplies. An existing user with no key parses to the default (packing): an
  * already-packed checklist is NEVER auto-activated, only the owner's tap does
  * that.
  */

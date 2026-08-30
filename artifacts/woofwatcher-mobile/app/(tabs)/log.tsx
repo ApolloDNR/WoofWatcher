@@ -1,9 +1,16 @@
-import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system/legacy";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
   ImageBackground,
@@ -18,12 +25,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import {
   appendCareAuditEvent,
   appendStickyNote,
-  buildCareLogDeletionAuditEntry,
   getCareAuditTrail,
   deriveCareIntelligence,
   deriveCareLogSearch,
@@ -36,12 +43,14 @@ import {
   type StickyNoteColor,
 } from "@workspace/care-domain";
 import { useAppViewport } from "@/context/AppViewportContext";
+import { useAppFileSystem } from "@/context/AppFileSystemContext";
 import { useCare, Entry } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { resolvePetName } from "@/lib/petIdentity";
+import { useActiveCurrentTime } from "@/hooks/useActiveCurrentTime";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
@@ -95,10 +104,32 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
-import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
+import {
+  formatRouteDistanceMiles,
+  parseWalkRoute,
+  type WalkRouteCaptureStatus,
+} from "@/lib/walkRoute";
+import {
+  buildWalkSessionFinishPatch,
+  buildWalkSessionStartEntry,
+  findOpenWalkSession,
+} from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
-import { persistPickedMedia } from "@/lib/durablePickedMedia";
+import { localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
+import {
+  parseStrictNonNegativeDecimal,
+  parseStrictNonNegativeInteger,
+  validateMealAmounts,
+} from "@/lib/inputValidation";
+import {
+  PickedMediaLocalDataActionError,
+  releasePickedMediaReferences,
+  runMedicationProofPhotoPicker,
+} from "@/lib/pickedMediaLocalDataActions";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
+import { collectCareAppOwnedFileReferences } from "@/lib/appOwnedFileReferences";
+import { runCareFileCleanupAfterDurableSnapshot } from "@/lib/careFileCleanup";
+import { runCareLogDeletionWithoutSharedAudit } from "@/lib/careLogDeletionPrivacy";
 import { TrailMap } from "@/components/TrailMap";
 import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -106,12 +137,31 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
-import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader, BoardSegmentTabs } from "@/components/board/BoardPrimitives";
-import { PressScale } from "@/components/motion/GameFeel";
+import {
+  BoardActionButton,
+  BoardCard,
+  BoardPill,
+  BoardRouteHeader,
+  BoardSectionHeader,
+  BoardSegmentTabs,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
+import { MOTION_MS, PressScale, SPRING } from "@/components/motion/GameFeel";
 import { homeImmersiveRoomIsNight } from "./index";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  careMutationWasAccepted,
+  type CareStorageWarning,
+} from "@/lib/careWriteProtection";
+import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
+import { getTimelineStickyNotePreview } from "@/lib/timelineStickyNotePreview";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const FULL_COMPOSER_LOG_DEDUPE_MS = 1_000;
+const LOG_HISTORY_PAGE_SIZE = 80;
+const LOG_ROW_STICKY_NOTE_LIMIT = 2;
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -155,8 +205,18 @@ const QUICK_LOG_DOCTRINE: Array<{
   tone: "quick" | "detail" | "edit";
 }> = [
   { label: "Tap", detail: "quick log", icon: "flash-outline", tone: "quick" },
-  { label: "Hold", detail: "details", icon: "finger-print-outline", tone: "detail" },
-  { label: "Edit later", detail: "Timeline", icon: "create-outline", tone: "edit" },
+  {
+    label: "Hold",
+    detail: "details",
+    icon: "finger-print-outline",
+    tone: "detail",
+  },
+  {
+    label: "Edit later",
+    detail: "Timeline",
+    icon: "create-outline",
+    tone: "edit",
+  },
 ];
 
 const DETAIL_WORKFLOW_RAIL: Array<{
@@ -165,10 +225,30 @@ const DETAIL_WORKFLOW_RAIL: Array<{
   icon: IoniconName;
   tone: "quick" | "detail" | "edit";
 }> = [
-  { label: "Review", detail: "full record", icon: "reader-outline", tone: "quick" },
-  { label: "Edit", detail: "correct later", icon: "pencil-outline", tone: "detail" },
-  { label: "Sticky", detail: "add context", icon: "document-text-outline", tone: "edit" },
-  { label: "Audit", detail: "trace changes", icon: "git-commit-outline", tone: "detail" },
+  {
+    label: "Review",
+    detail: "full record",
+    icon: "reader-outline",
+    tone: "quick",
+  },
+  {
+    label: "Edit",
+    detail: "correct later",
+    icon: "pencil-outline",
+    tone: "detail",
+  },
+  {
+    label: "Sticky",
+    detail: "add context",
+    icon: "document-text-outline",
+    tone: "edit",
+  },
+  {
+    label: "Audit",
+    detail: "trace changes",
+    icon: "git-commit-outline",
+    tone: "detail",
+  },
 ];
 
 type Severity = "normal" | "watch" | "alert";
@@ -198,7 +278,12 @@ interface LogType {
   baseTitle: string;
   groups?: ChoiceGroup[];
   stepper?: { label: string; unit: string; values: number[] };
-  numeric?: { label: string; placeholder: string; unit: "diet" | "weight"; optional?: boolean };
+  numeric?: {
+    label: string;
+    placeholder: string;
+    unit: "diet" | "weight";
+    optional?: boolean;
+  };
   noteField?: { placeholder: string };
 }
 
@@ -226,14 +311,36 @@ const LOG_TYPES: LogType[] = [
           { id: "served", label: "Served", suffix: "outcome pending" },
           { id: "complete", label: "Ate all", suffix: "ate all" },
           { id: "most", label: "Ate most", suffix: "ate most" },
-          { id: "partial", label: "Ate some", suffix: "partial", severity: "watch" },
-          { id: "grazing", label: "Still grazing", suffix: "still grazing", severity: "watch" },
-          { id: "skipped", label: "Refused", suffix: "refused", severity: "watch" },
+          {
+            id: "partial",
+            label: "Ate some",
+            suffix: "partial",
+            severity: "watch",
+          },
+          {
+            id: "grazing",
+            label: "Still grazing",
+            suffix: "still grazing",
+            severity: "watch",
+          },
+          {
+            id: "skipped",
+            label: "Refused",
+            suffix: "refused",
+            severity: "watch",
+          },
         ],
       },
     ],
-    numeric: { label: "Served amount", placeholder: "0.75", unit: "diet", optional: true },
-    noteField: { placeholder: "Sticky note: appetite, anxiety, toppers, what changed..." },
+    numeric: {
+      label: "Served amount",
+      placeholder: "0.75",
+      unit: "diet",
+      optional: true,
+    },
+    noteField: {
+      placeholder: "Sticky note: appetite, anxiety, toppers, what changed...",
+    },
   },
   {
     type: "water",
@@ -258,7 +365,11 @@ const LOG_TYPES: LogType[] = [
     label: "Walk",
     icon: "paw",
     baseTitle: "Walk",
-    stepper: { label: "Duration", unit: "min", values: [10, 15, 20, 30, 45, 60] },
+    stepper: {
+      label: "Duration",
+      unit: "min",
+      values: [10, 15, 20, 30, 45, 60],
+    },
   },
   {
     type: "potty",
@@ -290,22 +401,30 @@ const LOG_TYPES: LogType[] = [
         options: [
           { id: "not-logged", label: "Not logged" },
           { id: "brown", label: "Brown" },
-          { id: "yellow", label: "Yellow", suffix: "yellow stool", severity: "watch" },
-          { id: "red-black", label: "Red/black", suffix: "red/black stool", severity: "alert" },
+          {
+            id: "yellow",
+            label: "Yellow",
+            suffix: "yellow stool",
+            severity: "watch",
+          },
+          {
+            id: "red-black",
+            label: "Red/black",
+            suffix: "red/black stool",
+            severity: "alert",
+          },
         ],
       },
       {
         key: "pottyContext",
         label: "Context",
-        options: [
-          { id: "routine", label: "Routine" },
-          { id: "accident", label: "Accident", suffix: "accident", severity: "watch" },
-          { id: "urgent", label: "Urgent", suffix: "urgent", severity: "watch" },
-          { id: "straining", label: "Straining", suffix: "straining", severity: "alert" },
-        ],
+        options: POTTY_CONTEXT_OPTIONS,
       },
     ],
-    noteField: { placeholder: "Sticky note: stool detail, color, accident, urgency, or anything unusual..." },
+    noteField: {
+      placeholder:
+        "Sticky note: stool detail, color, accident, urgency, or anything unusual...",
+    },
   },
   {
     type: "play",
@@ -327,11 +446,19 @@ const LOG_TYPES: LogType[] = [
         options: [
           { id: "win", label: "Win", suffix: "win" },
           { id: "practice", label: "Practice", suffix: "practice" },
-          { id: "struggle", label: "Struggle", suffix: "struggle", severity: "watch" },
+          {
+            id: "struggle",
+            label: "Struggle",
+            suffix: "struggle",
+            severity: "watch",
+          },
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: cue, trigger, reward, trainer notes, or what changed..." },
+    noteField: {
+      placeholder:
+        "Sticky note: cue, trigger, reward, trainer notes, or what changed...",
+    },
   },
   {
     type: "mood",
@@ -342,17 +469,36 @@ const LOG_TYPES: LogType[] = [
       {
         key: "mood",
         label: "How are they feeling?",
+        noDefault: true,
         options: [
           { id: "happy", label: "Happy", suffix: "happy", mood: "happy" },
-          { id: "excited", label: "Excited", suffix: "excited", mood: "excited" },
+          {
+            id: "excited",
+            label: "Excited",
+            suffix: "excited",
+            mood: "excited",
+          },
           { id: "calm", label: "Calm", suffix: "calm", mood: "calm" },
-          { id: "anxious", label: "Anxious", suffix: "anxious", mood: "anxious", severity: "watch" },
-          { id: "unwell", label: "Unwell", suffix: "unwell", mood: "unwell", severity: "alert" },
+          {
+            id: "anxious",
+            label: "Anxious",
+            suffix: "anxious",
+            mood: "anxious",
+            severity: "watch",
+          },
+          {
+            id: "unwell",
+            label: "Unwell",
+            suffix: "unwell",
+            mood: "unwell",
+            severity: "alert",
+          },
         ],
       },
       {
         key: "energyLevel",
         label: "Energy level",
+        noDefault: true,
         options: [
           { id: "steady", label: "Steady", suffix: "steady energy" },
           { id: "low", label: "Low", suffix: "low energy", severity: "watch" },
@@ -360,14 +506,21 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: energy, trigger, appetite, visitors, weather, or what changed..." },
+    noteField: {
+      placeholder:
+        "Sticky note: energy, trigger, appetite, visitors, weather, or what changed...",
+    },
   },
   {
     type: "alone",
     label: "Alone",
     icon: "house",
     baseTitle: "Alone time",
-    stepper: { label: "Duration", unit: "min", values: [10, 20, 30, 45, 60, 90] },
+    stepper: {
+      label: "Duration",
+      unit: "min",
+      values: [10, 20, 30, 45, 60, 90],
+    },
     groups: [
       {
         key: "aloneOutcome",
@@ -375,8 +528,20 @@ const LOG_TYPES: LogType[] = [
         options: [
           { id: "settled", label: "Settled", suffix: "settled", mood: "calm" },
           { id: "calm", label: "Calm", suffix: "calm", mood: "calm" },
-          { id: "anxious", label: "Anxious", suffix: "anxious", mood: "anxious", severity: "watch" },
-          { id: "distressed", label: "Distressed", suffix: "distressed", mood: "anxious", severity: "alert" },
+          {
+            id: "anxious",
+            label: "Anxious",
+            suffix: "anxious",
+            mood: "anxious",
+            severity: "watch",
+          },
+          {
+            id: "distressed",
+            label: "Distressed",
+            suffix: "distressed",
+            mood: "anxious",
+            severity: "alert",
+          },
         ],
       },
     ],
@@ -393,13 +558,27 @@ const LOG_TYPES: LogType[] = [
         label: "Status",
         options: [
           { id: "taken", label: "Taken", suffix: "taken" },
-          { id: "skipped", label: "Skipped", suffix: "skipped", severity: "watch" },
+          {
+            id: "skipped",
+            label: "Skipped",
+            suffix: "skipped",
+            severity: "watch",
+          },
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: side effects, refill note, or anything unusual..." },
+    noteField: {
+      placeholder:
+        "Sticky note: side effects, refill note, or anything unusual...",
+    },
   },
-  { type: "weight", label: "Weight", icon: "scale", baseTitle: "Weight", numeric: { label: "Weight", placeholder: "0.0", unit: "weight" } },
+  {
+    type: "weight",
+    label: "Weight",
+    icon: "scale",
+    baseTitle: "Weight",
+    numeric: { label: "Weight", placeholder: "0.0", unit: "weight" },
+  },
   {
     type: "symptom",
     label: "Symptom",
@@ -409,6 +588,7 @@ const LOG_TYPES: LogType[] = [
       {
         key: "what",
         label: "What happened?",
+        noDefault: true,
         options: [
           { id: "vomit", label: "Vomit", suffix: "vomit" },
           { id: "diarrhea", label: "Diarrhea", suffix: "diarrhea" },
@@ -420,6 +600,7 @@ const LOG_TYPES: LogType[] = [
       {
         key: "severity",
         label: "Severity",
+        noDefault: true,
         options: [
           { id: "watch", label: "Watch", severity: "watch" },
           { id: "alert", label: "Alert", severity: "alert" },
@@ -441,12 +622,42 @@ const LOG_TYPES: LogType[] = [
         noDefault: true,
         required: true,
         options: [
-          { id: "rough-greeting", label: "Rough greeting", suffix: "rough greeting", severity: "watch" },
-          { id: "dog-conflict", label: "Dog conflict", suffix: "dog conflict", severity: "watch" },
-          { id: "snap-or-bite", label: "Snap/bite", suffix: "snap or bite", severity: "alert" },
-          { id: "escape", label: "Escape", suffix: "escape", severity: "alert" },
-          { id: "injury", label: "Injury", suffix: "injury", severity: "alert" },
-          { id: "other", label: "Other", suffix: "incident", severity: "watch" },
+          {
+            id: "rough-greeting",
+            label: "Rough greeting",
+            suffix: "rough greeting",
+            severity: "watch",
+          },
+          {
+            id: "dog-conflict",
+            label: "Dog conflict",
+            suffix: "dog conflict",
+            severity: "watch",
+          },
+          {
+            id: "snap-or-bite",
+            label: "Snap/bite",
+            suffix: "snap or bite",
+            severity: "alert",
+          },
+          {
+            id: "escape",
+            label: "Escape",
+            suffix: "escape",
+            severity: "alert",
+          },
+          {
+            id: "injury",
+            label: "Injury",
+            suffix: "injury",
+            severity: "alert",
+          },
+          {
+            id: "other",
+            label: "Other",
+            suffix: "incident",
+            severity: "watch",
+          },
         ],
       },
       {
@@ -465,19 +676,35 @@ const LOG_TYPES: LogType[] = [
         noDefault: true,
         options: [
           { id: "recovered", label: "Recovered", suffix: "recovered" },
-          { id: "separated", label: "Separated", suffix: "separated", severity: "watch" },
-          { id: "follow-up-needed", label: "Follow-up", suffix: "follow-up needed", severity: "alert" },
+          {
+            id: "separated",
+            label: "Separated",
+            suffix: "separated",
+            severity: "watch",
+          },
+          {
+            id: "follow-up-needed",
+            label: "Follow-up",
+            suffix: "follow-up needed",
+            severity: "alert",
+          },
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: timeline, response, injury check..." },
+    noteField: {
+      placeholder: "Sticky note: timeline, response, injury check...",
+    },
   },
   {
     type: "grooming",
     label: "Grooming",
     icon: "star",
     baseTitle: "Grooming",
-    stepper: { label: "Duration", unit: "min", values: [5, 10, 15, 20, 30, 45] },
+    stepper: {
+      label: "Duration",
+      unit: "min",
+      values: [5, 10, 15, 20, 30, 45],
+    },
     groups: [
       {
         key: "kind",
@@ -490,15 +717,57 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: coat, paws, ears, products, groomer notes, or what changed..." },
+    noteField: {
+      placeholder:
+        "Sticky note: coat, paws, ears, products, groomer notes, or what changed...",
+    },
   },
-  { type: "note", label: "Note", icon: "star", baseTitle: "Note", noteField: { placeholder: "What's on your mind?" } },
+  {
+    type: "note",
+    label: "Note",
+    icon: "star",
+    baseTitle: "Note",
+    noteField: { placeholder: "What's on your mind?" },
+  },
 ];
 
 const TYPE_BY_ID: Record<string, LogType> = LOG_TYPES.reduce(
   (acc, t) => ({ ...acc, [t.type]: t }),
   {} as Record<string, LogType>,
 );
+
+function initializeLogComposerChoices(
+  config: LogType | undefined,
+  preset: Record<string, string> | null,
+): Record<string, string> {
+  const initial: Record<string, string> = {};
+  config?.groups?.forEach((group) => {
+    if (group.noDefault) return;
+    initial[group.key] = group.options[0].id;
+  });
+  return { ...initial, ...(preset ?? {}) };
+}
+
+function getLogComposerValidationIssue(
+  type: CareEventType,
+  choices: Record<string, string>,
+): { label: string; message: string } | null {
+  if (type === "mood" && !choices.mood && !choices.energyLevel) {
+    return {
+      label: "Mood or energy",
+      message:
+        "Choose a mood or energy level before saving. WoofWatcher never guesses how your dog feels.",
+    };
+  }
+  if (type === "symptom" && !choices.what) {
+    return {
+      label: "What happened?",
+      message:
+        "Choose what happened before saving. Severity alone cannot create a symptom log.",
+    };
+  }
+  return null;
+}
 
 type LauncherTab = "favorites" | "all" | "health";
 
@@ -508,6 +777,33 @@ interface LauncherAction {
   icon: PixelIconName;
   tab: LauncherTab | "household";
   preset?: Record<string, string>;
+}
+
+interface LogComposerIntent {
+  revision: number;
+  type: CareEventType;
+  preset: Record<string, string> | null;
+}
+
+type LogComposerIntentSource =
+  | { kind: "route" | "selection"; type: CareEventType }
+  | {
+      kind: "launcher";
+      type: CareEventType;
+      preset?: Record<string, string>;
+    };
+
+function advanceLogComposerIntent(
+  current: LogComposerIntent,
+  source: LogComposerIntentSource,
+): LogComposerIntent {
+  const preset =
+    source.kind === "launcher" && source.preset ? { ...source.preset } : null;
+  return {
+    revision: current.revision + 1,
+    type: source.type,
+    preset,
+  };
 }
 
 const LAUNCHER_TABS: { key: LauncherTab; label: string }[] = [
@@ -524,13 +820,30 @@ const LAUNCHER_ACTIONS: LauncherAction[] = [
   { label: "Treat", type: "treat", icon: "treat", tab: "favorites" },
   { label: "Play", type: "play", icon: "play", tab: "favorites" },
   { label: "Water", type: "water", icon: "bile", tab: "favorites" },
-  { label: "Vomit", type: "symptom", icon: "vomit", tab: "health", preset: { what: "vomit", severity: "watch" } },
+  {
+    label: "Vomit",
+    type: "symptom",
+    icon: "vomit",
+    tab: "health",
+    preset: { what: "vomit", severity: "watch" },
+  },
   // Distinct bolt icon (Anxious owns the raincloud) and no preset: incident
   // facts are never pre-claimed for the caregiver.
   { label: "Incident", type: "incident", icon: "energy", tab: "health" },
-  { label: "Medication", type: "medication", icon: "medication", tab: "health" },
+  {
+    label: "Medication",
+    type: "medication",
+    icon: "medication",
+    tab: "health",
+  },
   { label: "Alone Time", type: "alone", icon: "clock", tab: "household" },
-  { label: "Anxious", type: "mood", icon: "anxious", tab: "health", preset: { mood: "anxious" } },
+  {
+    label: "Anxious",
+    type: "mood",
+    icon: "anxious",
+    tab: "health",
+    preset: { mood: "anxious" },
+  },
   { label: "Note", type: "note", icon: "note", tab: "household" },
   { label: "Weight", type: "weight", icon: "health", tab: "health" },
   { label: "Grooming", type: "grooming", icon: "happy", tab: "all" },
@@ -538,7 +851,12 @@ const LAUNCHER_ACTIONS: LauncherAction[] = [
 
 const ALONE_RETURN_OPTIONS = getAloneTimeReturnOptions();
 
-const MOOD_LAUNCHER: { key: string; label: string; icon: PixelIconName; mood: string }[] = [
+const MOOD_LAUNCHER: {
+  key: string;
+  label: string;
+  icon: PixelIconName;
+  mood: string;
+}[] = [
   { key: "great", label: "Great", icon: "mood_great", mood: "happy" },
   { key: "good", label: "Good", icon: "mood_good", mood: "calm" },
   { key: "okay", label: "Okay", icon: "mood_okay", mood: "calm" },
@@ -555,27 +873,34 @@ const TRUST_ACTION_LABELS: Record<CareLogReviewAction, string> = {
 
 const ENTRY_ATTENTION_CHIP_COPY: Record<string, string> = {
   "needs-review": "Needs review",
-  "proof-needed": "Proof needed",
+  "proof-needed": "Photo needed",
   "photo-requested": "Photo requested",
   "outcome-pending": "Outcome pending",
-  "proof-attached": "Proof attached",
+  "proof-attached": "Photo attached",
   rejected: "Rejected",
   corrected: "Corrected",
   estimated: "Estimated",
 };
 
-function launcherActionKey(action: Pick<LauncherAction, "label" | "type">): string {
+function launcherActionKey(
+  action: Pick<LauncherAction, "label" | "type">,
+): string {
   return `${action.type}:${action.label}`;
 }
 
-function findLauncherActionForType(type: CareEventType | null): LauncherAction | null {
+function findLauncherActionForType(
+  type: CareEventType | null,
+): LauncherAction | null {
   if (!type) return null;
   return LAUNCHER_ACTIONS.find((action) => action.type === type) ?? null;
 }
 
 // Icon resolution covers the composer types plus legacy entry types.
 const TYPE_ICON: Record<string, PulseIconName> = {
-  ...LOG_TYPES.reduce((acc, t) => ({ ...acc, [t.type]: t.icon }), {} as Record<string, PulseIconName>),
+  ...LOG_TYPES.reduce(
+    (acc, t) => ({ ...acc, [t.type]: t.icon }),
+    {} as Record<string, PulseIconName>,
+  ),
   pee: "drop",
   poop: "drop",
   park: "paw",
@@ -625,21 +950,25 @@ function CareTypeIcon({
 }
 
 // "{petName}" resolves to the dog's real display name at render time (via
-// resolvePetName), so a renamed dog never reads "Phoenix" in guidance copy.
+// resolvePetName), so guidance uses the current name or a neutral fallback.
 const LOG_GUIDANCE: Record<string, string> = {
   meal: "Serve it now, then update the outcome when {petName} finishes.",
   water: "Fresh water keeps hydration and Bile Watch context honest.",
   treat: "Treats stay connected to diet, training, and appetite patterns.",
   walk: "Capture route, duration, distance, and dog interactions in one pass.",
-  potty: "Potty is the parent log; pee, poop, accidents, and stool notes live here.",
+  potty:
+    "Potty is the parent log; pee, poop, accidents, and stool notes live here.",
   play: "Play logs help separate energy from anxiety and boredom.",
-  training: "Wins, rough spots, and next practice become trainer-ready handoff notes.",
+  training:
+    "Wins, rough spots, and next practice become trainer-ready handoff notes.",
   mood: "Mood checks make {petName}'s care twin respond to real daily patterns.",
   alone: "Track away time, return state, and what helped {petName} settle.",
-  medication: "Medication logs are household-visible by default and audit-friendly.",
+  medication:
+    "Medication logs are household-visible by default and audit-friendly.",
   weight: "Weight logs update {petName}'s living profile.",
   symptom: "Health notes stay non-diagnostic and easy to share with your vet.",
-  incident: "Log factual behavior or safety incidents with trigger, exposure, injury check, and follow-up.",
+  incident:
+    "Log factual behavior or safety incidents with trigger, exposure, injury check, and follow-up.",
   grooming: "Grooming logs remember coat, paws, ears, products, and next due.",
   note: "Sticky notes keep tiny care details from disappearing.",
 };
@@ -650,11 +979,48 @@ const LOG_GUIDANCE: Record<string, string> = {
 const SYNC_PROVIDER_CONFIGURED =
   isClerkConfigured && getConsumerSurfacePolicy().providerSyncControls;
 
-function syncLabel(status: Entry["syncStatus"]): string | null {
+function careStorageWarningMessage(warning: CareStorageWarning): string {
+  if (warning === "save-failed") {
+    return "Device storage could not confirm recent care changes. They may not survive an app restart.";
+  }
+  if (warning === "read-failed") {
+    return "Saved care data could not be read. Saving is paused this session to protect what is stored.";
+  }
+  if (warning === "newer-version") {
+    return "This care data came from a newer WoofWatcher version. This version will not overwrite it.";
+  }
+  return "Saved care data could not be read and was reset. A recovery copy was kept on this device.";
+}
+
+function syncLabel(
+  status: Entry["syncStatus"],
+  storageWarning: CareStorageWarning = null,
+): string | null {
+  if (storageWarning) return "Storage warning";
   if (status === "pending") return "Pending sync";
-  if (status === "local") return SYNC_PROVIDER_CONFIGURED ? "Saved offline" : "Saved on this device";
+  if (status === "local")
+    return SYNC_PROVIDER_CONFIGURED ? "Saved offline" : "Saved on this device";
   if (status === "failed") return "Sync failed";
   return null;
+}
+
+function describeWalkRouteCaptureStatus(
+  status: WalkRouteCaptureStatus,
+): string {
+  switch (status) {
+    case "idle":
+      return "Route recording starts when an active walk begins";
+    case "starting":
+      return "Getting location for the route map…";
+    case "recording":
+      return "Recording the route for this walk's map · stays in your care log";
+    case "paused":
+      return "Route recording paused while local data is being reset";
+    case "denied":
+      return "Route not recorded: location permission was denied";
+    case "unavailable":
+      return "Route recording is unavailable on this device";
+  }
 }
 
 const DETAIL_SKIP_KEYS = new Set([
@@ -662,7 +1028,6 @@ const DETAIL_SKIP_KEYS = new Set([
   "auditAction",
   "auditSubjectId",
   "auditTrail",
-  "deletedEntrySnapshot",
   "stickyNotes",
   "title",
   "durationMinutes",
@@ -761,8 +1126,22 @@ function isDetailRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === "object" && !Array.isArray(value);
 }
 
+function entryProofAttachmentUri(
+  entry: Entry | null | undefined,
+): string | null {
+  if (!entry || !isDetailRecord(entry.details)) return null;
+  const uri = entry.details.photoProofAttachmentUri;
+  return typeof uri === "string" && uri.trim() ? uri : null;
+}
+
 function humanizeKey(key: string): string {
-  return DETAIL_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return (
+    DETAIL_LABELS[key] ??
+    key
+      .replace(/([A-Z])/g, " $1")
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+  );
 }
 
 // Humanize only slug-like enum ids ("dog-conflict" -> "Dog Conflict").
@@ -777,7 +1156,8 @@ function humanizeDetailValue(text: string): string {
 function detailValue(value: unknown): string | null {
   if (value == null) return null;
   if (typeof value === "string") return value.trim() || null;
-  if (typeof value === "number") return Number.isFinite(value) ? String(value) : null;
+  if (typeof value === "number")
+    return Number.isFinite(value) ? String(value) : null;
   if (typeof value === "boolean") return value ? "Yes" : "No";
   return null;
 }
@@ -803,7 +1183,10 @@ function entryTypeLabel(type: string): string {
   return config?.label ?? humanizeKey(type);
 }
 
-function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] {
+function buildEntryDetailRows(
+  entry: Entry,
+  storageWarning: CareStorageWarning = null,
+): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
   const details = isDetailRecord(entry.details) ? entry.details : {};
   const servingAmount = detailValue(details.servingAmount);
@@ -814,38 +1197,77 @@ function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] 
   const eatenUnit = detailValue(details.eatenUnit) ?? servedUnit;
   const expectedPortion = detailValue(details.expectedPortion);
   const mealCompletion = detailValue(details.mealCompletion);
-  const status = syncLabel(entry.syncStatus);
+  const status = syncLabel(entry.syncStatus, storageWarning);
 
-  if (entry.durationMinutes != null) rows.push({ label: "Duration", value: `${entry.durationMinutes} min` });
-  if (entry.amount && !eatenAmount) rows.push({ label: "Amount", value: servingUnit ? `${entry.amount} ${servingUnit}` : entry.amount });
-  if (!entry.amount && servingAmount) rows.push({ label: "Serving", value: servingUnit ? `${servingAmount} ${servingUnit}` : servingAmount });
-  if (mealCompletion) rows.push({ label: "Completion", value: humanizeKey(mealCompletion) });
+  if (entry.durationMinutes != null)
+    rows.push({ label: "Duration", value: `${entry.durationMinutes} min` });
+  if (entry.amount && !eatenAmount)
+    rows.push({
+      label: "Amount",
+      value: servingUnit ? `${entry.amount} ${servingUnit}` : entry.amount,
+    });
+  if (!entry.amount && servingAmount)
+    rows.push({
+      label: "Serving",
+      value: servingUnit ? `${servingAmount} ${servingUnit}` : servingAmount,
+    });
+  if (mealCompletion)
+    rows.push({ label: "Completion", value: humanizeKey(mealCompletion) });
   if (expectedPortion) rows.push({ label: "Expected", value: expectedPortion });
-  if (servedAmount) rows.push({ label: "Served", value: servedUnit ? `${servedAmount} ${servedUnit}` : servedAmount });
-  if (eatenAmount) rows.push({ label: "Eaten", value: eatenUnit ? `${eatenAmount} ${eatenUnit}` : eatenAmount });
+  if (servedAmount)
+    rows.push({
+      label: "Served",
+      value: servedUnit ? `${servedAmount} ${servedUnit}` : servedAmount,
+    });
+  if (eatenAmount)
+    rows.push({
+      label: "Eaten",
+      value: eatenUnit ? `${eatenAmount} ${eatenUnit}` : eatenAmount,
+    });
   if (typeof details.householdVisible === "boolean") {
-    rows.push({ label: "Household", value: details.householdVisible ? "Visible" : "Private" });
+    rows.push({
+      label: "Household",
+      value: details.householdVisible ? "Visible" : "Private",
+    });
   }
   if (entry.food) rows.push({ label: "Food", value: entry.food });
   if (entry.mood) rows.push({ label: "Mood", value: humanizeKey(entry.mood) });
-  if (entry.severity) rows.push({ label: "Severity", value: humanizeKey(entry.severity) });
-  if (entry.dogInteractions != null) rows.push({ label: "Dog interactions", value: String(entry.dogInteractions) });
-  if (status) rows.push({ label: "Sync", value: status });
+  if (entry.severity)
+    rows.push({ label: "Severity", value: humanizeKey(entry.severity) });
+  if (entry.dogInteractions != null)
+    rows.push({
+      label: "Dog interactions",
+      value: String(entry.dogInteractions),
+    });
+  if (status) {
+    rows.push({
+      label: storageWarning ? "Storage" : "Sync",
+      value: status,
+    });
+  }
 
   Object.entries(details).forEach(([key, value]) => {
     if (DETAIL_SKIP_KEYS.has(key)) return;
     const text = detailValue(value);
     if (!text) return;
     const timestamp = formatDetailTimestamp(text);
-    rows.push({ label: humanizeKey(key), value: timestamp ?? humanizeDetailValue(text) });
+    rows.push({
+      label: humanizeKey(key),
+      value: timestamp ?? humanizeDetailValue(text),
+    });
   });
 
   return rows;
 }
 
-function buildEntryHandoffMessage(entry: Entry): string {
-  const type = entryTypeLabel(normalizeCareEventType(entry.type, entry.details));
-  const rows = buildEntryDetailRows(entry);
+function buildEntryHandoffMessage(
+  entry: Entry,
+  storageWarning: CareStorageWarning = null,
+): string {
+  const type = entryTypeLabel(
+    normalizeCareEventType(entry.type, entry.details),
+  );
+  const rows = buildEntryDetailRows(entry, storageWarning);
   const stickyNotes = getStickyNotes(entry.details);
   const auditTrail = getCareAuditTrail(entry.details);
   return [
@@ -898,16 +1320,12 @@ function auditMeta(event: CareAuditEvent): string {
 function formatCareAmount(value: number | null, unit: string): string {
   if (value == null) return "--";
   const rounded = Math.round(value * 100) / 100;
-  const text = Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/0+$/, "").replace(/\.$/, "");
-  const unitText = unit === "g" || unit === "oz" || rounded === 1 ? unit : `${unit}s`;
+  const text = Number.isInteger(rounded)
+    ? String(rounded)
+    : String(rounded).replace(/0+$/, "").replace(/\.$/, "");
+  const unitText =
+    unit === "g" || unit === "oz" || rounded === 1 ? unit : `${unit}s`;
   return `${text} ${unitText}`;
-}
-
-function parseNonNegativeNumber(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number.parseFloat(trimmed);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 function mealCompletionLabel(value: string): string {
@@ -954,14 +1372,18 @@ const POTTY_STOOL_COLOR_OPTIONS = [
   { id: "gray", label: "Gray" },
 ];
 
-const POTTY_CONTEXT_DRAFT_OPTIONS: { id: PottyDraftContext; label: string }[] = [
-  { id: "none", label: "No extra context" },
-  ...POTTY_CONTEXT_OPTIONS,
-];
+const POTTY_CONTEXT_DRAFT_OPTIONS: { id: PottyDraftContext; label: string }[] =
+  [{ id: "none", label: "No extra context" }, ...POTTY_CONTEXT_OPTIONS];
 
-function optionId<T extends string>(value: unknown, options: { id: T }[], fallback: T): T {
+function optionId<T extends string>(
+  value: unknown,
+  options: { id: T }[],
+  fallback: T,
+): T {
   const cleaned = typeof value === "string" ? value.trim() : "";
-  return options.some((option) => option.id === cleaned) ? (cleaned as T) : fallback;
+  return options.some((option) => option.id === cleaned)
+    ? (cleaned as T)
+    : fallback;
 }
 
 function pottyOutcomeHasPee(outcome: PottyDetailOutcome): boolean {
@@ -975,28 +1397,77 @@ function pottyOutcomeHasStool(outcome: PottyDetailOutcome): boolean {
 function pottyDraftFromEntry(entry: Entry | null): PottyDetailDraft {
   const details = entry && isDetailRecord(entry.details) ? entry.details : {};
   return {
-    outcome: optionId(details.pottyOutcome, POTTY_DETAIL_OUTCOMES, "tried-nothing"),
+    outcome: optionId(
+      details.pottyOutcome,
+      POTTY_DETAIL_OUTCOMES,
+      "tried-nothing",
+    ),
     location: optionId(details.pottyWhere, POTTY_LOCATION_OPTIONS, "outside"),
     peeDetail: optionId(details.peeDetail, POTTY_PEE_DETAIL_OPTIONS, "normal"),
-    stoolCondition: optionId(details.condition, POTTY_STOOL_CONDITION_OPTIONS, "normal"),
-    stoolColor: optionId(details.stoolColor, POTTY_STOOL_COLOR_OPTIONS, "not-logged"),
-    context: optionId(details.pottyContext, POTTY_CONTEXT_DRAFT_OPTIONS, "none"),
+    stoolCondition: optionId(
+      details.condition,
+      POTTY_STOOL_CONDITION_OPTIONS,
+      "normal",
+    ),
+    stoolColor: optionId(
+      details.stoolColor,
+      POTTY_STOOL_COLOR_OPTIONS,
+      "not-logged",
+    ),
+    context: optionId(
+      details.pottyContext,
+      POTTY_CONTEXT_DRAFT_OPTIONS,
+      "none",
+    ),
   };
 }
 
 function isPendingMealEntry(entry: Entry): boolean {
-  if (normalizeCareEventType(entry.type, entry.details) !== "meal") return false;
+  if (normalizeCareEventType(entry.type, entry.details) !== "meal")
+    return false;
   const details = isDetailRecord(entry.details) ? entry.details : {};
   const completion = String(details.mealCompletion ?? "").toLowerCase();
   const lifecycle = String(details.mealLifecycle ?? "").toLowerCase();
-  return completion === "served" || completion === "grazing" || lifecycle === "outcome-pending";
+  return (
+    completion === "served" ||
+    completion === "grazing" ||
+    lifecycle === "outcome-pending"
+  );
 }
 
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
+  const appFileSystem = useAppFileSystem();
+  const {
+    state,
+    careMutationsBlocked,
+    addEntry,
+    deleteEntry,
+    updateEntry,
+    updateCareDoc,
+    persistCurrentCareSnapshot,
+    storageWarning,
+    refresh,
+    syncOutbox,
+    isSyncing,
+  } = useCare();
+  const careStateRef = useRef(state);
+  careStateRef.current = state;
+  const logScreenMountedRef = useRef(true);
+  const proofPickerInFlightRef = useRef(false);
+  const [proofPickerBusy, setProofPickerBusy] = useState(false);
+  useEffect(() => {
+    logScreenMountedRef.current = true;
+    return () => {
+      logScreenMountedRef.current = false;
+    };
+  }, []);
+  const showCareReadOnly = useCallback(
+    () => notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE),
+    [],
+  );
   const me = useGetMe({
     query: {
       queryKey: getGetMeQueryKey(),
@@ -1011,20 +1482,32 @@ export default function LogScreen() {
     walk?: string | string[];
   }>();
   const routeSelectedType = useMemo(() => {
-    const rawType = Array.isArray(routeParams.type) ? routeParams.type[0] : routeParams.type;
+    const rawType = Array.isArray(routeParams.type)
+      ? routeParams.type[0]
+      : routeParams.type;
     const normalized = normalizeCareEventType(rawType);
     return TYPE_BY_ID[normalized] ? normalized : null;
   }, [routeParams.type]);
-  const routeDetailParam = Array.isArray(routeParams.detail) ? routeParams.detail[0] : routeParams.detail;
-  const routeIntentParam = Array.isArray(routeParams.intent) ? routeParams.intent[0] : routeParams.intent;
+  const routeDetailParam = Array.isArray(routeParams.detail)
+    ? routeParams.detail[0]
+    : routeParams.detail;
+  const routeIntentParam = Array.isArray(routeParams.intent)
+    ? routeParams.intent[0]
+    : routeParams.intent;
   const routeWantsDetailSheet =
-    routeDetailParam === "1" || routeDetailParam === "true" || routeDetailParam === "sheet";
+    routeDetailParam === "1" ||
+    routeDetailParam === "true" ||
+    routeDetailParam === "sheet";
   const routeDetailIntentKey =
     routeSelectedType && routeWantsDetailSheet
       ? `${routeSelectedType}:${routeIntentParam ?? routeDetailParam ?? "detail"}`
       : null;
-  const routeEntryParam = Array.isArray(routeParams.entry) ? routeParams.entry[0] : routeParams.entry;
-  const routeWalkParam = Array.isArray(routeParams.walk) ? routeParams.walk[0] : routeParams.walk;
+  const routeEntryParam = Array.isArray(routeParams.entry)
+    ? routeParams.entry[0]
+    : routeParams.entry;
+  const routeWalkParam = Array.isArray(routeParams.walk)
+    ? routeParams.walk[0]
+    : routeParams.walk;
   const lastRouteSelectedType = useRef<string | null>(null);
   const lastRouteDetailIntentKey = useRef<string | null>(null);
   const lastRouteEntryParam = useRef<string | null>(null);
@@ -1054,11 +1537,7 @@ export default function LogScreen() {
     topInset: insets.top,
     surface: "tabbed",
   });
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useActiveCurrentTime();
   // Under 360pt the console chrome truncates ("Tap saves. Hold o...",
   // "SAVED On d..."), so narrow screens get shorter honest strings and
   // drop the decorative under-5-sec pill.
@@ -1068,11 +1547,24 @@ export default function LogScreen() {
   const caregiver =
     me.data?.user?.displayName?.trim() || state.caregivers[0]?.name || "You";
   const currentCaregiverRole = useMemo(
-    () => state.caregivers.find((person) => person.name === caregiver)?.role ?? state.caregivers[0]?.role ?? null,
+    () =>
+      state.caregivers.find((person) => person.name === caregiver)?.role ??
+      state.caregivers[0]?.role ??
+      null,
     [caregiver, state.caregivers],
   );
 
-  const [selectedType, setSelectedType] = useState<string>(() => routeSelectedType ?? "meal");
+  const [composerIntent, setComposerIntent] = useState<LogComposerIntent>(
+    () => ({
+      revision: 0,
+      type: routeSelectedType ?? "meal",
+      preset: null,
+    }),
+  );
+  const selectedType = composerIntent.type;
+  const beginComposerIntent = useCallback((source: LogComposerIntentSource) => {
+    setComposerIntent((current) => advanceLogComposerIntent(current, source));
+  }, []);
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [numeric, setNumeric] = useState("");
@@ -1085,7 +1577,8 @@ export default function LogScreen() {
   const [walkSocialOutcome, setWalkSocialOutcome] = useState("");
   const [walkFinishRouteName, setWalkFinishRouteName] = useState("");
   const [walkFinishDistanceMiles, setWalkFinishDistanceMiles] = useState("");
-  const [walkFinishDogInteractions, setWalkFinishDogInteractions] = useState("");
+  const [walkFinishDogInteractions, setWalkFinishDogInteractions] =
+    useState("");
   const [walkFinishSocialOutcome, setWalkFinishSocialOutcome] = useState("");
   const [walkFinishNote, setWalkFinishNote] = useState("");
   const [moodContext, setMoodContext] = useState("");
@@ -1108,19 +1601,30 @@ export default function LogScreen() {
   const [noteText, setNoteText] = useState("");
   const [searchText, setSearchText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
+  const [historyPage, setHistoryPage] = useState(0);
+  const deferredSearchText = useDeferredValue(searchText);
   const [launcherTab, setLauncherTab] = useState<LauncherTab>("favorites");
-  const [selectedLauncherKey, setSelectedLauncherKey] = useState<string | null>(() => launcherActionKey(LAUNCHER_ACTIONS[0]!));
-  const [launcherDetailAction, setLauncherDetailAction] = useState<LauncherAction | null>(null);
-  const pendingChoicePreset = useRef<Record<string, string> | null>(null);
+  const [selectedLauncherKey, setSelectedLauncherKey] = useState<string | null>(
+    () => launcherActionKey(LAUNCHER_ACTIONS[0]!),
+  );
+  const [launcherDetailAction, setLauncherDetailAction] =
+    useState<LauncherAction | null>(null);
 
   const config = TYPE_BY_ID[selectedType];
   const medicationAdherence = useMemo(
-    () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
+    () =>
+      deriveMedicationAdherence({
+        entries: state.entries,
+        routines: state.routines,
+        now,
+      }),
     [state.entries, state.routines, now],
   );
   const medicationDefault = useMemo(
     () =>
-      medicationAdherence.items.find((item) => item.status === "missed" || item.status === "due") ??
+      medicationAdherence.items.find(
+        (item) => item.status === "missed" || item.status === "due",
+      ) ??
       medicationAdherence.items.find((item) => item.status === "upcoming") ??
       null,
     [medicationAdherence.items],
@@ -1128,43 +1632,70 @@ export default function LogScreen() {
 
   useEffect(() => {
     if (!routeSelectedType) return;
-    if (routeSelectedType !== lastRouteSelectedType.current) {
-      setSelectedType(routeSelectedType);
+    if (!routeWantsDetailSheet) {
+      if (routeSelectedType === lastRouteSelectedType.current) return;
+      beginComposerIntent({ kind: "route", type: routeSelectedType });
       setSelectedLauncherKey(null);
       lastRouteSelectedType.current = routeSelectedType;
+      return;
     }
-    if (!routeWantsDetailSheet || !routeDetailIntentKey || routeDetailIntentKey === lastRouteDetailIntentKey.current) {
+    if (
+      !routeDetailIntentKey ||
+      routeDetailIntentKey === lastRouteDetailIntentKey.current
+    ) {
       return;
     }
     const routeDetailAction = findLauncherActionForType(routeSelectedType);
     if (!routeDetailAction) return;
-    pendingChoicePreset.current = routeDetailAction.preset ?? null;
-    setLauncherTab(routeDetailAction.tab === "health" ? "health" : routeDetailAction.tab === "all" ? "all" : "favorites");
-    setSelectedLauncherKey(launcherActionKey(routeDetailAction));
-    setSelectedType(routeDetailAction.type);
+    setLauncherTab(
+      routeDetailAction.tab === "health"
+        ? "health"
+        : routeDetailAction.tab === "all"
+          ? "all"
+          : "favorites",
+    );
+    // A type-only route is generic even when the launcher has a more
+    // specific shortcut for that type (for example Anxious or Vomit).
+    // Do not highlight or apply that shortcut unless the caregiver chose it.
+    setSelectedLauncherKey(
+      routeDetailAction.preset ? null : launcherActionKey(routeDetailAction),
+    );
+    beginComposerIntent({ kind: "route", type: routeSelectedType });
     // Detail intents land straight in the pre-focused composer - no
     // interstitial between "add details" and the real form. The composer
     // lives in the Log view, so make sure we're on it.
     setLogView("log");
     setTimeout(() => scrollToComposer(), 350);
+    lastRouteSelectedType.current = routeSelectedType;
     lastRouteDetailIntentKey.current = routeDetailIntentKey;
-  }, [routeDetailIntentKey, routeSelectedType, routeWantsDetailSheet]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    beginComposerIntent,
+    routeDetailIntentKey,
+    routeSelectedType,
+    routeWantsDetailSheet,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset contextual controls whenever the type changes.
+  // Every new composer intent resets contextual controls, including a new
+  // intent for the already-selected type. This prevents abandoned form state
+  // from leaking into a later deep link or launcher action.
   useEffect(() => {
-    const init: Record<string, string> = {};
-    config?.groups?.forEach((g) => {
-      if (g.noDefault) return;
-      init[g.key] = g.options[0].id;
-    });
-    setChoices({ ...init, ...(pendingChoicePreset.current ?? {}) });
-    pendingChoicePreset.current = null;
-    setStepIndex(config?.stepper ? Math.min(2, config.stepper.values.length - 1) : 0);
-    setNumeric(selectedType === "weight" ? String(state.profile.weight.current ?? "") : "");
-    setExpectedPortion(selectedType === "meal" ? state.dietProfile.normalPortion : "");
+    setChoices(initializeLogComposerChoices(config, composerIntent.preset));
+    setStepIndex(
+      config?.stepper ? Math.min(2, config.stepper.values.length - 1) : 0,
+    );
+    setNumeric(
+      selectedType === "weight"
+        ? String(state.profile.weight.current ?? "")
+        : "",
+    );
+    setExpectedPortion(
+      selectedType === "meal" ? state.dietProfile.normalPortion : "",
+    );
     setEatenAmount("");
     setMedicationDose(
-      selectedType === "medication" && medicationDefault?.dose && medicationDefault.dose !== "Dose not set"
+      selectedType === "medication" &&
+        medicationDefault?.dose &&
+        medicationDefault.dose !== "Dose not set"
         ? medicationDefault.dose
         : "",
     );
@@ -1188,7 +1719,7 @@ export default function LogScreen() {
     setIncidentFollowUp("");
     setHouseholdVisible(true);
     setNoteText("");
-  }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [composerIntent.revision]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (
@@ -1205,13 +1736,43 @@ export default function LogScreen() {
   const [promptId, setPromptId] = useState<string | null>(null);
   const [promptTitle, setPromptTitle] = useState("");
   const [promptNote, setPromptNote] = useState("");
-  const [promptMode, setPromptMode] = useState<"post-log" | "sticky">("post-log");
+  const [promptMode, setPromptMode] = useState<"post-log" | "sticky">(
+    "post-log",
+  );
   const promptRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
   // Measured scroll target for the full composer card so "Add Details" and
   // the Quick Log fallback always land on the composer instead of a guess.
   const composerSectionY = useRef<number | null>(null);
-  const [lastQuickLog, setLastQuickLog] = useState<{ id: string; title: string } | null>(null);
+  const [lastQuickLog, setLastQuickLog] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const lastQuickLogUndoGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (lastQuickLogUndoGateRef.current === null) {
+    lastQuickLogUndoGateRef.current = createExclusiveAsyncAction();
+  }
+  const lastQuickLogUndoGate = lastQuickLogUndoGateRef.current;
+  const [lastQuickLogUndoBusy, setLastQuickLogUndoBusy] = useState(false);
+  const fullComposerLogGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (fullComposerLogGateRef.current === null) {
+    fullComposerLogGateRef.current = createExclusiveAsyncAction();
+  }
+  const fullComposerLogGate = fullComposerLogGateRef.current;
+  const lastFullComposerLogAtRef = useRef(Number.NEGATIVE_INFINITY);
+  const [fullComposerLogBusy, setFullComposerLogBusy] = useState(false);
+  const entryHandoffShareGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (entryHandoffShareGateRef.current === null) {
+    entryHandoffShareGateRef.current = createExclusiveAsyncAction();
+  }
+  const entryHandoffShareGate = entryHandoffShareGateRef.current;
+  const [entryHandoffShareBusy, setEntryHandoffShareBusy] = useState(false);
   // Screen readers can't see the feedback card and its Undo vanishes on a
   // timer - every quick log announces, whichever of the five paths set it.
   useEffect(() => {
@@ -1225,12 +1786,12 @@ export default function LogScreen() {
   const [editNote, setEditNote] = useState("");
 
   useEffect(() => {
-    if (!routeEntryParam || routeEntryParam === lastRouteEntryParam.current) return;
+    if (!routeEntryParam || routeEntryParam === lastRouteEntryParam.current)
+      return;
     if (!state.entries.some((entry) => entry.id === routeEntryParam)) return;
     setDetailEntryId(routeEntryParam);
     lastRouteEntryParam.current = routeEntryParam;
   }, [routeEntryParam, state.entries]);
-
 
   const stickyColor = (color: StickyNoteColor) => {
     if (color === "sun") return colors.amber;
@@ -1266,8 +1827,9 @@ export default function LogScreen() {
     [state.entries, detailEntryId],
   );
   const detailRows = useMemo(
-    () => (detailEntry ? buildEntryDetailRows(detailEntry) : []),
-    [detailEntry],
+    () =>
+      detailEntry ? buildEntryDetailRows(detailEntry, storageWarning) : [],
+    [detailEntry, storageWarning],
   );
   const detailStickyNotes = useMemo(
     () => (detailEntry ? getStickyNotes(detailEntry.details) : []),
@@ -1280,7 +1842,9 @@ export default function LogScreen() {
   const detailAuditSummary = useMemo(() => {
     if (!detailAuditTrail.length) return null;
     const latest = detailAuditTrail[detailAuditTrail.length - 1]!;
-    const correctionCount = detailAuditTrail.filter((event) => event.action === "updated").length;
+    const correctionCount = detailAuditTrail.filter(
+      (event) => event.action === "updated",
+    ).length;
     const changeLabels = Array.from(
       new Set(detailAuditTrail.flatMap((event) => event.changes ?? [])),
     )
@@ -1290,28 +1854,40 @@ export default function LogScreen() {
     return {
       latest,
       changeLabels,
-      title: correctionCount ? `${correctionCount} ${correctionCount === 1 ? "correction" : "corrections"}` : "Original history",
+      title: correctionCount
+        ? `${correctionCount} ${correctionCount === 1 ? "correction" : "corrections"}`
+        : "Original history",
       meta: auditMeta(latest),
     };
   }, [detailAuditTrail]);
   const detailTrustReview = useMemo(
-    () => (detailEntry ? getCareLogTrustReview(detailEntry, currentCaregiverRole) : null),
+    () =>
+      detailEntry
+        ? getCareLogTrustReview(detailEntry, currentCaregiverRole)
+        : null,
     [detailEntry, currentCaregiverRole],
   );
-  const detailType = detailEntry ? normalizeCareEventType(detailEntry.type, detailEntry.details) : null;
-  const detailIcon = detailType ? TYPE_ICON[detailType] ?? "paw" : "paw";
+  const detailType = detailEntry
+    ? normalizeCareEventType(detailEntry.type, detailEntry.details)
+    : null;
+  const detailIcon = detailType ? (TYPE_ICON[detailType] ?? "paw") : "paw";
   const detailTypeText = detailType ? entryTypeLabel(detailType) : "";
   // Recorded walk route (if this walk captured one): shown on the private
   // bundled canvas without sending its shape to a mapping provider.
   const detailRoute = useMemo(
-    () => (detailType === "walk" ? parseWalkRoute(detailEntry?.details?.route) : null),
+    () =>
+      detailType === "walk"
+        ? parseWalkRoute(detailEntry?.details?.route)
+        : null,
     [detailEntry, detailType],
   );
   const detailRouteDistanceM =
     detailRoute && typeof detailEntry?.details?.routeDistanceM === "number"
       ? detailEntry.details.routeDistanceM
       : null;
-  const [pottyDetailDraft, setPottyDetailDraft] = useState<PottyDetailDraft>(() => pottyDraftFromEntry(null));
+  const [pottyDetailDraft, setPottyDetailDraft] = useState<PottyDetailDraft>(
+    () => pottyDraftFromEntry(null),
+  );
 
   useEffect(() => {
     if (detailType !== "potty") return;
@@ -1320,15 +1896,37 @@ export default function LogScreen() {
 
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
-  useEffect(() => {
+  const reducedMotion = useReducedMotion();
+  const fade = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
+  ).current;
+  const slide = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16),
+  ).current;
+  useLayoutEffect(() => {
     if (isWebRoutePreview) return;
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+    if (reducedMotion) {
+      fade.stopAnimation();
+      slide.stopAnimation();
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
+    const entrance = Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: MOTION_MS.screen,
+        useNativeDriver: !isWebRoutePreview,
+      }),
+      Animated.spring(slide, {
+        toValue: 0,
+        ...SPRING.default,
+        useNativeDriver: !isWebRoutePreview,
+      }),
+    ]);
+    entrance.start();
+    return () => entrance.stop();
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
   // Two-phase mount: the console stage and quick-log launcher (the whole
   // first screenful) render on the tab-press frame; the composer, search,
@@ -1369,6 +1967,18 @@ export default function LogScreen() {
     let dogInteractions: number | undefined;
     const occurredAt = new Date().toISOString();
 
+    const composerValidationIssue = getLogComposerValidationIssue(
+      config.type,
+      choices,
+    );
+    if (composerValidationIssue) {
+      notifyDialog(
+        composerValidationIssue.label,
+        composerValidationIssue.message,
+      );
+      return null;
+    }
+
     for (const g of config.groups ?? []) {
       if (g.required && !g.options.some((o) => o.id === choices[g.key])) {
         notifyDialog(
@@ -1386,7 +1996,10 @@ export default function LogScreen() {
       // Unselected optional facts stay out of the record entirely.
       if (!opt) return;
       details[g.key] = opt.id;
-      if (opt.suffix && !(config.type === "meal" && g.key === "mealCompletion")) {
+      if (
+        opt.suffix &&
+        !(config.type === "meal" && g.key === "mealCompletion")
+      ) {
         parts.push(opt.suffix);
       }
       if (opt.mood) mood = opt.mood;
@@ -1400,14 +2013,20 @@ export default function LogScreen() {
     let numericValue: number | null = null;
     if (config.numeric) {
       const trimmed = numeric.trim();
-      const n = parseNonNegativeNumber(trimmed);
+      const n = parseStrictNonNegativeDecimal(trimmed);
       if (!trimmed && config.numeric.optional) {
         amount = undefined;
       } else if (n == null || (n <= 0 && config.type !== "meal")) {
-        notifyDialog("Add a value", `Enter a ${config.numeric.label.toLowerCase()} to log.`);
+        notifyDialog(
+          "Add a value",
+          `Enter a ${config.numeric.label.toLowerCase()} to log.`,
+        );
         return null;
       } else {
-        const unit = config.numeric.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
+        const unit =
+          config.numeric.unit === "diet"
+            ? dietProgress.unit
+            : state.profile.weight.unit;
         numericValue = n;
         amount = String(n);
         details.servingAmount = n;
@@ -1419,13 +2038,26 @@ export default function LogScreen() {
     if (config.type === "meal") {
       const unit = dietProgress.unit;
       const completion = choices.mealCompletion ?? "served";
-      const expected = expectedPortion.trim() || state.dietProfile.normalPortion.trim();
-      const eaten = parseNonNegativeNumber(eatenAmount);
-
-      if (eatenAmount.trim() && eaten == null) {
-        notifyDialog("Check eaten amount", "Enter a valid eaten amount, or leave it blank.");
+      const expected =
+        expectedPortion.trim() || state.dietProfile.normalPortion.trim();
+      const mealAmounts = validateMealAmounts({
+        completed: completion === "complete" || completion === "partial",
+        served: numeric,
+        servedUnit: unit,
+        eaten: eatenAmount,
+        eatenUnit: unit,
+      });
+      if (!mealAmounts.ok) {
+        notifyDialog(
+          mealAmounts.field === "served"
+            ? "Check served amount"
+            : "Check eaten amount",
+          mealAmounts.message,
+        );
         return null;
       }
+      const eaten = mealAmounts.eaten;
+      numericValue = mealAmounts.served;
 
       if (mealOutcomeNeedsEatenAmount(completion) && eaten == null) {
         notifyDialog(
@@ -1454,22 +2086,33 @@ export default function LogScreen() {
         details.eatenAmount = 0;
         details.eatenUnit = unit;
         amount = "0";
-        if (numericValue != null && numericValue > 0) parts.push(`served ${numericValue} ${unit}`);
+        if (numericValue != null && numericValue > 0)
+          parts.push(`served ${numericValue} ${unit}`);
         parts.push("skipped");
       } else if (completion === "served" || completion === "grazing") {
         amount = undefined;
-        if (numericValue != null && numericValue > 0) parts.push(`served ${numericValue} ${unit}`);
+        if (numericValue != null && numericValue > 0)
+          parts.push(`served ${numericValue} ${unit}`);
         parts.push(mealCompletionLabel(completion));
       } else {
-        const finalEaten = eaten ?? (completion === "complete" && numericValue != null ? numericValue : null);
+        const finalEaten =
+          eaten ??
+          (completion === "complete" && numericValue != null
+            ? numericValue
+            : null);
         if (finalEaten != null) {
           details.eatenAmount = finalEaten;
           details.eatenUnit = unit;
           amount = String(finalEaten);
         }
-        if (completion !== "complete") parts.push(mealCompletionLabel(completion));
-        if (numericValue != null && numericValue > 0) parts.push(`served ${numericValue} ${unit}`);
-        if (finalEaten != null && (completion === "partial" || finalEaten !== numericValue)) {
+        if (completion !== "complete")
+          parts.push(mealCompletionLabel(completion));
+        if (numericValue != null && numericValue > 0)
+          parts.push(`served ${numericValue} ${unit}`);
+        if (
+          finalEaten != null &&
+          (completion === "partial" || finalEaten !== numericValue)
+        ) {
           parts.push(`ate ${finalEaten} ${unit}`);
         }
       }
@@ -1477,7 +2120,10 @@ export default function LogScreen() {
 
     if (config.type === "medication") {
       const outcome = choices.medicationOutcome ?? "taken";
-      const defaultDose = medicationDefault?.dose && medicationDefault.dose !== "Dose not set" ? medicationDefault.dose : "";
+      const defaultDose =
+        medicationDefault?.dose && medicationDefault.dose !== "Dose not set"
+          ? medicationDefault.dose
+          : "";
       const dose = medicationDose.trim() || defaultDose;
 
       details.medicationOutcome = outcome;
@@ -1498,16 +2144,23 @@ export default function LogScreen() {
     if (config.type === "walk") {
       const routeName = walkRouteName.trim();
       const socialOutcome = walkSocialOutcome.trim();
-      const distance = parseNonNegativeNumber(walkDistanceMiles);
-      const interactionCount = parseNonNegativeNumber(walkDogInteractions);
+      const distance = parseStrictNonNegativeDecimal(walkDistanceMiles);
+      const interactionCount =
+        parseStrictNonNegativeInteger(walkDogInteractions);
 
       if (walkDistanceMiles.trim() && distance == null) {
-        notifyDialog("Check distance", "Enter a valid distance, or leave it blank.");
+        notifyDialog(
+          "Check distance",
+          "Enter a valid distance, or leave it blank.",
+        );
         return null;
       }
 
       if (walkDogInteractions.trim() && interactionCount == null) {
-        notifyDialog("Check dog interactions", "Enter a valid dog interaction count, or leave it blank.");
+        notifyDialog(
+          "Check dog interactions",
+          "Enter a valid dog interaction count, or leave it blank.",
+        );
         return null;
       }
 
@@ -1518,10 +2171,12 @@ export default function LogScreen() {
       }
       if (distance != null) details.distanceMiles = distance;
       if (interactionCount != null) {
-        dogInteractions = Math.round(interactionCount);
+        dogInteractions = interactionCount;
         details.dogInteractions = dogInteractions;
         if (dogInteractions > 0) {
-          parts.push(`${dogInteractions} dog ${dogInteractions === 1 ? "interaction" : "interactions"}`);
+          parts.push(
+            `${dogInteractions} dog ${dogInteractions === 1 ? "interaction" : "interactions"}`,
+          );
         }
       }
       if (socialOutcome) details.socialOutcome = socialOutcome;
@@ -1555,17 +2210,20 @@ export default function LogScreen() {
     if (config.type === "alone") {
       const trigger = aloneTrigger.trim();
       const support = calmingSupport.trim();
-      const recovery = parseNonNegativeNumber(recoveryMinutes);
+      const recovery = parseStrictNonNegativeInteger(recoveryMinutes);
 
       if (recoveryMinutes.trim() && recovery == null) {
-        notifyDialog("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
+        notifyDialog(
+          "Check recovery time",
+          "Enter recovery minutes as a number, or leave it blank.",
+        );
         return null;
       }
 
       details.householdVisible = householdVisible;
       if (trigger) details.aloneTrigger = trigger;
       if (support) details.calmingSupport = support;
-      if (recovery != null) details.recoveryMinutes = Math.round(recovery);
+      if (recovery != null) details.recoveryMinutes = recovery;
     }
 
     if (config.type === "grooming") {
@@ -1580,7 +2238,9 @@ export default function LogScreen() {
       }
       if (products) details.groomingProducts = products;
       if (nextDue) details.groomingNextDue = nextDue;
-      if (/(itch|red|sore|hot spot|mat|odor|ear|rash|pain|blood)/i.test(condition)) {
+      if (
+        /(itch|red|sore|hot spot|mat|odor|ear|rash|pain|blood)/i.test(condition)
+      ) {
         severity = "watch";
       }
     }
@@ -1591,7 +2251,9 @@ export default function LogScreen() {
       const injury = incidentInjury.trim();
       const action = incidentAction.trim();
       const followUp = incidentFollowUp.trim();
-      const incidentSeverity = String(choices.incidentSeverity ?? "").toLowerCase();
+      const incidentSeverity = String(
+        choices.incidentSeverity ?? "",
+      ).toLowerCase();
 
       details.householdVisible = householdVisible;
       if (trigger) details.incidentTrigger = trigger;
@@ -1599,8 +2261,13 @@ export default function LogScreen() {
       if (injury) details.incidentInjury = injury;
       if (action) details.incidentAction = action;
       if (followUp) details.incidentFollowUp = followUp;
-      if (incidentSeverity === "urgent" || incidentSeverity === "review") severity = "alert";
-      if (/(bite|bit|blood|bleed|puncture|injur|wound|limp|vet|emergency|escaped|missing)/i.test(`${injury} ${followUp} ${noteText}`)) {
+      if (incidentSeverity === "urgent" || incidentSeverity === "review")
+        severity = "alert";
+      if (
+        /(bite|bit|blood|bleed|puncture|injur|wound|limp|vet|emergency|escaped|missing)/i.test(
+          `${injury} ${followUp} ${noteText}`,
+        )
+      ) {
         severity = "alert";
       }
     }
@@ -1610,7 +2277,8 @@ export default function LogScreen() {
     }
 
     const note = config.noteField ? noteText.trim() || undefined : undefined;
-    if (durationMinutes) parts.push(`${durationMinutes} ${config.stepper!.unit}`);
+    if (durationMinutes)
+      parts.push(`${durationMinutes} ${config.stepper!.unit}`);
     if (note) {
       details = appendStickyNote(details, {
         id: stickyNoteId(),
@@ -1629,7 +2297,9 @@ export default function LogScreen() {
         interaction: "detail-sheet",
       }),
     };
-    const title = parts.length ? `${config.baseTitle} - ${parts.join(", ")}` : config.baseTitle;
+    const title = parts.length
+      ? `${config.baseTitle} - ${parts.join(", ")}`
+      : config.baseTitle;
     details = appendCareAuditEvent(details, {
       id: auditId(),
       action: "created",
@@ -1689,62 +2359,117 @@ export default function LogScreen() {
   ]);
 
   const handleLog = useCallback(() => {
-    const entry = buildEntry();
-    if (!entry) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const id = addEntry(entry);
+    void fullComposerLogGate
+      .run(async () => {
+        const activationAt = Date.now();
+        if (
+          activationAt - lastFullComposerLogAtRef.current <
+          FULL_COMPOSER_LOG_DEDUPE_MS
+        ) {
+          return;
+        }
+        setFullComposerLogBusy(true);
+        try {
+          if (careMutationsBlocked) {
+            showCareReadOnly();
+            return;
+          }
+          const entry = buildEntry();
+          if (!entry) return;
+          const id = addEntry(entry);
+          if (!careMutationWasAccepted(id)) {
+            showCareReadOnly();
+            return;
+          }
+          lastFullComposerLogAtRef.current = activationAt;
 
-    // Weight logs also update the living profile weight.
-    if (entry.type === "weight" && entry.amount != null) {
-      const w = parseFloat(entry.amount);
-      if (!Number.isNaN(w)) {
-        updateCareDoc((doc) => ({
-          ...doc,
-          profile: { ...doc.profile, weight: { ...doc.profile.weight, current: w } },
-        }));
-      }
-    }
+          // Weight logs also update the living profile weight.
+          if (entry.type === "weight" && entry.amount != null) {
+            const w = parseStrictNonNegativeDecimal(entry.amount);
+            if (w != null && w > 0) {
+              const profileUpdated = updateCareDoc((doc) => ({
+                ...doc,
+                profile: {
+                  ...doc.profile,
+                  weight: { ...doc.profile.weight, current: w },
+                },
+              }));
+              if (!careMutationWasAccepted(profileUpdated)) showCareReadOnly();
+            }
+          }
 
-    setNumeric(entry.type === "weight" ? (entry.amount ?? "") : "");
-    if (entry.type === "meal") {
-      setExpectedPortion(state.dietProfile.normalPortion);
-      setEatenAmount("");
-      setHouseholdVisible(true);
-    }
-    if (entry.type === "mood") {
-      setMoodContext("");
-      setHouseholdVisible(true);
-    }
-    if (entry.type === "alone") {
-      setAloneTrigger("");
-      setCalmingSupport("");
-      setRecoveryMinutes("");
-      setHouseholdVisible(true);
-    }
-    if (entry.type === "incident") {
-      setIncidentTrigger("");
-      setIncidentExposure("");
-      setIncidentInjury("");
-      setIncidentAction("");
-      setIncidentFollowUp("");
-      setHouseholdVisible(true);
-    }
-    setNoteText("");
+          setNumeric(entry.type === "weight" ? (entry.amount ?? "") : "");
+          if (entry.type === "meal") {
+            setExpectedPortion(state.dietProfile.normalPortion);
+            setEatenAmount("");
+            setHouseholdVisible(true);
+          }
+          if (entry.type === "mood") {
+            setMoodContext("");
+            setHouseholdVisible(true);
+          }
+          if (entry.type === "alone") {
+            setAloneTrigger("");
+            setCalmingSupport("");
+            setRecoveryMinutes("");
+            setHouseholdVisible(true);
+          }
+          if (entry.type === "incident") {
+            setIncidentTrigger("");
+            setIncidentExposure("");
+            setIncidentInjury("");
+            setIncidentAction("");
+            setIncidentFollowUp("");
+            setHouseholdVisible(true);
+          }
+          setNoteText("");
 
-    // If a note was already captured inline, skip the prompt.
-    if (config?.noteField) return;
+          // If a note was already captured inline, skip the follow-up prompt.
+          if (!config?.noteField) {
+            setPromptId(id);
+            setPromptTitle(entry.title);
+            setPromptNote("");
+            setPromptMode("post-log");
+            setTimeout(() => promptRef.current?.focus(), 250);
+          }
 
-    setPromptId(id);
-    setPromptTitle(entry.title);
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
+            () => {},
+          );
+        } finally {
+          if (logScreenMountedRef.current) setFullComposerLogBusy(false);
+        }
+      })
+      .catch(() => {
+        if (!logScreenMountedRef.current) return;
+        notifyDialog(
+          "Check this care log",
+          "WoofWatcher could not confirm that logging finished cleanly. Check the timeline before trying again.",
+        );
+      });
+  }, [
+    addEntry,
+    buildEntry,
+    careMutationsBlocked,
+    config,
+    fullComposerLogGate,
+    showCareReadOnly,
+    state.dietProfile.normalPortion,
+    updateCareDoc,
+  ]);
+
+  const dismissQuickNote = useCallback(() => {
+    setPromptId(null);
     setPromptNote("");
-    setPromptMode("post-log");
-    setTimeout(() => promptRef.current?.focus(), 250);
-  }, [buildEntry, addEntry, updateCareDoc, config, state.dietProfile.normalPortion]);
+  }, []);
 
   const saveQuickNote = useCallback(() => {
     const text = promptNote.trim();
     if (promptId && text) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
       const entry = state.entries.find((item) => item.id === promptId);
       const occurredAt = new Date().toISOString();
       const detailsWithNote = appendStickyNote(entry?.details ?? {}, {
@@ -1762,11 +2487,43 @@ export default function LogScreen() {
         summary: `${caregiver} added a sticky note to "${entry?.title ?? "this log"}".`,
         changes: ["stickyNotes"],
       });
-      updateEntry(promptId, { note: entry?.note ?? text, details });
+      const updated = updateEntry(promptId, {
+        note: entry?.note ?? text,
+        details,
+      });
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setPromptId(null);
     setPromptNote("");
-  }, [promptId, promptNote, promptMode, state.entries, caregiver, updateEntry]);
+  }, [
+    promptId,
+    promptNote,
+    promptMode,
+    state.entries,
+    caregiver,
+    careMutationsBlocked,
+    showCareReadOnly,
+    updateEntry,
+  ]);
+
+  const carePickedMediaUris = (excludeEntryId?: string): string[] =>
+    collectCareAppOwnedFileReferences({
+      doc: careStateRef.current,
+      entries: careStateRef.current.entries,
+      excludeEntryIds: excludeEntryId ? [excludeEntryId] : [],
+    });
+
+  const reportPickedMediaCleanupFailure = (count: number) => {
+    if (!logScreenMountedRef.current || count <= 0) return;
+    notifyDialog(
+      "Local file cleanup incomplete",
+      `The log change is complete, but ${count} saved photo${count === 1 ? "" : "s"} could not be removed from this device. Privacy & Data reset will try again.`,
+    );
+  };
 
   const handleDelete = useCallback(
     (id: string, title: string, onDeleted?: () => void) => {
@@ -1780,33 +2537,62 @@ export default function LogScreen() {
           },
         ],
         async () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          const entry = state.entries.find((item) => item.id === id);
-          const deleted = await deleteEntry(id);
-          if (!deleted) {
-            notifyDialog("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
+          if (careMutationsBlocked) {
+            showCareReadOnly();
             return;
           }
-          // Shared-household accountability only: the deletion audit note
-          // says "from the shared care log", so it is truthful and useful
-          // only when more than one caregiver exists. For a solo owner it
-          // would leave a "Deleted log - ..." row in their own timeline and
-          // read as if the delete failed - so a solo delete just deletes.
-          if (entry && state.caregivers.length > 1) {
-            addEntry(
-              buildCareLogDeletionAuditEntry({
-                id: auditId(),
-                caregiver,
-                occurredAt: new Date().toISOString(),
-                entry,
-              }),
-            );
+          const entry = careStateRef.current.entries.find(
+            (item) => item.id === id,
+          );
+          const { mutationResult: deleted } =
+            await runCareLogDeletionWithoutSharedAudit({
+              deleteEntry: () => deleteEntry(id),
+            });
+          if (!careMutationWasAccepted(deleted)) {
+            if (logScreenMountedRef.current) {
+              notifyDialog(
+                "Delete failed",
+                "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.",
+              );
+            }
+            return;
           }
-          onDeleted?.();
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+            () => {},
+          );
+          // Intentionally no shared deletion audit: this response cannot
+          // establish authoritative visibility at deletion time. A stale
+          // shared cache must never republish a now-private row's contents.
+          const result = await runCareFileCleanupAfterDurableSnapshot({
+            persistSnapshot: persistCurrentCareSnapshot,
+            cleanup: () =>
+              releasePickedMediaReferences({
+                appFileSystem,
+                uris: [entryProofAttachmentUri(entry)],
+                protectedUris: carePickedMediaUris(id),
+              }),
+          });
+          if (logScreenMountedRef.current) {
+            if (result.status === "snapshot-not-confirmed") {
+              notifyDialog(
+                "Photo retained",
+                "The log was removed from this session, but WoofWatcher could not confirm that change in device storage. Its local photo was kept so a relaunch cannot restore a log with a missing file.",
+              );
+            } else if (result.cleanup.status === "partial-failure") {
+              reportPickedMediaCleanupFailure(result.cleanup.failedUris.length);
+            }
+          }
+          if (logScreenMountedRef.current) onDeleted?.();
         },
       );
     },
-    [addEntry, caregiver, deleteEntry, state.caregivers.length, state.entries],
+    [
+      appFileSystem,
+      careMutationsBlocked,
+      deleteEntry,
+      persistCurrentCareSnapshot,
+      showCareReadOnly,
+    ],
   );
 
   const openEditEntry = useCallback((e: Entry) => {
@@ -1827,13 +2613,16 @@ export default function LogScreen() {
 
   const saveEditEntry = useCallback(() => {
     if (!editEntry) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const title = editTitle.trim() || editEntry.title;
     const note = editNote.trim() || undefined;
     const changes: string[] = [];
     if (title !== editEntry.title) changes.push("title");
     if ((note ?? "") !== (editEntry.note ?? "")) changes.push("note");
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (changes.length) {
       const details = appendCareAuditEvent(editEntry.details ?? {}, {
         id: auditId(),
@@ -1843,14 +2632,27 @@ export default function LogScreen() {
         summary: `${caregiver} updated ${changes.join(" and ")} on "${editEntry.title}".`,
         changes,
       });
-      updateEntry(editEntry.id, {
+      const updated = updateEntry(editEntry.id, {
         ...(title !== editEntry.title ? { title } : {}),
         ...((note ?? "") !== (editEntry.note ?? "") ? { note } : {}),
         details,
       });
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditEntry(null);
-  }, [caregiver, editEntry, editTitle, editNote, updateEntry]);
+  }, [
+    caregiver,
+    careMutationsBlocked,
+    editEntry,
+    editTitle,
+    editNote,
+    showCareReadOnly,
+    updateEntry,
+  ]);
 
   const openEntryDetail = useCallback((e: Entry) => {
     setDetailEntryId(e.id);
@@ -1865,10 +2667,18 @@ export default function LogScreen() {
         outcome,
       });
 
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
+      const updated = updateEntry(entry.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(entry.id, patch);
     },
-    [caregiver, updateEntry],
+    [caregiver, careMutationsBlocked, showCareReadOnly, updateEntry],
   );
 
   const updatePottyDetailFromDetail = useCallback(
@@ -1882,22 +2692,46 @@ export default function LogScreen() {
         outcome: pottyDetailDraft.outcome,
         location: pottyDetailDraft.location,
         peeDetail: includesPee ? pottyDetailDraft.peeDetail : undefined,
-        stoolCondition: includesStool ? pottyDetailDraft.stoolCondition : undefined,
-        stoolColor: includesStool && pottyDetailDraft.stoolColor !== "not-logged" ? pottyDetailDraft.stoolColor : undefined,
-        context: pottyDetailDraft.context === "none" ? undefined : pottyDetailDraft.context,
+        stoolCondition: includesStool
+          ? pottyDetailDraft.stoolCondition
+          : undefined,
+        stoolColor:
+          includesStool && pottyDetailDraft.stoolColor !== "not-logged"
+            ? pottyDetailDraft.stoolColor
+            : undefined,
+        context:
+          pottyDetailDraft.context === "none"
+            ? undefined
+            : pottyDetailDraft.context,
       });
 
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
+      const updated = updateEntry(entry.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(entry.id, patch);
     },
-    [caregiver, pottyDetailDraft, updateEntry],
+    [
+      caregiver,
+      careMutationsBlocked,
+      pottyDetailDraft,
+      showCareReadOnly,
+      updateEntry,
+    ],
   );
   const openAloneSession = useMemo(
     () => findOpenAloneTimeSession(state.entries),
     [state.entries],
   );
   const openAloneStartedAt = openAloneSession
-    ? String(openAloneSession.details?.aloneStartedAt ?? openAloneSession.occurredAt)
+    ? String(
+        openAloneSession.details?.aloneStartedAt ?? openAloneSession.occurredAt,
+      )
     : "";
   const openAloneMinutes = useMemo(() => {
     if (!openAloneStartedAt) return 0;
@@ -1910,7 +2744,9 @@ export default function LogScreen() {
     [state.entries],
   );
   const openWalkStartedAt = openWalkSession
-    ? String(openWalkSession.details?.walkStartedAt ?? openWalkSession.occurredAt)
+    ? String(
+        openWalkSession.details?.walkStartedAt ?? openWalkSession.occurredAt,
+      )
     : "";
   const openWalkMinutes = useMemo(() => {
     if (!openWalkStartedAt) return 0;
@@ -1922,34 +2758,62 @@ export default function LogScreen() {
   // form, not in the read-only record sheet - that sheet says "In progress"
   // and offers no way to end the walk, a dead end for the quest loop.
   useEffect(() => {
-    if (routeWalkParam !== "finish" || routeWalkParam === lastRouteWalkParam.current) return;
+    if (
+      routeWalkParam !== "finish" ||
+      routeWalkParam === lastRouteWalkParam.current
+    )
+      return;
     if (!openWalkSession) return;
     lastRouteWalkParam.current = routeWalkParam;
     setDetailEntryId(null);
     // The WALK ACTIVE finish panel lives in the Log view.
     setLogView("log");
     const timer = setTimeout(() => {
-      scrollRef.current?.scrollTo({ y: Math.max(0, walkCardYRef.current - 84), animated: true });
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, walkCardYRef.current - 84),
+        animated: !reducedMotion,
+      });
       announce("Finish details are ready.");
     }, 380);
     return () => clearTimeout(timer);
-  }, [routeWalkParam, openWalkSession]);
+  }, [openWalkSession, reducedMotion, routeWalkParam]);
 
   // Honest route-recorder state: only ever says "recording" while location
   // fixes are actually landing; otherwise it explains what would enable it.
   const walkRouteCapture = useWalkRouteCaptureStatus();
-  const walkRouteStatusText =
-    walkRouteCapture.status === "recording"
-      ? "Recording the route for this walk's map · stays in your care log"
-      : walkRouteCapture.status === "starting"
-        ? "Getting location for the route map…"
-        : "Route recording available when location is permitted";
+  const walkRouteStatusText = describeWalkRouteCaptureStatus(
+    walkRouteCapture.status,
+  );
 
-  const shareEntryHandoff = useCallback((e: Entry) => {
-    const message = buildEntryHandoffMessage(e);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message, title: `${e.title} handoff` });
-  }, []);
+  const shareEntryHandoff = useCallback(
+    (e: Entry) => {
+      void entryHandoffShareGate
+        .run(async () => {
+          if (logScreenMountedRef.current) setEntryHandoffShareBusy(true);
+          try {
+            const message = buildEntryHandoffMessage(e, storageWarning);
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+              () => {},
+            );
+            await shareTextPayload({
+              message,
+              title: `${e.title} handoff`,
+            });
+          } finally {
+            if (logScreenMountedRef.current) setEntryHandoffShareBusy(false);
+          }
+        })
+        .catch(() => {
+          if (logScreenMountedRef.current) {
+            notifyDialog(
+              "Sharing unavailable",
+              "The care handoff could not be prepared. Try again.",
+            );
+          }
+        });
+    },
+    [entryHandoffShareGate, storageWarning],
+  );
 
   const handleTrustReview = useCallback(
     (action: CareLogReviewAction) => {
@@ -1962,85 +2826,230 @@ export default function LogScreen() {
       });
 
       if (!patch) {
-        notifyDialog("Adult review needed", "Only an adult owner or primary caregiver can review this log.");
-        return;
-      }
-
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(detailEntry.id, patch);
-    },
-    [caregiver, currentCaregiverRole, detailEntry, now, updateEntry],
-  );
-
-  const handleAttachProof = useCallback(async () => {
-    if (!detailEntry) return;
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: false,
-        quality: 0.78,
-      });
-      if (result.canceled || !result.assets[0]?.uri) return;
-
-      const asset = result.assets[0];
-      const fileName =
-        typeof (asset as { fileName?: unknown }).fileName === "string"
-          ? (asset as { fileName: string }).fileName
-          : "Medication proof photo";
-      const persistedPhoto = await persistPickedMedia({
-        platform: Platform.OS,
-        sourceUri: asset.uri,
-        fileName,
-        mimeType: asset.mimeType,
-        filePrefix: "medication-proof",
-        fileSystem: FileSystem,
-      });
-      if (!persistedPhoto.ok) {
         notifyDialog(
-          "Photo not saved",
-          "WoofWatcher could not copy that photo into durable app storage. The medication log was not changed. Try again or choose another photo.",
+          "Adult review needed",
+          "Only an adult owner or primary caregiver can review this log.",
         );
         return;
       }
-      const patch = buildCareLogPhotoProofAttachmentPatch(detailEntry, {
-        caregiver,
-        uri: persistedPhoto.uri,
-        fileName,
-        source: "library",
-        now,
-      });
 
-      if (!patch) {
-        notifyDialog("Proof not attached", "Choose a clear photo before saving proof to this log.");
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
+      const updated = updateEntry(detailEntry.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    [
+      caregiver,
+      careMutationsBlocked,
+      currentCaregiverRole,
+      detailEntry,
+      now,
+      showCareReadOnly,
+      updateEntry,
+    ],
+  );
+
+  const handleAttachProof = useCallback(async () => {
+    if (!detailEntry || proofPickerInFlightRef.current) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
+
+    const currentEntry = careStateRef.current.entries.find(
+      (entry) => entry.id === detailEntry.id,
+    );
+    if (!currentEntry) return;
+    const entryId = currentEntry.id;
+    const originalUri = entryProofAttachmentUri(currentEntry);
+    proofPickerInFlightRef.current = true;
+    setProofPickerBusy(true);
+    try {
+      let rejectionReason:
+        | "invalid-proof"
+        | "stale-entry"
+        | "mutation-rejected"
+        | null = null;
+      let action: Awaited<ReturnType<typeof runMedicationProofPhotoPicker>>;
+      try {
+        action = await runMedicationProofPhotoPicker({
+          appFileSystem,
+          failureProtectedUris: [originalUri, ...carePickedMediaUris()],
+          cleanupProtectedUris: carePickedMediaUris(entryId),
+          pick: () =>
+            ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              allowsEditing: false,
+              quality: 0.78,
+            }),
+          apply: ({ fileName, uri }) => {
+            const latestEntry = careStateRef.current.entries.find(
+              (entry) => entry.id === entryId,
+            );
+            if (!logScreenMountedRef.current || !latestEntry) {
+              rejectionReason = "stale-entry";
+              return false;
+            }
+            const patch = buildCareLogPhotoProofAttachmentPatch(latestEntry, {
+              caregiver,
+              uri,
+              fileName,
+              source: "library",
+              now: Date.now(),
+            });
+
+            if (!patch) {
+              rejectionReason = "invalid-proof";
+              return false;
+            }
+
+            const updated = updateEntry(entryId, patch);
+            if (!careMutationWasAccepted(updated)) {
+              rejectionReason = "mutation-rejected";
+              return false;
+            }
+            return true;
+          },
+        });
+      } catch (error) {
+        if (logScreenMountedRef.current) {
+          notifyDialog(
+            "Photo unavailable",
+            error instanceof PickedMediaLocalDataActionError &&
+              error.cleanupFailed
+              ? "The photo was not added, and one temporary local file could not be removed. Privacy & Data reset will retry cleanup."
+              : "Add a photo later. Medication logs stay pending until a caregiver confirms them.",
+          );
+        }
         return;
       }
 
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(detailEntry.id, patch);
-    } catch {
-      notifyDialog("Photo unavailable", "Attach proof later. Medication logs stay pending until an owner confirms them.");
+      if (!logScreenMountedRef.current) return;
+      if (action.status === "not-saved") {
+        notifyDialog(
+          "Photo not saved",
+          action.cleanupFailed
+            ? "WoofWatcher could not save that photo, and its temporary picker copy could not be removed. The medication log was not changed. Privacy & Data reset will retry cleanup."
+            : "WoofWatcher could not save that photo on this device. The medication log was not changed. Try again or choose another photo.",
+        );
+        return;
+      }
+      if (action.status === "rejected") {
+        if (action.cleanupFailed) reportPickedMediaCleanupFailure(1);
+        if (rejectionReason === "stale-entry") return;
+        if (rejectionReason === "mutation-rejected") {
+          showCareReadOnly();
+        } else {
+          notifyDialog(
+            "Photo not attached",
+            "Choose a clear photo before adding it to this log.",
+          );
+        }
+        return;
+      }
+      if (action.status !== "applied") return;
+
+      const result = await runCareFileCleanupAfterDurableSnapshot({
+        persistSnapshot: persistCurrentCareSnapshot,
+        cleanup: () =>
+          releasePickedMediaReferences({
+            appFileSystem,
+            uris: [originalUri],
+            protectedUris: carePickedMediaUris(entryId),
+          }),
+      });
+      if (!logScreenMountedRef.current) return;
+      if (result.status === "snapshot-not-confirmed") {
+        notifyDialog(
+          "Previous photo retained",
+          "WoofWatcher could not confirm the updated log in device storage, so it kept the previous local photo. The new photo is still shown for this session; try again before relaunching.",
+        );
+      } else if (result.cleanup.status === "partial-failure") {
+        reportPickedMediaCleanupFailure(result.cleanup.failedUris.length);
+      }
+
+      // Feedback is deliberately outside the accepted data mutation. Native
+      // haptic failures must never turn a saved proof into a reported failure.
+      try {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+          () => {},
+        );
+      } catch {
+        // Haptics are best-effort; the attachment has already been committed.
+      }
+      if (action.cleanupFailed) {
+        reportPickedMediaCleanupFailure(1);
+      }
+    } finally {
+      proofPickerInFlightRef.current = false;
+      if (logScreenMountedRef.current) setProofPickerBusy(false);
     }
-  }, [caregiver, detailEntry, now, updateEntry]);
+  }, [
+    caregiver,
+    appFileSystem,
+    careMutationsBlocked,
+    detailEntry,
+    persistCurrentCareSnapshot,
+    showCareReadOnly,
+    updateEntry,
+  ]);
 
   const logSearch = useMemo(
-    () => deriveCareLogSearch({ entries: state.entries, query: searchText, type: filter }),
-    [state.entries, searchText, filter],
+    () =>
+      deriveCareLogSearch({
+        entries: state.entries,
+        query: deferredSearchText,
+        type: filter,
+      }),
+    [state.entries, deferredSearchText, filter],
   );
   const filtered = logSearch.entries;
+  const effectiveHistoryPage = Math.min(
+    historyPage,
+    Math.max(0, Math.ceil(filtered.length / LOG_HISTORY_PAGE_SIZE) - 1),
+  );
+  const historyPageStart = effectiveHistoryPage * LOG_HISTORY_PAGE_SIZE;
+  const visibleHistoryEntries = useMemo(
+    () =>
+      filtered.slice(
+        historyPageStart,
+        historyPageStart + LOG_HISTORY_PAGE_SIZE,
+      ),
+    [filtered, historyPageStart],
+  );
+  const newerHistoryCount = historyPageStart;
+  const olderHistoryCount = Math.max(
+    0,
+    filtered.length - historyPageStart - visibleHistoryEntries.length,
+  );
+
+  useEffect(() => {
+    setHistoryPage(0);
+  }, [filter, searchText, filtered.length]);
 
   const grouped = useMemo(() => {
     const groups: { key: string; label: string; entries: Entry[] }[] = [];
     const map: Record<string, Entry[]> = {};
-    for (const e of filtered) {
+    for (const e of visibleHistoryEntries) {
       const k = dayKey(e.occurredAt);
       if (!map[k]) {
         map[k] = [];
-        groups.push({ key: k, label: dayLabel(e.occurredAt, now), entries: map[k] });
+        groups.push({
+          key: k,
+          label: dayLabel(e.occurredAt, now),
+          entries: map[k],
+        });
       }
       map[k].push(e);
     }
     return groups;
-  }, [filtered, now]);
+  }, [now, visibleHistoryEntries]);
 
   const presentTypes = useMemo(() => {
     const set = new Set(
@@ -2051,8 +3060,14 @@ export default function LogScreen() {
 
   // Today's snapshot: total count and per-type counts
   const todaySnapshot = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const todayEntries = state.entries.filter((e) => e.occurredAt.startsWith(today));
+    const today = todayLocalDateKey();
+    const todayEntries = state.entries.filter((entry) => {
+      const occurredAt = new Date(entry.occurredAt);
+      return (
+        Number.isFinite(occurredAt.getTime()) &&
+        localDateKey(occurredAt) === today
+      );
+    });
     const counts: Record<string, number> = {};
     for (const e of todayEntries) {
       const type = normalizeCareEventType(e.type, e.details);
@@ -2062,7 +3077,11 @@ export default function LogScreen() {
     const top = Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([type, count]) => ({ type, count, icon: TYPE_ICON[type] ?? ("paw" as PulseIconName) }));
+      .map(([type, count]) => ({
+        type,
+        count,
+        icon: TYPE_ICON[type] ?? ("paw" as PulseIconName),
+      }));
     return { total: todayEntries.length, top };
   }, [state.entries]);
   const todaySignalCards = useMemo(
@@ -2073,26 +3092,44 @@ export default function LogScreen() {
       // repeated down the page.
       {
         label: "Food",
-        value: dietProgress.targetAmount == null ? "Set" : `${dietProgress.percent}%`,
-        detail: dietProgress.targetAmount == null ? "portion" : "of daily target",
+        value:
+          dietProgress.targetAmount == null
+            ? "Set"
+            : `${dietProgress.percent}%`,
+        detail:
+          dietProgress.targetAmount == null ? "portion" : "of daily target",
         icon: "restaurant-outline" as const,
         tone: colors.sage,
       },
-      SYNC_PROVIDER_CONFIGURED
+      storageWarning
         ? {
-            label: "Sync",
-            value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
-            detail: syncOutbox.total > 0 ? "queued safely" : "protected",
-            icon: syncOutbox.total > 0 ? ("cloud-offline-outline" as const) : ("cloud-done-outline" as const),
-            tone: syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
+            label: "Storage",
+            value: "Unconfirmed",
+            detail: "check device warning",
+            icon: "warning-outline" as const,
+            tone: colors.amber,
           }
-        : {
-            label: "Saved",
-            value: "On device",
-            detail: "nothing waiting",
-            icon: "shield-checkmark-outline" as const,
-            tone: colors.sage,
-          },
+        : SYNC_PROVIDER_CONFIGURED
+          ? {
+              label: "Sync",
+              value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
+              detail: syncOutbox.total > 0 ? "queued safely" : "protected",
+              icon:
+                syncOutbox.total > 0
+                  ? ("cloud-offline-outline" as const)
+                  : ("cloud-done-outline" as const),
+              tone:
+                syncOutbox.status === "needs-retry"
+                  ? colors.amber
+                  : colors.primary,
+            }
+          : {
+              label: "Saved",
+              value: "On device",
+              detail: "nothing waiting",
+              icon: "shield-checkmark-outline" as const,
+              tone: colors.sage,
+            },
     ],
     [
       colors.amber,
@@ -2106,37 +3143,45 @@ export default function LogScreen() {
       dietProgress.targetAmount,
       syncOutbox.status,
       syncOutbox.total,
+      storageWarning,
       todaySnapshot.total,
     ],
   );
 
-  const numericUnit = config?.numeric?.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
+  const numericUnit =
+    config?.numeric?.unit === "diet"
+      ? dietProgress.unit
+      : state.profile.weight.unit;
   const selectedMealCompletion = choices.mealCompletion ?? "served";
   const selectedIcon = config?.icon ?? ("paw" as PulseIconName);
   const selectedTone = careTypeTone(selectedType, selectedIcon);
   const selectedLabel = config?.label ?? "Care";
   const petDisplayName = resolvePetName(state.profile.name);
   const selectedGuidance = (
-    LOG_GUIDANCE[selectedType] ?? "Log care once and it becomes part of the shared household record."
+    LOG_GUIDANCE[selectedType] ??
+    "Log care once and it becomes part of the shared household record."
   ).replace(/\{petName\}/g, petDisplayName);
-  // Safety-fact groups (incident "What happened?") gate the save button until
-  // the caregiver actively answers - one tap can never log an unverified claim.
+  // Neutral mood/symptom entry and safety-fact groups gate save until the
+  // caregiver supplies real evidence - one tap never invents a care fact.
   const missingRequiredGroup =
+    getLogComposerValidationIssue(selectedType, choices) ??
     config?.groups?.find(
       (g) => g.required && !g.options.some((o) => o.id === choices[g.key]),
-    ) ?? null;
+    ) ??
+    null;
   const selectedTrustLabel =
     selectedType === "symptom"
       ? "Vet-share ready"
       : selectedType === "meal"
-        ? selectedMealCompletion === "served" || selectedMealCompletion === "grazing"
+        ? selectedMealCompletion === "served" ||
+          selectedMealCompletion === "grazing"
           ? "Outcome pending"
           : "Diet progress ready"
         : selectedType === "alone"
           ? "Alone Time Watch"
           : selectedType === "incident"
             ? "Owner review"
-          : "Household record";
+            : "Household record";
   const composerTrustItems = [
     {
       icon: "git-branch-outline" as const,
@@ -2159,12 +3204,15 @@ export default function LogScreen() {
             : colors.primary,
     },
     {
-      icon: householdVisible ? ("people-outline" as const) : ("lock-closed-outline" as const),
+      icon: householdVisible
+        ? ("people-outline" as const)
+        : ("lock-closed-outline" as const),
       label: householdVisible ? "Household" : "Private",
       tone: householdVisible ? colors.primary : colors.mutedForeground,
     },
   ];
-  const dietPercentWidth = `${Math.min(Math.max(dietProgress.percent, 0), 100)}%` as `${number}%`;
+  const dietPercentWidth =
+    `${Math.min(Math.max(dietProgress.percent, 0), 100)}%` as `${number}%`;
   const dietProgressText =
     dietProgress.targetAmount == null
       ? "Set a normal portion in Plans to unlock exact daily targets."
@@ -2183,7 +3231,10 @@ export default function LogScreen() {
   const launcherDetailPresentation = useMemo(
     () =>
       launcherDetailAction
-        ? describeQuickLogDetailSheet(launcherDetailAction.type, launcherDetailAction.label)
+        ? describeQuickLogDetailSheet(
+            launcherDetailAction.type,
+            launcherDetailAction.label,
+          )
         : null,
     [launcherDetailAction],
   );
@@ -2197,11 +3248,15 @@ export default function LogScreen() {
   const selectedLauncherPresentation = useMemo(
     () =>
       selectedLauncherAction
-        ? describeQuickLogLauncherAction(selectedLauncherAction.type, selectedLauncherAction.label)
+        ? describeQuickLogLauncherAction(
+            selectedLauncherAction.type,
+            selectedLauncherAction.label,
+          )
         : null,
     [selectedLauncherAction],
   );
-  const selectedLauncherRequiresDetail = selectedLauncherPresentation?.detailRequired ?? false;
+  const selectedLauncherRequiresDetail =
+    selectedLauncherPresentation?.detailRequired ?? false;
   const logCommandOpenLoops =
     state.entries.filter(isPendingMealEntry).length +
     (openAloneSession ? 1 : 0) +
@@ -2214,8 +3269,8 @@ export default function LogScreen() {
   const logCommandSpeech = selectedLauncherAction
     ? selectedLauncherRequiresDetail
       ? `${selectedLauncherAction.label} opens the details form before it saves.`
-      : `Tap ${selectedLauncherAction.label}. Hold for proof, notes, and corrections.`
-    : "Tap fast. Hold for proof, notes, or later updates.";
+      : `Tap ${selectedLauncherAction.label}. Hold for photos, notes, and corrections.`
+    : "Tap fast. Hold for photos, notes, or later updates.";
   const logCommandHud = [
     {
       label: "Today",
@@ -2226,7 +3281,10 @@ export default function LogScreen() {
       label: "Care IQ",
       // Zero-log day: "--" like Home instead of "0%" - the console HUD and
       // the Home quest meta must tell the same first-log story.
-      value: careIntelligence.visibleLogCount === 0 ? "--" : `${careIntelligence.score}%`,
+      value:
+        careIntelligence.visibleLogCount === 0
+          ? "--"
+          : `${careIntelligence.score}%`,
       tone:
         careIntelligence.status === "needs-attention"
           ? colors.amber
@@ -2258,20 +3316,20 @@ export default function LogScreen() {
 
   const selectLauncherAction = (action: LauncherAction) => {
     Haptics.selectionAsync();
-    pendingChoicePreset.current = action.preset ?? null;
     setSelectedLauncherKey(launcherActionKey(action));
-    setSelectedType(action.type);
-    if (selectedType === action.type && action.preset) {
-      setChoices((prev) => ({ ...prev, ...action.preset }));
-    }
+    beginComposerIntent({
+      kind: "launcher",
+      type: action.type,
+      preset: action.preset,
+    });
   };
 
   const scrollToComposer = useCallback(() => {
     scrollRef.current?.scrollTo({
       y: Math.max((composerSectionY.current ?? 620) - 12, 0),
-      animated: true,
+      animated: !reducedMotion,
     });
-  }, []);
+  }, [reducedMotion]);
 
   const focusFullComposerForLauncherAction = (action: LauncherAction) => {
     selectLauncherAction(action);
@@ -2290,7 +3348,9 @@ export default function LogScreen() {
   const openQuickLogGuide = () => {
     const action =
       selectedLauncherAction ??
-      findLauncherActionForType(TYPE_BY_ID[selectedType] ? (selectedType as CareEventType) : null) ??
+      findLauncherActionForType(
+        TYPE_BY_ID[selectedType] ? (selectedType as CareEventType) : null,
+      ) ??
       LAUNCHER_ACTIONS[0]!;
     openLauncherDetailSheet(action);
   };
@@ -2304,8 +3364,8 @@ export default function LogScreen() {
     const prev = recentQuickSave.current;
     return Boolean(
       prev &&
-        prev.type === type &&
-        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+      prev.type === type &&
+      Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
     );
   }, []);
   const markQuickSave = useCallback((type: string) => {
@@ -2313,40 +3373,61 @@ export default function LogScreen() {
   }, []);
 
   const handleLeavingHome = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (openAloneSession) {
-      setSelectedType("alone");
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      beginComposerIntent({ kind: "selection", type: "alone" });
       setSelectedLauncherKey("alone:Alone Time");
-      scrollRef.current?.scrollTo({ y: 360, animated: true });
+      scrollRef.current?.scrollTo({ y: 360, animated: !reducedMotion });
+      return;
+    }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
       return;
     }
     // A rapid second tap lands before the open session exists in state.
     if (isDuplicateQuickTap("alone")) return;
-    markQuickSave("alone");
     const entry = buildAloneTimeStartEntry({ caregiver, now });
     const id = addEntry(entry);
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    markQuickSave("alone");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: `${petDisplayName} is home alone` });
-    setSelectedType("alone");
+    beginComposerIntent({ kind: "selection", type: "alone" });
     setSelectedLauncherKey("alone:Alone Time");
   }, [
     addEntry,
+    beginComposerIntent,
     caregiver,
+    careMutationsBlocked,
     isDuplicateQuickTap,
     markQuickSave,
     now,
     openAloneSession,
     petDisplayName,
+    reducedMotion,
+    showCareReadOnly,
   ]);
 
   const handleReturnHome = useCallback(
     (outcome: AloneTimeReturnOutcome) => {
       if (!openAloneSession?.id) return;
-      const recovery = returnRecoveryMinutes.trim() ? parseNonNegativeNumber(returnRecoveryMinutes) : null;
+      const recovery = returnRecoveryMinutes.trim()
+        ? parseStrictNonNegativeInteger(returnRecoveryMinutes)
+        : null;
       if (returnRecoveryMinutes.trim() && recovery == null) {
-        notifyDialog("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
+        notifyDialog(
+          "Check recovery time",
+          "Enter recovery minutes as a number, or leave it blank.",
+        );
         return;
       }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
       const patch = buildAloneTimeReturnPatch(openAloneSession, {
         caregiver,
         outcome,
@@ -2354,60 +3435,122 @@ export default function LogScreen() {
         ...(recovery != null ? { recoveryMinutes: recovery } : {}),
         ...(returnNote.trim() ? { note: returnNote.trim() } : {}),
       });
-      updateEntry(openAloneSession.id, patch);
+      const updated = updateEntry(openAloneSession.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setLastQuickLog({ id: openAloneSession.id, title: patch.title });
       setReturnRecoveryMinutes("");
       setReturnNote("");
     },
-    [caregiver, now, openAloneSession, returnNote, returnRecoveryMinutes, updateEntry],
+    [
+      caregiver,
+      careMutationsBlocked,
+      now,
+      openAloneSession,
+      returnNote,
+      returnRecoveryMinutes,
+      showCareReadOnly,
+      updateEntry,
+    ],
   );
 
   const handleStartWalk = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (openWalkSession) {
-      setSelectedType("walk");
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      beginComposerIntent({ kind: "selection", type: "walk" });
       setSelectedLauncherKey("walk:Walk");
-      scrollRef.current?.scrollTo({ y: 360, animated: true });
+      scrollRef.current?.scrollTo({ y: 360, animated: !reducedMotion });
+      return;
+    }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
       return;
     }
     // A rapid second tap lands before the open session exists in state.
     if (isDuplicateQuickTap("walk")) return;
-    markQuickSave("walk");
     const entry = buildWalkSessionStartEntry({ caregiver, now });
     const id = addEntry(entry as Omit<Entry, "id">);
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    markQuickSave("walk");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: "Walk started" });
-    setSelectedType("walk");
+    beginComposerIntent({ kind: "selection", type: "walk" });
     setSelectedLauncherKey("walk:Walk");
-  }, [addEntry, caregiver, isDuplicateQuickTap, markQuickSave, now, openWalkSession]);
+  }, [
+    addEntry,
+    beginComposerIntent,
+    caregiver,
+    careMutationsBlocked,
+    isDuplicateQuickTap,
+    markQuickSave,
+    now,
+    openWalkSession,
+    reducedMotion,
+    showCareReadOnly,
+  ]);
 
   const handleFinishWalk = useCallback(() => {
     if (!openWalkSession?.id) return;
-    const distance = walkFinishDistanceMiles.trim() ? parseNonNegativeNumber(walkFinishDistanceMiles) : null;
-    const dogCount = walkFinishDogInteractions.trim() ? parseNonNegativeNumber(walkFinishDogInteractions) : null;
+    const distance = walkFinishDistanceMiles.trim()
+      ? parseStrictNonNegativeDecimal(walkFinishDistanceMiles)
+      : null;
+    const dogCount = walkFinishDogInteractions.trim()
+      ? parseStrictNonNegativeInteger(walkFinishDogInteractions)
+      : null;
 
     if (walkFinishDistanceMiles.trim() && distance == null) {
-      notifyDialog("Check distance", "Enter a valid distance, or leave it blank.");
+      notifyDialog(
+        "Check distance",
+        "Enter a valid distance, or leave it blank.",
+      );
       return;
     }
 
     if (walkFinishDogInteractions.trim() && dogCount == null) {
-      notifyDialog("Check dog interactions", "Enter a valid dog interaction count, or leave it blank.");
+      notifyDialog(
+        "Check dog interactions",
+        "Enter a valid dog interaction count, or leave it blank.",
+      );
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const patch = buildWalkSessionFinishPatch(openWalkSession, {
       caregiver,
       now,
-      ...(walkFinishRouteName.trim() ? { routeName: walkFinishRouteName.trim() } : {}),
+      ...(walkFinishRouteName.trim()
+        ? { routeName: walkFinishRouteName.trim() }
+        : {}),
       ...(distance != null ? { distanceMiles: distance } : {}),
-      ...(dogCount != null ? { dogInteractions: Math.round(dogCount) } : {}),
-      ...(walkFinishSocialOutcome.trim() ? { socialOutcome: walkFinishSocialOutcome.trim() } : {}),
+      ...(dogCount != null ? { dogInteractions: dogCount } : {}),
+      ...(walkFinishSocialOutcome.trim()
+        ? { socialOutcome: walkFinishSocialOutcome.trim() }
+        : {}),
       ...(walkFinishNote.trim() ? { note: walkFinishNote.trim() } : {}),
     });
 
-    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
-    setLastQuickLog({ id: openWalkSession.id, title: patch.title ?? "Walk completed" });
+    const updated = updateEntry(
+      openWalkSession.id,
+      patch as Partial<Omit<Entry, "id">>,
+    );
+    if (!careMutationWasAccepted(updated)) {
+      showCareReadOnly();
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLastQuickLog({
+      id: openWalkSession.id,
+      title: patch.title ?? "Walk completed",
+    });
     setWalkFinishRouteName("");
     setWalkFinishDistanceMiles("");
     setWalkFinishDogInteractions("");
@@ -2415,8 +3558,10 @@ export default function LogScreen() {
     setWalkFinishNote("");
   }, [
     caregiver,
+    careMutationsBlocked,
     now,
     openWalkSession,
+    showCareReadOnly,
     updateEntry,
     walkFinishDistanceMiles,
     walkFinishDogInteractions,
@@ -2441,7 +3586,10 @@ export default function LogScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     // Dedupe: the first tap already saved this intent and its feedback card
     // is still up; a bounce inside the shared window must not double-log.
     // Wall-clock time here - the screen's 30s `now` tick would otherwise
@@ -2452,8 +3600,9 @@ export default function LogScreen() {
     ) {
       return;
     }
-    markQuickSave(policy.type);
-    const role = state.caregivers.find((person) => person.name === caregiver)?.role;
+    const role = state.caregivers.find(
+      (person) => person.name === caregiver,
+    )?.role;
     const entry = buildQuickLogEntry(
       {
         type: action.type,
@@ -2465,26 +3614,72 @@ export default function LogScreen() {
       { caregiver, caregiverRole: role, now },
     );
     const id = addEntry(entry);
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    markQuickSave(policy.type);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: entry.title });
     setSelectedLauncherKey(launcherActionKey(action));
-    setSelectedType(action.type);
+    beginComposerIntent({
+      kind: "launcher",
+      type: action.type,
+      preset: action.preset,
+    });
   };
 
-  const undoLastQuickLog = () => {
+  const undoLastQuickLog = async () => {
+    const feedback = lastQuickLog;
+    if (!feedback) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
+    await lastQuickLogUndoGate.run(async () => {
+      setLastQuickLogUndoBusy(true);
+      try {
+        let deleted = false;
+        try {
+          deleted = await deleteEntry(feedback.id);
+        } catch {
+          deleted = false;
+        }
+        if (!logScreenMountedRef.current) return;
+        if (!careMutationWasAccepted(deleted)) {
+          notifyDialog(
+            "Undo not completed",
+            "WoofWatcher could not confirm that this care log was removed. Check the timeline before trying again.",
+          );
+          return;
+        }
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        setLastQuickLog((current) =>
+          current?.id === feedback.id ? null : current,
+        );
+      } finally {
+        if (logScreenMountedRef.current) {
+          setLastQuickLogUndoBusy(false);
+        }
+      }
+    });
+  };
+
+  const openLastQuickLogDetails = () => {
+    if (lastQuickLogUndoGate.isBusy()) return;
     if (!lastQuickLog) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void deleteEntry(lastQuickLog.id);
-    setLastQuickLog(null);
+    Haptics.selectionAsync().catch(() => {});
+    setDetailEntryId(lastQuickLog.id);
   };
 
   const selectMoodLauncher = (mood: (typeof MOOD_LAUNCHER)[number]) => {
     Haptics.selectionAsync();
-    pendingChoicePreset.current = { mood: mood.mood, moodTone: mood.key };
     setSelectedLauncherKey(null);
-    setSelectedType("mood");
-    if (selectedType === "mood") {
-      setChoices((prev) => ({ ...prev, mood: mood.mood, moodTone: mood.key }));
-    }
+    beginComposerIntent({
+      kind: "launcher",
+      type: "mood",
+      preset: { mood: mood.mood, moodTone: mood.key },
+    });
   };
 
   const H_PAD = 16;
@@ -2494,752 +3689,1403 @@ export default function LogScreen() {
       <ScrollView
         ref={scrollRef}
         style={s.container}
-        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{
+          paddingTop: topPadding,
+          paddingBottom: bottomPadding,
+          paddingHorizontal: H_PAD,
+        }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+        <Animated.View
+          style={{ opacity: fade, transform: [{ translateY: slide }] }}
+        >
           <BoardRouteHeader
             title="Log"
-            back
-            onBack={() => router.push("/")}
-            actionIcon="notifications-outline"
-            actionLabel="Open Health Watch"
+            actionIcon="flash-outline"
+            actionLabel="Log care"
             onAction={() => {
               Haptics.selectionAsync();
-              router.push("/health?tab=health" as never);
+              executePrimaryTabTaskPath("fast-log-from-log", {
+                navigate: (route) => router.push(route as never),
+                selectLogView: setLogView,
+              });
             }}
           />
 
           <BoardSegmentTabs
             segments={logViewSegments}
             active={view}
-            onChange={setLogView}
+            onChange={(nextView) => {
+              if (nextView === "history") {
+                executePrimaryTabTaskPath("log-history", {
+                  navigate: () => undefined,
+                  selectLogView: setLogView,
+                });
+                return;
+              }
+              setLogView(nextView);
+            }}
             style={s.logViewTabs}
           />
 
           {view === "log" ? (
             <>
-          <BoardCard padded={false} style={s.logCommandStageCard}>
-            <ImageBackground
-              source={LOG_COMMAND_STAGE_ROOM}
-              resizeMode="cover"
-              // Android fades images in over 300ms by default, which reads
-              // as the hero art popping in after the tab switch.
-              fadeDuration={0}
-              imageStyle={[stageImageFill, s.logCommandStageImage, pixelImageStyle]}
-              style={s.logCommandStage}
-              testID="quick-log-command-pixel-stage"
-            >
-              <View
-                style={[
-                  s.logCommandStageShade,
-                  logCommandStageIsNight ? { backgroundColor: "rgba(9,17,32,0.35)" } : null,
-                ]}
-              />
-              <View style={s.logCommandStageTop}>
-                <View style={s.logCommandBubble}>
-                  {/* The bubble is a fixed ivory painted-stage overlay, so its
+              <BoardCard padded={false} style={s.logCommandStageCard}>
+                <ImageBackground
+                  source={LOG_COMMAND_STAGE_ROOM}
+                  resizeMode="cover"
+                  // Android fades images in over 300ms by default, which reads
+                  // as the hero art popping in after the tab switch.
+                  fadeDuration={0}
+                  imageStyle={[
+                    stageImageFill,
+                    s.logCommandStageImage,
+                    pixelImageStyle,
+                  ]}
+                  style={s.logCommandStage}
+                  testID="quick-log-command-pixel-stage"
+                >
+                  <View
+                    style={[
+                      s.logCommandStageShade,
+                      logCommandStageIsNight
+                        ? { backgroundColor: "rgba(9,17,32,0.35)" }
+                        : null,
+                    ]}
+                  />
+                  <View style={s.logCommandStageTop}>
+                    <View style={s.logCommandBubble}>
+                      {/* The bubble is a fixed ivory painted-stage overlay, so its
                       ink is fixed too - theme foreground goes near-white in
                       dark mode and vanished against the bubble. Matches
                       LivingPhoenixRoom's OVERLAY_INK treatment. */}
-                  <Text style={[s.logCommandKicker, { color: "#4F7B57", fontFamily: "Inter_700Bold" }]}>
-                    Quick Care Console
-                  </Text>
-                  <Text
-                    numberOfLines={2}
-                    style={[s.logCommandSpeech, { color: "#26221C", fontFamily: DISPLAY_SEMI }]}
-                  >
-                    {logCommandSpeech}
-                  </Text>
-                  <View style={s.logCommandBubbleTail} />
-                </View>
-                {/* Ivory stays cream in BOTH themes, so the chip ink is fixed
+                      <Text
+                        style={[
+                          s.logCommandKicker,
+                          { color: "#4F7B57", fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        Quick Care Console
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        style={[
+                          s.logCommandSpeech,
+                          { color: "#26221C", fontFamily: DISPLAY_SEMI },
+                        ]}
+                      >
+                        {logCommandSpeech}
+                      </Text>
+                      <View style={s.logCommandBubbleTail} />
+                    </View>
+                    {/* Ivory stays cream in BOTH themes, so the chip ink is fixed
                     to the light-board forest/amber - the dark-palette tokens
                     lighten and washed out against the cream chip. */}
-                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: "#08142433" }]}>
-                  <PixelIcon name={selectedLauncherAction?.icon ?? "heart"} size={17} />
-                  <Text
-                    style={[
-                      s.logCommandChipText,
-                      {
-                        color: selectedLauncherRequiresDetail ? "#8A5A0C" : "#33582F",
-                        fontFamily: "Inter_700Bold",
-                      },
-                    ]}
-                  >
-                    {selectedLauncherRequiresDetail ? "Details" : "Ready"}
-                  </Text>
-                </View>
-              </View>
-
-              <View pointerEvents="none" style={s.logCommandSprite}>
-                <View style={s.logCommandSpriteShadow} />
-                <SpriteSheetPlayer
-                  asset={LOG_COMMAND_STAGE_SPRITE}
-                  track={LOG_COMMAND_STAGE_TRACK}
-                  width={68}
-                  height={68}
-                  testID="quick-log-command-pixel-sprite"
-                />
-              </View>
-
-            </ImageBackground>
-            <View style={[s.logCommandDock, { backgroundColor: colors.ivory + "F3", borderColor: colors.border }]}>
-              <View style={s.logCommandHud}>
-                {logCommandHud.map((metric) => (
-                  <View
-                    key={metric.label}
-                    style={[s.logCommandHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
-                  >
-                    {/* Cream cells stay cream in dark mode; the dark-palette
-                        sage lightens and drops below AA there, so the label
-                        ink is fixed to the light-board sage. */}
-                    <Text style={[s.logCommandHudLabel, { color: "#4D8A56", fontFamily: "Inter_700Bold" }]}>
-                      {metric.label}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      style={[s.logCommandHudValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                    <View
+                      style={[
+                        s.logCommandChip,
+                        {
+                          backgroundColor: colors.ivory + "F2",
+                          borderColor: "#08142433",
+                        },
+                      ]}
                     >
-                      {metric.value}
-                    </Text>
+                      <PixelIcon
+                        name={selectedLauncherAction?.icon ?? "heart"}
+                        size={17}
+                      />
+                      <Text
+                        style={[
+                          s.logCommandChipText,
+                          {
+                            color: selectedLauncherRequiresDetail
+                              ? "#8A5A0C"
+                              : "#33582F",
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {selectedLauncherRequiresDetail ? "Details" : "Ready"}
+                      </Text>
+                    </View>
                   </View>
-                ))}
-              </View>
-            </View>
-            <View style={s.logCommandActionRow}>
-              <BoardActionButton
-                label={selectedLauncherRequiresDetail ? "Add details" : "Quick Log"}
-                icon={selectedLauncherRequiresDetail ? "reader-outline" : "flash-outline"}
-                variant="primary"
-                accessibilityLabel={
-                  selectedLauncherAction
-                    ? `${selectedLauncherRequiresDetail ? "Open details for" : "Quick log"} ${selectedLauncherAction.label}`
-                    : "Open full Quick Log composer"
-                }
-                onPress={() => {
-                  if (selectedLauncherAction) {
-                    handleQuickLauncherAction(selectedLauncherAction);
-                    return;
-                  }
-                  Haptics.selectionAsync();
-                  scrollToComposer();
-                }}
-              />
-            </View>
-          </BoardCard>
 
-          <BoardCard style={s.launcherCard}>
-            <View style={s.quickLogActionConsole}>
-              <View style={s.quickLogActionConsoleHeader}>
-                <View style={s.quickLogActionTitleBlock}>
-                  <Text style={[s.quickLogActionKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    QUICK LOG FLOW
-                  </Text>
-                  <Text numberOfLines={1} style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {narrowViewport ? "Tap saves. Hold: details." : "Tap saves. Hold opens details."}
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`How ${selectedLauncherAction?.label ?? selectedLabel} quick logging works`}
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  onPress={openQuickLogGuide}
-                  style={({ pressed }) => [
-                    s.quickLogGuideButton,
+                  <View pointerEvents="none" style={s.logCommandSprite}>
+                    <View style={s.logCommandSpriteShadow} />
+                    <SpriteSheetPlayer
+                      asset={LOG_COMMAND_STAGE_SPRITE}
+                      track={LOG_COMMAND_STAGE_TRACK}
+                      width={68}
+                      height={68}
+                      testID="quick-log-command-pixel-sprite"
+                    />
+                  </View>
+                </ImageBackground>
+                <View
+                  style={[
+                    s.logCommandDock,
                     {
-                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      backgroundColor: colors.ivory + "F3",
                       borderColor: colors.border,
                     },
                   ]}
                 >
-                  <Ionicons name="help-circle-outline" size={17} color={colors.sage} />
-                </Pressable>
-              </View>
-
-            <View style={s.launcherTabs}>
-              {LAUNCHER_TABS.map((tab) => {
-                const active = launcherTab === tab.key;
-                return (
-                  <Pressable
-                    key={tab.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Show ${tab.label} quick log actions`}
-                    aria-selected={active}
+                  <View style={s.logCommandHud}>
+                    {logCommandHud.map((metric) => (
+                      <View
+                        key={metric.label}
+                        style={[
+                          s.logCommandHudCell,
+                          {
+                            backgroundColor: colors.cream,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        {/* Cream cells stay cream in dark mode; the dark-palette
+                        sage lightens and drops below AA there, so the label
+                        ink is fixed to the light-board sage. */}
+                        <Text
+                          style={[
+                            s.logCommandHudLabel,
+                            { color: "#4D8A56", fontFamily: "Inter_700Bold" },
+                          ]}
+                        >
+                          {metric.label}
+                        </Text>
+                        <Text
+                          style={[
+                            s.logCommandHudValue,
+                            {
+                              color: colors.brandNavy,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
+                        >
+                          {metric.value}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View style={s.logCommandActionRow}>
+                  <BoardActionButton
+                    label={
+                      selectedLauncherRequiresDetail
+                        ? "Add details"
+                        : "Quick Log"
+                    }
+                    icon={
+                      selectedLauncherRequiresDetail
+                        ? "reader-outline"
+                        : "flash-outline"
+                    }
+                    variant="primary"
+                    accessibilityLabel={
+                      selectedLauncherAction
+                        ? `${selectedLauncherRequiresDetail ? "Open details for" : "Quick log"} ${selectedLauncherAction.label}`
+                        : "Open full Quick Log composer"
+                    }
                     onPress={() => {
+                      if (selectedLauncherAction) {
+                        handleQuickLauncherAction(selectedLauncherAction);
+                        return;
+                      }
                       Haptics.selectionAsync();
-                      setLauncherTab(tab.key);
+                      scrollToComposer();
                     }}
+                  />
+                </View>
+              </BoardCard>
+
+              <BoardCard style={s.launcherCard}>
+                <View style={s.quickLogActionConsole}>
+                  <View style={s.quickLogActionConsoleHeader}>
+                    <View style={s.quickLogActionTitleBlock}>
+                      <Text
+                        style={[
+                          s.quickLogActionKicker,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        QUICK LOG FLOW
+                      </Text>
+                      <Text
+                        style={[
+                          s.quickLogActionSub,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {narrowViewport
+                          ? "Tap saves. Hold: details."
+                          : "Tap saves. Hold opens details."}
+                      </Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`How ${selectedLauncherAction?.label ?? selectedLabel} quick logging works`}
+                      hitSlop={MOBILE_INLINE_HIT_SLOP}
+                      onPress={openQuickLogGuide}
+                      style={({ pressed }) => [
+                        s.quickLogGuideButton,
+                        {
+                          backgroundColor: pressed
+                            ? colors.secondary
+                            : colors.background,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="help-circle-outline"
+                        size={17}
+                        color={colors.sage}
+                      />
+                    </Pressable>
+                  </View>
+
+                  <View style={s.launcherTabs}>
+                    {LAUNCHER_TABS.map((tab) => {
+                      const active = launcherTab === tab.key;
+                      return (
+                        <Pressable
+                          key={tab.key}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Show ${tab.label} quick log actions`}
+                          aria-selected={active}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setLauncherTab(tab.key);
+                          }}
+                          style={({ pressed }) => [
+                            s.launcherTab,
+                            {
+                              backgroundColor: active
+                                ? colors.primary
+                                : colors.card,
+                              borderColor: active
+                                ? colors.primary
+                                : colors.border,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.launcherTabText,
+                              {
+                                color: active
+                                  ? colors.primaryForeground
+                                  : colors.foreground,
+                                fontFamily: active
+                                  ? "Inter_700Bold"
+                                  : "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {tab.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  <View style={s.launcherGrid}>
+                    {launcherActions.map((action) => {
+                      const active =
+                        selectedLauncherKey === launcherActionKey(action);
+                      const launcherPresentation =
+                        describeQuickLogLauncherAction(
+                          action.type,
+                          action.label,
+                        );
+                      return (
+                        <PressScale
+                          key={`${action.label}-${action.type}`}
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            launcherPresentation.accessibilityLabel
+                          }
+                          accessibilityHint={launcherPresentation.feedbackHint}
+                          aria-selected={active}
+                          onPress={() => handleQuickLauncherAction(action)}
+                          onLongPress={() =>
+                            focusFullComposerForLauncherAction(action)
+                          }
+                          scaleTo={0.94}
+                          haptic="none"
+                          containerStyle={s.launcherTileLayout}
+                          style={[
+                            s.launcherTile,
+                            {
+                              backgroundColor: active
+                                ? colors.ivory
+                                : colors.background,
+                              borderColor: launcherPresentation.detailRequired
+                                ? colors.amber + "66"
+                                : active
+                                  ? colors.primary
+                                  : colors.border,
+                              shadowColor: launcherPresentation.detailRequired
+                                ? colors.amber
+                                : active
+                                  ? colors.primary
+                                  : colors.navy,
+                              shadowOpacity: active ? 0.13 : 0,
+                              shadowRadius: active ? 10 : 0,
+                              shadowOffset: {
+                                width: 0,
+                                height: active ? 5 : 0,
+                              },
+                              elevation: active ? 2 : 0,
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              s.launcherIconHalo,
+                              {
+                                backgroundColor: active
+                                  ? colors.sageSoft
+                                  : colors.card,
+                                borderColor: active
+                                  ? colors.primary + "55"
+                                  : colors.border,
+                              },
+                            ]}
+                          >
+                            <PixelIcon name={action.icon} size={30} />
+                          </View>
+                          {active ? (
+                            <View
+                              style={[
+                                s.launcherSelectedMark,
+                                { backgroundColor: colors.primary },
+                              ]}
+                            >
+                              <Ionicons
+                                name="checkmark"
+                                size={12}
+                                color={colors.primaryForeground}
+                              />
+                            </View>
+                          ) : null}
+                          <Text
+                            style={[
+                              s.launcherTileText,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {action.label}
+                          </Text>
+                          {/* Only detail-required tiles carry a pill: a quiet
+                        differentiator instead of twelve identical labels. */}
+                          {launcherPresentation.detailRequired ? (
+                            <View
+                              style={[
+                                s.launcherTileMode,
+                                { backgroundColor: colors.amberSoft },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  s.launcherTileModeText,
+                                  {
+                                    color: colors.amber,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
+                                {launcherPresentation.modeLabel}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </PressScale>
+                      );
+                    })}
+                    {/* Invisible fillers square off the last space-between row so a
+                  partial tab (like Health's 5 tiles) never leaves a mid-row hole. */}
+                    {Array.from(
+                      { length: (3 - (launcherActions.length % 3)) % 3 },
+                      (_, fillerIndex) => (
+                        <View
+                          key={`launcher-filler-${fillerIndex}`}
+                          pointerEvents="none"
+                          style={s.launcherTileGhost}
+                        />
+                      ),
+                    )}
+                  </View>
+
+                  <View style={s.launcherDoctrineRail}>
+                    {QUICK_LOG_DOCTRINE.map((item) => {
+                      const toneColor =
+                        item.tone === "quick"
+                          ? colors.sage
+                          : item.tone === "detail"
+                            ? colors.copper
+                            : colors.blueSignal;
+                      return (
+                        <View
+                          key={item.label}
+                          style={[
+                            s.launcherDoctrineCard,
+                            {
+                              backgroundColor: toneColor + "0F",
+                              borderColor: toneColor + "33",
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name={item.icon}
+                            size={14}
+                            color={toneColor}
+                          />
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text
+                              style={[
+                                s.launcherDoctrineLabel,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_800ExtraBold",
+                                },
+                              ]}
+                            >
+                              {item.label}
+                            </Text>
+                            <Text
+                              style={[
+                                s.launcherDoctrineDetail,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              {item.detail}
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {lastQuickLog ? (
+                    <View
+                      style={[
+                        s.quickFeedback,
+                        {
+                          backgroundColor: colors.sage + "12",
+                          borderColor: colors.sage + "44",
+                        },
+                      ]}
+                    >
+                      <View style={s.quickFeedbackCopy}>
+                        <Text
+                          style={[
+                            s.quickFeedbackTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {lastQuickLog.title} logged
+                        </Text>
+                        <Text
+                          style={[
+                            s.quickFeedbackSub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {
+                            describeQuickLogLauncherAction(
+                              state.entries.find(
+                                (item) => item.id === lastQuickLog.id,
+                              )?.type,
+                              lastQuickLog.title,
+                            ).feedbackHint
+                          }
+                        </Text>
+                      </View>
+                      <View style={s.quickFeedbackActions}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Undo ${lastQuickLog.title} quick log`}
+                          accessibilityState={{
+                            disabled: lastQuickLogUndoBusy,
+                          }}
+                          disabled={lastQuickLogUndoBusy}
+                          onPress={undoLastQuickLog}
+                          style={[
+                            s.quickFeedbackButton,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: colors.border,
+                              opacity: lastQuickLogUndoBusy ? 0.5 : 1,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.quickFeedbackButtonText,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            Undo
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Add details to ${lastQuickLog.title}`}
+                          accessibilityState={{
+                            disabled: lastQuickLogUndoBusy,
+                          }}
+                          disabled={lastQuickLogUndoBusy}
+                          onPress={openLastQuickLogDetails}
+                          style={[
+                            s.quickFeedbackButton,
+                            {
+                              backgroundColor: colors.primary,
+                              borderColor: colors.primary,
+                              opacity: lastQuickLogUndoBusy ? 0.5 : 1,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.quickFeedbackButtonText,
+                              {
+                                color: colors.primaryForeground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            Add details
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {openWalkSession ? (
+                    <View
+                      onLayout={(event) => {
+                        walkCardYRef.current = event.nativeEvent.layout.y;
+                      }}
+                      style={[
+                        s.aloneActivePanel,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.sage + "55",
+                        },
+                      ]}
+                    >
+                      <View style={s.aloneActiveTop}>
+                        <View
+                          style={[
+                            s.aloneActiveIcon,
+                            {
+                              backgroundColor: colors.sageSoft,
+                              borderColor: colors.sage + "55",
+                            },
+                          ]}
+                        >
+                          <PixelIcon name="walk" size={34} />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text
+                            style={[
+                              s.aloneActiveKicker,
+                              {
+                                color: colors.sage,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            WALK ACTIVE
+                          </Text>
+                          <Text
+                            style={[
+                              s.aloneActiveTitle,
+                              {
+                                color: colors.foreground,
+                                fontFamily: DISPLAY_SEMI,
+                              },
+                            ]}
+                          >
+                            {petDisplayName} is on a walk
+                          </Text>
+                          <Text
+                            style={[
+                              s.aloneActiveMeta,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            Started by{" "}
+                            {openWalkSession.caregiver || "household"} -{" "}
+                            {formatAloneDuration(openWalkMinutes)}
+                          </Text>
+                          <Text
+                            style={[
+                              s.walkRouteStatus,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            {walkRouteStatusText}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text
+                        style={[
+                          s.returnCheckTitle,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        Finish details
+                      </Text>
+                      <View style={s.returnDetailRow}>
+                        <TextInput
+                          accessibilityLabel="Walk finish route or place"
+                          value={walkFinishRouteName}
+                          onChangeText={setWalkFinishRouteName}
+                          placeholder="Route or place"
+                          placeholderTextColor={colors.mutedForeground}
+                          style={[
+                            s.returnInput,
+                            s.returnInputHalf,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                        <TextInput
+                          accessibilityLabel="Walk finish distance in miles"
+                          value={walkFinishDistanceMiles}
+                          onChangeText={setWalkFinishDistanceMiles}
+                          placeholder="Miles"
+                          placeholderTextColor={colors.mutedForeground}
+                          keyboardType="decimal-pad"
+                          style={[
+                            s.returnInput,
+                            s.returnInputHalf,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={s.returnDetailRow}>
+                        <TextInput
+                          accessibilityLabel="Walk finish dog interactions"
+                          value={walkFinishDogInteractions}
+                          onChangeText={setWalkFinishDogInteractions}
+                          placeholder="Dogs met"
+                          placeholderTextColor={colors.mutedForeground}
+                          keyboardType="number-pad"
+                          style={[
+                            s.returnInput,
+                            s.returnInputHalf,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                        <TextInput
+                          accessibilityLabel="Walk finish social outcome"
+                          value={walkFinishSocialOutcome}
+                          onChangeText={setWalkFinishSocialOutcome}
+                          placeholder="Social outcome"
+                          placeholderTextColor={colors.mutedForeground}
+                          style={[
+                            s.returnInput,
+                            s.returnInputHalf,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                      <TextInput
+                        accessibilityLabel="Walk finish note"
+                        value={walkFinishNote}
+                        onChangeText={setWalkFinishNote}
+                        placeholder="Anything notable?"
+                        placeholderTextColor={colors.mutedForeground}
+                        style={[
+                          s.returnInput,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Finish walk session"
+                        onPress={handleFinishWalk}
+                        style={({ pressed }) => [
+                          s.walkFinishButton,
+                          {
+                            backgroundColor: pressed
+                              ? colors.forestBright
+                              : colors.primary,
+                            borderColor: colors.primary,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.walkFinishText,
+                            {
+                              color: colors.primaryForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Finish walk
+                        </Text>
+                        <Ionicons
+                          name="checkmark-circle-outline"
+                          size={18}
+                          color={colors.primaryForeground}
+                        />
+                      </Pressable>
+                    </View>
+                  ) : null}
+
+                  {openAloneSession ? (
+                    <View
+                      style={[
+                        s.aloneActivePanel,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.amber + "55",
+                        },
+                      ]}
+                    >
+                      <View style={s.aloneActiveTop}>
+                        <View
+                          style={[
+                            s.aloneActiveIcon,
+                            {
+                              backgroundColor: colors.amberSoft,
+                              borderColor: colors.amber + "44",
+                            },
+                          ]}
+                        >
+                          <PixelIcon name="clock" size={34} />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text
+                            style={[
+                              s.aloneActiveKicker,
+                              {
+                                color: colors.sage,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            HOME ALONE ACTIVE
+                          </Text>
+                          <Text
+                            style={[
+                              s.aloneActiveTitle,
+                              {
+                                color: colors.foreground,
+                                fontFamily: DISPLAY_SEMI,
+                              },
+                            ]}
+                          >
+                            {petDisplayName} is home alone
+                          </Text>
+                          <Text
+                            style={[
+                              s.aloneActiveMeta,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            Started by{" "}
+                            {openAloneSession.caregiver || "household"} -{" "}
+                            {formatAloneDuration(openAloneMinutes)}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text
+                        style={[
+                          s.returnCheckTitle,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        Return check-in
+                      </Text>
+                      <View style={s.returnOutcomeGrid}>
+                        {ALONE_RETURN_OPTIONS.map((option) => (
+                          <Pressable
+                            key={option.id}
+                            accessibilityRole="button"
+                            accessibilityLabel={`I'm Home. ${petDisplayName} was ${option.label}`}
+                            onPress={() => handleReturnHome(option.id)}
+                            style={({ pressed }) => [
+                              s.returnOutcomeButton,
+                              {
+                                backgroundColor: pressed
+                                  ? colors.secondary
+                                  : colors.background,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.returnOutcomeText,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                      <View style={s.returnDetailRow}>
+                        <TextInput
+                          accessibilityLabel="Home alone recovery minutes"
+                          value={returnRecoveryMinutes}
+                          onChangeText={setReturnRecoveryMinutes}
+                          placeholder="Recovery min"
+                          placeholderTextColor={colors.mutedForeground}
+                          keyboardType="number-pad"
+                          style={[
+                            s.returnInput,
+                            s.returnInputHalf,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                        <TextInput
+                          accessibilityLabel="Home alone return note"
+                          value={returnNote}
+                          onChangeText={setReturnNote}
+                          placeholder="What helped?"
+                          placeholderTextColor={colors.mutedForeground}
+                          style={[
+                            s.returnInput,
+                            s.returnInputHalf,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  ) : null}
+
+                  <View
                     style={[
-                      s.launcherTab,
+                      s.moodPanel,
                       {
-                        backgroundColor: active ? colors.primary : colors.card,
-                        borderColor: active ? colors.primary : colors.border,
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
                     <Text
                       style={[
-                        s.launcherTabText,
+                        s.moodQuestion,
                         {
-                          color: active ? colors.primaryForeground : colors.foreground,
-                          fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
                         },
                       ]}
                     >
-                      {tab.label}
+                      How is {petDisplayName} feeling?
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                    <View style={s.moodRow}>
+                      {MOOD_LAUNCHER.map((mood) => {
+                        const active =
+                          selectedType === "mood" &&
+                          choices.moodTone === mood.key;
+                        return (
+                          <Pressable
+                            key={mood.label}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${petDisplayName} feels ${mood.label}`}
+                            aria-selected={active}
+                            onPress={() => selectMoodLauncher(mood)}
+                            style={({ pressed }) => [
+                              s.moodOption,
+                              {
+                                backgroundColor: active
+                                  ? colors.sageSoft
+                                  : "transparent",
+                                borderColor: active
+                                  ? colors.primary + "66"
+                                  : "transparent",
+                                opacity: pressed ? 0.72 : 1,
+                              },
+                            ]}
+                          >
+                            <PixelIcon name={mood.icon} size={30} />
+                            <Text
+                              style={[
+                                s.moodOptionText,
+                                {
+                                  color: colors.foreground,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              {mood.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
 
-            <View style={s.launcherGrid}>
-              {launcherActions.map((action) => {
-                const active = selectedLauncherKey === launcherActionKey(action);
-                const launcherPresentation = describeQuickLogLauncherAction(action.type, action.label);
-                return (
-                  <PressScale
-                    key={`${action.label}-${action.type}`}
-                    accessibilityRole="button"
-                    accessibilityLabel={launcherPresentation.accessibilityLabel}
-                    accessibilityHint={launcherPresentation.feedbackHint}
-                    aria-selected={active}
-                    onPress={() => handleQuickLauncherAction(action)}
-                    onLongPress={() => focusFullComposerForLauncherAction(action)}
-                    scaleTo={0.94}
-                    haptic="none"
-                    containerStyle={s.launcherTileLayout}
+                  <BoardActionButton
+                    label="Add details (optional)"
+                    accessibilityLabel={`Add details to the selected ${selectedLabel} log in the full composer`}
+                    variant="soft"
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      scrollToComposer();
+                    }}
+                  />
+                </View>
+              </BoardCard>
+
+              <View style={s.quickLogSupportRail}>
+                {todaySignalCards.map((card) => (
+                  <View
+                    key={card.label}
                     style={[
-                      s.launcherTile,
+                      s.signalCard,
                       {
-                        backgroundColor: active ? colors.ivory : colors.background,
-                        borderColor: launcherPresentation.detailRequired
-                          ? colors.amber + "66"
-                          : active
-                            ? colors.primary
-                            : colors.border,
-                        shadowColor: launcherPresentation.detailRequired ? colors.amber : active ? colors.primary : colors.navy,
-                        shadowOpacity: active ? 0.13 : 0,
-                        shadowRadius: active ? 10 : 0,
-                        shadowOffset: { width: 0, height: active ? 5 : 0 },
-                        elevation: active ? 2 : 0,
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
                     <View
                       style={[
-                        s.launcherIconHalo,
+                        s.signalIcon,
+                        { backgroundColor: card.tone + "18" },
+                      ]}
+                    >
+                      <Ionicons name={card.icon} size={16} color={card.tone} />
+                    </View>
+                    <Text
+                      style={[
+                        s.signalLabel,
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      {card.label}
+                    </Text>
+                    <Text
+                      style={[
+                        s.signalValue,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      {card.value}
+                    </Text>
+                    <Text
+                      style={[
+                        s.signalDetail,
                         {
-                          backgroundColor: active ? colors.sageSoft : colors.card,
-                          borderColor: active ? colors.primary + "55" : colors.border,
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
                         },
                       ]}
                     >
-                      <PixelIcon name={action.icon} size={30} />
-                    </View>
-                    {active ? (
-                      <View style={[s.launcherSelectedMark, { backgroundColor: colors.primary }]}>
-                        <Ionicons name="checkmark" size={12} color={colors.primaryForeground} />
-                      </View>
-                    ) : null}
-                    <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      style={[s.launcherTileText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
-                    >
-                      {action.label}
+                      {card.detail}
                     </Text>
-                    {/* Only detail-required tiles carry a pill: a quiet
-                        differentiator instead of twelve identical labels. */}
-                    {launcherPresentation.detailRequired ? (
-                      <View style={[s.launcherTileMode, { backgroundColor: colors.amberSoft }]}>
-                        <Text
-                          numberOfLines={1}
-                          adjustsFontSizeToFit
-                          style={[
-                            s.launcherTileModeText,
-                            {
-                              color: colors.amber,
-                              fontFamily: "Inter_700Bold",
-                            },
-                          ]}
-                        >
-                          {launcherPresentation.modeLabel}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </PressScale>
-                );
-              })}
-              {/* Invisible fillers square off the last space-between row so a
-                  partial tab (like Health's 5 tiles) never leaves a mid-row hole. */}
-              {Array.from(
-                { length: (3 - (launcherActions.length % 3)) % 3 },
-                (_, fillerIndex) => (
-                  <View
-                    key={`launcher-filler-${fillerIndex}`}
-                    pointerEvents="none"
-                    style={s.launcherTileGhost}
-                  />
-                ),
-              )}
-            </View>
-
-            <View style={s.launcherDoctrineRail}>
-              {QUICK_LOG_DOCTRINE.map((item) => {
-                const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.blueSignal;
-                return (
-                  <View
-                    key={item.label}
-                    style={[
-                      s.launcherDoctrineCard,
-                      {
-                        backgroundColor: toneColor + "0F",
-                        borderColor: toneColor + "33",
-                      },
-                    ]}
-                  >
-                    <Ionicons name={item.icon} size={14} color={toneColor} />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={[s.launcherDoctrineLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                        {item.label}
-                      </Text>
-                      <Text numberOfLines={1} style={[s.launcherDoctrineDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {item.detail}
-                      </Text>
-                    </View>
                   </View>
-                );
-              })}
-            </View>
-
-            {lastQuickLog ? (
-              <View style={[s.quickFeedback, { backgroundColor: colors.sage + "12", borderColor: colors.sage + "44" }]}>
-                <View style={s.quickFeedbackCopy}>
-                  <Text style={[s.quickFeedbackTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    {lastQuickLog.title} logged
-                  </Text>
-                  <Text style={[s.quickFeedbackSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {describeQuickLogLauncherAction(state.entries.find((item) => item.id === lastQuickLog.id)?.type, lastQuickLog.title).feedbackHint}
-                  </Text>
-                </View>
-                <View style={s.quickFeedbackActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Undo ${lastQuickLog.title} quick log`}
-                    onPress={undoLastQuickLog}
-                    style={[s.quickFeedbackButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  >
-                    <Text style={[s.quickFeedbackButtonText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      Undo
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Add details to ${lastQuickLog.title}`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setDetailEntryId(lastQuickLog.id);
-                    }}
-                    style={[s.quickFeedbackButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  >
-                    <Text style={[s.quickFeedbackButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-                      Add details
-                    </Text>
-                  </Pressable>
-                </View>
+                ))}
               </View>
-            ) : null}
 
-            {openWalkSession ? (
-              <View
-                onLayout={(event) => {
-                  walkCardYRef.current = event.nativeEvent.layout.y;
-                }}
-                style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.sage + "55" }]}
-              >
-                <View style={s.aloneActiveTop}>
-                  <View style={[s.aloneActiveIcon, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
-                    <PixelIcon name="walk" size={34} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[s.aloneActiveKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      WALK ACTIVE
-                    </Text>
-                    <Text style={[s.aloneActiveTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {petDisplayName} is on a walk
-                    </Text>
-                    <Text style={[s.aloneActiveMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      Started by {openWalkSession.caregiver || "household"} - {formatAloneDuration(openWalkMinutes)}
-                    </Text>
-                    <Text style={[s.walkRouteStatus, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {walkRouteStatusText}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[s.returnCheckTitle, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Finish details
-                </Text>
-                <View style={s.returnDetailRow}>
-                  <TextInput
-                    value={walkFinishRouteName}
-                    onChangeText={setWalkFinishRouteName}
-                    placeholder="Route or place"
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                  <TextInput
-                    value={walkFinishDistanceMiles}
-                    onChangeText={setWalkFinishDistanceMiles}
-                    placeholder="Miles"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="decimal-pad"
-                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <View style={s.returnDetailRow}>
-                  <TextInput
-                    value={walkFinishDogInteractions}
-                    onChangeText={setWalkFinishDogInteractions}
-                    placeholder="Dogs met"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                  <TextInput
-                    value={walkFinishSocialOutcome}
-                    onChangeText={setWalkFinishSocialOutcome}
-                    placeholder="Social outcome"
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <TextInput
-                  value={walkFinishNote}
-                  onChangeText={setWalkFinishNote}
-                  placeholder="Anything notable?"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Finish walk session"
-                  onPress={handleFinishWalk}
-                  style={({ pressed }) => [
-                    s.walkFinishButton,
+              {storageWarning ? (
+                <View
+                  accessibilityRole="alert"
+                  aria-live="assertive"
+                  style={[
+                    s.outboxCard,
                     {
-                      backgroundColor: pressed ? colors.forestBright : colors.primary,
-                      borderColor: colors.primary,
+                      backgroundColor: colors.amberSoft,
+                      borderColor: colors.amber + "66",
+                      shadowColor: colors.amber,
                     },
                   ]}
                 >
-                  <Text style={[s.walkFinishText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-                    Finish walk
-                  </Text>
-                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.primaryForeground} />
-                </Pressable>
-              </View>
-            ) : null}
-
-            {openAloneSession ? (
-              <View style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.amber + "55" }]}>
-                <View style={s.aloneActiveTop}>
-                  <View style={[s.aloneActiveIcon, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "44" }]}>
-                    <PixelIcon name="clock" size={34} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[s.aloneActiveKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      HOME ALONE ACTIVE
-                    </Text>
-                    <Text style={[s.aloneActiveTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {petDisplayName} is home alone
-                    </Text>
-                    <Text style={[s.aloneActiveMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      Started by {openAloneSession.caregiver || "household"} - {formatAloneDuration(openAloneMinutes)}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[s.returnCheckTitle, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Return check-in
-                </Text>
-                <View style={s.returnOutcomeGrid}>
-                  {ALONE_RETURN_OPTIONS.map((option) => (
-                    <Pressable
-                      key={option.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`I'm Home. ${petDisplayName} was ${option.label}`}
-                      onPress={() => handleReturnHome(option.id)}
-                      style={({ pressed }) => [
-                        s.returnOutcomeButton,
-                        {
-                          backgroundColor: pressed ? colors.secondary : colors.background,
-                          borderColor: colors.border,
-                        },
+                  <View style={s.outboxTop}>
+                    <View
+                      style={[
+                        s.outboxIcon,
+                        { backgroundColor: colors.amber + "18" },
                       ]}
                     >
-                      <Text style={[s.returnOutcomeText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {option.label}
+                      <Ionicons
+                        name="warning-outline"
+                        size={18}
+                        color={colors.amber}
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          s.outboxEyebrow,
+                          { color: colors.amber, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        DEVICE STORAGE
                       </Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={s.returnDetailRow}>
-                  <TextInput
-                    value={returnRecoveryMinutes}
-                    onChangeText={setReturnRecoveryMinutes}
-                    placeholder="Recovery min"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                  <TextInput
-                    value={returnNote}
-                    onChangeText={setReturnNote}
-                    placeholder="What helped?"
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-              </View>
-            ) : null}
-
-            <View style={[s.moodPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Text style={[s.moodQuestion, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                How is {petDisplayName} feeling?
-              </Text>
-              <View style={s.moodRow}>
-                {MOOD_LAUNCHER.map((mood) => {
-                  const active = selectedType === "mood" && choices.moodTone === mood.key;
-                  return (
-                    <Pressable
-                      key={mood.label}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${petDisplayName} feels ${mood.label}`}
-                      aria-selected={active}
-                      onPress={() => selectMoodLauncher(mood)}
-                      style={({ pressed }) => [
-                        s.moodOption,
-                        {
-                          backgroundColor: active ? colors.sageSoft : "transparent",
-                          borderColor: active ? colors.primary + "66" : "transparent",
-                          opacity: pressed ? 0.72 : 1,
-                        },
-                      ]}
-                    >
-                      <PixelIcon name={mood.icon} size={30} />
-                      <Text style={[s.moodOptionText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                        {mood.label}
+                      <Text
+                        style={[
+                          s.outboxTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
+                        Device storage not confirmed
                       </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            <BoardActionButton
-              label="Add details (optional)"
-              accessibilityLabel={`Add details to the selected ${selectedLabel} log in the full composer`}
-              variant="soft"
-              onPress={() => {
-                Haptics.selectionAsync();
-                scrollToComposer();
-              }}
-            />
-            </View>
-          </BoardCard>
-
-          <View style={s.quickLogSupportRail}>
-            {todaySignalCards.map((card) => (
-              <View
-                key={card.label}
-                style={[s.signalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              >
-                <View style={[s.signalIcon, { backgroundColor: card.tone + "18" }]}>
-                  <Ionicons name={card.icon} size={16} color={card.tone} />
+                      <Text
+                        style={[
+                          s.outboxMessage,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {careStorageWarningMessage(storageWarning)}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-                <Text style={[s.signalLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  {card.label}
-                </Text>
-                <Text style={[s.signalValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {card.value}
-                </Text>
-                <Text style={[s.signalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {card.detail}
-                </Text>
-              </View>
-            ))}
-          </View>
+              ) : null}
 
-          {!SYNC_PROVIDER_CONFIGURED && state.entries.length > 0 ? (
-            // Local-first build: device storage is the success state, so the
-            // care record card confirms that instead of promising sync.
-            <View
-              style={[
-                s.outboxCard,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.sage + "33",
-                  shadowColor: colors.sage,
-                },
-              ]}
-            >
-              <View style={s.outboxTop}>
-                <View style={[s.outboxIcon, { backgroundColor: colors.sage + "18" }]}>
-                  <Ionicons name="shield-checkmark-outline" size={18} color={colors.sage} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.outboxEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    CARE RECORD
-                  </Text>
-                  <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    Saved on this device
-                  </Text>
-                  <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Nothing waiting. {petDisplayName}'s care record lives safely in this device's local storage.
-                  </Text>
-                </View>
-              </View>
-            </View>
-          ) : null}
-
-          {SYNC_PROVIDER_CONFIGURED && syncOutbox.total > 0 ? (
-            <View
-              style={[
-                s.outboxCard,
-                {
-                  backgroundColor: colors.card,
-                  borderColor:
-                    syncOutbox.status === "needs-retry"
-                      ? colors.amber + "55"
-                      : colors.primary + "33",
-                  shadowColor:
-                    syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
-                },
-              ]}
-            >
-              <View style={s.outboxTop}>
+              {!SYNC_PROVIDER_CONFIGURED &&
+              state.entries.length > 0 &&
+              !storageWarning ? (
+                // Local-first build: device storage is the success state, so the
+                // care record card confirms that instead of promising sync.
                 <View
                   style={[
-                    s.outboxIcon,
+                    s.outboxCard,
                     {
-                      backgroundColor:
-                        syncOutbox.status === "needs-retry"
-                          ? colors.amber + "18"
-                          : colors.primary + "14",
+                      backgroundColor: colors.card,
+                      borderColor: colors.sage + "33",
+                      shadowColor: colors.sage,
                     },
                   ]}
                 >
-                  <Ionicons
-                    name={
-                      syncOutbox.status === "needs-retry"
-                        ? "cloud-offline-outline"
-                        : "cloud-upload-outline"
-                    }
-                    size={18}
-                    color={
-                      syncOutbox.status === "needs-retry" ? colors.amber : colors.primary
-                    }
-                  />
+                  <View style={s.outboxTop}>
+                    <View
+                      style={[
+                        s.outboxIcon,
+                        { backgroundColor: colors.sage + "18" },
+                      ]}
+                    >
+                      <Ionicons
+                        name="shield-checkmark-outline"
+                        size={18}
+                        color={colors.sage}
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          s.outboxEyebrow,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        CARE RECORD
+                      </Text>
+                      <Text
+                        style={[
+                          s.outboxTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
+                        Saved on this device
+                      </Text>
+                      <Text
+                        style={[
+                          s.outboxMessage,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        Nothing waiting. {petDisplayName}'s care record lives
+                        safely in this device's local storage.
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.outboxEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    SYNC STATUS
-                  </Text>
-                  <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {syncOutbox.status === "needs-retry" ? "Saved on this device" : "Syncing safely"}
-                  </Text>
-                  <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {syncOutbox.message} {petDisplayName}'s local record is safe on this device.
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    syncOutbox.retryable > 0
-                      ? "Retry sync outbox"
-                      : "Review older saved care changes"
-                  }
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    if (syncOutbox.retryable > 0) {
-                      refresh();
-                      return;
-                    }
-                    setLogView("history");
-                    const firstReviewId =
-                      syncOutbox.reviewRequiredIds[0];
-                    if (firstReviewId) {
-                      setDetailEntryId(firstReviewId);
-                    }
-                    scrollRef.current?.scrollTo({ y: 0, animated: true });
-                  }}
-                  disabled={
-                    isSyncing || syncOutbox.status !== "needs-retry"
-                  }
-                  style={({ pressed }) => [
-                    s.outboxButton,
-                    {
-                      backgroundColor:
-                        syncOutbox.status === "needs-retry"
-                          ? colors.primary
-                          : colors.background,
-                      opacity:
-                        pressed ||
-                        isSyncing ||
-                        syncOutbox.status !== "needs-retry"
-                          ? 0.66
-                          : 1,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      s.outboxButtonText,
-                      {
-                        color:
-                          syncOutbox.status === "needs-retry"
-                            ? colors.primaryForeground
-                            : colors.mutedForeground,
-                        fontFamily: "Inter_700Bold",
-                      },
-                    ]}
-                  >
-                    {isSyncing ? "Syncing" : syncOutbox.actionLabel}
-                  </Text>
-                </Pressable>
-              </View>
-              <View style={s.outboxMetrics}>
-                <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
-                  <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    {syncOutbox.retryableCreateIds.length} creates
-                  </Text>
-                </View>
-                <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
-                  <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    {syncOutbox.retryableUpdateIds.length} updates
-                  </Text>
-                </View>
-                <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
-                  <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    {syncOutbox.reviewRequiredIds.length > 0
-                      ? `${syncOutbox.reviewRequiredIds.length} preserved`
-                      : `${syncOutbox.pending} syncing`}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          ) : null}
+              ) : null}
 
-          {/* Composer card */}
-          <View
-            style={{ height: 0 }}
-            onLayout={(event) => {
-              composerSectionY.current = event.nativeEvent.layout.y + topPadding;
-            }}
-          />
+              {SYNC_PROVIDER_CONFIGURED &&
+              syncOutbox.total > 0 &&
+              !storageWarning ? (
+                <View
+                  style={[
+                    s.outboxCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor:
+                        syncOutbox.status === "needs-retry"
+                          ? colors.amber + "55"
+                          : colors.primary + "33",
+                      shadowColor:
+                        syncOutbox.status === "needs-retry"
+                          ? colors.amber
+                          : colors.primary,
+                    },
+                  ]}
+                >
+                  <View style={s.outboxTop}>
+                    <View
+                      style={[
+                        s.outboxIcon,
+                        {
+                          backgroundColor:
+                            syncOutbox.status === "needs-retry"
+                              ? colors.amber + "18"
+                              : colors.primary + "14",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          syncOutbox.status === "needs-retry"
+                            ? "cloud-offline-outline"
+                            : "cloud-upload-outline"
+                        }
+                        size={18}
+                        color={
+                          syncOutbox.status === "needs-retry"
+                            ? colors.amber
+                            : colors.primary
+                        }
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          s.outboxEyebrow,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        SYNC STATUS
+                      </Text>
+                      <Text
+                        style={[
+                          s.outboxTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
+                        ]}
+                      >
+                        {syncOutbox.status === "needs-retry"
+                          ? "Saved on this device"
+                          : "Syncing safely"}
+                      </Text>
+                      <Text
+                        style={[
+                          s.outboxMessage,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {syncOutbox.message} {petDisplayName}'s local record is
+                        safe on this device.
+                      </Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        syncOutbox.retryable > 0
+                          ? "Retry sync outbox"
+                          : "Review older saved care changes"
+                      }
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        if (syncOutbox.retryable > 0) {
+                          refresh();
+                          return;
+                        }
+                        setLogView("history");
+                        const firstReviewId = syncOutbox.reviewRequiredIds[0];
+                        if (firstReviewId) {
+                          setDetailEntryId(firstReviewId);
+                        }
+                        scrollRef.current?.scrollTo({
+                          y: 0,
+                          animated: !reducedMotion,
+                        });
+                      }}
+                      disabled={
+                        isSyncing || syncOutbox.status !== "needs-retry"
+                      }
+                      style={({ pressed }) => [
+                        s.outboxButton,
+                        {
+                          backgroundColor:
+                            syncOutbox.status === "needs-retry"
+                              ? colors.primary
+                              : colors.background,
+                          opacity:
+                            pressed ||
+                            isSyncing ||
+                            syncOutbox.status !== "needs-retry"
+                              ? 0.66
+                              : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.outboxButtonText,
+                          {
+                            color:
+                              syncOutbox.status === "needs-retry"
+                                ? colors.primaryForeground
+                                : colors.mutedForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {isSyncing ? "Syncing" : syncOutbox.actionLabel}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View style={s.outboxMetrics}>
+                    <View
+                      style={[
+                        s.outboxMetric,
+                        { backgroundColor: colors.background },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.outboxMetricText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {syncOutbox.retryableCreateIds.length} creates
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        s.outboxMetric,
+                        { backgroundColor: colors.background },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.outboxMetricText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {syncOutbox.retryableUpdateIds.length} updates
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        s.outboxMetric,
+                        { backgroundColor: colors.background },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.outboxMetricText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {syncOutbox.reviewRequiredIds.length > 0
+                          ? `${syncOutbox.reviewRequiredIds.length} preserved`
+                          : `${syncOutbox.pending} syncing`}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Composer card */}
+              <View
+                style={{ height: 0 }}
+                onLayout={(event) => {
+                  composerSectionY.current =
+                    event.nativeEvent.layout.y + topPadding;
+                }}
+              />
             </>
           ) : null}
           {/* The composer (Log view) and the history sections (History view)
@@ -3247,623 +5093,459 @@ export default function LogScreen() {
               (two-phase render), then split by the Log|History segment. */}
           {belowFoldReady && view === "log" ? (
             <>
-          <BoardCard style={s.composerHero}>
-            <View style={s.quickLogDetailDock}>
-            <View style={[s.composerHeroBanner, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View style={[s.composerHeroIcon, { backgroundColor: selectedTone + "22", borderColor: selectedTone + "66" }]}>
-                <CareTypeIcon type={selectedType} icon={selectedIcon} size={30} />
-              </View>
-              <View style={s.composerHeroText}>
-                <Text style={[s.composerKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Now logging
-                </Text>
-                <Text style={[s.composerTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                  {selectedLabel}
-                </Text>
-                <Text style={[s.composerHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {selectedGuidance}
-                </Text>
-              </View>
-              <View style={[s.composerBadge, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "33" }]}>
-                <Text style={[s.composerBadgeText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
-                  {selectedTrustLabel}
-                </Text>
-              </View>
-            </View>
-
-            <View style={s.composerTrustRail}>
-              {composerTrustItems.map((item) => (
-                <View
-                  key={item.label}
-                  style={[
-                    s.composerTrustChip,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor: item.tone + "33",
-                    },
-                  ]}
-                >
-                  <Ionicons name={item.icon} size={14} color={item.tone} />
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    style={[s.composerTrustText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
-                  >
-                    {item.label}
-                </Text>
-              </View>
-            ))}
-            </View>
-            </View>
-
-            <BoardSectionHeader
-              title="Choose care type"
-              accessory={<BoardPill label="Fast tap" icon="flash-outline" tone={colors.sage} />}
-              style={s.composerSectionHeader}
-            />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.typeRow}
-              style={{ marginHorizontal: -4 }}
-            >
-              {LOG_TYPES.map((q) => {
-                const active = selectedType === q.type;
-                const tint = careTypeTone(q.type, q.icon);
-                return (
-                  <Pressable
-                    key={q.type}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Log ${q.label}`}
-                    aria-selected={active}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setSelectedLauncherKey(null);
-                      setSelectedType(q.type);
-                    }}
+              <BoardCard style={s.composerHero}>
+                <View style={s.quickLogDetailDock}>
+                  <View
                     style={[
-                      s.typeChip,
+                      s.composerHeroBanner,
                       {
-                        backgroundColor: active ? colors.primary : colors.card,
-                        borderColor: active ? colors.primary : colors.border,
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
-                    <View style={[s.typeChipIcon, { backgroundColor: active ? "rgba(255,255,255,0.18)" : tint + "1A" }]}>
-                      <CareTypeIcon type={q.type} icon={q.icon} size={15} color={active ? colors.primaryForeground : undefined} />
-                    </View>
-                    <Text
+                    <View
                       style={[
-                        s.typeChipLabel,
-                        { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
+                        s.composerHeroIcon,
+                        {
+                          backgroundColor: selectedTone + "22",
+                          borderColor: selectedTone + "66",
+                        },
                       ]}
                     >
-                      {q.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            {/* Contextual controls */}
-            {config?.groups?.map((g) => (
-              <View key={g.key} style={s.fieldBlock}>
-                <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {g.label}
-                </Text>
-                <View style={s.segRow}>
-                  {g.options.map((o) => {
-                    const selectedOptionId = g.noDefault
-                      ? choices[g.key] ?? null
-                      : choices[g.key] ?? g.options[0].id;
-                    const active = selectedOptionId === o.id;
-                    return (
-                      <Pressable
-                        key={o.id}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          setChoices((prev) => ({ ...prev, [g.key]: o.id }));
-                        }}
+                      <CareTypeIcon
+                        type={selectedType}
+                        icon={selectedIcon}
+                        size={30}
+                      />
+                    </View>
+                    <View style={s.composerHeroText}>
+                      <Text
                         style={[
-                          s.segPill,
+                          s.composerKicker,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        Now logging
+                      </Text>
+                      <Text
+                        style={[
+                          s.composerTitle,
+                          { color: colors.foreground, fontFamily: DISPLAY },
+                        ]}
+                      >
+                        {selectedLabel}
+                      </Text>
+                      <Text
+                        style={[
+                          s.composerHint,
                           {
-                            backgroundColor: active ? colors.primary : colors.card,
-                            borderColor: active ? colors.primary : colors.border,
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
                           },
                         ]}
                       >
-                        <Text
-                          style={[
-                            s.segText,
-                            { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
-                          ]}
-                        >
-                          {o.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
-
-            {selectedType === "mood" && (
-              <View style={[s.moodDetailPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Care context</Text>
-                  <TextInput
-                    placeholder="After breakfast, visitor came over, slept poorly, great walk..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={moodContext}
-                    onChangeText={setMoodContext}
-                    multiline
-                    style={[
-                      s.input,
-                      s.inputMulti,
-                      {
-                        backgroundColor: colors.card,
-                        color: colors.foreground,
-                        borderColor: colors.border,
-                        fontFamily: "Inter_400Regular",
-                      },
-                    ]}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityLabel="Share this log with the household"
-                  aria-checked={householdVisible}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setHouseholdVisible((prev) => !prev);
-                  }}
-                  style={[
-                    s.visibilityToggle,
-                    {
-                      backgroundColor: householdVisible ? colors.sage + "14" : colors.card,
-                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {householdVisible ? "Visible to household" : "Private log"}
-                    </Text>
-                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? `Shared mood logs update Mood Trend, Care Pass, and ${petDisplayName}'s care twin.` : "Private moods stay out of shared trend cards and reports."}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
-            {config?.stepper && (
-              <View style={s.fieldBlock}>
-                <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {config.stepper.label}
-                </Text>
-                <View style={s.segRow}>
-                  {config.stepper.values.map((v, i) => {
-                    const active = stepIndex === i;
-                    return (
-                      <Pressable
-                        key={v}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          setStepIndex(i);
-                        }}
+                        {selectedGuidance}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        s.composerBadge,
+                        {
+                          backgroundColor: colors.sageSoft,
+                          borderColor: colors.sage + "33",
+                        },
+                      ]}
+                    >
+                      <Text
                         style={[
-                          s.segPill,
-                          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                          s.composerBadgeText,
+                          { color: colors.forest, fontFamily: "Inter_700Bold" },
                         ]}
                       >
+                        {selectedTrustLabel}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={s.composerTrustRail}>
+                    {composerTrustItems.map((item) => (
+                      <View
+                        key={item.label}
+                        style={[
+                          s.composerTrustChip,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: item.tone + "33",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={item.icon}
+                          size={14}
+                          color={item.tone}
+                        />
                         <Text
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
                           style={[
-                            s.segText,
-                            { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
+                            s.composerTrustText,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
                           ]}
                         >
-                          {v} {config.stepper!.unit}
+                          {item.label}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                <BoardSectionHeader
+                  title="Choose care type"
+                  accessory={
+                    <BoardPill
+                      label="Fast tap"
+                      icon="flash-outline"
+                      tone={colors.sage}
+                    />
+                  }
+                  style={s.composerSectionHeader}
+                />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.typeRow}
+                  style={{ marginHorizontal: -4 }}
+                >
+                  {LOG_TYPES.map((q) => {
+                    const active = selectedType === q.type;
+                    const tint = careTypeTone(q.type, q.icon);
+                    return (
+                      <Pressable
+                        key={q.type}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Log ${q.label}`}
+                        aria-selected={active}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setSelectedLauncherKey(null);
+                          beginComposerIntent({
+                            kind: "selection",
+                            type: q.type,
+                          });
+                        }}
+                        style={({ pressed }) => [
+                          s.typeChip,
+                          {
+                            backgroundColor: active
+                              ? colors.primary
+                              : colors.card,
+                            borderColor: active
+                              ? colors.primary
+                              : colors.border,
+                            opacity: pressed ? 0.72 : 1,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            s.typeChipIcon,
+                            {
+                              backgroundColor: active
+                                ? "rgba(255,255,255,0.18)"
+                                : tint + "1A",
+                            },
+                          ]}
+                        >
+                          <CareTypeIcon
+                            type={q.type}
+                            icon={q.icon}
+                            size={15}
+                            color={
+                              active ? colors.primaryForeground : undefined
+                            }
+                          />
+                        </View>
+                        <Text
+                          style={[
+                            s.typeChipLabel,
+                            {
+                              color: active
+                                ? colors.primaryForeground
+                                : colors.foreground,
+                              fontFamily: active
+                                ? "Inter_700Bold"
+                                : "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {q.label}
                         </Text>
                       </Pressable>
                     );
                   })}
-                </View>
-              </View>
-            )}
+                </ScrollView>
 
-            {config?.numeric && (
-              <View style={s.fieldBlock}>
-                <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {config.numeric.label} ({numericUnit}{config.numeric.optional ? ", optional" : ""})
-                </Text>
-                <TextInput
-                  placeholder={config.numeric.placeholder}
-                  placeholderTextColor={colors.mutedForeground}
-                  value={numeric}
-                  onChangeText={setNumeric}
-                  keyboardType="decimal-pad"
-                  style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                />
-              </View>
-            )}
+                {/* Contextual controls */}
+                {config?.groups?.map((g) => (
+                  <View key={g.key} style={s.fieldBlock}>
+                    <Text
+                      style={[
+                        s.fieldLabel,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {g.label}
+                    </Text>
+                    <View style={s.segRow}>
+                      {g.options.map((o) => {
+                        const selectedOptionId = g.noDefault
+                          ? (choices[g.key] ?? null)
+                          : (choices[g.key] ?? g.options[0].id);
+                        const active = selectedOptionId === o.id;
+                        return (
+                          <Pressable
+                            key={o.id}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Set ${g.label}: ${o.label}`}
+                            accessibilityState={{ selected: active }}
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              setChoices((prev) => ({
+                                ...prev,
+                                [g.key]: o.id,
+                              }));
+                            }}
+                            style={({ pressed }) => [
+                              s.segPill,
+                              {
+                                backgroundColor: active
+                                  ? colors.primary
+                                  : colors.card,
+                                borderColor: active
+                                  ? colors.primary
+                                  : colors.border,
+                                opacity: pressed ? 0.72 : 1,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.segText,
+                                {
+                                  color: active
+                                    ? colors.primaryForeground
+                                    : colors.foreground,
+                                  fontFamily: active
+                                    ? "Inter_700Bold"
+                                    : "Inter_500Medium",
+                                },
+                              ]}
+                            >
+                              {o.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))}
 
-            {selectedType === "walk" && (
-              <View style={s.mealFields}>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Route or place</Text>
-                  <TextInput
-                    placeholder="Neighborhood Loop, Dog park, River trail..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={walkRouteName}
-                    onChangeText={setWalkRouteName}
-                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <View style={s.mealFieldRow}>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Distance mi</Text>
+                {selectedType === "mood" && (
+                  <View
+                    style={[
+                      s.moodDetailPanel,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Care context
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Mood care context"
+                        placeholder="After breakfast, visitor came over, slept poorly, great walk..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={moodContext}
+                        onChangeText={setMoodContext}
+                        multiline
+                        style={[
+                          s.input,
+                          s.inputMulti,
+                          {
+                            backgroundColor: colors.card,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_400Regular",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share this log with the household"
+                      aria-checked={householdVisible}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setHouseholdVisible((prev) => !prev);
+                      }}
+                      style={({ pressed }) => [
+                        s.visibilityToggle,
+                        {
+                          backgroundColor: householdVisible
+                            ? colors.sage + "14"
+                            : colors.card,
+                          borderColor: householdVisible
+                            ? colors.sage + "55"
+                            : colors.border,
+                          opacity: pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          householdVisible
+                            ? "people-outline"
+                            : "lock-closed-outline"
+                        }
+                        size={16}
+                        color={
+                          householdVisible
+                            ? colors.sage
+                            : colors.mutedForeground
+                        }
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.visibilityTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Visible to household"
+                            : "Private log"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.visibilitySub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? `Shared mood logs update Mood Trend, Care Pass, and ${petDisplayName}'s care twin.`
+                            : "Private moods stay out of shared trend cards and reports."}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                )}
+
+                {config?.stepper && (
+                  <View style={s.fieldBlock}>
+                    <Text
+                      style={[
+                        s.fieldLabel,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {config.stepper.label}
+                    </Text>
+                    <View style={s.segRow}>
+                      {config.stepper.values.map((v, i) => {
+                        const active = stepIndex === i;
+                        return (
+                          <Pressable
+                            key={v}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${config.stepper!.label}: ${v} ${config.stepper!.unit}`}
+                            accessibilityState={{ selected: active }}
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              setStepIndex(i);
+                            }}
+                            style={({ pressed }) => [
+                              s.segPill,
+                              {
+                                backgroundColor: active
+                                  ? colors.primary
+                                  : colors.card,
+                                borderColor: active
+                                  ? colors.primary
+                                  : colors.border,
+                                opacity: pressed ? 0.72 : 1,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.segText,
+                                {
+                                  color: active
+                                    ? colors.primaryForeground
+                                    : colors.foreground,
+                                  fontFamily: active
+                                    ? "Inter_700Bold"
+                                    : "Inter_500Medium",
+                                },
+                              ]}
+                            >
+                              {v} {config.stepper!.unit}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+
+                {config?.numeric && (
+                  <View style={s.fieldBlock}>
+                    <Text
+                      style={[
+                        s.fieldLabel,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {config.numeric.label} ({numericUnit}
+                      {config.numeric.optional ? ", optional" : ""})
+                    </Text>
                     <TextInput
-                      placeholder="1.2"
+                      accessibilityLabel={`${config.numeric.label}, ${numericUnit}, ${config.numeric.optional ? "optional" : "required"}`}
+                      placeholder={config.numeric.placeholder}
                       placeholderTextColor={colors.mutedForeground}
-                      value={walkDistanceMiles}
-                      onChangeText={setWalkDistanceMiles}
+                      value={numeric}
+                      onChangeText={setNumeric}
                       keyboardType="decimal-pad"
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dog interactions</Text>
-                    <TextInput
-                      placeholder="0"
-                      placeholderTextColor={colors.mutedForeground}
-                      value={walkDogInteractions}
-                      onChangeText={setWalkDogInteractions}
-                      keyboardType="number-pad"
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                </View>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Social outcome</Text>
-                  <TextInput
-                    placeholder="Calm greeting, no dogs seen, barked near the gate..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={walkSocialOutcome}
-                    onChangeText={setWalkSocialOutcome}
-                    multiline
-                    style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityLabel="Share this log with the household"
-                  aria-checked={householdVisible}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setHouseholdVisible((prev) => !prev);
-                  }}
-                  style={[
-                    s.visibilityToggle,
-                    {
-                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
-                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {householdVisible ? "Visible to household" : "Private log"}
-                    </Text>
-                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? "Shared walk logs update route templates and handoffs." : "Private walks stay out of household route templates."}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
-            {selectedType === "training" && (
-              <View style={s.mealFields}>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Skill or cue</Text>
-                  <TextInput
-                    placeholder="Leash manners, recall, calm greeting..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={trainingSkill}
-                    onChangeText={setTrainingSkill}
-                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Next practice</Text>
-                  <TextInput
-                    placeholder="Practice calm passes, repeat place cue, shorten distance..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={trainingNextPractice}
-                    onChangeText={setTrainingNextPractice}
-                    multiline
-                    style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityLabel="Share this log with the household"
-                  aria-checked={householdVisible}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setHouseholdVisible((prev) => !prev);
-                  }}
-                  style={[
-                    s.visibilityToggle,
-                    {
-                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
-                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {householdVisible ? "Visible to household" : "Private log"}
-                    </Text>
-                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? "Shared training logs update Training Progress and trainer handoffs." : "Private training stays out of shared progress."}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
-            {selectedType === "alone" && (
-              <View style={s.mealFields}>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Trigger or context</Text>
-                  <TextInput
-                    placeholder="Leaving after breakfast, doorbell, both owners out..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={aloneTrigger}
-                    onChangeText={setAloneTrigger}
-                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <View style={s.mealFieldRow}>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Recovery min</Text>
-                    <TextInput
-                      placeholder="15"
-                      placeholderTextColor={colors.mutedForeground}
-                      value={recoveryMinutes}
-                      onChangeText={setRecoveryMinutes}
-                      keyboardType="number-pad"
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Support</Text>
-                    <TextInput
-                      placeholder="Puzzle toy"
-                      placeholderTextColor={colors.mutedForeground}
-                      value={calmingSupport}
-                      onChangeText={setCalmingSupport}
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityLabel="Share this log with the household"
-                  aria-checked={householdVisible}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setHouseholdVisible((prev) => !prev);
-                  }}
-                  style={[
-                    s.visibilityToggle,
-                    {
-                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
-                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {householdVisible ? "Visible to household" : "Private log"}
-                    </Text>
-                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? "Shared alone logs update Alone Time patterns and handoffs." : "Private alone logs stay out of shared anxiety patterns."}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
-            {selectedType === "incident" && (
-              <View style={s.mealFields}>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Trigger or context</Text>
-                  <TextInput
-                    placeholder="Dog at gate, crowded sidewalk..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={incidentTrigger}
-                    onChangeText={setIncidentTrigger}
-                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Who or what was involved?</Text>
-                  <TextInput
-                    placeholder="Off-leash dog, stranger..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={incidentExposure}
-                    onChangeText={setIncidentExposure}
-                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <View style={s.mealFieldRow}>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Injury check</Text>
-                    <TextInput
-                      placeholder="None, scratch..."
-                      placeholderTextColor={colors.mutedForeground}
-                      value={incidentInjury}
-                      onChangeText={setIncidentInjury}
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Action taken</Text>
-                    <TextInput
-                      placeholder="Separated..."
-                      placeholderTextColor={colors.mutedForeground}
-                      value={incidentAction}
-                      onChangeText={setIncidentAction}
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                </View>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Follow-up</Text>
-                  <TextInput
-                    placeholder="Watch tonight, trainer note, vet call, avoid gate route..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={incidentFollowUp}
-                    onChangeText={setIncidentFollowUp}
-                    multiline
-                    style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityLabel="Share this log with the household"
-                  aria-checked={householdVisible}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setHouseholdVisible((prev) => !prev);
-                  }}
-                  style={[
-                    s.visibilityToggle,
-                    {
-                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
-                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {householdVisible ? "Visible to household" : "Private log"}
-                    </Text>
-                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? "Shared incident logs update Incident Watch, Care Pass, and trainer handoffs." : "Private incidents stay out of shared incident reports."}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
-            {selectedType === "grooming" && (
-              <View style={s.mealFields}>
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Coat or skin note</Text>
-                  <TextInput
-                    placeholder="Light shedding, mats behind ears, paws looked good..."
-                    placeholderTextColor={colors.mutedForeground}
-                    value={groomingCondition}
-                    onChangeText={setGroomingCondition}
-                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <View style={s.mealFieldRow}>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Products</Text>
-                    <TextInput
-                      placeholder="Slicker brush"
-                      placeholderTextColor={colors.mutedForeground}
-                      value={groomingProducts}
-                      onChangeText={setGroomingProducts}
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Next due</Text>
-                    <TextInput
-                      placeholder="2026-06-18"
-                      placeholderTextColor={colors.mutedForeground}
-                      value={groomingNextDue}
-                      onChangeText={setGroomingNextDue}
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityLabel="Share this log with the household"
-                  aria-checked={householdVisible}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setHouseholdVisible((prev) => !prev);
-                  }}
-                  style={[
-                    s.visibilityToggle,
-                    {
-                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
-                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {householdVisible ? "Visible to household" : "Private log"}
-                    </Text>
-                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? "Shared grooming logs update Grooming Care and handoffs." : "Private grooming stays out of shared grooming reports."}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
-            {selectedType === "meal" && (
-              <View style={s.mealFields}>
-                <View style={s.mealFieldRow}>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      Expected portion
-                    </Text>
-                    <TextInput
-                      placeholder={state.dietProfile.normalPortion || "1 cup"}
-                      placeholderTextColor={colors.mutedForeground}
-                      value={expectedPortion}
-                      onChangeText={setExpectedPortion}
-                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                    />
-                  </View>
-                  <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      Eaten amount {mealOutcomeNeedsEatenAmount(selectedMealCompletion) ? "(required)" : "(optional)"}
-                    </Text>
-                    <TextInput
-                      placeholder={
-                        selectedMealCompletion === "skipped"
-                          ? "0"
-                          : selectedMealCompletion === "served" || selectedMealCompletion === "grazing"
-                            ? "pending"
-                            : "0.5"
-                      }
-                      placeholderTextColor={colors.mutedForeground}
-                      value={eatenAmount}
-                      onChangeText={setEatenAmount}
-                      keyboardType="decimal-pad"
-                      editable={
-                        selectedMealCompletion !== "skipped" &&
-                        selectedMealCompletion !== "served" &&
-                        selectedMealCompletion !== "grazing"
-                      }
                       style={[
                         s.input,
                         {
@@ -3871,433 +5553,1969 @@ export default function LogScreen() {
                           color: colors.foreground,
                           borderColor: colors.border,
                           fontFamily: "Inter_500Medium",
-                          opacity:
-                            selectedMealCompletion === "skipped" ||
-                            selectedMealCompletion === "served" ||
-                            selectedMealCompletion === "grazing"
-                              ? 0.62
-                              : 1,
                         },
                       ]}
                     />
                   </View>
-                </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityLabel="Share this log with the household"
-                  aria-checked={householdVisible}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setHouseholdVisible((prev) => !prev);
-                  }}
-                  style={[
-                    s.visibilityToggle,
-                    {
-                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
-                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {householdVisible ? "Visible to household" : "Private log"}
-                    </Text>
-                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? "Shared logs update the household routine board." : "Private notes stay out of shared routine status."}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
+                )}
 
-            {selectedType === "medication" && (
-              <View style={s.mealFields}>
-                {medicationDefault ? (
-                  <View style={[s.medRoutinePanel, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "2E" }]}>
-                    <View style={[s.medRoutineIcon, { backgroundColor: colors.primary + "14" }]}>
-                      <Ionicons name="medical-outline" size={16} color={colors.primary} />
-                    </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[s.medRoutineLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Medication routine</Text>
-                      <Text numberOfLines={1} style={[s.medRoutineTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                        {medicationDefault.label}
+                {selectedType === "walk" && (
+                  <View style={s.mealFields}>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Route or place
                       </Text>
-                      <Text numberOfLines={1} style={[s.medRoutineMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {medicationDefault.time}{medicationDefault.owner ? ` - ${medicationDefault.owner}` : ""} - {medicationDefault.status}
-                      </Text>
+                      <TextInput
+                        accessibilityLabel="Walk route or place"
+                        placeholder="Neighborhood Loop, Dog park, River trail..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={walkRouteName}
+                        onChangeText={setWalkRouteName}
+                        style={[
+                          s.input,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      />
                     </View>
+                    <View style={s.mealFieldRow}>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Distance mi
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Walk distance in miles"
+                          placeholder="1.2"
+                          placeholderTextColor={colors.mutedForeground}
+                          value={walkDistanceMiles}
+                          onChangeText={setWalkDistanceMiles}
+                          keyboardType="decimal-pad"
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Dog interactions
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Walk dog interactions"
+                          placeholder="0"
+                          placeholderTextColor={colors.mutedForeground}
+                          value={walkDogInteractions}
+                          onChangeText={setWalkDogInteractions}
+                          keyboardType="number-pad"
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Social outcome
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Walk social outcome"
+                        placeholder="Calm greeting, no dogs seen, barked near the gate..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={walkSocialOutcome}
+                        onChangeText={setWalkSocialOutcome}
+                        multiline
+                        style={[
+                          s.input,
+                          s.inputMulti,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_400Regular",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share this log with the household"
+                      aria-checked={householdVisible}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setHouseholdVisible((prev) => !prev);
+                      }}
+                      style={({ pressed }) => [
+                        s.visibilityToggle,
+                        {
+                          backgroundColor: householdVisible
+                            ? colors.sage + "14"
+                            : colors.background,
+                          borderColor: householdVisible
+                            ? colors.sage + "55"
+                            : colors.border,
+                          opacity: pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          householdVisible
+                            ? "people-outline"
+                            : "lock-closed-outline"
+                        }
+                        size={16}
+                        color={
+                          householdVisible
+                            ? colors.sage
+                            : colors.mutedForeground
+                        }
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.visibilityTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Visible to household"
+                            : "Private log"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.visibilitySub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Shared walk logs update route templates and handoffs."
+                            : "Private walks stay out of household route templates."}
+                        </Text>
+                      </View>
+                    </Pressable>
                   </View>
+                )}
+
+                {selectedType === "training" && (
+                  <View style={s.mealFields}>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Skill or cue
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Training skill or cue"
+                        placeholder="Leash manners, recall, calm greeting..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={trainingSkill}
+                        onChangeText={setTrainingSkill}
+                        style={[
+                          s.input,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Next practice
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Training next practice"
+                        placeholder="Practice calm passes, repeat place cue, shorten distance..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={trainingNextPractice}
+                        onChangeText={setTrainingNextPractice}
+                        multiline
+                        style={[
+                          s.input,
+                          s.inputMulti,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_400Regular",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share this log with the household"
+                      aria-checked={householdVisible}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setHouseholdVisible((prev) => !prev);
+                      }}
+                      style={({ pressed }) => [
+                        s.visibilityToggle,
+                        {
+                          backgroundColor: householdVisible
+                            ? colors.sage + "14"
+                            : colors.background,
+                          borderColor: householdVisible
+                            ? colors.sage + "55"
+                            : colors.border,
+                          opacity: pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          householdVisible
+                            ? "people-outline"
+                            : "lock-closed-outline"
+                        }
+                        size={16}
+                        color={
+                          householdVisible
+                            ? colors.sage
+                            : colors.mutedForeground
+                        }
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.visibilityTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Visible to household"
+                            : "Private log"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.visibilitySub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Shared training logs update Training Progress and trainer handoffs."
+                            : "Private training stays out of shared progress."}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                )}
+
+                {selectedType === "alone" && (
+                  <View style={s.mealFields}>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Trigger or context
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Home alone trigger or context"
+                        placeholder="Leaving after breakfast, doorbell, both owners out..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={aloneTrigger}
+                        onChangeText={setAloneTrigger}
+                        style={[
+                          s.input,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <View style={s.mealFieldRow}>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Recovery min
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Home alone recovery minutes"
+                          placeholder="15"
+                          placeholderTextColor={colors.mutedForeground}
+                          value={recoveryMinutes}
+                          onChangeText={setRecoveryMinutes}
+                          keyboardType="number-pad"
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Support
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Home alone calming support"
+                          placeholder="Puzzle toy"
+                          placeholderTextColor={colors.mutedForeground}
+                          value={calmingSupport}
+                          onChangeText={setCalmingSupport}
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share this log with the household"
+                      aria-checked={householdVisible}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setHouseholdVisible((prev) => !prev);
+                      }}
+                      style={({ pressed }) => [
+                        s.visibilityToggle,
+                        {
+                          backgroundColor: householdVisible
+                            ? colors.sage + "14"
+                            : colors.background,
+                          borderColor: householdVisible
+                            ? colors.sage + "55"
+                            : colors.border,
+                          opacity: pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          householdVisible
+                            ? "people-outline"
+                            : "lock-closed-outline"
+                        }
+                        size={16}
+                        color={
+                          householdVisible
+                            ? colors.sage
+                            : colors.mutedForeground
+                        }
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.visibilityTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Visible to household"
+                            : "Private log"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.visibilitySub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Shared alone logs update Alone Time patterns and handoffs."
+                            : "Private alone logs stay out of shared anxiety patterns."}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                )}
+
+                {selectedType === "incident" && (
+                  <View style={s.mealFields}>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Trigger or context
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Incident trigger or context"
+                        placeholder="Dog at gate, crowded sidewalk..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={incidentTrigger}
+                        onChangeText={setIncidentTrigger}
+                        style={[
+                          s.input,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Who or what was involved?
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Incident people or animals involved"
+                        placeholder="Off-leash dog, stranger..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={incidentExposure}
+                        onChangeText={setIncidentExposure}
+                        style={[
+                          s.input,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <View style={s.mealFieldRow}>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Injury check
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Incident injury check"
+                          placeholder="None, scratch..."
+                          placeholderTextColor={colors.mutedForeground}
+                          value={incidentInjury}
+                          onChangeText={setIncidentInjury}
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Action taken
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Incident action taken"
+                          placeholder="Separated..."
+                          placeholderTextColor={colors.mutedForeground}
+                          value={incidentAction}
+                          onChangeText={setIncidentAction}
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Follow-up
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Incident follow-up"
+                        placeholder="Watch tonight, trainer note, vet call, avoid gate route..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={incidentFollowUp}
+                        onChangeText={setIncidentFollowUp}
+                        multiline
+                        style={[
+                          s.input,
+                          s.inputMulti,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_400Regular",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share this log with the household"
+                      aria-checked={householdVisible}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setHouseholdVisible((prev) => !prev);
+                      }}
+                      style={({ pressed }) => [
+                        s.visibilityToggle,
+                        {
+                          backgroundColor: householdVisible
+                            ? colors.sage + "14"
+                            : colors.background,
+                          borderColor: householdVisible
+                            ? colors.sage + "55"
+                            : colors.border,
+                          opacity: pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          householdVisible
+                            ? "people-outline"
+                            : "lock-closed-outline"
+                        }
+                        size={16}
+                        color={
+                          householdVisible
+                            ? colors.sage
+                            : colors.mutedForeground
+                        }
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.visibilityTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Visible to household"
+                            : "Private log"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.visibilitySub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Shared incident logs update Incident Watch, Care Pass, and trainer handoffs."
+                            : "Private incidents stay out of shared incident reports."}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                )}
+
+                {selectedType === "grooming" && (
+                  <View style={s.mealFields}>
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Coat or skin note
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Grooming coat or skin note"
+                        placeholder="Light shedding, mats behind ears, paws looked good..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={groomingCondition}
+                        onChangeText={setGroomingCondition}
+                        style={[
+                          s.input,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <View style={s.mealFieldRow}>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Products
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Grooming products"
+                          placeholder="Slicker brush"
+                          placeholderTextColor={colors.mutedForeground}
+                          value={groomingProducts}
+                          onChangeText={setGroomingProducts}
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Next due
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Grooming next due date"
+                          placeholder="2026-06-18"
+                          placeholderTextColor={colors.mutedForeground}
+                          value={groomingNextDue}
+                          onChangeText={setGroomingNextDue}
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share this log with the household"
+                      aria-checked={householdVisible}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setHouseholdVisible((prev) => !prev);
+                      }}
+                      style={({ pressed }) => [
+                        s.visibilityToggle,
+                        {
+                          backgroundColor: householdVisible
+                            ? colors.sage + "14"
+                            : colors.background,
+                          borderColor: householdVisible
+                            ? colors.sage + "55"
+                            : colors.border,
+                          opacity: pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          householdVisible
+                            ? "people-outline"
+                            : "lock-closed-outline"
+                        }
+                        size={16}
+                        color={
+                          householdVisible
+                            ? colors.sage
+                            : colors.mutedForeground
+                        }
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.visibilityTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Visible to household"
+                            : "Private log"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.visibilitySub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Shared grooming logs update Grooming Care and handoffs."
+                            : "Private grooming stays out of shared grooming reports."}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                )}
+
+                {selectedType === "meal" && (
+                  <View style={s.mealFields}>
+                    <View style={s.mealFieldRow}>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Expected portion
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Meal expected portion"
+                          placeholder={
+                            state.dietProfile.normalPortion || "1 cup"
+                          }
+                          placeholderTextColor={colors.mutedForeground}
+                          value={expectedPortion}
+                          onChangeText={setExpectedPortion}
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={s.mealField}>
+                        <Text
+                          style={[
+                            s.fieldLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Eaten amount{" "}
+                          {mealOutcomeNeedsEatenAmount(selectedMealCompletion)
+                            ? "(required)"
+                            : "(optional)"}
+                        </Text>
+                        <TextInput
+                          accessibilityLabel="Meal eaten amount"
+                          placeholder={
+                            selectedMealCompletion === "skipped"
+                              ? "0"
+                              : selectedMealCompletion === "served" ||
+                                  selectedMealCompletion === "grazing"
+                                ? "pending"
+                                : "0.5"
+                          }
+                          placeholderTextColor={colors.mutedForeground}
+                          value={eatenAmount}
+                          onChangeText={setEatenAmount}
+                          keyboardType="decimal-pad"
+                          editable={
+                            selectedMealCompletion !== "skipped" &&
+                            selectedMealCompletion !== "served" &&
+                            selectedMealCompletion !== "grazing"
+                          }
+                          style={[
+                            s.input,
+                            {
+                              backgroundColor: colors.background,
+                              color: colors.foreground,
+                              borderColor: colors.border,
+                              fontFamily: "Inter_500Medium",
+                              opacity:
+                                selectedMealCompletion === "skipped" ||
+                                selectedMealCompletion === "served" ||
+                                selectedMealCompletion === "grazing"
+                                  ? 0.62
+                                  : 1,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share this log with the household"
+                      aria-checked={householdVisible}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setHouseholdVisible((prev) => !prev);
+                      }}
+                      style={({ pressed }) => [
+                        s.visibilityToggle,
+                        {
+                          backgroundColor: householdVisible
+                            ? colors.sage + "14"
+                            : colors.background,
+                          borderColor: householdVisible
+                            ? colors.sage + "55"
+                            : colors.border,
+                          opacity: pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          householdVisible
+                            ? "people-outline"
+                            : "lock-closed-outline"
+                        }
+                        size={16}
+                        color={
+                          householdVisible
+                            ? colors.sage
+                            : colors.mutedForeground
+                        }
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.visibilityTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Visible to household"
+                            : "Private log"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.visibilitySub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Shared logs update the household routine board."
+                            : "Private notes stay out of shared routine status."}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                )}
+
+                {selectedType === "medication" && (
+                  <View style={s.mealFields}>
+                    {medicationDefault ? (
+                      <View
+                        style={[
+                          s.medRoutinePanel,
+                          {
+                            backgroundColor: colors.primary + "10",
+                            borderColor: colors.primary + "2E",
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            s.medRoutineIcon,
+                            { backgroundColor: colors.primary + "14" },
+                          ]}
+                        >
+                          <Ionicons
+                            name="medical-outline"
+                            size={16}
+                            color={colors.primary}
+                          />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text
+                            style={[
+                              s.medRoutineLabel,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            Medication routine
+                          </Text>
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.medRoutineTitle,
+                              {
+                                color: colors.foreground,
+                                fontFamily: DISPLAY_SEMI,
+                              },
+                            ]}
+                          >
+                            {medicationDefault.label}
+                          </Text>
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.medRoutineMeta,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            {medicationDefault.time}
+                            {medicationDefault.owner
+                              ? ` - ${medicationDefault.owner}`
+                              : ""}{" "}
+                            - {medicationDefault.status}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : null}
+                    <View>
+                      <Text
+                        style={[
+                          s.fieldLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Dose
+                      </Text>
+                      <TextInput
+                        accessibilityLabel="Medication dose"
+                        placeholder={
+                          medicationDefault?.dose &&
+                          medicationDefault.dose !== "Dose not set"
+                            ? medicationDefault.dose
+                            : "1 tablet"
+                        }
+                        placeholderTextColor={colors.mutedForeground}
+                        value={medicationDose}
+                        onChangeText={setMedicationDose}
+                        style={[
+                          s.input,
+                          {
+                            backgroundColor: colors.background,
+                            color: colors.foreground,
+                            borderColor: colors.border,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share this log with the household"
+                      aria-checked={householdVisible}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setHouseholdVisible((prev) => !prev);
+                      }}
+                      style={({ pressed }) => [
+                        s.visibilityToggle,
+                        {
+                          backgroundColor: householdVisible
+                            ? colors.sage + "14"
+                            : colors.background,
+                          borderColor: householdVisible
+                            ? colors.sage + "55"
+                            : colors.border,
+                          opacity: pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          householdVisible
+                            ? "people-outline"
+                            : "lock-closed-outline"
+                        }
+                        size={16}
+                        color={
+                          householdVisible
+                            ? colors.sage
+                            : colors.mutedForeground
+                        }
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.visibilityTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Visible to household"
+                            : "Private log"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.visibilitySub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_400Regular",
+                            },
+                          ]}
+                        >
+                          {householdVisible
+                            ? "Shared medication logs update the Medication Plan."
+                            : "Private medication notes stay out of shared adherence."}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                )}
+
+                {selectedType === "meal" && (
+                  <View
+                    style={[
+                      s.dietPanel,
+                      {
+                        backgroundColor: colors.sage + "12",
+                        borderColor: colors.sage + "33",
+                      },
+                    ]}
+                  >
+                    <View style={s.dietPanelTop}>
+                      <View>
+                        <Text
+                          style={[
+                            s.dietTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
+                        >
+                          Daily food progress
+                        </Text>
+                        <Text
+                          style={[
+                            s.dietSub,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {dietProgress.summary}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          s.dietBadge,
+                          { backgroundColor: colors.sage + "18" },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.dietBadgeText,
+                            { color: colors.sage, fontFamily: "Inter_700Bold" },
+                          ]}
+                        >
+                          {dietProgress.targetAmount == null
+                            ? "--"
+                            : `${dietProgress.percent}%`}
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={[
+                        s.dietTrack,
+                        { backgroundColor: colors.background },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          s.dietFill,
+                          {
+                            backgroundColor: colors.sage,
+                            width: dietPercentWidth,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        s.dietHint,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
+                    >
+                      {dietProgressText} Exact amount is optional; portion
+                      buttons still count toward the day.
+                    </Text>
+                  </View>
+                )}
+
+                {config?.noteField && (
+                  <View style={s.fieldBlock}>
+                    <TextInput
+                      accessibilityLabel={`${selectedLabel} care note`}
+                      placeholder={config.noteField.placeholder}
+                      placeholderTextColor={colors.mutedForeground}
+                      value={noteText}
+                      onChangeText={setNoteText}
+                      multiline
+                      style={[
+                        s.input,
+                        s.inputMulti,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.foreground,
+                          borderColor: colors.border,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
+                    />
+                  </View>
+                )}
+
+                {missingRequiredGroup ? (
+                  <Text
+                    style={[
+                      s.requiredChoiceHint,
+                      { color: colors.amber, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    Pick "{missingRequiredGroup.label}" above to save this{" "}
+                    {selectedLabel.toLowerCase()} log.
+                  </Text>
                 ) : null}
-                <View>
-                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dose</Text>
-                  <TextInput
-                    placeholder={medicationDefault?.dose && medicationDefault.dose !== "Dose not set" ? medicationDefault.dose : "1 tablet"}
-                    placeholderTextColor={colors.mutedForeground}
-                    value={medicationDose}
-                    onChangeText={setMedicationDose}
-                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityLabel="Share this log with the household"
-                  aria-checked={householdVisible}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setHouseholdVisible((prev) => !prev);
-                  }}
-                  style={[
-                    s.visibilityToggle,
-                    {
-                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
-                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {householdVisible ? "Visible to household" : "Private log"}
-                    </Text>
-                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? "Shared medication logs update the Medication Plan." : "Private medication notes stay out of shared adherence."}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
-            {selectedType === "meal" && (
-              <View style={[s.dietPanel, { backgroundColor: colors.sage + "12", borderColor: colors.sage + "33" }]}>
-                <View style={s.dietPanelTop}>
-                  <View>
-                    <Text style={[s.dietTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Daily food progress</Text>
-                    <Text style={[s.dietSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {dietProgress.summary}
-                    </Text>
-                  </View>
-                  <View style={[s.dietBadge, { backgroundColor: colors.sage + "18" }]}>
-                    <Text style={[s.dietBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      {dietProgress.targetAmount == null ? "--" : `${dietProgress.percent}%`}
-                    </Text>
-                  </View>
-                </View>
-                <View style={[s.dietTrack, { backgroundColor: colors.background }]}>
-                  <View style={[s.dietFill, { backgroundColor: colors.sage, width: dietPercentWidth }]} />
-                </View>
-                <Text style={[s.dietHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {dietProgressText} Exact amount is optional; portion buttons still count toward the day.
-                </Text>
-              </View>
-            )}
-
-            {config?.noteField && (
-              <View style={s.fieldBlock}>
-                <TextInput
-                  placeholder={config.noteField.placeholder}
-                  placeholderTextColor={colors.mutedForeground}
-                  value={noteText}
-                  onChangeText={setNoteText}
-                  multiline
-                  style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+                <BoardActionButton
+                  label={
+                    fullComposerLogBusy
+                      ? "Logging care"
+                      : `Log ${(config?.label ?? "care").toLowerCase()}`
+                  }
+                  icon="checkmark-circle"
+                  variant="primary"
+                  onPress={handleLog}
+                  disabled={missingRequiredGroup != null || fullComposerLogBusy}
+                  accessibilityLabel={
+                    fullComposerLogBusy
+                      ? "Logging care. Please wait."
+                      : missingRequiredGroup
+                        ? `Log ${(config?.label ?? "care").toLowerCase()}. Disabled until ${missingRequiredGroup.label.replace(/\?$/, "").toLowerCase()} is chosen.`
+                        : `Log ${(config?.label ?? "care").toLowerCase()}`
+                  }
+                  style={s.logSaveAction}
                 />
-              </View>
-            )}
-
-            {missingRequiredGroup ? (
-              <Text style={[s.requiredChoiceHint, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                Pick "{missingRequiredGroup.label}" above to save this {selectedLabel.toLowerCase()} log.
-              </Text>
-            ) : null}
-            <BoardActionButton
-              label={`Log ${(config?.label ?? "care").toLowerCase()}`}
-              icon="checkmark-circle"
-              variant="primary"
-              onPress={handleLog}
-              disabled={missingRequiredGroup != null}
-              accessibilityLabel={
-                missingRequiredGroup
-                  ? `Log ${(config?.label ?? "care").toLowerCase()}. Disabled until ${missingRequiredGroup.label.replace(/\?$/, "").toLowerCase()} is chosen.`
-                  : `Log ${(config?.label ?? "care").toLowerCase()}`
-              }
-              style={s.logSaveAction}
-            />
-          </BoardCard>
+              </BoardCard>
             </>
           ) : belowFoldReady && view === "history" ? (
             <>
-
-          {/* Today at a glance */}
-          {todaySnapshot.total > 0 && (
-            <BoardCard style={s.logBoardCard}>
-              <BoardSectionHeader
-                title="Today at a glance"
-                accessory={<BoardPill label={`${todaySnapshot.total} logged`} icon="checkmark-circle-outline" tone={colors.sage} />}
-              />
-              <View style={[s.snapshotSummary, { backgroundColor: colors.background }]}>
-                <View style={s.snapshotLeft}>
-                  <Text style={[s.snapshotCount, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{todaySnapshot.total}</Text>
-                  <Text style={[s.snapshotLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>logged today</Text>
-                </View>
-                <View style={s.snapshotIcons}>
-                  {todaySnapshot.top.map((t) => {
-                    const tint = careTypeTone(t.type, t.icon);
-                    return (
-                      <View key={t.type} style={[s.snapshotChip, { backgroundColor: tint + "16" }]}>
-                        <CareTypeIcon type={t.type} icon={t.icon} size={13} />
-                        <Text style={[s.snapshotChipCount, { color: tint, fontFamily: "Inter_700Bold" }]}>{t.count}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            </BoardCard>
-          )}
-
-          {/* Search and filters */}
-          <BoardCard style={s.logBoardCard}>
-            <BoardSectionHeader
-              title="Find care logs"
-              accessory={logSearch.hasActiveFilters ? <BoardPill label="Filtered" icon="funnel-outline" tone={colors.sage} /> : undefined}
-            />
-            <View style={[s.searchPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Ionicons name="search" size={18} color={colors.mutedForeground} />
-              <TextInput
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholder="Search notes, people, meds..."
-                placeholderTextColor={colors.mutedForeground}
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={[s.searchInput, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
-              {searchText.trim() ? (
-                <Pressable
-                  accessibilityLabel="Clear log search"
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setSearchText("");
-                  }}
-                  style={[s.searchClear, { backgroundColor: colors.card }]}
-                >
-                  <Ionicons name="close" size={16} color={colors.mutedForeground} />
-                </Pressable>
-              ) : null}
-            </View>
-            {logSearch.hasActiveFilters ? (
-              <Text style={[s.searchSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                {logSearch.summary}
-              </Text>
-            ) : null}
-
-            {/* Filter chips */}
-            {presentTypes.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.filterRow}
-                style={s.filterScroll}
-              >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Show all log types"
-                aria-selected={filter === null}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setFilter(null);
-                }}
-                style={[s.filterChip, { backgroundColor: filter === null ? colors.primary : colors.card, borderColor: filter === null ? colors.primary : colors.border }]}
-              >
-                <Text style={[s.filterText, { color: filter === null ? colors.primaryForeground : colors.foreground, fontFamily: filter === null ? "Inter_700Bold" : "Inter_600SemiBold" }]}>All</Text>
-              </Pressable>
-                {presentTypes.map((q) => {
-                  const active = filter === q.type;
-                  return (
-                    <Pressable
-                      key={q.type}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Filter by ${q.label}`}
-                      aria-selected={active}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setFilter(active ? null : q.type);
-                      }}
-                      style={[s.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
-                    >
-                      <CareTypeIcon type={q.type} icon={q.icon} size={14} color={active ? colors.primaryForeground : undefined} />
-                      <Text style={[s.filterText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold" }]}>{q.label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
-          </BoardCard>
-
-          {/* Timeline */}
-          {grouped.length === 0 ? (
-            <BoardCard style={s.logBoardCard}>
-              <BoardSectionHeader title="No matching logs" />
-              <View style={[s.emptyPanel, { backgroundColor: colors.background }]}>
-                <Ionicons name="clipboard-outline" size={32} color={colors.mutedForeground} />
-                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {logSearch.emptyMessage}
-                </Text>
-              </View>
-            </BoardCard>
-          ) : (
-            grouped.map((g) => (
-              <BoardCard key={g.key} style={s.logBoardCard}>
-                <BoardSectionHeader title={g.label} />
-                <View style={s.dayEntries}>
-                  {g.entries.map((e, i) => {
-                    const normalizedType = normalizeCareEventType(e.type, e.details);
-                    const icon = TYPE_ICON[normalizedType] ?? "paw";
-                    const sev = e.severity && e.severity !== "normal" ? e.severity : null;
-                    const sevColor = sev === "alert" ? colors.rose : colors.amber;
-                    const statusLabel = syncLabel(e.syncStatus);
-                    const compactStatusLabel =
-                      statusLabel === "Saved offline"
-                        ? "Offline"
-                        : statusLabel === "Saved on this device"
-                          ? "On device"
-                          : statusLabel === "Pending sync"
-                            ? "Queued"
-                            : statusLabel;
-                    // Without a sync provider, local storage is the success
-                    // state; render it calm instead of as a warning.
-                    const statusSettled =
-                      e.syncStatus === "synced" ||
-                      (!SYNC_PROVIDER_CONFIGURED && e.syncStatus === "local");
-                    const stickyNotes = getStickyNotes(e.details);
-                    const entryAttentionChips = getCareLogAttentionChips(e);
-                    const pendingMeal = isPendingMealEntry(e);
-                    const entryTime = new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-                    return (
-                      <Pressable
-                        key={e.id}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Open ${e.title} log details`}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          openEntryDetail(e);
-                        }}
-                        style={({ pressed }) => [
-                          s.entryRow,
-                          pendingMeal
-                            ? [s.entryRowPending, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "33", opacity: pressed ? 0.85 : 1 }]
-                            : { backgroundColor: pressed ? colors.background : "transparent" },
-                          !pendingMeal && i < g.entries.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+              {/* Today at a glance */}
+              {todaySnapshot.total > 0 && (
+                <BoardCard style={s.logBoardCard}>
+                  <BoardSectionHeader
+                    title="Today at a glance"
+                    accessory={
+                      <BoardPill
+                        label={`${todaySnapshot.total} logged`}
+                        icon="checkmark-circle-outline"
+                        tone={colors.sage}
+                      />
+                    }
+                  />
+                  <View
+                    style={[
+                      s.snapshotSummary,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <View style={s.snapshotLeft}>
+                      <Text
+                        style={[
+                          s.snapshotCount,
+                          {
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
+                          },
                         ]}
                       >
-                        <View style={s.entryTimeCol}>
-                          <Text numberOfLines={1} style={[s.entryTime, { color: pendingMeal ? colors.amber : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                            {entryTime}
-                          </Text>
-                        </View>
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <View style={s.entryTitleLine}>
-                            <Text numberOfLines={1} style={[s.entryTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                              {e.title}
+                        {todaySnapshot.total}
+                      </Text>
+                      <Text
+                        style={[
+                          s.snapshotLabel,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        logged today
+                      </Text>
+                    </View>
+                    <View style={s.snapshotIcons}>
+                      {todaySnapshot.top.map((t) => {
+                        const tint = careTypeTone(t.type, t.icon);
+                        return (
+                          <View
+                            key={t.type}
+                            style={[
+                              s.snapshotChip,
+                              { backgroundColor: tint + "16" },
+                            ]}
+                          >
+                            <CareTypeIcon
+                              type={t.type}
+                              icon={t.icon}
+                              size={13}
+                            />
+                            <Text
+                              style={[
+                                s.snapshotChipCount,
+                                { color: tint, fontFamily: "Inter_700Bold" },
+                              ]}
+                            >
+                              {t.count}
                             </Text>
-                            {sev && (
-                              <View style={[s.sevBadge, { backgroundColor: sevColor + "18" }]}>
-                                <Text style={[s.sevText, { color: sevColor, fontFamily: "Inter_700Bold" }]}>{sev}</Text>
-                              </View>
-                            )}
                           </View>
-                          <View style={s.entryMetaLine}>
-                            <Text numberOfLines={1} style={[s.entryMeta, { color: pendingMeal ? colors.amber : colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                              {e.caregiver}
-                            </Text>
-                            {compactStatusLabel ? (
-                              <View
+                        );
+                      })}
+                    </View>
+                  </View>
+                </BoardCard>
+              )}
+
+              {/* Search and filters */}
+              <BoardCard style={s.logBoardCard}>
+                <BoardSectionHeader
+                  title="Find care logs"
+                  accessory={
+                    logSearch.hasActiveFilters ? (
+                      <BoardPill
+                        label="Filtered"
+                        icon="funnel-outline"
+                        tone={colors.sage}
+                      />
+                    ) : undefined
+                  }
+                />
+                <View
+                  style={[
+                    s.searchPanel,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="search"
+                    size={18}
+                    color={colors.mutedForeground}
+                  />
+                  <TextInput
+                    accessibilityLabel="Search care logs"
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    placeholder="Search notes, people, meds..."
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    style={[
+                      s.searchInput,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  />
+                  {searchText.trim() ? (
+                    <Pressable
+                      accessibilityLabel="Clear log search"
+                      accessibilityRole="button"
+                      hitSlop={MOBILE_INLINE_HIT_SLOP}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setSearchText("");
+                      }}
+                      style={({ pressed }) => [
+                        s.searchClear,
+                        {
+                          backgroundColor: colors.card,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="close"
+                        size={16}
+                        color={colors.mutedForeground}
+                      />
+                    </Pressable>
+                  ) : null}
+                </View>
+                {logSearch.hasActiveFilters ? (
+                  <Text
+                    style={[
+                      s.searchSummary,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {logSearch.summary}
+                  </Text>
+                ) : null}
+
+                {/* Filter chips */}
+                {presentTypes.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.filterRow}
+                    style={s.filterScroll}
+                  >
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Show all log types"
+                      aria-selected={filter === null}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setFilter(null);
+                      }}
+                      style={({ pressed }) => [
+                        s.filterChip,
+                        {
+                          backgroundColor:
+                            filter === null ? colors.primary : colors.card,
+                          borderColor:
+                            filter === null ? colors.primary : colors.border,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.filterText,
+                          {
+                            color:
+                              filter === null
+                                ? colors.primaryForeground
+                                : colors.foreground,
+                            fontFamily:
+                              filter === null
+                                ? "Inter_700Bold"
+                                : "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        All
+                      </Text>
+                    </Pressable>
+                    {presentTypes.map((q) => {
+                      const active = filter === q.type;
+                      return (
+                        <Pressable
+                          key={q.type}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Filter by ${q.label}`}
+                          aria-selected={active}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setFilter(active ? null : q.type);
+                          }}
+                          style={({ pressed }) => [
+                            s.filterChip,
+                            {
+                              backgroundColor: active
+                                ? colors.primary
+                                : colors.card,
+                              borderColor: active
+                                ? colors.primary
+                                : colors.border,
+                              opacity: pressed ? 0.72 : 1,
+                            },
+                          ]}
+                        >
+                          <CareTypeIcon
+                            type={q.type}
+                            icon={q.icon}
+                            size={14}
+                            color={
+                              active ? colors.primaryForeground : undefined
+                            }
+                          />
+                          <Text
+                            style={[
+                              s.filterText,
+                              {
+                                color: active
+                                  ? colors.primaryForeground
+                                  : colors.foreground,
+                                fontFamily: active
+                                  ? "Inter_700Bold"
+                                  : "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {q.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+              </BoardCard>
+
+              {/* Timeline */}
+              {grouped.length === 0 ? (
+                <BoardCard style={s.logBoardCard}>
+                  <BoardSectionHeader title="No matching logs" />
+                  <View
+                    style={[
+                      s.emptyPanel,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <Ionicons
+                      name="clipboard-outline"
+                      size={32}
+                      color={colors.mutedForeground}
+                    />
+                    <Text
+                      style={[
+                        s.emptyText,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
+                    >
+                      {logSearch.emptyMessage}
+                    </Text>
+                  </View>
+                </BoardCard>
+              ) : (
+                grouped.map((g) => (
+                  <BoardCard key={g.key} style={s.logBoardCard}>
+                    <BoardSectionHeader title={g.label} />
+                    <View style={s.dayEntries}>
+                      {g.entries.map((e, i) => {
+                        const normalizedType = normalizeCareEventType(
+                          e.type,
+                          e.details,
+                        );
+                        const icon = TYPE_ICON[normalizedType] ?? "paw";
+                        const sev =
+                          e.severity && e.severity !== "normal"
+                            ? e.severity
+                            : null;
+                        const sevColor =
+                          sev === "alert" ? colors.rose : colors.amber;
+                        const statusLabel = syncLabel(
+                          e.syncStatus,
+                          storageWarning,
+                        );
+                        const compactStatusLabel =
+                          statusLabel === "Saved offline"
+                            ? "Offline"
+                            : statusLabel === "Saved on this device"
+                              ? "On device"
+                              : statusLabel === "Pending sync"
+                                ? "Queued"
+                                : statusLabel;
+                        // Without a sync provider, local storage is the success
+                        // state; render it calm instead of as a warning.
+                        const statusSettled =
+                          !storageWarning &&
+                          (e.syncStatus === "synced" ||
+                            (!SYNC_PROVIDER_CONFIGURED &&
+                              e.syncStatus === "local"));
+                        const stickyNotes = getStickyNotes(e.details);
+                        const {
+                          visibleNotes: visibleStickyNotes,
+                          hiddenCount: hiddenStickyNoteCount,
+                        } = getTimelineStickyNotePreview(
+                          stickyNotes,
+                          LOG_ROW_STICKY_NOTE_LIMIT,
+                        );
+                        const entryAttentionChips = getCareLogAttentionChips(e);
+                        const pendingMeal = isPendingMealEntry(e);
+                        const entryTime = new Date(
+                          e.occurredAt,
+                        ).toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        });
+                        return (
+                          <Pressable
+                            key={e.id}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open ${e.title} log details${hiddenStickyNoteCount > 0 ? `. ${hiddenStickyNoteCount} earlier sticky ${hiddenStickyNoteCount === 1 ? "note is" : "notes are"} available in log details.` : ""}`}
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              openEntryDetail(e);
+                            }}
+                            style={({ pressed }) => [
+                              s.entryRow,
+                              pendingMeal
+                                ? [
+                                    s.entryRowPending,
+                                    {
+                                      backgroundColor: colors.amberSoft,
+                                      borderColor: colors.amber + "33",
+                                      opacity: pressed ? 0.85 : 1,
+                                    },
+                                  ]
+                                : {
+                                    backgroundColor: pressed
+                                      ? colors.background
+                                      : "transparent",
+                                  },
+                              !pendingMeal &&
+                                i < g.entries.length - 1 && {
+                                  borderBottomWidth: StyleSheet.hairlineWidth,
+                                  borderBottomColor: colors.border,
+                                },
+                            ]}
+                          >
+                            <View style={s.entryTimeCol}>
+                              <Text
+                                numberOfLines={1}
                                 style={[
-                                  s.entryStatusChip,
+                                  s.entryTime,
                                   {
-                                    backgroundColor:
-                                      e.syncStatus === "failed"
-                                        ? colors.rose + "14"
-                                        : statusSettled
-                                          ? colors.sage + "14"
-                                          : colors.amber + "14",
+                                    color: pendingMeal
+                                      ? colors.amber
+                                      : colors.mutedForeground,
+                                    fontFamily: "Inter_600SemiBold",
                                   },
                                 ]}
                               >
+                                {entryTime}
+                              </Text>
+                            </View>
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <View style={s.entryTitleLine}>
                                 <Text
+                                  numberOfLines={1}
                                   style={[
-                                    s.entryStatusText,
+                                    s.entryTitle,
                                     {
-                                      color:
-                                        e.syncStatus === "failed"
-                                          ? colors.rose
-                                          : statusSettled
-                                            ? colors.sage
-                                            : colors.amber,
+                                      color: colors.foreground,
                                       fontFamily: "Inter_700Bold",
                                     },
                                   ]}
                                 >
-                                  {compactStatusLabel}
+                                  {e.title}
                                 </Text>
-                              </View>
-                            ) : null}
-                            {entryAttentionChips.map((chip) => {
-                              const chipColor =
-                                chip.tone === "rose"
-                                  ? colors.rose
-                                  : chip.tone === "copper"
-                                    ? colors.copper
-                                    : chip.tone === "sage"
-                                      ? colors.sage
-                                      : colors.amber;
-                              return (
-                                <View key={chip.id} style={[s.entryAttentionChip, { backgroundColor: chipColor + "14" }]}>
-                                  <Text style={[s.entryAttentionText, { color: chipColor, fontFamily: "Inter_700Bold" }]}>
-                                    {ENTRY_ATTENTION_CHIP_COPY[chip.id] ?? chip.label}
-                                  </Text>
-                                </View>
-                              );
-                            })}
-                          </View>
-                          {e.syncStatus === "failed" && e.syncError ? (
-                            <Text style={[s.entrySyncError, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>
-                              {e.syncError}
-                            </Text>
-                          ) : null}
-                          {e.note && stickyNotes.length === 0 ? (
-                            <Text numberOfLines={3} style={[s.entryNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                              {e.note}
-                            </Text>
-                          ) : null}
-                          {stickyNotes.length > 0 ? (
-                            <View style={s.stickyStack}>
-                              {stickyNotes.map((note) => {
-                                const tone = stickyColor(note.color);
-                                return (
-                                  <View key={note.id} style={[s.stickyNote, { backgroundColor: tone + "12", borderLeftColor: tone }]}>
-                                    <Text style={[s.stickyNoteText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                                      {note.text}
-                                    </Text>
-                                    <Text style={[s.stickyNoteMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                                      {note.caregiver}
+                                {sev && (
+                                  <View
+                                    style={[
+                                      s.sevBadge,
+                                      { backgroundColor: sevColor + "18" },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        s.sevText,
+                                        {
+                                          color: sevColor,
+                                          fontFamily: "Inter_700Bold",
+                                        },
+                                      ]}
+                                    >
+                                      {sev}
                                     </Text>
                                   </View>
-                                );
-                              })}
+                                )}
+                              </View>
+                              <View style={s.entryMetaLine}>
+                                <Text
+                                  numberOfLines={1}
+                                  style={[
+                                    s.entryMeta,
+                                    {
+                                      color: pendingMeal
+                                        ? colors.amber
+                                        : colors.mutedForeground,
+                                      fontFamily: "Inter_500Medium",
+                                    },
+                                  ]}
+                                >
+                                  {e.caregiver}
+                                </Text>
+                                {compactStatusLabel ? (
+                                  <View
+                                    style={[
+                                      s.entryStatusChip,
+                                      {
+                                        backgroundColor:
+                                          e.syncStatus === "failed"
+                                            ? colors.rose + "14"
+                                            : statusSettled
+                                              ? colors.sage + "14"
+                                              : colors.amber + "14",
+                                      },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        s.entryStatusText,
+                                        {
+                                          color:
+                                            e.syncStatus === "failed"
+                                              ? colors.rose
+                                              : statusSettled
+                                                ? colors.sage
+                                                : colors.amber,
+                                          fontFamily: "Inter_700Bold",
+                                        },
+                                      ]}
+                                    >
+                                      {compactStatusLabel}
+                                    </Text>
+                                  </View>
+                                ) : null}
+                                {entryAttentionChips.map((chip) => {
+                                  const chipColor =
+                                    chip.tone === "rose"
+                                      ? colors.rose
+                                      : chip.tone === "copper"
+                                        ? colors.copper
+                                        : chip.tone === "sage"
+                                          ? colors.sage
+                                          : colors.amber;
+                                  return (
+                                    <View
+                                      key={chip.id}
+                                      style={[
+                                        s.entryAttentionChip,
+                                        { backgroundColor: chipColor + "14" },
+                                      ]}
+                                    >
+                                      <Text
+                                        style={[
+                                          s.entryAttentionText,
+                                          {
+                                            color: chipColor,
+                                            fontFamily: "Inter_700Bold",
+                                          },
+                                        ]}
+                                      >
+                                        {ENTRY_ATTENTION_CHIP_COPY[chip.id] ??
+                                          chip.label}
+                                      </Text>
+                                    </View>
+                                  );
+                                })}
+                              </View>
+                              {e.syncStatus === "failed" && e.syncError ? (
+                                <Text
+                                  style={[
+                                    s.entrySyncError,
+                                    {
+                                      color: colors.rose,
+                                      fontFamily: "Inter_500Medium",
+                                    },
+                                  ]}
+                                >
+                                  {e.syncError}
+                                </Text>
+                              ) : null}
+                              {e.note && stickyNotes.length === 0 ? (
+                                <Text
+                                  numberOfLines={3}
+                                  style={[
+                                    s.entryNote,
+                                    {
+                                      color: colors.mutedForeground,
+                                      fontFamily: "Inter_400Regular",
+                                    },
+                                  ]}
+                                >
+                                  {e.note}
+                                </Text>
+                              ) : null}
+                              {stickyNotes.length > 0 ? (
+                                <View style={s.stickyStack}>
+                                  {visibleStickyNotes.map((note) => {
+                                    const tone = stickyColor(note.color);
+                                    return (
+                                      <View
+                                        key={note.id}
+                                        style={[
+                                          s.stickyNote,
+                                          {
+                                            backgroundColor: tone + "12",
+                                            borderLeftColor: tone,
+                                          },
+                                        ]}
+                                      >
+                                        <Text
+                                          style={[
+                                            s.stickyNoteText,
+                                            {
+                                              color: colors.foreground,
+                                              fontFamily: "Inter_500Medium",
+                                            },
+                                          ]}
+                                        >
+                                          {note.text}
+                                        </Text>
+                                        <Text
+                                          style={[
+                                            s.stickyNoteMeta,
+                                            {
+                                              color: colors.mutedForeground,
+                                              fontFamily: "Inter_500Medium",
+                                            },
+                                          ]}
+                                        >
+                                          {note.caregiver}
+                                        </Text>
+                                      </View>
+                                    );
+                                  })}
+                                  {hiddenStickyNoteCount > 0 ? (
+                                    <View
+                                      style={[
+                                        s.stickyNoteSummary,
+                                        {
+                                          backgroundColor:
+                                            colors.secondary + "0F",
+                                          borderColor: colors.border,
+                                        },
+                                      ]}
+                                    >
+                                      <Ionicons
+                                        name="layers-outline"
+                                        size={14}
+                                        color={colors.secondary}
+                                      />
+                                      <Text
+                                        style={[
+                                          s.stickyNoteSummaryText,
+                                          {
+                                            color: colors.secondary,
+                                            fontFamily: "Inter_700Bold",
+                                          },
+                                        ]}
+                                      >
+                                        {hiddenStickyNoteCount} earlier sticky{" "}
+                                        {hiddenStickyNoteCount === 1
+                                          ? "note"
+                                          : "notes"}{" "}
+                                        in log details
+                                      </Text>
+                                    </View>
+                                  ) : null}
+                                </View>
+                              ) : null}
                             </View>
-                          ) : null}
-                        </View>
-                        <View style={[s.entryIconChip, { backgroundColor: pendingMeal ? colors.amber + "26" : careTypeTone(normalizedType, icon) + "16" }]}>
-                          <CareTypeIcon type={normalizedType} icon={icon} size={18} />
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </BoardCard>
-            ))
-          )}
+                            <View
+                              style={[
+                                s.entryIconChip,
+                                {
+                                  backgroundColor: pendingMeal
+                                    ? colors.amber + "26"
+                                    : careTypeTone(normalizedType, icon) + "16",
+                                },
+                              ]}
+                            >
+                              <CareTypeIcon
+                                type={normalizedType}
+                                icon={icon}
+                                size={18}
+                              />
+                            </View>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </BoardCard>
+                ))
+              )}
+              {newerHistoryCount > 0 ? (
+                <BoardActionButton
+                  label={`Show ${Math.min(LOG_HISTORY_PAGE_SIZE, newerHistoryCount)} newer logs`}
+                  accessibilityLabel={`${newerHistoryCount} newer logs are hidden. Show the previous ${Math.min(LOG_HISTORY_PAGE_SIZE, newerHistoryCount)}.`}
+                  variant="soft"
+                  icon="chevron-up"
+                  onPress={() =>
+                    setHistoryPage((current) => Math.max(0, current - 1))
+                  }
+                />
+              ) : null}
+              {olderHistoryCount > 0 ? (
+                <BoardActionButton
+                  label={`Show ${Math.min(LOG_HISTORY_PAGE_SIZE, olderHistoryCount)} older logs`}
+                  accessibilityLabel={`${olderHistoryCount} older logs are hidden. Show the next ${Math.min(LOG_HISTORY_PAGE_SIZE, olderHistoryCount)}.`}
+                  variant="soft"
+                  icon="chevron-down"
+                  onPress={() => setHistoryPage((current) => current + 1)}
+                />
+              ) : null}
             </>
           ) : null}
         </Animated.View>
@@ -4307,175 +7525,408 @@ export default function LogScreen() {
       <Modal
         visible={launcherDetailAction !== null}
         transparent
-        animationType="slide"
+        animationType={reducedMotion ? "none" : "slide"}
         onRequestClose={() => setLauncherDetailAction(null)}
       >
-        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
-          <Pressable
-            accessible={false}
-            accessibilityViewIsModal
-            style={[s.launcherDetailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
-            onPress={(e) => e.stopPropagation()}
+        <ModalBackdropPressable
+          style={[s.modalBackdrop, { justifyContent: "flex-end" }]}
+          onPress={() => setLauncherDetailAction(null)}
+        >
+          <ModalSheetPressable
+            visible={launcherDetailAction !== null}
+            onRequestClose={() => setLauncherDetailAction(null)}
+            style={[
+              s.launcherDetailSheet,
+              {
+                backgroundColor: colors.card,
+                paddingBottom: modalSheetBottomPadding,
+              },
+            ]}
           >
-            <View style={s.editHandle} />
-            {launcherDetailAction && launcherDetailPresentation ? (
-              <>
-                <View style={s.launcherDetailTop}>
-                  <View style={[s.launcherDetailIcon, { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.border }]}>
-                    <PixelIcon name={launcherDetailAction.icon} size={34} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[s.launcherDetailKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      QUICK LOG FLOW
-                    </Text>
-                    <Text style={[s.launcherDetailTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {launcherDetailPresentation.title}
-                    </Text>
-                    <Text style={[s.launcherDetailSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {launcherDetailPresentation.subtitle}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[s.launcherDetailSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Ionicons name="flash-outline" size={16} color={colors.sage} />
-                  <Text style={[s.launcherDetailSummaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                    {launcherDetailPresentation.quickSummary}
-                  </Text>
-                </View>
-
-                <View style={s.launcherDetailModeRail}>
-                  {launcherDetailPresentation.interactionRail.map((item) => {
-                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.blueSignal;
-                    return (
-                      <View
-                        key={item.label}
+            <ScrollView
+              showsVerticalScrollIndicator
+              bounces={false}
+              style={s.launcherDetailScroll}
+              contentContainerStyle={s.launcherDetailContent}
+            >
+              <View style={s.editHandle} />
+              {launcherDetailAction && launcherDetailPresentation ? (
+                <>
+                  <View style={s.launcherDetailTop}>
+                    <View
+                      style={[
+                        s.launcherDetailIcon,
+                        {
+                          backgroundColor: colors.secondary,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <PixelIcon name={launcherDetailAction.icon} size={34} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
                         style={[
-                          s.launcherDetailModeCard,
+                          s.launcherDetailKicker,
+                          { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        QUICK LOG FLOW
+                      </Text>
+                      <Text
+                        style={[
+                          s.launcherDetailTitle,
                           {
-                            backgroundColor: toneColor + "0F",
-                            borderColor: toneColor + "33",
+                            color: colors.foreground,
+                            fontFamily: DISPLAY_SEMI,
                           },
                         ]}
                       >
-                        <Text numberOfLines={1} style={[s.launcherDetailModeLabel, { color: toneColor, fontFamily: "Inter_800ExtraBold" }]}>
-                          {item.label}
-                        </Text>
-                        <Text numberOfLines={1} style={[s.launcherDetailModeDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          {item.detail}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-
-                <View style={s.launcherDetailChecklist}>
-                  {launcherDetailPresentation.detailChecklist.map((item) => (
-                    <View key={item} style={s.launcherDetailChecklistRow}>
-                      <View style={[s.launcherDetailBullet, { backgroundColor: colors.sage }]} />
-                      <Text style={[s.launcherDetailChecklistText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {item}
+                        {launcherDetailPresentation.title}
+                      </Text>
+                      <Text
+                        style={[
+                          s.launcherDetailSubtitle,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {launcherDetailPresentation.subtitle}
                       </Text>
                     </View>
-                  ))}
-                </View>
-
-                <View style={[s.launcherDetailEditLater, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Ionicons name="create-outline" size={16} color={colors.sage} />
-                  <Text style={[s.launcherDetailEditLaterText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                    {launcherDetailPresentation.editLaterCopy}
-                  </Text>
-                </View>
-
-                {launcherDetailPresentation.safetyBoundary ? (
-                  <View style={[s.launcherDetailBoundary, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "44" }]}>
-                    <Ionicons name="shield-checkmark-outline" size={16} color={colors.amber} />
-                    <Text style={[s.launcherDetailBoundaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                      {launcherDetailPresentation.safetyBoundary}
-                    </Text>
                   </View>
-                ) : null}
 
-                <View style={s.launcherDetailActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${launcherDetailPresentation.primaryActionLabel}: ${launcherDetailAction.label}`}
-                    onPress={() => {
-                      const action = launcherDetailAction;
-                      setLauncherDetailAction(null);
-                      if (!action) return;
-                      if (launcherDetailPresentation.canQuickLog) {
-                        handleQuickLauncherAction(action);
-                      } else {
-                        focusFullComposerForLauncherAction(action);
-                      }
-                    }}
-                    style={({ pressed }) => [
-                      s.launcherDetailPrimary,
+                  <View
+                    style={[
+                      s.launcherDetailSummary,
                       {
-                        backgroundColor: pressed ? colors.primary + "DD" : colors.primary,
-                        borderColor: colors.primary,
-                      },
-                    ]}
-                  >
-                    <Text style={[s.launcherDetailPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
-                      {launcherDetailPresentation.primaryActionLabel}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={17} color={colors.primaryForeground} />
-                  </Pressable>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${launcherDetailPresentation.secondaryActionLabel}: ${launcherDetailAction.label}`}
-                    onPress={() => {
-                      const action = launcherDetailAction;
-                      setLauncherDetailAction(null);
-                      if (action && launcherDetailPresentation.secondaryActionLabel === "Open full details") {
-                        focusFullComposerForLauncherAction(action);
-                      }
-                    }}
-                    style={({ pressed }) => [
-                      s.launcherDetailSecondary,
-                      {
-                        backgroundColor: pressed ? colors.secondary : colors.background,
+                        backgroundColor: colors.background,
                         borderColor: colors.border,
                       },
                     ]}
                   >
-                    <Text style={[s.launcherDetailSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {launcherDetailPresentation.secondaryActionLabel}
+                    <Ionicons
+                      name="flash-outline"
+                      size={16}
+                      color={colors.sage}
+                    />
+                    <Text
+                      style={[
+                        s.launcherDetailSummaryText,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {launcherDetailPresentation.quickSummary}
                     </Text>
-                  </Pressable>
-                </View>
-              </>
-            ) : null}
-          </Pressable>
-        </Pressable>
+                  </View>
+
+                  <View style={s.launcherDetailModeRail}>
+                    {launcherDetailPresentation.interactionRail.map((item) => {
+                      const toneColor =
+                        item.tone === "quick"
+                          ? colors.sage
+                          : item.tone === "detail"
+                            ? colors.copper
+                            : colors.blueSignal;
+                      return (
+                        <View
+                          key={item.label}
+                          style={[
+                            s.launcherDetailModeCard,
+                            {
+                              backgroundColor: toneColor + "0F",
+                              borderColor: toneColor + "33",
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.launcherDetailModeLabel,
+                              {
+                                color: toneColor,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
+                          >
+                            {item.label}
+                          </Text>
+                          <Text
+                            style={[
+                              s.launcherDetailModeDetail,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {item.detail}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  <View style={s.launcherDetailChecklist}>
+                    {launcherDetailPresentation.detailChecklist.map((item) => (
+                      <View key={item} style={s.launcherDetailChecklistRow}>
+                        <View
+                          style={[
+                            s.launcherDetailBullet,
+                            { backgroundColor: colors.sage },
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            s.launcherDetailChecklistText,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {item}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <View
+                    style={[
+                      s.launcherDetailEditLater,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name="create-outline"
+                      size={16}
+                      color={colors.sage}
+                    />
+                    <Text
+                      style={[
+                        s.launcherDetailEditLaterText,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {launcherDetailPresentation.editLaterCopy}
+                    </Text>
+                  </View>
+
+                  {launcherDetailPresentation.safetyBoundary ? (
+                    <View
+                      style={[
+                        s.launcherDetailBoundary,
+                        {
+                          backgroundColor: colors.amberSoft,
+                          borderColor: colors.amber + "44",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="shield-checkmark-outline"
+                        size={16}
+                        color={colors.amber}
+                      />
+                      <Text
+                        style={[
+                          s.launcherDetailBoundaryText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {launcherDetailPresentation.safetyBoundary}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  <View style={s.launcherDetailActions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${launcherDetailPresentation.primaryActionLabel}: ${launcherDetailAction.label}`}
+                      onPress={() => {
+                        const action = launcherDetailAction;
+                        setLauncherDetailAction(null);
+                        if (!action) return;
+                        if (launcherDetailPresentation.canQuickLog) {
+                          handleQuickLauncherAction(action);
+                        } else {
+                          focusFullComposerForLauncherAction(action);
+                        }
+                      }}
+                      style={({ pressed }) => [
+                        s.launcherDetailPrimary,
+                        {
+                          backgroundColor: pressed
+                            ? colors.primary + "DD"
+                            : colors.primary,
+                          borderColor: colors.primary,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.launcherDetailPrimaryText,
+                          {
+                            color: colors.primaryForeground,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {launcherDetailPresentation.primaryActionLabel}
+                      </Text>
+                      <Ionicons
+                        name="arrow-forward"
+                        size={17}
+                        color={colors.primaryForeground}
+                      />
+                    </Pressable>
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${launcherDetailPresentation.secondaryActionLabel}: ${launcherDetailAction.label}`}
+                      onPress={() => {
+                        const action = launcherDetailAction;
+                        setLauncherDetailAction(null);
+                        if (
+                          action &&
+                          launcherDetailPresentation.secondaryActionLabel ===
+                            "Open full details"
+                        ) {
+                          focusFullComposerForLauncherAction(action);
+                        }
+                      }}
+                      style={({ pressed }) => [
+                        s.launcherDetailSecondary,
+                        {
+                          backgroundColor: pressed
+                            ? colors.secondary
+                            : colors.background,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.launcherDetailSecondaryText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {launcherDetailPresentation.secondaryActionLabel}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
+            </ScrollView>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
 
       {/* Entry detail modal */}
-      <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
-        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
-          <Pressable accessible={false} accessibilityViewIsModal style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+      <Modal
+        visible={detailEntry !== null}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setDetailEntryId(null)}
+      >
+        <ModalBackdropPressable
+          style={[s.modalBackdrop, { justifyContent: "flex-end" }]}
+          onPress={() => setDetailEntryId(null)}
+        >
+          <ModalSheetPressable
+            visible={detailEntry !== null}
+            onRequestClose={() => setDetailEntryId(null)}
+            style={[
+              s.detailSheet,
+              {
+                backgroundColor: colors.background,
+                paddingBottom: modalSheetBottomPadding,
+              },
+            ]}
+          >
             <View style={s.editHandle} />
             {detailEntry ? (
               <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
                 <View style={s.detailHeader}>
-                  <View style={[s.detailIcon, { backgroundColor: careTypeTone(detailType ?? "", detailIcon) + "18" }]}>
-                    <CareTypeIcon type={detailType ?? ""} icon={detailIcon} size={22} />
+                  <View
+                    style={[
+                      s.detailIcon,
+                      {
+                        backgroundColor:
+                          careTypeTone(detailType ?? "", detailIcon) + "18",
+                      },
+                    ]}
+                  >
+                    <CareTypeIcon
+                      type={detailType ?? ""}
+                      icon={detailIcon}
+                      size={22}
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.detailType, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{detailTypeText}</Text>
-                    <Text style={[s.detailTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{detailEntry.title}</Text>
-                    <Text style={[s.detailMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {detailEntry.caregiver || "Care team"} - {new Date(detailEntry.occurredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    <Text
+                      style={[
+                        s.detailType,
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      {detailTypeText}
+                    </Text>
+                    <Text
+                      style={[
+                        s.detailTitle,
+                        { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                      ]}
+                    >
+                      {detailEntry.title}
+                    </Text>
+                    <Text
+                      style={[
+                        s.detailMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      {detailEntry.caregiver || "Care team"} -{" "}
+                      {new Date(detailEntry.occurredAt).toLocaleString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        },
+                      )}
                     </Text>
                   </View>
                 </View>
 
                 <View style={s.detailCommandRail}>
                   {DETAIL_WORKFLOW_RAIL.map((item) => {
-                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.blueSignal;
+                    const toneColor =
+                      item.tone === "quick"
+                        ? colors.sage
+                        : item.tone === "detail"
+                          ? colors.copper
+                          : colors.blueSignal;
                     const detail =
                       item.label === "Audit" && detailAuditTrail.length > 0
                         ? `${detailAuditTrail.length} event${detailAuditTrail.length === 1 ? "" : "s"}`
@@ -4491,12 +7942,34 @@ export default function LogScreen() {
                           },
                         ]}
                       >
-                        <Ionicons name={item.icon} size={15} color={toneColor} />
+                        <Ionicons
+                          name={item.icon}
+                          size={15}
+                          color={toneColor}
+                        />
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text numberOfLines={1} style={[s.detailCommandLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.detailCommandLabel,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_800ExtraBold",
+                              },
+                            ]}
+                          >
                             {item.label}
                           </Text>
-                          <Text numberOfLines={1} style={[s.detailCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.detailCommandDetail,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
                             {detail}
                           </Text>
                         </View>
@@ -4505,10 +7978,30 @@ export default function LogScreen() {
                   })}
                 </View>
 
-                {detailEntry.syncStatus === "failed" && detailEntry.syncError ? (
-                  <View style={[s.detailNotice, { backgroundColor: colors.rose + "12", borderColor: colors.rose + "44" }]}>
-                    <Ionicons name="warning-outline" size={16} color={colors.rose} />
-                    <Text style={[s.detailNoticeText, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>{detailEntry.syncError}</Text>
+                {detailEntry.syncStatus === "failed" &&
+                detailEntry.syncError ? (
+                  <View
+                    style={[
+                      s.detailNotice,
+                      {
+                        backgroundColor: colors.rose + "12",
+                        borderColor: colors.rose + "44",
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name="warning-outline"
+                      size={16}
+                      color={colors.rose}
+                    />
+                    <Text
+                      style={[
+                        s.detailNoticeText,
+                        { color: colors.rose, fontFamily: "Inter_500Medium" },
+                      ]}
+                    >
+                      {detailEntry.syncError}
+                    </Text>
                   </View>
                 ) : null}
 
@@ -4534,58 +8027,153 @@ export default function LogScreen() {
                   >
                     <View style={s.trustReviewHeader}>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.detailSectionLabel,
+                            { color: colors.sage, fontFamily: "Inter_700Bold" },
+                          ]}
+                        >
                           Trust review
                         </Text>
-                        <Text style={[s.trustReviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                        <Text
+                          style={[
+                            s.trustReviewTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
+                        >
                           {detailTrustReview.statusLabel}
                         </Text>
                       </View>
-                      <View style={[s.trustBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <Text style={[s.trustBadgeText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      <View
+                        style={[
+                          s.trustBadge,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.trustBadgeText,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
                           {detailTrustReview.reasonLabel}
                         </Text>
                       </View>
                     </View>
-                    <Text style={[s.trustReviewHelp, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    <Text
+                      style={[
+                        s.trustReviewHelp,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
                       {detailTrustReview.helperText}
                     </Text>
                     {detailTrustReview.proofStatus ? (
-                      <View style={[s.trustProofRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <Ionicons name="camera-outline" size={15} color={colors.sage} />
+                      <View
+                        style={[
+                          s.trustProofRow,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="camera-outline"
+                          size={15}
+                          color={colors.sage}
+                        />
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={[s.trustProofText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                            Proof status: {humanizeKey(detailTrustReview.proofStatus)}
+                          <Text
+                            style={[
+                              s.trustProofText,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            Photo status:{" "}
+                            {humanizeKey(detailTrustReview.proofStatus)}
                           </Text>
                           {detailTrustReview.proofAttachmentName ? (
-                            <Text numberOfLines={1} style={[s.trustProofMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                            <Text
+                              numberOfLines={1}
+                              style={[
+                                s.trustProofMeta,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_500Medium",
+                                },
+                              ]}
+                            >
                               {detailTrustReview.proofAttachmentName}
                             </Text>
                           ) : null}
-                          {detailTrustReview.proofStorageStatus === "local-only" ? (
-                            <Text style={[s.trustProofMeta, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                              Local-only proof saved. Cloud storage is not enabled yet.
+                          {detailTrustReview.proofStorageStatus ===
+                          "local-only" ? (
+                            <Text
+                              style={[
+                                s.trustProofMeta,
+                                {
+                                  color: colors.amber,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              Photo saved on this device. Cloud backup is not
+                              available.
                             </Text>
                           ) : null}
                         </View>
                       </View>
                     ) : null}
-                    {detailTrustReview.proofStatus && detailTrustReview.proofStatus !== "attached" ? (
+                    {detailTrustReview.proofStatus &&
+                    detailTrustReview.proofStatus !== "attached" ? (
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel="Attach proof photo to care log"
+                        accessibilityLabel="Attach photo to care log"
+                        accessibilityState={{ disabled: proofPickerBusy }}
+                        disabled={proofPickerBusy}
                         onPress={handleAttachProof}
                         style={({ pressed }) => [
                           s.trustProofAttachButton,
                           {
-                            backgroundColor: pressed ? colors.secondary : colors.card,
+                            backgroundColor: pressed
+                              ? colors.secondary
+                              : colors.card,
                             borderColor: colors.border,
+                            opacity: proofPickerBusy ? 0.5 : 1,
                           },
                         ]}
                       >
-                        <Ionicons name="image-outline" size={15} color={colors.sage} />
-                        <Text style={[s.trustProofAttachText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                          Attach proof photo
+                        <Ionicons
+                          name="image-outline"
+                          size={15}
+                          color={colors.sage}
+                        />
+                        <Text
+                          style={[
+                            s.trustProofAttachText,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Attach photo
                         </Text>
                       </Pressable>
                     ) : null}
@@ -4595,7 +8183,11 @@ export default function LogScreen() {
                           const actionLabel = TRUST_ACTION_LABELS[action.id];
                           const isDanger = action.id === "reject";
                           const isPrimary = action.id === "confirm";
-                          const actionColor = isDanger ? colors.rose : isPrimary ? colors.sage : colors.primary;
+                          const actionColor = isDanger
+                            ? colors.rose
+                            : isPrimary
+                              ? colors.sage
+                              : colors.primary;
                           const iconName =
                             action.id === "confirm"
                               ? "checkmark-circle-outline"
@@ -4613,13 +8205,27 @@ export default function LogScreen() {
                               style={({ pressed }) => [
                                 s.trustActionButton,
                                 {
-                                  backgroundColor: pressed ? actionColor + "1F" : colors.card,
+                                  backgroundColor: pressed
+                                    ? actionColor + "1F"
+                                    : colors.card,
                                   borderColor: actionColor + "44",
                                 },
                               ]}
                             >
-                              <Ionicons name={iconName} size={15} color={actionColor} />
-                              <Text style={[s.trustActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              <Ionicons
+                                name={iconName}
+                                size={15}
+                                color={actionColor}
+                              />
+                              <Text
+                                style={[
+                                  s.trustActionText,
+                                  {
+                                    color: colors.foreground,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
                                 {actionLabel}
                               </Text>
                             </Pressable>
@@ -4627,9 +8233,29 @@ export default function LogScreen() {
                         })}
                       </View>
                     ) : (
-                      <View style={[s.trustLockedRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <Ionicons name="lock-closed-outline" size={15} color={colors.mutedForeground} />
-                        <Text style={[s.trustLockedText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      <View
+                        style={[
+                          s.trustLockedRow,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="lock-closed-outline"
+                          size={15}
+                          color={colors.mutedForeground}
+                        />
+                        <Text
+                          style={[
+                            s.trustLockedText,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
                           Adult owner review required.
                         </Text>
                       </View>
@@ -4638,14 +8264,36 @@ export default function LogScreen() {
                 ) : null}
 
                 {isPendingMealEntry(detailEntry) ? (
-                  <View style={[s.mealOutcomePanel, { backgroundColor: colors.sage + "10", borderColor: colors.sage + "3D" }]}>
+                  <View
+                    style={[
+                      s.mealOutcomePanel,
+                      {
+                        backgroundColor: colors.sage + "10",
+                        borderColor: colors.sage + "3D",
+                      },
+                    ]}
+                  >
                     <View style={s.mealOutcomeHeader}>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.detailSectionLabel,
+                            { color: colors.sage, fontFamily: "Inter_700Bold" },
+                          ]}
+                        >
                           Update outcome
                         </Text>
-                        <Text style={[s.mealOutcomeHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          Close this open meal loop when {petDisplayName} finishes or refuses.
+                        <Text
+                          style={[
+                            s.mealOutcomeHint,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          Close this open meal loop when {petDisplayName}{" "}
+                          finishes or refuses.
                         </Text>
                       </View>
                     </View>
@@ -4655,14 +8303,20 @@ export default function LogScreen() {
                         // already records this outcome (e.g. still grazing).
                         const active =
                           isDetailRecord(detailEntry.details) &&
-                          String(detailEntry.details.mealCompletion ?? "") === outcome.id;
+                          String(detailEntry.details.mealCompletion ?? "") ===
+                            outcome.id;
                         return (
                           <Pressable
                             key={outcome.id}
                             accessibilityRole="button"
                             accessibilityLabel={`Update meal outcome: ${outcome.label}`}
                             aria-selected={active}
-                            onPress={() => updateMealOutcomeFromDetail(detailEntry, outcome.id)}
+                            onPress={() =>
+                              updateMealOutcomeFromDetail(
+                                detailEntry,
+                                outcome.id,
+                              )
+                            }
                             style={({ pressed }) => [
                               s.mealOutcomeButton,
                               {
@@ -4671,7 +8325,9 @@ export default function LogScreen() {
                                   : pressed
                                     ? colors.secondary
                                     : colors.card,
-                                borderColor: active ? colors.primary : colors.border,
+                                borderColor: active
+                                  ? colors.primary
+                                  : colors.border,
                               },
                             ]}
                           >
@@ -4679,7 +8335,9 @@ export default function LogScreen() {
                               style={[
                                 s.mealOutcomeButtonText,
                                 {
-                                  color: active ? colors.primaryForeground : colors.foreground,
+                                  color: active
+                                    ? colors.primaryForeground
+                                    : colors.foreground,
                                   fontFamily: "Inter_700Bold",
                                 },
                               ]}
@@ -4694,20 +8352,52 @@ export default function LogScreen() {
                 ) : null}
 
                 {detailType === "potty" ? (
-                  <View style={[s.pottyDetailPanel, { backgroundColor: colors.secondary + "14", borderColor: colors.secondary + "55" }]}>
+                  <View
+                    style={[
+                      s.pottyDetailPanel,
+                      {
+                        backgroundColor: colors.secondary + "14",
+                        borderColor: colors.secondary + "55",
+                      },
+                    ]}
+                  >
                     <View style={s.mealOutcomeHeader}>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.detailSectionLabel,
+                            { color: colors.sage, fontFamily: "Inter_700Bold" },
+                          ]}
+                        >
                           Clarify potty log
                         </Text>
-                        <Text style={[s.mealOutcomeHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          Keep the quick tap fast, then clarify pee, stool, accident, or attempt details here.
+                        <Text
+                          style={[
+                            s.mealOutcomeHint,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          Keep the quick tap fast, then clarify pee, stool,
+                          accident, or attempt details here.
                         </Text>
                       </View>
                     </View>
 
                     <View style={s.pottyDetailGroup}>
-                      <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Outcome</Text>
+                      <Text
+                        style={[
+                          s.pottyDetailLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Outcome
+                      </Text>
                       <View style={s.pottyOptionGrid}>
                         {POTTY_DETAIL_OUTCOMES.map((option) => {
                           const active = pottyDetailDraft.outcome === option.id;
@@ -4716,19 +8406,36 @@ export default function LogScreen() {
                               key={option.id}
                               accessibilityRole="button"
                               accessibilityLabel={`Set potty outcome: ${option.label}`}
-                              onPress={() => setPottyDetailDraft((draft) => ({ ...draft, outcome: option.id }))}
+                              accessibilityState={{ selected: active }}
+                              onPress={() =>
+                                setPottyDetailDraft((draft) => ({
+                                  ...draft,
+                                  outcome: option.id,
+                                }))
+                              }
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
                                 {
-                                  backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
-                                  borderColor: active ? colors.primary : colors.border,
+                                  backgroundColor: active
+                                    ? colors.primary
+                                    : pressed
+                                      ? colors.secondary
+                                      : colors.card,
+                                  borderColor: active
+                                    ? colors.primary
+                                    : colors.border,
                                 },
                               ]}
                             >
                               <Text
                                 style={[
                                   s.pottyOptionText,
-                                  { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
+                                  {
+                                    color: active
+                                      ? colors.primaryForeground
+                                      : colors.foreground,
+                                    fontFamily: "Inter_700Bold",
+                                  },
                                 ]}
                               >
                                 {option.label}
@@ -4740,28 +8447,56 @@ export default function LogScreen() {
                     </View>
 
                     <View style={s.pottyDetailGroup}>
-                      <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Where</Text>
+                      <Text
+                        style={[
+                          s.pottyDetailLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Where
+                      </Text>
                       <View style={s.pottyOptionGrid}>
                         {POTTY_LOCATION_OPTIONS.map((option) => {
-                          const active = pottyDetailDraft.location === option.id;
+                          const active =
+                            pottyDetailDraft.location === option.id;
                           return (
                             <Pressable
                               key={option.id}
                               accessibilityRole="button"
                               accessibilityLabel={`Set potty location: ${option.label}`}
-                              onPress={() => setPottyDetailDraft((draft) => ({ ...draft, location: option.id }))}
+                              accessibilityState={{ selected: active }}
+                              onPress={() =>
+                                setPottyDetailDraft((draft) => ({
+                                  ...draft,
+                                  location: option.id,
+                                }))
+                              }
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
                                 {
-                                  backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
-                                  borderColor: active ? colors.primary : colors.border,
+                                  backgroundColor: active
+                                    ? colors.primary
+                                    : pressed
+                                      ? colors.secondary
+                                      : colors.card,
+                                  borderColor: active
+                                    ? colors.primary
+                                    : colors.border,
                                 },
                               ]}
                             >
                               <Text
                                 style={[
                                   s.pottyOptionText,
-                                  { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
+                                  {
+                                    color: active
+                                      ? colors.primaryForeground
+                                      : colors.foreground,
+                                    fontFamily: "Inter_700Bold",
+                                  },
                                 ]}
                               >
                                 {option.label}
@@ -4774,28 +8509,56 @@ export default function LogScreen() {
 
                     {pottyOutcomeHasPee(pottyDetailDraft.outcome) ? (
                       <View style={s.pottyDetailGroup}>
-                        <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Pee detail</Text>
+                        <Text
+                          style={[
+                            s.pottyDetailLabel,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Pee detail
+                        </Text>
                         <View style={s.pottyOptionGrid}>
                           {POTTY_PEE_DETAIL_OPTIONS.map((option) => {
-                            const active = pottyDetailDraft.peeDetail === option.id;
+                            const active =
+                              pottyDetailDraft.peeDetail === option.id;
                             return (
                               <Pressable
                                 key={option.id}
                                 accessibilityRole="button"
                                 accessibilityLabel={`Set pee detail: ${option.label}`}
-                                onPress={() => setPottyDetailDraft((draft) => ({ ...draft, peeDetail: option.id }))}
+                                accessibilityState={{ selected: active }}
+                                onPress={() =>
+                                  setPottyDetailDraft((draft) => ({
+                                    ...draft,
+                                    peeDetail: option.id,
+                                  }))
+                                }
                                 style={({ pressed }) => [
                                   s.pottyOptionButton,
                                   {
-                                    backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
-                                    borderColor: active ? colors.primary : colors.border,
+                                    backgroundColor: active
+                                      ? colors.primary
+                                      : pressed
+                                        ? colors.secondary
+                                        : colors.card,
+                                    borderColor: active
+                                      ? colors.primary
+                                      : colors.border,
                                   },
                                 ]}
                               >
                                 <Text
                                   style={[
                                     s.pottyOptionText,
-                                    { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
+                                    {
+                                      color: active
+                                        ? colors.primaryForeground
+                                        : colors.foreground,
+                                      fontFamily: "Inter_700Bold",
+                                    },
                                   ]}
                                 >
                                   {option.label}
@@ -4810,30 +8573,56 @@ export default function LogScreen() {
                     {pottyOutcomeHasStool(pottyDetailDraft.outcome) ? (
                       <>
                         <View style={s.pottyDetailGroup}>
-                          <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          <Text
+                            style={[
+                              s.pottyDetailLabel,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
                             Stool consistency
                           </Text>
                           <View style={s.pottyOptionGrid}>
                             {POTTY_STOOL_CONDITION_OPTIONS.map((option) => {
-                              const active = pottyDetailDraft.stoolCondition === option.id;
+                              const active =
+                                pottyDetailDraft.stoolCondition === option.id;
                               return (
                                 <Pressable
                                   key={option.id}
                                   accessibilityRole="button"
                                   accessibilityLabel={`Set stool consistency: ${option.label}`}
-                                  onPress={() => setPottyDetailDraft((draft) => ({ ...draft, stoolCondition: option.id }))}
+                                  accessibilityState={{ selected: active }}
+                                  onPress={() =>
+                                    setPottyDetailDraft((draft) => ({
+                                      ...draft,
+                                      stoolCondition: option.id,
+                                    }))
+                                  }
                                   style={({ pressed }) => [
                                     s.pottyOptionButton,
                                     {
-                                      backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
-                                      borderColor: active ? colors.primary : colors.border,
+                                      backgroundColor: active
+                                        ? colors.primary
+                                        : pressed
+                                          ? colors.secondary
+                                          : colors.card,
+                                      borderColor: active
+                                        ? colors.primary
+                                        : colors.border,
                                     },
                                   ]}
                                 >
                                   <Text
                                     style={[
                                       s.pottyOptionText,
-                                      { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
+                                      {
+                                        color: active
+                                          ? colors.primaryForeground
+                                          : colors.foreground,
+                                        fontFamily: "Inter_700Bold",
+                                      },
                                     ]}
                                   >
                                     {option.label}
@@ -4844,28 +8633,56 @@ export default function LogScreen() {
                           </View>
                         </View>
                         <View style={s.pottyDetailGroup}>
-                          <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Stool color</Text>
+                          <Text
+                            style={[
+                              s.pottyDetailLabel,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            Stool color
+                          </Text>
                           <View style={s.pottyOptionGrid}>
                             {POTTY_STOOL_COLOR_OPTIONS.map((option) => {
-                              const active = pottyDetailDraft.stoolColor === option.id;
+                              const active =
+                                pottyDetailDraft.stoolColor === option.id;
                               return (
                                 <Pressable
                                   key={option.id}
                                   accessibilityRole="button"
                                   accessibilityLabel={`Set stool color: ${option.label}`}
-                                  onPress={() => setPottyDetailDraft((draft) => ({ ...draft, stoolColor: option.id }))}
+                                  accessibilityState={{ selected: active }}
+                                  onPress={() =>
+                                    setPottyDetailDraft((draft) => ({
+                                      ...draft,
+                                      stoolColor: option.id,
+                                    }))
+                                  }
                                   style={({ pressed }) => [
                                     s.pottyOptionButton,
                                     {
-                                      backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
-                                      borderColor: active ? colors.primary : colors.border,
+                                      backgroundColor: active
+                                        ? colors.primary
+                                        : pressed
+                                          ? colors.secondary
+                                          : colors.card,
+                                      borderColor: active
+                                        ? colors.primary
+                                        : colors.border,
                                     },
                                   ]}
                                 >
                                   <Text
                                     style={[
                                       s.pottyOptionText,
-                                      { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
+                                      {
+                                        color: active
+                                          ? colors.primaryForeground
+                                          : colors.foreground,
+                                        fontFamily: "Inter_700Bold",
+                                      },
                                     ]}
                                   >
                                     {option.label}
@@ -4879,7 +8696,17 @@ export default function LogScreen() {
                     ) : null}
 
                     <View style={s.pottyDetailGroup}>
-                      <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Context</Text>
+                      <Text
+                        style={[
+                          s.pottyDetailLabel,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Context
+                      </Text>
                       <View style={s.pottyOptionGrid}>
                         {POTTY_CONTEXT_DRAFT_OPTIONS.map((option) => {
                           const active = pottyDetailDraft.context === option.id;
@@ -4888,19 +8715,36 @@ export default function LogScreen() {
                               key={option.id}
                               accessibilityRole="button"
                               accessibilityLabel={`Set potty context: ${option.label}`}
-                              onPress={() => setPottyDetailDraft((draft) => ({ ...draft, context: option.id }))}
+                              accessibilityState={{ selected: active }}
+                              onPress={() =>
+                                setPottyDetailDraft((draft) => ({
+                                  ...draft,
+                                  context: option.id,
+                                }))
+                              }
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
                                 {
-                                  backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
-                                  borderColor: active ? colors.primary : colors.border,
+                                  backgroundColor: active
+                                    ? colors.primary
+                                    : pressed
+                                      ? colors.secondary
+                                      : colors.card,
+                                  borderColor: active
+                                    ? colors.primary
+                                    : colors.border,
                                 },
                               ]}
                             >
                               <Text
                                 style={[
                                   s.pottyOptionText,
-                                  { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
+                                  {
+                                    color: active
+                                      ? colors.primaryForeground
+                                      : colors.foreground,
+                                    fontFamily: "Inter_700Bold",
+                                  },
                                 ]}
                               >
                                 {option.label}
@@ -4918,13 +8762,29 @@ export default function LogScreen() {
                       style={({ pressed }) => [
                         s.pottySaveButton,
                         {
-                          backgroundColor: pressed ? colors.primary + "DD" : colors.primary,
+                          backgroundColor: pressed
+                            ? colors.primary + "DD"
+                            : colors.primary,
                           borderColor: colors.primary,
                         },
                       ]}
                     >
-                      <Text style={[s.pottySaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save potty details</Text>
-                      <Ionicons name="checkmark-circle-outline" size={18} color={colors.primaryForeground} />
+                      <Text
+                        style={[
+                          s.pottySaveText,
+                          {
+                            color: colors.primaryForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Save potty details
+                      </Text>
+                      <Ionicons
+                        name="checkmark-circle-outline"
+                        size={18}
+                        color={colors.primaryForeground}
+                      />
                     </Pressable>
                   </View>
                 ) : null}
@@ -4936,7 +8796,15 @@ export default function LogScreen() {
                       height={160}
                       accessibilityLabel="Private device-only view of this walk's recorded route"
                     />
-                    <Text style={[s.detailTrailCaption, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    <Text
+                      style={[
+                        s.detailTrailCaption,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
                       {[
                         detailRouteDistanceM != null
                           ? `Route · ${formatRouteDistanceMiles(detailRouteDistanceM)}`
@@ -4950,78 +8818,294 @@ export default function LogScreen() {
                 <View style={s.detailGrid}>
                   {detailRows.length > 0 ? (
                     detailRows.map((row) => (
-                      <View key={`${row.label}:${row.value}`} style={[s.detailField, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <Text style={[s.detailFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{row.label}</Text>
-                        <Text style={[s.detailFieldValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{row.value}</Text>
+                      <View
+                        key={`${row.label}:${row.value}`}
+                        style={[
+                          s.detailField,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.detailFieldLabel,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {row.label}
+                        </Text>
+                        <Text
+                          style={[
+                            s.detailFieldValue,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {row.value}
+                        </Text>
                       </View>
                     ))
                   ) : (
-                    <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>No extra detail fields yet.</Text>
+                    <View
+                      style={[
+                        s.detailFieldWide,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.detailFieldValue,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        No extra detail fields yet.
+                      </Text>
                     </View>
                   )}
                 </View>
 
                 {detailEntry.note ? (
-                  <View style={[s.detailNote, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Note</Text>
-                    <Text style={[s.detailBodyText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{detailEntry.note}</Text>
+                  <View
+                    style={[
+                      s.detailNote,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.detailSectionLabel,
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      Note
+                    </Text>
+                    <Text
+                      style={[
+                        s.detailBodyText,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
+                    >
+                      {detailEntry.note}
+                    </Text>
                   </View>
                 ) : null}
 
                 <View style={s.detailSectionHeader}>
-                  <Text style={[s.detailSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Sticky notes</Text>
-                  <Text style={[s.detailSectionCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{detailStickyNotes.length}</Text>
+                  <Text
+                    style={[
+                      s.detailSectionTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    Sticky notes
+                  </Text>
+                  <Text
+                    style={[
+                      s.detailSectionCount,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {detailStickyNotes.length}
+                  </Text>
                 </View>
                 {detailStickyNotes.length > 0 ? (
                   <View style={s.stickyStack}>
                     {detailStickyNotes.map((note) => {
                       const tone = stickyColor(note.color);
                       return (
-                        <View key={note.id} style={[s.stickyNote, { backgroundColor: tone + "12", borderLeftColor: tone }]}>
-                          <Text style={[s.stickyNoteText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{note.text}</Text>
-                          <Text style={[s.stickyNoteMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {note.caregiver} - {new Date(note.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                        <View
+                          key={note.id}
+                          style={[
+                            s.stickyNote,
+                            {
+                              backgroundColor: tone + "12",
+                              borderLeftColor: tone,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.stickyNoteText,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            {note.text}
+                          </Text>
+                          <Text
+                            style={[
+                              s.stickyNoteMeta,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            {note.caregiver} -{" "}
+                            {new Date(note.createdAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
                           </Text>
                         </View>
                       );
                     })}
                   </View>
                 ) : (
-                  <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>No sticky notes attached.</Text>
+                  <View
+                    style={[
+                      s.detailFieldWide,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.detailFieldValue,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      No sticky notes attached.
+                    </Text>
                   </View>
                 )}
 
                 <View style={s.detailSectionHeader}>
-                  <Text style={[s.detailSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Correction history</Text>
-                  <Text style={[s.detailSectionCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.detailSectionTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    Correction history
+                  </Text>
+                  <Text
+                    style={[
+                      s.detailSectionCount,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     {detailAuditSummary ? "Traceable" : "Original"}
                   </Text>
                 </View>
                 {detailAuditSummary ? (
-                  <View style={[s.correctionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View
+                    style={[
+                      s.correctionCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
                     <View style={s.correctionCardTop}>
-                      <View style={[s.correctionIcon, { backgroundColor: colors.copper + "16", borderColor: colors.copper + "44" }]}>
-                        <Ionicons name="git-commit-outline" size={17} color={colors.copper} />
+                      <View
+                        style={[
+                          s.correctionIcon,
+                          {
+                            backgroundColor: colors.copper + "16",
+                            borderColor: colors.copper + "44",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="git-commit-outline"
+                          size={17}
+                          color={colors.copper}
+                        />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[s.correctionTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.correctionTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
                           {detailAuditSummary.title}
                         </Text>
-                        <Text style={[s.correctionMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        <Text
+                          style={[
+                            s.correctionMeta,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
                           Latest update: {detailAuditSummary.meta}
                         </Text>
                       </View>
                     </View>
-                    <Text style={[s.correctionBody, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    <Text
+                      style={[
+                        s.correctionBody,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
                       {detailAuditSummary.latest.summary}
                     </Text>
                     {detailAuditSummary.changeLabels.length ? (
                       <View style={s.correctionChipRow}>
                         {detailAuditSummary.changeLabels.map((label) => (
-                          <View key={label} style={[s.correctionChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                            <Text style={[s.correctionChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          <View
+                            key={label}
+                            style={[
+                              s.correctionChip,
+                              {
+                                backgroundColor: colors.background,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.correctionChipText,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
                               {label}
                             </Text>
                           </View>
@@ -5030,27 +9114,108 @@ export default function LogScreen() {
                     ) : null}
                   </View>
                 ) : (
-                  <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      No corrections yet. New edits, proof, and outcome updates will appear here.
+                  <View
+                    style={[
+                      s.detailFieldWide,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.detailFieldValue,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      No corrections yet. New edits, photos, and outcome updates
+                      will appear here.
                     </Text>
                   </View>
                 )}
 
                 <View style={s.detailSectionHeader}>
-                  <Text style={[s.detailSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Audit trail</Text>
-                  <Text style={[s.detailSectionCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{detailAuditTrail.length}</Text>
+                  <Text
+                    style={[
+                      s.detailSectionTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    Audit trail
+                  </Text>
+                  <Text
+                    style={[
+                      s.detailSectionCount,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {detailAuditTrail.length}
+                  </Text>
                 </View>
                 {detailAuditTrail.length > 0 ? (
                   <View style={s.auditStack}>
                     {detailAuditTrail.map((event) => (
-                      <View key={event.id} style={[s.auditRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <View style={[s.auditDot, { backgroundColor: event.action === "deleted" ? colors.rose : colors.copper }]} />
+                      <View
+                        key={event.id}
+                        style={[
+                          s.auditRow,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            s.auditDot,
+                            {
+                              backgroundColor:
+                                event.action === "deleted"
+                                  ? colors.rose
+                                  : colors.copper,
+                            },
+                          ]}
+                        />
                         <View style={{ flex: 1 }}>
-                          <Text style={[s.auditSummary, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{event.summary}</Text>
-                          <Text style={[s.auditMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{auditMeta(event)}</Text>
+                          <Text
+                            style={[
+                              s.auditSummary,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            {event.summary}
+                          </Text>
+                          <Text
+                            style={[
+                              s.auditMeta,
+                              {
+                                color: colors.mutedForeground,
+                                fontFamily: "Inter_500Medium",
+                              },
+                            ]}
+                          >
+                            {auditMeta(event)}
+                          </Text>
                           {event.changes?.length ? (
-                            <Text style={[s.auditChanges, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                            <Text
+                              style={[
+                                s.auditChanges,
+                                {
+                                  color: colors.mutedForeground,
+                                  fontFamily: "Inter_400Regular",
+                                },
+                              ]}
+                            >
                               Changed: {event.changes.join(", ")}
                             </Text>
                           ) : null}
@@ -5059,25 +9224,78 @@ export default function LogScreen() {
                     ))}
                   </View>
                 ) : (
-                  <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <View
+                    style={[
+                      s.detailFieldWide,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.detailFieldValue,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
                       Original log, no later changes recorded.
                     </Text>
                   </View>
                 )}
 
-                <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold", marginTop: 18 }]}>
+                <Text
+                  style={[
+                    s.detailSectionLabel,
+                    {
+                      color: colors.sage,
+                      fontFamily: "Inter_700Bold",
+                      marginTop: 18,
+                    },
+                  ]}
+                >
                   Record controls
                 </Text>
                 <View style={s.detailActions}>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Share care handoff"
+                    accessibilityState={{ disabled: entryHandoffShareBusy }}
+                    disabled={entryHandoffShareBusy}
                     onPress={() => shareEntryHandoff(detailEntry)}
-                    style={({ pressed }) => [s.detailPrimaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                    style={({ pressed }) => [
+                      s.detailPrimaryBtn,
+                      {
+                        backgroundColor: colors.primary,
+                        opacity: entryHandoffShareBusy
+                          ? 0.5
+                          : pressed
+                            ? 0.85
+                            : 1,
+                      },
+                    ]}
                   >
-                    <Ionicons name="share-outline" size={17} color={colors.primaryForeground} />
-                    <Text style={[s.detailPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Share handoff</Text>
+                    <Ionicons
+                      name="share-outline"
+                      size={17}
+                      color={colors.primaryForeground}
+                    />
+                    <Text
+                      style={[
+                        s.detailPrimaryText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {entryHandoffShareBusy
+                        ? "Opening share…"
+                        : "Share handoff"}
+                    </Text>
                   </Pressable>
                   <View style={s.detailIconActions}>
                     <Pressable
@@ -5087,9 +9305,19 @@ export default function LogScreen() {
                         setDetailEntryId(null);
                         openStickyPrompt(detailEntry);
                       }}
-                      style={[s.detailIconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                      style={[
+                        s.detailIconBtn,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
                     >
-                      <Ionicons name="document-text-outline" size={17} color={colors.primary} />
+                      <Ionicons
+                        name="document-text-outline"
+                        size={17}
+                        color={colors.primary}
+                      />
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
@@ -5098,9 +9326,19 @@ export default function LogScreen() {
                         setDetailEntryId(null);
                         openEditEntry(detailEntry);
                       }}
-                      style={[s.detailIconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                      style={[
+                        s.detailIconBtn,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
                     >
-                      <Ionicons name="pencil-outline" size={17} color={colors.primary} />
+                      <Ionicons
+                        name="pencil-outline"
+                        size={17}
+                        color={colors.primary}
+                      />
                     </Pressable>
                   </View>
                 </View>
@@ -5109,98 +9347,270 @@ export default function LogScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Delete care log"
-                  onPress={() => handleDelete(detailEntry.id, detailEntry.title, () => setDetailEntryId(null))}
-                  style={({ pressed }) => [s.detailDeleteBtn, { opacity: pressed ? 0.6 : 1 }]}
+                  onPress={() =>
+                    handleDelete(detailEntry.id, detailEntry.title, () =>
+                      setDetailEntryId(null),
+                    )
+                  }
+                  style={({ pressed }) => [
+                    s.detailDeleteBtn,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
                 >
-                  <Text style={[s.detailDeleteText, { color: colors.destructive, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.detailDeleteText,
+                      {
+                        color: colors.destructive,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
                     Delete
                   </Text>
                 </Pressable>
               </ScrollView>
             ) : null}
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
 
       {/* Entry editor modal */}
-      <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
-        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
-          <Pressable accessible={false} accessibilityViewIsModal style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
-            <View style={s.editHandle} />
-            <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
-            <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Title</Text>
-            <TextInput
-              value={editTitle}
-              onChangeText={setEditTitle}
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-            />
-            <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Note (optional)</Text>
-            <TextInput
-              value={editNote}
-              onChangeText={setEditNote}
-              placeholder="Add or update a note..."
-              placeholderTextColor={colors.mutedForeground}
-              multiline
-              style={[s.input, s.inputMulti, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
-            />
-            <BoardActionButton
-              label="Save changes"
-              icon="checkmark"
-              variant="primary"
-              onPress={saveEditEntry}
-              style={s.editSaveAction}
-            />
-          </Pressable>
-        </Pressable>
+      <Modal
+        visible={editEntry !== null}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setEditEntry(null)}
+      >
+        <ModalBackdropPressable
+          style={[s.modalBackdrop, { justifyContent: "flex-end" }]}
+          onPress={() => setEditEntry(null)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={keyboardOffset}
+            style={s.modalDock}
+          >
+            <ModalSheetPressable
+              visible={editEntry !== null}
+              onRequestClose={() => setEditEntry(null)}
+              style={[
+                s.editSheet,
+                {
+                  backgroundColor: colors.background,
+                  paddingBottom: modalSheetBottomPadding,
+                },
+              ]}
+            >
+              <View style={s.editHandle} />
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+                bounces={false}
+                style={s.editFormScroll}
+                contentContainerStyle={s.editFormContent}
+              >
+                <Text
+                  style={[
+                    s.editSheetTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
+                  Edit entry
+                </Text>
+                <Text
+                  style={[
+                    s.editFieldLabel,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  Title
+                </Text>
+                <TextInput
+                  accessibilityLabel="Care log title"
+                  value={editTitle}
+                  onChangeText={setEditTitle}
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    s.input,
+                    {
+                      backgroundColor: colors.card,
+                      color: colors.foreground,
+                      borderColor: colors.border,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    s.editFieldLabel,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  Note (optional)
+                </Text>
+                <TextInput
+                  accessibilityLabel="Care log note"
+                  value={editNote}
+                  onChangeText={setEditNote}
+                  placeholder="Add or update a note..."
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  style={[
+                    s.input,
+                    s.inputMulti,
+                    {
+                      backgroundColor: colors.card,
+                      color: colors.foreground,
+                      borderColor: colors.border,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                />
+                <BoardActionButton
+                  label="Save changes"
+                  icon="checkmark"
+                  variant="primary"
+                  onPress={saveEditEntry}
+                  style={s.editSaveAction}
+                />
+              </ScrollView>
+            </ModalSheetPressable>
+          </KeyboardAvoidingView>
+        </ModalBackdropPressable>
       </Modal>
 
       {/* Post-log quick-note prompt */}
-      <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
-        <Pressable accessible={false} style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalCenter}>
-            <Pressable accessible={false} accessibilityViewIsModal style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
-              <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
-                <Ionicons name="checkmark" size={22} color={colors.sage} />
-              </View>
-              <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                {promptMode === "post-log" ? `${promptTitle} logged` : "Add sticky note"}
-              </Text>
-              <Text style={[s.modalSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {promptMode === "post-log" ? "Add a quick sticky note? (optional)" : promptTitle}
-              </Text>
-              <TextInput
-                ref={promptRef}
-                placeholder="e.g. ate eagerly, left some kibble..."
-                placeholderTextColor={colors.mutedForeground}
-                value={promptNote}
-                onChangeText={setPromptNote}
-                multiline
-                style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular", marginTop: 14 }]}
-                returnKeyType="done"
-                blurOnSubmit
-                onSubmitEditing={saveQuickNote}
-              />
-              <View style={s.modalActions}>
-                <Pressable
-                  onPress={() => {
-                    setPromptId(null);
-                    setPromptNote("");
-                  }}
-                  style={({ pressed }) => [s.modalSkip, { opacity: pressed ? 0.6 : 1 }]}
+      <Modal
+        visible={promptId !== null}
+        transparent
+        animationType={reducedMotion ? "none" : "fade"}
+        onRequestClose={dismissQuickNote}
+      >
+        <ModalBackdropPressable
+          style={[s.modalBackdrop, centeredModalPadding]}
+          onPress={dismissQuickNote}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={keyboardOffset}
+            style={s.modalCenter}
+          >
+            <ModalSheetPressable
+              visible={promptId !== null}
+              onRequestClose={dismissQuickNote}
+              style={[s.modalCard, { backgroundColor: colors.card }]}
+            >
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+                bounces={false}
+                style={s.modalPromptScroll}
+                contentContainerStyle={s.modalPromptContent}
+              >
+                <View
+                  style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}
                 >
-                  <Text style={[s.modalSkipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Skip</Text>
-                </Pressable>
-                <Pressable
-                  onPress={saveQuickNote}
-                  style={({ pressed }) => [s.modalSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                  <Ionicons name="checkmark" size={22} color={colors.sage} />
+                </View>
+                <Text
+                  accessibilityRole="header"
+                  style={[
+                    s.modalTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
                 >
-                  <Text style={[s.modalSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
-                </Pressable>
-              </View>
-            </Pressable>
+                  {promptMode === "post-log"
+                    ? `${promptTitle} logged`
+                    : "Add sticky note"}
+                </Text>
+                <Text
+                  style={[
+                    s.modalSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                >
+                  {promptMode === "post-log"
+                    ? "Add a quick sticky note? (optional)"
+                    : promptTitle}
+                </Text>
+                <TextInput
+                  ref={promptRef}
+                  accessibilityLabel="Sticky note"
+                  placeholder="e.g. ate eagerly, left some kibble..."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={promptNote}
+                  onChangeText={setPromptNote}
+                  multiline
+                  style={[
+                    s.input,
+                    s.inputMulti,
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.foreground,
+                      borderColor: colors.border,
+                      fontFamily: "Inter_400Regular",
+                      marginTop: 14,
+                    },
+                  ]}
+                  returnKeyType="done"
+                  blurOnSubmit
+                  onSubmitEditing={saveQuickNote}
+                />
+                <View style={s.modalActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Skip sticky note"
+                    onPress={dismissQuickNote}
+                    style={({ pressed }) => [
+                      s.modalSkip,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.modalSkipText,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      Skip
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Save sticky note"
+                    onPress={saveQuickNote}
+                    style={({ pressed }) => [
+                      s.modalSave,
+                      {
+                        backgroundColor: colors.primary,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.modalSaveText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Save sticky
+                    </Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
+            </ModalSheetPressable>
           </KeyboardAvoidingView>
-        </Pressable>
+        </ModalBackdropPressable>
       </Modal>
     </View>
   );
@@ -5210,9 +9620,27 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
 
-  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
-  headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  syncBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 18,
+  },
+  headerIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  syncBtn: {
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
 
@@ -5397,8 +9825,18 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   outboxTop: { flexDirection: "row", alignItems: "center", gap: 10 },
-  outboxIcon: { width: 38, height: 38, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  outboxEyebrow: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
+  outboxIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  outboxEyebrow: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
   outboxTitle: { fontSize: 15.5, marginTop: 2 },
   outboxMessage: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
   outboxButton: {
@@ -5409,7 +9847,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
   },
   outboxButtonText: { fontSize: 12.5 },
-  outboxMetrics: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 },
+  outboxMetrics: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+    marginTop: 12,
+  },
   outboxMetric: { borderRadius: 11, paddingHorizontal: 10, paddingVertical: 6 },
   outboxMetricText: { fontSize: 11.5 },
 
@@ -5695,7 +10138,7 @@ const s = StyleSheet.create({
     gap: 8,
   },
   returnInput: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 9,
     paddingHorizontal: 10,
@@ -5751,7 +10194,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   composerHeroText: { flex: 1, minWidth: 0 },
-  composerKicker: { fontSize: 9, textTransform: "uppercase", letterSpacing: 1.1 },
+  composerKicker: {
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+  },
   composerTitle: { fontSize: 22, lineHeight: 25, marginTop: 1 },
   composerHint: { fontSize: 12, lineHeight: 17, marginTop: 3 },
   composerBadge: {
@@ -5794,6 +10241,7 @@ const s = StyleSheet.create({
   loggerTitle: { fontSize: 16, marginBottom: 12 },
   typeRow: { gap: 8, paddingHorizontal: 4, paddingBottom: 4 },
   typeChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -5803,14 +10251,20 @@ const s = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
   },
-  typeChipIcon: { width: 26, height: 26, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  typeChipIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   typeChipLabel: { fontSize: 13.5 },
 
   fieldBlock: { marginTop: 16 },
   fieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 8 },
   segRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   segPill: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 14,
@@ -5820,7 +10274,13 @@ const s = StyleSheet.create({
   },
   segText: { fontSize: 13.5 },
 
-  input: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  input: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+  },
   inputMulti: { minHeight: 64, textAlignVertical: "top" },
   mealFields: { marginTop: 2, gap: 12 },
   mealFieldRow: { flexDirection: "row", gap: 10 },
@@ -5837,24 +10297,58 @@ const s = StyleSheet.create({
   visibilityTitle: { fontSize: 13.5 },
   visibilitySub: { fontSize: 12, lineHeight: 16, marginTop: 2 },
 
-  medRoutinePanel: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 8, padding: 13 },
-  medRoutineIcon: { width: 34, height: 34, borderRadius: 7, alignItems: "center", justifyContent: "center" },
-  medRoutineLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5 },
+  medRoutinePanel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 13,
+  },
+  medRoutineIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  medRoutineLabel: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   medRoutineTitle: { fontSize: 15.5, marginTop: 2 },
   medRoutineMeta: { fontSize: 12.5, marginTop: 2 },
 
   dietPanel: { marginTop: 14, borderRadius: 8, borderWidth: 1, padding: 14 },
-  dietPanelTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  dietPanelTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   dietTitle: { fontSize: 15, letterSpacing: -0.1 },
   dietSub: { fontSize: 12.5, marginTop: 2 },
-  dietBadge: { minWidth: 48, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  dietBadge: {
+    minWidth: 48,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
   dietBadgeText: { fontSize: 12.5 },
   dietTrack: { height: 8, borderRadius: 99, overflow: "hidden", marginTop: 12 },
   dietFill: { height: "100%", borderRadius: 99 },
   dietHint: { fontSize: 12.5, lineHeight: 17, marginTop: 10 },
 
   logSaveAction: { marginTop: 18, minHeight: 52 },
-  requiredChoiceHint: { fontSize: 12, lineHeight: 16, marginTop: 14, textAlign: "center" },
+  requiredChoiceHint: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 14,
+    textAlign: "center",
+  },
 
   logBoardCard: { marginTop: 12 },
   logViewTabs: { marginBottom: 12 },
@@ -5868,12 +10362,24 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   searchInput: { flex: 1, fontSize: 14.5, minHeight: 28, paddingVertical: 0 },
-  searchClear: { width: 28, height: 28, borderRadius: 999, alignItems: "center", justifyContent: "center" },
-  searchSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 8, marginLeft: 2 },
+  searchClear: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchSummary: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 8,
+    marginLeft: 2,
+  },
 
   filterScroll: { marginTop: 8 },
   filterRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 6 },
   filterChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -5884,12 +10390,32 @@ const s = StyleSheet.create({
   },
   filterText: { fontSize: 13 },
 
-  snapshotSummary: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 },
+  snapshotSummary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
   snapshotLeft: { flexDirection: "row", alignItems: "baseline", gap: 5 },
   snapshotCount: { fontSize: 22, letterSpacing: -0.3 },
   snapshotLabel: { fontSize: 13 },
-  snapshotIcons: { flexDirection: "row", gap: 6, flex: 1, justifyContent: "flex-end", flexWrap: "wrap" },
-  snapshotChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
+  snapshotIcons: {
+    flexDirection: "row",
+    gap: 6,
+    flex: 1,
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+  },
+  snapshotChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
   snapshotChipCount: { fontSize: 12 },
 
   dayEntries: { marginTop: -2 },
@@ -5910,7 +10436,13 @@ const s = StyleSheet.create({
   },
   entryTimeCol: { width: 64, flexShrink: 0, paddingTop: 2 },
   entryTime: { fontSize: 12, lineHeight: 16 },
-  entryIconChip: { width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  entryIconChip: {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   entryTitleLine: { flexDirection: "row", alignItems: "center", gap: 8 },
   entryTitle: { fontSize: 14.5, flexShrink: 1 },
   sevBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 },
@@ -5946,16 +10478,52 @@ const s = StyleSheet.create({
   entrySyncError: { fontSize: 12, marginTop: 4 },
   entryNote: { fontSize: 13, lineHeight: 18, marginTop: 4 },
   stickyStack: { gap: 6, marginTop: 8 },
-  stickyNote: { borderLeftWidth: 3, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
+  stickyNote: {
+    borderLeftWidth: 3,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
   stickyNoteText: { fontSize: 12.5, lineHeight: 17 },
   stickyNoteMeta: { fontSize: 11, marginTop: 4 },
-  launcherDetailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, gap: 14 },
+  stickyNoteSummary: {
+    alignSelf: "flex-start",
+    minHeight: 32,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  stickyNoteSummaryText: { fontSize: 11.5, lineHeight: 16 },
+  launcherDetailSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 22,
+    maxHeight: "92%",
+  },
+  launcherDetailScroll: { flexShrink: 1, minHeight: 0 },
+  launcherDetailContent: { gap: 14, paddingBottom: 2 },
   launcherDetailTop: { flexDirection: "row", alignItems: "center", gap: 13 },
-  launcherDetailIcon: { width: 58, height: 58, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  launcherDetailIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   launcherDetailKicker: { fontSize: 9, letterSpacing: 1.1 },
   launcherDetailTitle: { fontSize: 23, marginTop: 2 },
   launcherDetailSubtitle: { fontSize: 13, lineHeight: 18, marginTop: 3 },
-  launcherDetailSummary: { borderWidth: 1, borderRadius: 17, padding: 13, flexDirection: "row", gap: 10, alignItems: "flex-start" },
+  launcherDetailSummary: {
+    borderWidth: 1,
+    borderRadius: 17,
+    padding: 13,
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
+  },
   launcherDetailSummaryText: { flex: 1, fontSize: 13.5, lineHeight: 19 },
   launcherDetailModeRail: {
     flexDirection: "row",
@@ -5980,7 +10548,11 @@ const s = StyleSheet.create({
     marginTop: 3,
   },
   launcherDetailChecklist: { gap: 9 },
-  launcherDetailChecklistRow: { flexDirection: "row", gap: 9, alignItems: "flex-start" },
+  launcherDetailChecklistRow: {
+    flexDirection: "row",
+    gap: 9,
+    alignItems: "flex-start",
+  },
   launcherDetailBullet: { width: 7, height: 7, borderRadius: 2, marginTop: 6 },
   launcherDetailChecklistText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   launcherDetailEditLater: {
@@ -5992,7 +10564,14 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
   },
   launcherDetailEditLaterText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
-  launcherDetailBoundary: { borderWidth: 1, borderRadius: 16, padding: 12, flexDirection: "row", gap: 9, alignItems: "flex-start" },
+  launcherDetailBoundary: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+    flexDirection: "row",
+    gap: 9,
+    alignItems: "flex-start",
+  },
   launcherDetailBoundaryText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   launcherDetailActions: { gap: 10, marginTop: 2 },
   launcherDetailPrimary: {
@@ -6013,9 +10592,25 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   launcherDetailSecondaryText: { fontSize: 14 },
-  detailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", padding: 22 },
-  detailHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
-  detailIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  detailSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: "90%",
+    padding: 22,
+  },
+  detailHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
+  },
+  detailIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   detailType: { fontSize: 9, textTransform: "uppercase", letterSpacing: 1.1 },
   detailTitle: { fontSize: 21, marginTop: 2 },
   detailMeta: { fontSize: 12.5, marginTop: 3 },
@@ -6045,7 +10640,15 @@ const s = StyleSheet.create({
     fontSize: 10.5,
     marginTop: 2,
   },
-  detailNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 15, padding: 11, marginBottom: 12 },
+  detailNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 15,
+    padding: 11,
+    marginBottom: 12,
+  },
   detailNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   trustReviewPanel: {
     borderWidth: 1,
@@ -6222,31 +10825,79 @@ const s = StyleSheet.create({
   detailTrailBlock: { marginTop: 4, marginBottom: 6 },
   detailTrailCaption: { fontSize: 11, lineHeight: 15, marginTop: 6 },
   detailField: { width: "48%", borderWidth: 1, borderRadius: 15, padding: 12 },
-  detailFieldWide: { width: "100%", borderWidth: 1, borderRadius: 15, padding: 12 },
-  detailFieldLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  detailFieldWide: {
+    width: "100%",
+    borderWidth: 1,
+    borderRadius: 15,
+    padding: 12,
+  },
+  detailFieldLabel: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
   detailFieldValue: { fontSize: 13.5, lineHeight: 18 },
   detailNote: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },
-  detailSectionLabel: { fontSize: 9, textTransform: "uppercase", letterSpacing: 1.1, marginBottom: 6 },
+  detailSectionLabel: {
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+    marginBottom: 6,
+  },
   detailBodyText: { fontSize: 13.5, lineHeight: 19 },
-  detailSectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 8 },
+  detailSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+    marginBottom: 8,
+  },
   detailSectionTitle: { fontSize: 16 },
   detailSectionCount: { fontSize: 12 },
   correctionCard: { borderWidth: 1, borderRadius: 16, padding: 13, gap: 10 },
   correctionCardTop: { flexDirection: "row", alignItems: "center", gap: 10 },
-  correctionIcon: { width: 34, height: 34, borderRadius: 11, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  correctionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   correctionTitle: { fontSize: 13.5 },
   correctionMeta: { fontSize: 11.5, marginTop: 2 },
   correctionBody: { fontSize: 13, lineHeight: 18 },
   correctionChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  correctionChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
-  correctionChipText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.35 },
+  correctionChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  correctionChipText: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.35,
+  },
   auditStack: { gap: 8 },
-  auditRow: { flexDirection: "row", gap: 10, borderWidth: 1, borderRadius: 15, padding: 12 },
+  auditRow: {
+    flexDirection: "row",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 15,
+    padding: 12,
+  },
   auditDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
   auditSummary: { fontSize: 13, lineHeight: 18 },
   auditMeta: { fontSize: 11.5, marginTop: 3 },
   auditChanges: { fontSize: 12, marginTop: 4, lineHeight: 17 },
-  detailActions: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 18 },
+  detailActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 18,
+  },
   detailPrimaryBtn: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -6275,10 +10926,29 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
-  editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
+  editSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 22,
+    maxHeight: "92%",
+  },
+  editFormScroll: { flexShrink: 1, minHeight: 0 },
+  editFormContent: { paddingBottom: 2 },
+  editHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    marginBottom: 16,
+  },
   editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
-  editFieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 7, marginTop: 14 },
+  editFieldLabel: {
+    fontSize: 12,
+    letterSpacing: 0,
+    marginBottom: 7,
+    marginTop: 14,
+  },
   editSaveAction: { marginTop: 20 },
 
   emptyPanel: {
@@ -6290,22 +10960,61 @@ const s = StyleSheet.create({
   emptyText: { fontSize: 15 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)" },
+  modalDock: { flex: 1, justifyContent: "flex-end" },
   modalCenter: { flex: 1, justifyContent: "center", paddingHorizontal: 28 },
   modalCard: {
     borderRadius: 26,
     padding: 24,
+    maxHeight: "100%",
     shadowColor: "#0F1F33",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
     shadowRadius: 30,
     elevation: 8,
   },
-  modalIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 14 },
+  modalPromptScroll: { flexShrink: 1, minHeight: 0 },
+  modalPromptContent: { paddingBottom: 2 },
+  modalIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
   modalTitle: { fontSize: 19, letterSpacing: -0.2 },
   modalSub: { fontSize: 14, marginTop: 4 },
-  modalActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
-  modalSkip: { flex: 1, height: 48, alignItems: "center", justifyContent: "center" },
-  modalSkipText: { fontSize: 15 },
-  modalSave: { flex: 2, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  modalSaveText: { fontSize: 15 },
+  modalActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 16,
+  },
+  modalSkip: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSkipText: {
+    fontSize: 15,
+    lineHeight: 20,
+    flexShrink: 1,
+    textAlign: "center",
+  },
+  modalSave: {
+    flex: 2,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 10,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSaveText: {
+    fontSize: 15,
+    lineHeight: 20,
+    flexShrink: 1,
+    textAlign: "center",
+  },
 });

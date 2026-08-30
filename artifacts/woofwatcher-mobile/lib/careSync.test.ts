@@ -29,6 +29,7 @@ import {
   buildCareEntryRefreshPlan,
   mergeServerAndLocalEntries,
   normalizeDiscardedServerEntryIds,
+  partitionCachedCareEntriesByDiscardedIdentity,
   reconcileCreatedCareEntryAcknowledgement,
   removeDiscardedServerEntryId,
   restoreEntryAfterDeleteFailure,
@@ -1117,6 +1118,52 @@ test("cancelling an entry mutation suppresses its result and queued update", asy
   assert.deepEqual(outcomes, []);
 });
 
+test("enqueueAndWait holds admission through the async state callback", async () => {
+  const mutation = deferred<string>();
+  const durableCallback = deferred<void>();
+  let callbackStarted = false;
+  let settled = false;
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    mutate: () => mutation.promise,
+    onSuccess: () => {},
+    async onFailure() {
+      callbackStarted = true;
+      await durableCallback.promise;
+    },
+  });
+
+  const settlement = queue.enqueueAndWait("server_walk", "pending edit");
+  void settlement.then(() => {
+    settled = true;
+  });
+  mutation.reject(new Error("terminal provider response"));
+  await flushMutationQueue();
+
+  assert.equal(callbackStarted, true);
+  assert.equal(settled, false);
+  durableCallback.resolve();
+  await settlement;
+  assert.equal(settled, true);
+});
+
+test("cancelAll releases an exact settlement waiter and keeps its late callback inert", async () => {
+  const mutation = deferred<string>();
+  const outcomes: string[] = [];
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    mutate: () => mutation.promise,
+    onSuccess: () => outcomes.push("success"),
+    onFailure: () => outcomes.push("failure"),
+  });
+
+  const settlement = queue.enqueueAndWait("server_walk", "old identity");
+  queue.cancelAll();
+  await settlement;
+  mutation.resolve("stale success");
+  await flushMutationQueue();
+
+  assert.deepEqual(outcomes, []);
+});
+
 test("a timed-out mutation aborts its request and releases the queued update", async () => {
   const first = deferred<string>();
   const calls: string[] = [];
@@ -1725,6 +1772,21 @@ test("a durable cancelled client key suppresses its server row after process dea
   );
 });
 
+test("identity-scoped cleanup partitions cached rows by exact id or client key before hydration", () => {
+  const cached = [
+    { id: "server_deleted", details: { clientKey: "temp_server_deleted" } },
+    { id: "temp_deleted", details: { clientKey: "temp_deleted" } },
+    { id: "server_safe", details: { clientKey: "temp_safe" } },
+  ];
+  const partition = partitionCachedCareEntriesByDiscardedIdentity(
+    cached,
+    ["server_deleted", "temp_deleted"],
+  );
+
+  assert.deepEqual(partition.retained, [cached[2]]);
+  assert.deepEqual(partition.quarantined, [cached[0], cached[1]]);
+});
+
 test("one empty refresh does not make a late cancelled create eligible to reappear", () => {
   const durableLedger = ["temp_cancelled"];
   const firstRefresh: Array<{
@@ -1878,6 +1940,144 @@ test("serializes durable tombstone writes so a later clear cannot be overtaken",
   await addWrite;
   await clearWrite;
   assert.deepEqual(writes, [["server_cancelled"], []]);
+});
+
+test("drain waits for active and queued durable tombstone writes", async () => {
+  const firstGate = deferred<void>();
+  const secondGate = deferred<void>();
+  const writes: string[] = [];
+  const writer = createSerializedCareSyncWriter<string>(async (value) => {
+    writes.push(value);
+    await (value === "first" ? firstGate.promise : secondGate.promise);
+  });
+
+  const firstWrite = writer.enqueue("first");
+  const secondWrite = writer.enqueue("second");
+  let drainSettled = false;
+  const drain = writer.drain().then(() => {
+    drainSettled = true;
+  });
+
+  await Promise.resolve();
+  assert.equal(drainSettled, false);
+  assert.deepEqual(writes, ["first"]);
+
+  firstGate.resolve();
+  await firstWrite;
+  await flushMutationQueue();
+  assert.equal(drainSettled, false);
+  assert.deepEqual(writes, ["first", "second"]);
+
+  secondGate.resolve();
+  await secondWrite;
+  await drain;
+  assert.equal(drainSettled, true);
+});
+
+test("a drain invoked inside the physical writer observes its active write", async () => {
+  const writeGate = deferred<void>();
+  let drain!: () => Promise<void>;
+  let reentrantDrain!: Promise<void>;
+  let drainSettled = false;
+  const writer = createSerializedCareSyncWriter<string>(async () => {
+    reentrantDrain = drain().then(() => {
+      drainSettled = true;
+    });
+    await writeGate.promise;
+  });
+  drain = writer.drain;
+
+  const write = writer.enqueue("server_cancelled");
+  await flushMutationQueue();
+  assert.equal(drainSettled, false);
+
+  writeGate.resolve();
+  await write;
+  await reentrantDrain;
+  assert.equal(drainSettled, true);
+});
+
+test("drain resolves after rejected work settles and the queued write recovers", async () => {
+  const firstGate = deferred<void>();
+  const writes: string[] = [];
+  const writer = createSerializedCareSyncWriter<string>(async (value) => {
+    writes.push(value);
+    if (value === "first") {
+      await firstGate.promise;
+      throw new Error("storage failed");
+    }
+  });
+
+  const firstWrite = assert.rejects(
+    writer.enqueue("first"),
+    /storage failed/,
+  );
+  const secondWrite = writer.enqueue("second");
+  const drain = writer.drain();
+
+  firstGate.resolve();
+  await drain;
+  await firstWrite;
+  await secondWrite;
+  assert.deepEqual(writes, ["first", "second"]);
+});
+
+test("drain does not adopt durable writes accepted after its snapshot", async () => {
+  const beforeDrainGate = deferred<void>();
+  const afterDrainGate = deferred<void>();
+  const writes: string[] = [];
+  const writer = createSerializedCareSyncWriter<string>(async (value) => {
+    writes.push(value);
+    await (value === "before" ? beforeDrainGate.promise : afterDrainGate.promise);
+  });
+
+  const beforeDrainWrite = writer.enqueue("before");
+  let drainSettled = false;
+  const drain = writer.drain().then(() => {
+    drainSettled = true;
+  });
+  let afterDrainSettled = false;
+  const afterDrainWrite = writer.enqueue("after").then(() => {
+    afterDrainSettled = true;
+  });
+
+  beforeDrainGate.resolve();
+  await beforeDrainWrite;
+  await flushMutationQueue();
+  assert.equal(drainSettled, true);
+  assert.equal(afterDrainSettled, false);
+
+  afterDrainGate.resolve();
+  await afterDrainWrite;
+  await drain;
+  assert.deepEqual(writes, ["before", "after"]);
+});
+
+test("synchronous failure and re-entrant enqueue preserve durable writer FIFO", async () => {
+  const writes: string[] = [];
+  let enqueue!: (value: string) => Promise<void>;
+  let reentrantWrite!: Promise<void>;
+  const writer = createSerializedCareSyncWriter<string>((value) => {
+    writes.push(value);
+    if (value === "first") {
+      reentrantWrite = enqueue("second");
+      throw new Error("synchronous storage failure");
+    }
+    return Promise.resolve();
+  });
+  enqueue = writer.enqueue;
+
+  const firstWrite = assert.rejects(
+    writer.enqueue("first"),
+    /synchronous storage failure/,
+  );
+  const thirdWrite = writer.enqueue("third");
+
+  await firstWrite;
+  await flushMutationQueue();
+  assert.deepEqual(writes, ["first", "second", "third"]);
+  await reentrantWrite;
+  await thirdWrite;
 });
 
 test("a rejected durable write does not stall the next queued write", async () => {

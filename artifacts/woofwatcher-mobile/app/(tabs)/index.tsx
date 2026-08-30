@@ -1,22 +1,30 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Animated,
+  AppState,
   Easing,
   Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  deriveBileVomitEvidence30,
   deriveAdventureMode,
   deriveCareIntelligence,
   normalizeCareEventType,
@@ -54,8 +62,10 @@ import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
 import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, type Entry } from "@/context/CareContext";
+import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { announce } from "@/lib/announce";
 import { isClerkEnabledForBuild } from "@/lib/auth";
+import { useActiveCurrentTime } from "@/hooks/useActiveCurrentTime";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
@@ -72,6 +82,7 @@ import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import { describeCareTwinReactionForLog } from "@/lib/careTwinReactionPolicy";
 import {
   buildHomeMissionDeck,
+  type HomeMissionRoute,
   type HomeMissionTone,
 } from "@/lib/homeMissionDeck";
 import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
@@ -82,8 +93,17 @@ import {
   resolveHomeWelcomeCardMaxHeight,
   shouldHoldHomeFixedHeroTop,
 } from "@/lib/homeFixedHeroLayout";
-import { isHomeSceneReady } from "@/lib/homeSceneReady";
+import {
+  applyHomeWelcomePreferenceHydration,
+  isHomeSceneReady,
+  shouldDeferHomeWelcomeAfterReadFailure,
+} from "@/lib/homeSceneReady";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
+import {
+  deriveHomeEvidenceCopy,
+  formatHomeCompletion,
+  selectObservableHomeEntries,
+} from "@/lib/homeEvidence";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import {
   careXpForEntry,
@@ -101,13 +121,41 @@ import {
   buildWalkSessionStartEntry,
   findOpenWalkSession,
 } from "@/lib/walkSession";
-import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
-import { resolvePetName } from "@/lib/petIdentity";
+import {
+  derivePhoenixStatus,
+  isCareEntryObservableAt,
+  type Mood,
+  type ObservedEnergyLevel,
+} from "@/lib/phoenixStatus";
+import {
+  buildCareTwinRoomAccessibilityLabel,
+  buildPetSetupCopy,
+  resolveConsumerPetName,
+} from "@/lib/petIdentity";
 import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
+import { deriveHomeRoutinePlan } from "@/lib/homeRoutinePlan";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  runAcceptedCareMutation,
+} from "@/lib/careWriteProtection";
+import {
+  canonicalHealthRoute,
+  canonicalMoreRoute,
+  canonicalPlansReminderCenterRoute,
+  canonicalPlansRoute,
+} from "@/lib/canonicalRouteBuilders";
+import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
+import {
+  HOME_WELCOME_DISMISSED_KEY,
+  createDevicePreferenceHydrationRetryScheduler,
+} from "@/lib/devicePreferences";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
+import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 
 const HOME_PROVIDER_SYNC_ENABLED =
   isClerkEnabledForBuild && getConsumerSurfacePolicy().providerSyncControls;
+const HOME_PREFERENCE_ANNOUNCEMENT_DELAY_MS = 1000;
 
 interface QuickItem {
   key: string;
@@ -165,11 +213,6 @@ const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-
 // visibly walks it - the room returns when the walk is finished.
 const HOME_IMMERSIVE_PARK_DAY = require("@/assets/avatar/rooms/home-fullbleed-park-day.png");
 const HOME_IMMERSIVE_PARK_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-park-night.png");
-
-// Device-local flag so the first-run welcome card stays dismissed across
-// reloads. It keeps the "woofwatcher" key prefix so the privacy
-// erase-all-data flow removes it with every other WoofWatcher key.
-const HOME_WELCOME_DISMISSED_KEY = "woofwatcher.homeWelcomeDismissed.v1";
 
 export function homeImmersiveRoomIsNight(hour: number): boolean {
   return hour >= 20 || hour < 6;
@@ -231,11 +274,6 @@ const MOOD_ICON: Record<Mood, PixelIconName> = {
   unwell: "mood_rough",
 };
 
-function completionLabel(done: number, target: number): string {
-  if (!target) return `${done}`;
-  return `${Math.min(done, target)}/${target}`;
-}
-
 function routineIcon(type: string): PixelIconName {
   const t = normalizeCareEventType(type);
   if (t === "walk") return "walk";
@@ -260,6 +298,7 @@ function formatDuration(min: number): string {
 }
 
 function isToday(iso: string, now: number): boolean {
+  if (!isCareEntryObservableAt({ occurredAt: iso }, now)) return false;
   const d = new Date(iso);
   const n = new Date(now);
   return (
@@ -267,6 +306,20 @@ function isToday(iso: string, now: number): boolean {
     d.getMonth() === n.getMonth() &&
     d.getDate() === n.getDate()
   );
+}
+
+function observedEnergyLabel(level: ObservedEnergyLevel | null): string {
+  if (level === "low") return "Low";
+  if (level === "steady") return "Steady";
+  if (level === "high") return "High";
+  return "No data";
+}
+
+function observedEnergyProgress(level: ObservedEnergyLevel | null): number {
+  if (level === "low") return 0.3;
+  if (level === "steady") return 0.65;
+  if (level === "high") return 1;
+  return 0;
 }
 
 function shortTime(iso: string): string {
@@ -313,12 +366,7 @@ function HomeHeaderAction({
 }: {
   label: string;
   accessibilityLabel: string;
-  route:
-    | "/log"
-    | "/health?tab=health"
-    | "/health?tab=bile"
-    | "/calendar"
-    | "/records";
+  route: HomeMissionRoute;
 }) {
   const colors = useColors();
   const router = useRouter();
@@ -353,11 +401,19 @@ function HomeHeaderAction({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { width: viewportWidth, height: viewportHeight } =
-    useAppViewport();
+  const homeScreenMountedRef = useRef(true);
+  useEffect(() => {
+    homeScreenMountedRef.current = true;
+    return () => {
+      homeScreenMountedRef.current = false;
+    };
+  }, []);
+  const { width: viewportWidth, height: viewportHeight } = useAppViewport();
+  const { fontScale } = useWindowDimensions();
   const router = useRouter();
   const {
     state,
+    careMutationsBlocked,
     addEntry,
     deleteEntry,
     updateEntry,
@@ -366,14 +422,24 @@ export default function HomeScreen() {
     legacyImport,
     isLoaded,
   } = useCare();
+  const showCareReadOnly = () =>
+    notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   // The data-loss warning must reach screen-reader users on every platform.
   useEffect(() => {
     if (storageWarning === "save-failed") {
       announce("Device storage is failing. Recent care logs may not be saved.");
     } else if (storageWarning === "read-failed") {
-      announce("Could not read saved care data. Saving is paused this session.");
+      announce(
+        "Could not read saved care data. Saving is paused this session.",
+      );
     } else if (storageWarning === "reset") {
-      announce("Saved care data could not be read and was reset. A recovery copy was kept.");
+      announce(
+        "Saved care data could not be read and was reset. A recovery copy was kept.",
+      );
+    } else if (storageWarning === "newer-version") {
+      announce(
+        "This care data was created by a newer WoofWatcher version. This version will not overwrite it.",
+      );
     }
   }, [storageWarning]);
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
@@ -405,16 +471,51 @@ export default function HomeScreen() {
       }),
     [bottomChromeClearance, topPadding, viewportHeight, viewportWidth],
   );
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useActiveCurrentTime();
 
-  const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const petName = resolveConsumerPetName(state.profile.name);
+  // Home is a household-shared surface. Private entries are removed once at
+  // the boundary, before any status, story, activity, or recommendation can
+  // select their title, caregiver, details, or derived signals.
+  const homeEntries = useMemo(
+    () => selectObservableHomeEntries(state.entries, now),
+    [now, state.entries],
+  );
+  const todayHomeEntries = useMemo(
+    () => homeEntries.filter((entry) => isToday(entry.occurredAt, now)),
+    [homeEntries, now],
+  );
+  const bileCount = useMemo(
+    () =>
+      deriveBileVomitEvidence30({ entries: todayHomeEntries, now })
+        .vomitEntriesNewestFirst.length,
+    [now, todayHomeEntries],
+  );
+  const status = useMemo(
+    () => derivePhoenixStatus({ ...state, entries: homeEntries }, now),
+    [homeEntries, now, state],
+  );
+  const homeEvidenceCopy = useMemo(
+    () =>
+      deriveHomeEvidenceCopy({
+        todayLogCount: todayHomeEntries.length,
+        healthAlert: status.counts.healthAlert,
+        bileCount,
+      }),
+    [bileCount, status.counts.healthAlert, todayHomeEntries.length],
+  );
+  const hasMoodEvidence = status.evidence.mood !== null;
+  const hasEnergyEvidence = status.evidence.energy !== null;
+  const energyEvidenceLabel = observedEnergyLabel(status.evidence.energy);
+  const energyEvidenceProgress = observedEnergyProgress(status.evidence.energy);
+  const bondEvidenceCount = todayHomeEntries.filter((entry) =>
+    ["play", "training"].includes(
+      normalizeCareEventType(entry.type, entry.details),
+    ),
+  ).length;
   const openWalkSession = useMemo(
-    () => findOpenWalkSession(state.entries),
-    [state.entries],
+    () => findOpenWalkSession(homeEntries),
+    [homeEntries],
   );
   // Session-scoped reaction gate: the room only reacts to care logged in
   // THIS session. Without the floor, a meal logged minutes before an app
@@ -426,18 +527,20 @@ export default function HomeScreen() {
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
-        entries: state.entries,
+        entries: homeEntries,
         routines: state.routines,
         caregivers: state.caregivers,
+        petName,
         now,
         energy: status.energy,
         activeWalk: Boolean(openWalkSession),
         reactionsSince: reactionSessionFloor.current,
       }),
     [
-      state.entries,
+      homeEntries,
       state.routines,
       state.caregivers,
+      petName,
       now,
       openWalkSession,
       status.energy,
@@ -462,21 +565,21 @@ export default function HomeScreen() {
       ? restWord
       : HOME_MOOD_WORD[status.mood];
 
-  // Care Sense card derivations - each meter is a presentation of the same
-  // real, derived state the old chips carried. Mood maps ordinally (the word
-  // stays the source of truth in the value label), hunger reads meals done
-  // against target, alone time fills over a four-hour window while an away
-  // session is actually open. No invented numbers.
+  // Care Sense only presents a reading when the corresponding local evidence
+  // exists. Missing mood/activity evidence and missing meal targets stay
+  // visibly unknown instead of receiving a synthetic baseline.
   const careSenseHeadline =
-    status.mood === "unwell"
-      ? "Extra-gentle day underway."
-      : status.mood === "anxious"
-        ? "A gentle day - stay close."
-        : status.mood === "excited"
-          ? "Ready for adventure!"
-          : status.mood === "happy"
-            ? "Great day so far!"
-            : "A calm, steady day.";
+    todayHomeEntries.length === 0 || !hasMoodEvidence
+      ? homeEvidenceCopy.headline
+      : status.mood === "unwell"
+        ? "Extra-gentle day underway."
+        : status.mood === "anxious"
+          ? "A gentle day - stay close."
+          : status.mood === "excited"
+            ? "Ready for adventure!"
+            : status.mood === "happy"
+              ? "Great day so far!"
+              : "A calm, steady day.";
   const careSenseMoodRatio =
     status.mood === "happy"
       ? 0.95
@@ -490,38 +593,38 @@ export default function HomeScreen() {
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
-        entries: state.entries,
+        entries: homeEntries,
         routines: state.routines,
         caregivers: state.caregivers,
         now,
         providerSyncEnabled: HOME_PROVIDER_SYNC_ENABLED,
       }),
-    [state.entries, state.routines, state.caregivers, now],
+    [homeEntries, state.routines, state.caregivers, now],
   );
   const careCareer = useMemo(
-    () => deriveCareCareer(state.entries, now),
-    [state.entries, now],
+    () => deriveCareCareer(homeEntries, now),
+    [homeEntries, now],
   );
   const careStreak = useMemo(
-    () => deriveCareStreak(state.entries, now),
-    [state.entries, now],
+    () => deriveCareStreak(homeEntries, now),
+    [homeEntries, now],
   );
   const todayCommand = useMemo(
     () =>
       deriveTodayCommand(
         {
           profile: state.profile,
-          entries: state.entries,
+          entries: homeEntries,
           routines: state.routines,
           caregivers: state.caregivers,
           providerSyncEnabled: HOME_PROVIDER_SYNC_ENABLED,
         },
         now,
       ),
-    [state.caregivers, state.entries, state.profile, state.routines, now],
+    [homeEntries, state.caregivers, state.profile, state.routines, now],
   );
 
-  const petName = resolvePetName(state.profile.name);
+  const petSetupCopy = buildPetSetupCopy(state.profile.name);
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
@@ -534,30 +637,130 @@ export default function HomeScreen() {
   // the app - guest/preview mode stays fully usable behind the card.
   // `null` means the persisted flag has not hydrated yet, so the card never
   // flashes for someone who already dismissed it.
+  const { store, operationSettledEpoch } = useDevicePreferences();
   const [welcomeDismissed, setWelcomeDismissed] = useState<boolean | null>(
     null,
   );
+  const [welcomePreferenceReadFailed, setWelcomePreferenceReadFailed] =
+    useState(false);
+  const [welcomePreferenceRetryEpoch, setWelcomePreferenceRetryEpoch] =
+    useState(0);
+  const welcomeDismissedRef = useRef<boolean | null>(welcomeDismissed);
+  const deferWelcomeForSessionRef = useRef(false);
+  welcomeDismissedRef.current = welcomeDismissed;
+  const homeSceneReady = isHomeSceneReady(
+    isLoaded,
+    welcomeDismissed,
+    storageWarning,
+    welcomePreferenceReadFailed,
+  );
+  const welcomeHydrationRetryRef = useRef<ReturnType<
+    typeof createDevicePreferenceHydrationRetryScheduler
+  > | null>(null);
+  if (welcomeHydrationRetryRef.current === null) {
+    welcomeHydrationRetryRef.current =
+      createDevicePreferenceHydrationRetryScheduler();
+  }
+  const hydrationRetry = welcomeHydrationRetryRef.current;
   useEffect(() => {
     let cancelled = false;
-    AsyncStorage.getItem(HOME_WELCOME_DISMISSED_KEY)
-      .then((raw) => {
-        if (!cancelled) setWelcomeDismissed(raw === "true");
-      })
-      .catch(() => {
-        if (!cancelled) setWelcomeDismissed(false);
-      });
+    hydrationRetry.activate();
+    hydrationRetry.reset();
+
+    function hydrateWelcomePreference() {
+      void store
+        .hydrate(HOME_WELCOME_DISMISSED_KEY, {
+          isCancelled: () => cancelled,
+          apply: (raw) => {
+            applyHomeWelcomePreferenceHydration(
+              raw,
+              deferWelcomeForSessionRef.current,
+              welcomeDismissedRef,
+              setWelcomeDismissed,
+            );
+          },
+        })
+        .then((result) => {
+          if (cancelled || result === "cancelled") return;
+          setWelcomePreferenceReadFailed(false);
+          hydrationRetry.reset();
+        })
+        .catch((error) => {
+          if (cancelled || error instanceof LocalDataResetInProgressError)
+            return;
+          deferWelcomeForSessionRef.current ||=
+            shouldDeferHomeWelcomeAfterReadFailure(welcomeDismissedRef.current);
+          setWelcomePreferenceReadFailed(true);
+          hydrationRetry.request(hydrateWelcomePreference);
+        });
+    }
+
+    hydrateWelcomePreference();
     return () => {
       cancelled = true;
+      hydrationRetry.deactivate();
     };
-  }, []);
+  }, [
+    hydrationRetry,
+    operationSettledEpoch,
+    store,
+    welcomePreferenceRetryEpoch,
+  ]);
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        Platform.OS !== "ios" ||
+        !welcomePreferenceReadFailed ||
+        !homeSceneReady ||
+        storageWarning
+      ) {
+        return undefined;
+      }
+
+      let announcementTimer: ReturnType<typeof setTimeout> | undefined;
+      const clearAnnouncement = () => {
+        if (announcementTimer === undefined) return;
+        clearTimeout(announcementTimer);
+        announcementTimer = undefined;
+      };
+      const scheduleAnnouncement = () => {
+        clearAnnouncement();
+        if (AppState.currentState !== "active") return;
+        announcementTimer = setTimeout(() => {
+          announcementTimer = undefined;
+          if (AppState.currentState !== "active") return;
+          announce(
+            "Couldn't load a Home display preference. Home is available. Retry is available.",
+          );
+        }, HOME_PREFERENCE_ANNOUNCEMENT_DELAY_MS);
+      };
+
+      scheduleAnnouncement();
+      const appStateSubscription = AppState.addEventListener(
+        "change",
+        (nextState) => {
+          clearAnnouncement();
+          if (nextState === "active") scheduleAnnouncement();
+        },
+      );
+      return () => {
+        clearAnnouncement();
+        appStateSubscription.remove();
+      };
+    }, [homeSceneReady, storageWarning, welcomePreferenceReadFailed]),
+  );
+  const retryWelcomePreference = () => {
+    hydrationRetry.reset();
+    setWelcomePreferenceRetryEpoch((epoch) => epoch + 1);
+  };
   const dismissWelcome = () => {
     setWelcomeDismissed(true);
-    AsyncStorage.setItem(HOME_WELCOME_DISMISSED_KEY, "true").catch(() => {});
+    void store.save(HOME_WELCOME_DISMISSED_KEY, "true").catch((error) => {
+      if (error instanceof LocalDataResetInProgressError) return;
+    });
   };
   const isFreshStart =
-    !hasCaregivers &&
-    state.entries.length === 0 &&
-    !state.profile.breed?.trim();
+    !hasCaregivers && homeEntries.length === 0 && !state.profile.breed?.trim();
 
   // The welcome card leaves by folding shut (height + opacity, ~250ms)
   // instead of unmounting instantly - the first quick log used to yank the
@@ -621,8 +824,8 @@ export default function HomeScreen() {
     [now],
   );
   const openAloneSession = useMemo(
-    () => findOpenAloneTimeSession(state.entries),
-    [state.entries],
+    () => findOpenAloneTimeSession(homeEntries),
+    [homeEntries],
   );
   const openAloneStartedAt = openAloneSession
     ? String(
@@ -660,17 +863,17 @@ export default function HomeScreen() {
     ? "home-alone"
     : openWalkSession
       ? "on-walk"
-      : "with-human";
+      : "no-session";
   const presenceLabel = openAloneSession
-    ? `${petName} Home alone`
+    ? `${petName} is home alone`
     : openWalkSession
       ? `${petName} on a walk`
-      : `${petName} with ${caregiver}`;
+      : "No active away session";
   const presenceSub = openAloneSession
     ? `${formatDuration(openAloneMinutes)} active - tap I\u2019m Home in Log`
     : openWalkSession
       ? `${formatDuration(openWalkMinutes)} active - tap Finish in Next Up`
-      : `At home - ${timeLabel}`;
+      : `Presence not logged - ${timeLabel}`;
   const presenceRoute: HomePresenceRoute = openAloneSession
     ? openAloneSession.id
       ? homeLogEntryRoute(openAloneSession.id)
@@ -687,24 +890,37 @@ export default function HomeScreen() {
       : "Opens the Alone Time flow to log heading out or time apart.";
 
   const meals = status.counts.meals;
-  const fed = meals.target > 0 ? meals.done >= meals.target : true;
-  const bondLabel = status.mood === "unwell" ? "Okay" : "Strong";
-  const hydrationScore = 72;
-  const hungerScore = fed ? 86 : 42;
-  const hungerLabel = fed ? "Good" : "Hungry";
-  const bondScore = status.mood === "anxious" ? 70 : 92;
+  const hasMealTarget = meals.target > 0;
+  const fed = meals.target > 0 && meals.done >= meals.target;
+  const hungerLabel = formatHomeCompletion(meals.done, meals.target);
+  const hungerScore = meals.target > 0 ? careSenseMealsRatio * 100 : 0;
+  const hungerTone = hasMealTarget
+    ? fed
+      ? colors.sage
+      : colors.copper
+    : colors.mutedForeground;
   const moodIcon = MOOD_ICON[status.mood];
 
   // Shared with Today Command: pending meal outcomes stay actionable across
   // the midnight rollover (up to 12h) instead of vanishing at 12:00 AM.
   const pendingMeal = useMemo(
-    () => findPendingMealOutcome(state.entries, now),
-    [state.entries, now],
+    () => findPendingMealOutcome(homeEntries, now),
+    [homeEntries, now],
   );
 
   // Session-local snooze: a snoozed routine steps out of Next Up for 30
   // minutes on this device, without touching the Plan schedule itself.
   const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+  const homeRoutinePlan = useMemo(
+    () =>
+      deriveHomeRoutinePlan({
+        routines: state.routines,
+        entries: homeEntries,
+        snoozedUntil,
+        now,
+      }),
+    [homeEntries, now, snoozedUntil, state.routines],
+  );
 
   const nextUp = useMemo<HomeNextUpItem[]>(() => {
     if (openAloneSession) {
@@ -735,11 +951,8 @@ export default function HomeScreen() {
         },
       ];
     }
-    const awakeRoutines = state.routines.filter(
-      (r) => (snoozedUntil[r.id] ?? 0) <= now,
-    );
-    if (awakeRoutines.length) {
-      return awakeRoutines.slice(0, 3).map((r) => {
+    if (homeRoutinePlan.scheduledItems.length) {
+      return homeRoutinePlan.scheduledItems.slice(0, 3).map((r) => {
         const routineType = normalizeCareEventType(r.type ?? "note");
         return {
           label: r.label,
@@ -753,34 +966,17 @@ export default function HomeScreen() {
         };
       });
     }
-    if (state.routines.length) {
+    if (homeRoutinePlan.hasSavedRoutines) {
       // Everything scheduled is snoozed right now.
       return [];
     }
     return [
       {
-        label: hasCaregivers ? `Walk with ${caregiver}` : "Evening walk",
-        time: "5:30 PM",
-        icon: "walk" as PixelIconName,
-        route: homeLogDetailRoute("walk", now),
-        meta: "Start",
-        kind: "suggestion" as const,
-        owner: hasCaregivers ? caregiver : undefined,
-      },
-      {
-        label: "Dinner",
-        time: "7:00 PM",
-        icon: "meal" as PixelIconName,
-        route: homeLogDetailRoute("meal", now),
-        meta: "Serve",
-        kind: "suggestion" as const,
-      },
-      {
-        label: "Training",
-        time: "6:30 PM",
-        icon: "training" as PixelIconName,
-        route: homeLogDetailRoute("training", now),
-        meta: "Log",
+        label: "Plan today's care",
+        time: "No routines scheduled",
+        icon: "clock" as PixelIconName,
+        route: "/calendar" as const,
+        meta: "Plan",
         kind: "suggestion" as const,
       },
     ];
@@ -789,16 +985,13 @@ export default function HomeScreen() {
     openAloneSession,
     openWalkMinutes,
     openWalkSession,
-    snoozedUntil,
-    state.routines,
-    caregiver,
-    hasCaregivers,
+    homeRoutinePlan,
     now,
   ]);
 
   // Served meal awaiting its outcome: rendered as its own open-loop chip
   // stacked above the planned Next Up item, so closing the meal loop never
-  // hides the plan (or the "more in Plan" link) from the hero flow.
+  // hides the plan (or the "more in Plans" link) from the hero flow.
   const pendingMealOpenLoop = useMemo(
     () =>
       pendingMeal
@@ -815,7 +1008,7 @@ export default function HomeScreen() {
   );
 
   const nextPrimary = nextUp[0];
-  const nextCount = Math.max(nextUp.length, 1);
+  const nextCount = nextUp.length;
   const nextMeta = openAloneSession
     ? "I'm Home"
     : openWalkSession
@@ -849,14 +1042,30 @@ export default function HomeScreen() {
     // back to the calm command line instead of echoing the active walk here.
     if (openWalkSession) return todayCommand.primaryAction.detail;
     const parts = nextUp.slice(0, 2).map((item, index) => {
-      if (index === 0 && item.kind === "routine" && status.minutesUntilNext !== null) {
+      if (item.kind === "suggestion") return item.time;
+      if (
+        index === 0 &&
+        item.kind === "routine" &&
+        status.minutesUntilNext !== null
+      ) {
         return `${item.label} in ${formatDuration(status.minutesUntilNext)}`;
       }
       return `${item.label} ${item.time.includes(" - ") ? "" : "at "}${item.time}`;
     });
     if (!parts.length) return todayCommand.primaryAction.detail;
     return parts.join(" · ");
-  }, [nextUp, openWalkSession, status.minutesUntilNext, todayCommand.primaryAction.detail]);
+  }, [
+    nextUp,
+    openWalkSession,
+    status.minutesUntilNext,
+    todayCommand.primaryAction.detail,
+  ]);
+  const careSenseSubline =
+    todayHomeEntries.length === 0
+      ? `${petName}: ${homeEvidenceCopy.summary}`
+      : hasMoodEvidence
+        ? `${petName} is ${homeMoodWord}. ${glanceLine}`
+        : `${petName}: ${homeEvidenceCopy.summary} ${glanceLine}`;
 
   // The old Fed/Potty/Walk/Alone recency chips folded into the Care Sense
   // meters above - same real-log truth, one calmer surface.
@@ -886,33 +1095,18 @@ export default function HomeScreen() {
     ? "Alone"
     : openWalkSession
       ? "On walk"
-      : `With ${caregiver}`;
+      : "No session";
 
-  const health = status.counts.healthAlert
-    ? {
-        status: "Needs Watch",
-        sub: "Recent symptom logged",
-        color: colors.amber,
-      }
-    : { status: "Stable", sub: "All good right now", color: colors.sage };
-
-  const bileCount = useMemo(
-    () =>
-      state.entries.filter((e) => {
-        if (!isToday(e.occurredAt, now)) return false;
-        const t = normalizeCareEventType(e.type, e.details);
-        return t === "vomit" || t === "symptom" || /bile/i.test(e.title);
-      }).length,
-    [state.entries, now],
-  );
-  const bile =
-    bileCount === 0
-      ? { status: "Low Risk", sub: "Everything looks good", color: colors.sage }
-      : {
-          status: "Watch",
-          sub: `${bileCount} flagged today`,
-          color: colors.amber,
-        };
+  const health = {
+    status: homeEvidenceCopy.health.status,
+    sub: homeEvidenceCopy.health.detail,
+    color: status.counts.healthAlert ? colors.amber : colors.mutedForeground,
+  };
+  const bile = {
+    status: homeEvidenceCopy.bile.status,
+    sub: homeEvidenceCopy.bile.detail,
+    color: bileCount > 0 ? colors.amber : colors.mutedForeground,
+  };
 
   // Header bell badge mirrors the Health/Bile watch cards below: one signal
   // per watch surface that currently needs owner attention, hidden when calm.
@@ -928,13 +1122,13 @@ export default function HomeScreen() {
         ? "On a walk now"
         : openAloneSession
           ? "Home alone now"
-          : "Care on track";
+          : homeEvidenceCopy.careLine;
 
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () => [
       {
         label: "Mood",
-        value: status.meta.label,
+        value: hasMoodEvidence ? status.meta.label : "No data",
         icon: moodIcon,
         tone:
           status.mood === "unwell"
@@ -942,50 +1136,42 @@ export default function HomeScreen() {
             : status.mood === "anxious"
               ? colors.amber
               : colors.sage,
-        progress:
-          status.mood === "unwell" ? 44 : status.mood === "anxious" ? 62 : 92,
+        progress: hasMoodEvidence
+          ? status.mood === "unwell"
+            ? 44
+            : status.mood === "anxious"
+              ? 62
+              : 92
+          : 0,
       },
       {
         label: "Energy",
-        value: `${status.energy}%`,
+        value: energyEvidenceLabel,
         icon: "energy",
         tone: colors.sage,
-        progress: status.energy,
+        progress: Math.round(energyEvidenceProgress * 100),
       },
       {
         label: "Hunger",
         value: hungerLabel,
         icon: "hunger",
-        tone: fed ? colors.sage : colors.copper,
+        tone: hungerTone,
         progress: hungerScore,
-      },
-      {
-        label: "Hydration",
-        value: "Good",
-        icon: "bile",
-        tone: colors.blueSignal,
-        progress: hydrationScore,
-      },
-      {
-        label: "Bond",
-        value: bondLabel,
-        icon: "heart",
-        tone: colors.rose,
-        progress: bondScore,
       },
     ],
     [
-      bondLabel,
-      bondScore,
       colors.amber,
-      colors.blueSignal,
       colors.copper,
       colors.rose,
       colors.sage,
       fed,
+      hungerTone,
+      hasEnergyEvidence,
+      hasMoodEvidence,
+      energyEvidenceLabel,
+      energyEvidenceProgress,
       hungerLabel,
       hungerScore,
-      hydrationScore,
       moodIcon,
       status.energy,
       status.meta.label,
@@ -995,14 +1181,14 @@ export default function HomeScreen() {
 
   const aloneMinutes = useMemo(
     () =>
-      state.entries
+      homeEntries
         .filter(
           (e) =>
             isToday(e.occurredAt, now) &&
             normalizeCareEventType(e.type, e.details) === "alone",
         )
         .reduce((sum, e) => sum + (e.durationMinutes ?? 0), 0),
-    [state.entries, now],
+    [homeEntries, now],
   );
   const alone = {
     status: openAloneSession
@@ -1020,7 +1206,7 @@ export default function HomeScreen() {
 
   const recentActivity = useMemo(
     () =>
-      [...state.entries]
+      [...homeEntries]
         .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
         .slice(0, 3)
         .map((entry) => ({
@@ -1030,7 +1216,7 @@ export default function HomeScreen() {
           icon: routineIcon(entry.type),
           caregiver: entry.caregiver,
         })),
-    [state.entries],
+    [homeEntries],
   );
 
   const questLine = careIntelligence.title;
@@ -1038,11 +1224,11 @@ export default function HomeScreen() {
     () =>
       deriveAdventureMode({
         petName,
-        entries: state.entries,
+        entries: homeEntries,
         memories: state.adventureMemories,
         now,
       }),
-    [petName, state.entries, state.adventureMemories, now],
+    [homeEntries, petName, state.adventureMemories, now],
   );
   const adventureQuest = adventureMode.quests[0];
 
@@ -1055,11 +1241,11 @@ export default function HomeScreen() {
       return;
     }
     if (target === "health") {
-      router.push("/health?tab=health" as never);
+      router.push(canonicalHealthRoute("overview") as never);
       return;
     }
     if (target === "diet") {
-      router.push("/more?section=diet" as never);
+      router.push(canonicalHealthRoute("diet") as never);
       return;
     }
     router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
@@ -1075,11 +1261,11 @@ export default function HomeScreen() {
   const openHomeWatchCard = (target: HomeWatchTarget) => {
     void Haptics.selectionAsync();
     if (target === "health") {
-      router.push("/health?tab=health" as never);
+      router.push(canonicalHealthRoute("overview") as never);
       return;
     }
     if (target === "bile") {
-      router.push("/health?tab=bile" as never);
+      router.push(canonicalHealthRoute("bile-watch") as never);
       return;
     }
     router.push(`/log?type=alone&detail=1&intent=${Date.now()}` as never);
@@ -1106,7 +1292,7 @@ export default function HomeScreen() {
       careIntelligence.nextAction.kind === "handle-routine" ||
       careIntelligence.nextAction.targetRoutineId
     ) {
-      router.push("/calendar");
+      router.push(canonicalPlansRoute());
       return;
     }
     if (careIntelligence.nextAction.kind === "update-meal-outcome") {
@@ -1218,6 +1404,16 @@ export default function HomeScreen() {
     title: string;
     type: CareEventType;
   } | null>(null);
+  const quickFeedbackRef = useRef(quickFeedback);
+  quickFeedbackRef.current = quickFeedback;
+  const quickFeedbackUndoGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (quickFeedbackUndoGateRef.current === null) {
+    quickFeedbackUndoGateRef.current = createExclusiveAsyncAction();
+  }
+  const quickFeedbackUndoGate = quickFeedbackUndoGateRef.current;
+  const [quickFeedbackUndoBusy, setQuickFeedbackUndoBusy] = useState(false);
   const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(
     null,
   );
@@ -1281,9 +1477,9 @@ export default function HomeScreen() {
   // floats on top of a live Update button (and the reveal never jumps).
   const pendingMealChipSuppressed = Boolean(
     toast &&
-      quickFeedback &&
-      pendingMeal &&
-      quickFeedback.id === pendingMeal.id,
+    quickFeedback &&
+    pendingMeal &&
+    quickFeedback.id === pendingMeal.id,
   );
   const mealChipReveal = useSharedValue(0);
   useEffect(() => {
@@ -1301,29 +1497,42 @@ export default function HomeScreen() {
     opacity: mealChipReveal.value,
     maxHeight: 88 * mealChipReveal.value,
   }));
+  const setToastVisibility = (
+    toValue: 0 | 1,
+    duration: number,
+    onComplete?: () => void,
+  ) => {
+    toastOpacity.stopAnimation();
+    if (reducedMotion) {
+      toastOpacity.setValue(toValue);
+      onComplete?.();
+      return;
+    }
+    Animated.timing(toastOpacity, {
+      toValue,
+      duration,
+      useNativeDriver: Platform.OS !== "web",
+    }).start(({ finished }) => {
+      if (finished) onComplete?.();
+    });
+  };
   const showToast = (
     msg: string,
     feedback?: { id: string; title: string; type: CareEventType },
     holdMs?: number,
   ) => {
+    quickFeedbackRef.current = feedback ?? null;
     setToast(msg);
     setQuickFeedback(feedback ?? null);
     // The toast is invisible to screen readers and its Undo button vanishes
     // on a timer - announce so the core loop is not silent under VoiceOver.
     announce(feedback ? `${msg}. Undo available.` : msg);
-    Animated.timing(toastOpacity, {
-      toValue: 1,
-      duration: 160,
-      useNativeDriver: Platform.OS !== "web",
-    }).start();
+    setToastVisibility(1, 160);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(
       () => {
-        Animated.timing(toastOpacity, {
-          toValue: 0,
-          duration: 240,
-          useNativeDriver: Platform.OS !== "web",
-        }).start(() => {
+        setToastVisibility(0, 240, () => {
+          quickFeedbackRef.current = null;
           setToast(null);
           setQuickFeedback(null);
         });
@@ -1346,7 +1555,9 @@ export default function HomeScreen() {
     if (!legacyImport || legacyImportShown.current) return;
     legacyImportShown.current = true;
     const logs =
-      legacyImport.entries === 1 ? "1 care log" : `${legacyImport.entries} care logs`;
+      legacyImport.entries === 1
+        ? "1 care log"
+        : `${legacyImport.entries} care logs`;
     showToast(
       legacyImport.entries
         ? `Welcome back. Brought over ${logs} from the earlier WoofWatcher.`
@@ -1359,24 +1570,55 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [legacyImport]);
 
-  const undoQuickFeedback = () => {
-    if (!quickFeedback) return;
-    const title = quickFeedback.title;
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    void deleteEntry(quickFeedback.id);
-    setQuickFeedback(null);
-    // Clear the room bubble in the same commit: the undone log's "Meal
-    // served"/"Walk started" line must not linger over the twin for the
-    // rest of its 3.2s timer after the entry is already gone.
-    if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
-    setRoomSpeechOverride(null);
-    showToast(`${title} undone`);
+  const undoQuickFeedback = async () => {
+    const feedback = quickFeedback;
+    if (!feedback) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
+    await quickFeedbackUndoGate.run(async () => {
+      setQuickFeedbackUndoBusy(true);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      try {
+        let deleted = false;
+        try {
+          deleted = await deleteEntry(feedback.id);
+        } catch {
+          deleted = false;
+        }
+        if (!homeScreenMountedRef.current) return;
+        if (!deleted) {
+          notifyDialog(
+            "Undo not completed",
+            "WoofWatcher could not confirm that this care log was removed. Check the timeline before trying again.",
+          );
+          return;
+        }
+        // A newer quick log may have replaced this feedback while deletion
+        // settled. Never clear or relabel that newer action.
+        if (quickFeedbackRef.current?.id !== feedback.id) return;
+        quickFeedbackRef.current = null;
+        // Clear the room bubble in the same commit: the undone log's "Meal
+        // served"/"Walk started" line must not linger over the twin for the
+        // rest of its 3.2s timer after the entry is already gone.
+        if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+        setRoomSpeechOverride(null);
+        showToast(`${feedback.title} undone`);
+      } finally {
+        if (homeScreenMountedRef.current) {
+          setQuickFeedbackUndoBusy(false);
+        }
+      }
+    });
   };
 
   const openQuickFeedbackDetails = () => {
+    if (quickFeedbackUndoGate.isBusy()) return;
     if (!quickFeedback) return;
     const entryId = quickFeedback.id;
     if (toastTimer.current) clearTimeout(toastTimer.current);
+    quickFeedbackRef.current = null;
     setToast(null);
     setQuickFeedback(null);
     router.push(`/log?entry=${entryId}` as never);
@@ -1409,18 +1651,31 @@ export default function HomeScreen() {
   // and notes stay optional and editable from the saved log afterward).
   const finishWalkFromHome = () => {
     if (!openWalkSession?.id) return;
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
     }
     const patch = buildWalkSessionFinishPatch(openWalkSession, {
       caregiver,
       now: Date.now(),
     });
-    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
-    showRoomSpeech("Walk completed");
-    showToast(
-      `Walk completed · ${formatDuration(patch.durationMinutes)} logged · +${careXpForEntry({ ...openWalkSession, details: patch.details })} care XP`,
+    const updated = updateEntry(
+      openWalkSession.id,
+      patch as Partial<Omit<Entry, "id">>,
     );
+    const accepted = runAcceptedCareMutation(updated, () => {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      }
+      showRoomSpeech("Walk completed");
+      showToast(
+        `Walk completed · ${formatDuration(patch.durationMinutes)} logged · +${careXpForEntry({ ...openWalkSession, details: patch.details })} care XP`,
+      );
+    });
+    if (!accepted) {
+      showCareReadOnly();
+      return;
+    }
   };
 
   // Double-tap safety: one save per intent on every quick-log surface. The
@@ -1435,8 +1690,8 @@ export default function HomeScreen() {
     const prev = recentQuickSave.current;
     return Boolean(
       prev &&
-        prev.type === type &&
-        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+      prev.type === type &&
+      Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
     );
   };
   const markQuickSave = (type: CareEventType) => {
@@ -1451,10 +1706,13 @@ export default function HomeScreen() {
     routineId?: string;
     routineLabel?: string;
   }): string | null => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return null;
+    }
     // A rapid second Walk tap lands before the open session exists in
     // state; it is the same intent, already answered by the first tap.
     if (isDuplicateQuickTap("walk")) return null;
-    markQuickSave("walk");
     const entry = buildWalkSessionStartEntry({
       caregiver,
       now,
@@ -1462,18 +1720,29 @@ export default function HomeScreen() {
       routineLabel: options?.routineLabel,
     });
     const id = addEntry(entry as Omit<Entry, "id">);
-    const reactionPlan = describeCareTwinReactionForLog({
-      type: "walk",
-      label: "Walk",
-      title: "Walk started",
-      details: entry.details,
+    const accepted = runAcceptedCareMutation(id, () => {
+      markQuickSave("walk");
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+      const reactionPlan = describeCareTwinReactionForLog({
+        type: "walk",
+        label: "Walk",
+        title: "Walk started",
+        petName,
+        details: entry.details,
+      });
+      showRoomSpeech(reactionPlan.label);
+      showToast("Walk started · care XP lands when you finish", {
+        id,
+        title: "Walk started",
+        type: "walk",
+      });
     });
-    showRoomSpeech(reactionPlan.label);
-    showToast("Walk started · care XP lands when you finish", {
-      id,
-      title: "Walk started",
-      type: "walk",
-    });
+    if (!accepted) {
+      showCareReadOnly();
+      return null;
+    }
     return id;
   };
 
@@ -1491,15 +1760,16 @@ export default function HomeScreen() {
       router.push(homeLogDetailRoute(policy.type, Date.now()) as never);
       return;
     }
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
     if (item.type === "walk") {
       if (openWalkSession) {
         openActiveWalkFromHomeQuickLog();
         return;
       }
       startWalkSessionFromHome();
+      return;
+    }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
       return;
     }
     // Dedupe against the same tick (ref) and the saved timeline (shared
@@ -1509,11 +1779,10 @@ export default function HomeScreen() {
     // tick look like a bounce forever.
     if (
       isDuplicateQuickTap(policy.type) ||
-      findRecentQuickLogDuplicate(state.entries, item.type, Date.now())
+      findRecentQuickLogDuplicate(homeEntries, item.type, Date.now())
     ) {
       return;
     }
-    markQuickSave(policy.type);
     const role = state.caregivers.find(
       (person) => person.name === caregiver,
     )?.role;
@@ -1528,31 +1797,42 @@ export default function HomeScreen() {
       { caregiver, caregiverRole: role, now },
     );
     const id = addEntry(entry);
-    const reactionPlan = describeCareTwinReactionForLog({
-      type: entry.type,
-      label: item.label,
-      title: entry.title,
-      mood: entry.mood,
-      severity: entry.severity,
-      details: entry.details,
+    const accepted = runAcceptedCareMutation(id, () => {
+      markQuickSave(policy.type);
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+      const reactionPlan = describeCareTwinReactionForLog({
+        type: entry.type,
+        label: item.label,
+        title: entry.title,
+        mood: entry.mood,
+        severity: entry.severity,
+        petName,
+        details: entry.details,
+      });
+      showRoomSpeech(reactionPlan.label);
+      // The served-meal explainer lives in this one toast (with the room
+      // bubble) - no third dark callout over the sprite. The outcome-pending
+      // Next Up chip stays the persistent affordance after the toast fades.
+      const mealOutcomeOpen =
+        entry.type === "meal" &&
+        entry.details?.mealLifecycle === "outcome-pending";
+      showToast(
+        mealOutcomeOpen
+          ? `Meal served · outcome stays open · +${careXpForEntry(entry)} care XP`
+          : `${item.title} logged · +${careXpForEntry(entry)} care XP`,
+        {
+          id,
+          title: item.title,
+          type: item.type,
+        },
+      );
     });
-    showRoomSpeech(reactionPlan.label);
-    // The served-meal explainer lives in this one toast (with the room
-    // bubble) - no third dark callout over the sprite. The outcome-pending
-    // Next Up chip stays the persistent affordance after the toast fades.
-    const mealOutcomeOpen =
-      entry.type === "meal" &&
-      entry.details?.mealLifecycle === "outcome-pending";
-    showToast(
-      mealOutcomeOpen
-        ? `Meal served · outcome stays open · +${careXpForEntry(entry)} care XP`
-        : `${item.title} logged · +${careXpForEntry(entry)} care XP`,
-      {
-        id,
-        title: item.title,
-        type: item.type,
-      },
-    );
+    if (!accepted) {
+      showCareReadOnly();
+      return;
+    }
   };
 
   const tapPhoenixRoom = () => {
@@ -1575,13 +1855,13 @@ export default function HomeScreen() {
 
   const openAvatarStudio = () => {
     void Haptics.selectionAsync();
-    router.push("/portrait");
+    router.push({ pathname: "/more", params: { section: "avatar-studio" } });
   };
 
   // Today's Story: one honest sentence from the day's real log evidence.
   const todayStoryLine = useMemo(() => {
     const todayKey = new Date(now).toDateString();
-    const todaysEntries = state.entries.filter(
+    const todaysEntries = homeEntries.filter(
       (entry) => new Date(entry.occurredAt).toDateString() === todayKey,
     );
     if (!todaysEntries.length) {
@@ -1592,7 +1872,7 @@ export default function HomeScreen() {
     )[0];
     const count = todaysEntries.length;
     return `${latest.title} logged by ${latest.caregiver}. ${count} care ${count === 1 ? "moment" : "moments"} today.`;
-  }, [now, petName, state.entries]);
+  }, [homeEntries, now, petName]);
 
   const isWebRoutePreview = (Platform.OS as string) === "web";
   // The web preview mirrors the native inset so the room console floats
@@ -1607,9 +1887,11 @@ export default function HomeScreen() {
     240,
     viewportWidth - routeHorizontalPadding * 2,
   );
-  const heroDesignHeight = Math.round(
-    heroStageWidth / homeFirstScreenLayout.heroAspectRatio,
-  );
+  const largeTextHeroHeight =
+    fontScale >= 1.5 ? Math.ceil(72 * (fontScale - 1)) : 0;
+  const heroDesignHeight =
+    Math.round(heroStageWidth / homeFirstScreenLayout.heroAspectRatio) +
+    largeTextHeroHeight;
   const heroStageScale = isShortViewport
     ? Math.max(0.72, Math.min(1, viewportHeight / 700))
     : 1;
@@ -1625,15 +1907,20 @@ export default function HomeScreen() {
     maxHeight: heroStageHeight * (1 - welcomeCollapse.value),
   }));
   const [fixedHeroTop, setFixedHeroTop] = useState<number | null>(null);
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const fade = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
+  ).current;
   useEffect(() => {
-    if (isWebRoutePreview) return;
+    if (isWebRoutePreview || reducedMotion) {
+      fade.setValue(1);
+      return;
+    }
     Animated.timing(fade, {
       toValue: 1,
       duration: 450,
       useNativeDriver: !isWebRoutePreview,
     }).start();
-  }, [fade, isWebRoutePreview]);
+  }, [fade, isWebRoutePreview, reducedMotion]);
 
   const roomIsNight =
     colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
@@ -1666,10 +1953,7 @@ export default function HomeScreen() {
         ]}
       >
         <View
-          style={[
-            s.heroWrap,
-            { height: heroStageHeight, overflow: "hidden" },
-          ]}
+          style={[s.heroWrap, { height: heroStageHeight, overflow: "hidden" }]}
         >
           <View
             style={
@@ -1713,10 +1997,10 @@ export default function HomeScreen() {
       </Reanimated.View>
     );
 
-  if (!isHomeSceneReady(isLoaded, welcomeDismissed, storageWarning)) {
+  if (!homeSceneReady) {
     return (
       <View
-        accessibilityLabel="Loading Today"
+        accessibilityLabel="Loading Home"
         accessibilityRole="progressbar"
         aria-busy
         style={[s.root, { backgroundColor: colors.background }]}
@@ -1747,7 +2031,10 @@ export default function HomeScreen() {
       />
       {colors.isDark ? (
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(9,17,32,0.16)" }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(9,17,32,0.16)" },
+          ]}
           pointerEvents="none"
         />
       ) : null}
@@ -1781,20 +2068,32 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
               accessibilityHint={`Opens ${petName}'s profile.`}
-              onPress={() => router.push("/profile" as never)}
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={() => router.push(canonicalMoreRoute("dog-profile"))}
+              style={({ pressed }) => [
+                s.identityWrap,
+                { opacity: pressed ? 0.75 : 1 },
+              ]}
             >
               <PetPortrait size={42} />
               <View style={s.identityCopy}>
                 <View style={s.identityNameRow}>
                   <Text
-                    numberOfLines={1}
-                    style={[s.identityName, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}
+                    numberOfLines={2}
+                    style={[
+                      s.identityName,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Fraunces_700Bold",
+                      },
+                    ]}
                   >
                     {petName}
                   </Text>
-                  <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="chevron-down"
+                    size={14}
+                    color={colors.mutedForeground}
+                  />
                 </View>
                 <View style={s.identityCareLine}>
                   <Ionicons
@@ -1803,8 +2102,15 @@ export default function HomeScreen() {
                     color={watchSignalCount > 0 ? colors.amber : colors.forest}
                   />
                   <Text
-                    numberOfLines={1}
-                    style={[s.identityCareText, { color: watchSignalCount > 0 ? colors.amber : colors.forest, fontFamily: "Inter_700Bold" }]}
+                    numberOfLines={2}
+                    style={[
+                      s.identityCareText,
+                      {
+                        color:
+                          watchSignalCount > 0 ? colors.amber : colors.forest,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
                   >
                     {careLine}
                   </Text>
@@ -1813,16 +2119,21 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open the Pack"
-              accessibilityHint="Opens pets and people who share the care."
-              onPress={() => router.push("/pack" as never)}
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              accessibilityLabel="Open Care Team & Supplies"
+              accessibilityHint="Opens caregivers, supply inventory, and travel checklists."
+              onPress={() =>
+                router.push(canonicalMoreRoute("care-team-supplies"))
+              }
               style={[
                 s.headerButton,
                 { borderColor: "transparent", backgroundColor: "transparent" },
               ]}
             >
-              <Ionicons name="people-outline" size={24} color={colors.foreground} />
+              <Ionicons
+                name="people-outline"
+                size={24}
+                color={colors.foreground}
+              />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -1832,8 +2143,7 @@ export default function HomeScreen() {
                   ? `${watchSignalCount} ${watchSignalCount === 1 ? "signal needs" : "signals need"} attention`
                   : "Upcoming care reminders"
               }
-              onPress={() => router.push("/reminders" as never)}
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              onPress={() => router.push(canonicalPlansReminderCenterRoute())}
               style={[
                 s.headerButton,
                 { borderColor: "transparent", backgroundColor: "transparent" },
@@ -1846,7 +2156,12 @@ export default function HomeScreen() {
               />
               {watchSignalCount > 0 ? (
                 <View style={[s.badge, { backgroundColor: colors.rose }]}>
-                  <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.badgeText,
+                      { color: colors.brandNavy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {watchSignalCount}
                   </Text>
                 </View>
@@ -1869,55 +2184,117 @@ export default function HomeScreen() {
               }}
               style={[{ overflow: "hidden" }, welcomeCardAnimatedStyle]}
             >
-            <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Dismiss welcome"
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
-                onPress={dismissWelcome}
-                style={s.welcomeDismiss}
+              <View
+                style={[
+                  s.welcomeCard,
+                  s.softShadow,
+                  { backgroundColor: colors.forest },
+                ]}
               >
-                <Ionicons name="close" size={16} color={colors.primaryForeground} />
-              </Pressable>
-              <Text style={[s.welcomeKicker, { color: colors.amberSoft, fontFamily: "Fredoka_600SemiBold" }]}>
-                WELCOME TO WOOFWATCHER
-              </Text>
-              <Text style={[s.welcomeTitle, { color: colors.primaryForeground, fontFamily: "Fraunces_700Bold" }]}>
-                Let's make {petName} yours
-              </Text>
-              <Text style={[s.welcomeBody, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
-                Add your dog's name, breed, and routines so Today, Log, and Records fit your real day. It takes a minute.
-              </Text>
-              <View style={s.welcomeActions}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Set up ${petName}`}
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    router.push("/setup" as never);
-                  }}
-                  style={({ pressed }) => [
-                    s.welcomePrimary,
-                    { backgroundColor: colors.primaryForeground, opacity: pressed ? 0.85 : 1 },
+                  accessibilityLabel="Dismiss welcome"
+                  onPress={dismissWelcome}
+                  style={s.welcomeDismiss}
+                >
+                  <View style={s.welcomeDismissVisual}>
+                    <Ionicons
+                      name="close"
+                      size={16}
+                      color={colors.primaryForeground}
+                    />
+                  </View>
+                </Pressable>
+                <Text
+                  style={[
+                    s.welcomeKicker,
+                    {
+                      color: colors.amberSoft,
+                      fontFamily: "Fredoka_600SemiBold",
+                    },
                   ]}
                 >
-                  <Text style={[s.welcomePrimaryText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    Set up {petName}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={15} color={colors.forest} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Explore first"
-                  onPress={dismissWelcome}
-                  style={({ pressed }) => [s.welcomeGhost, { opacity: pressed ? 0.7 : 1 }]}
+                  WELCOME TO WOOFWATCHER
+                </Text>
+                <Text
+                  style={[
+                    s.welcomeTitle,
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Fraunces_700Bold",
+                    },
+                  ]}
                 >
-                  <Text style={[s.welcomeGhostText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-                    Explore first
-                  </Text>
-                </Pressable>
+                  {petSetupCopy.title}
+                </Text>
+                <Text
+                  style={[
+                    s.welcomeBody,
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  Add your dog's name, breed, and routines so Home, Log, and
+                  Health fit your real day. It takes a minute.
+                </Text>
+                <View style={s.welcomeActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={petSetupCopy.actionLabel}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      router.push("/setup" as never);
+                    }}
+                    style={({ pressed }) => [
+                      s.welcomePrimary,
+                      {
+                        backgroundColor: colors.primaryForeground,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.welcomePrimaryText,
+                        {
+                          color: colors.forest,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {petSetupCopy.actionLabel}
+                    </Text>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={15}
+                      color={colors.forest}
+                    />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Explore first"
+                    onPress={dismissWelcome}
+                    style={({ pressed }) => [
+                      s.welcomeGhost,
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.welcomeGhostText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Explore first
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
-            </View>
             </Reanimated.View>
           ) : null}
 
@@ -1949,14 +2326,16 @@ export default function HomeScreen() {
             style={[
               s.heroBackdrop,
               { height: heroStageHeight, overflow: "hidden" },
-              heroDeferredForWelcome
-                ? welcomeHeroAnimatedStyle
-                : null,
+              heroDeferredForWelcome ? welcomeHeroAnimatedStyle : null,
             ]}
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${petName} Room. Phoenix ${avatarTemplate.label} care twin. ${avatarMotion.label}.`}
+              accessibilityLabel={buildCareTwinRoomAccessibilityLabel({
+                name: state.profile.name,
+                templateLabel: avatarTemplate.label,
+                motionLabel: avatarMotion.label,
+              })}
               accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               onPress={tapPhoenixRoom}
               onLongPress={openAvatarStudio}
@@ -1977,7 +2356,11 @@ export default function HomeScreen() {
                 },
               ]}
             >
-              <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
+              <Ionicons
+                name="color-wand-outline"
+                size={17}
+                color={colors.forest}
+              />
             </Pressable>
           </Reanimated.View>
 
@@ -1991,25 +2374,89 @@ export default function HomeScreen() {
               aria-live="assertive"
               style={[
                 s.storageWarningCard,
-                { backgroundColor: colors.amberSoft, borderColor: colors.amber + "66" },
+                {
+                  backgroundColor: colors.amberSoft,
+                  borderColor: colors.amber + "66",
+                },
               ]}
             >
               <Ionicons name="warning-outline" size={17} color={colors.amber} />
-              <Text style={[s.storageWarningText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              <Text
+                style={[
+                  s.storageWarningText,
+                  { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                ]}
+              >
                 {storageWarning === "save-failed"
                   ? "Device storage is failing - new care logs may not survive an app restart."
                   : storageWarning === "read-failed"
                     ? "Couldn't read saved care data. Saving is paused this session to protect what's stored."
-                    : "Saved care data couldn't be read and was reset. A recovery copy was kept on this device."}
+                    : storageWarning === "newer-version"
+                      ? "This care data was created by a newer WoofWatcher version. This version will not overwrite it. Update WoofWatcher to safely open and edit this care plan."
+                      : "Saved care data couldn't be read and was reset. A recovery copy was kept on this device."}
               </Text>
             </View>
           ) : null}
 
+          {welcomePreferenceReadFailed ? (
+            <View
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              aria-live="polite"
+              style={[
+                s.storageWarningCard,
+                {
+                  backgroundColor: colors.amberSoft,
+                  borderColor: colors.amber + "66",
+                },
+              ]}
+            >
+              <Ionicons name="refresh-outline" size={17} color={colors.amber} />
+              <View style={s.preferenceWarningBody}>
+                <Text
+                  style={[
+                    s.storageWarningText,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  Couldn't load a Home display preference. Home is available,
+                  and retrying will not change care data.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry welcome preference"
+                  onPress={retryWelcomePreference}
+                  style={({ pressed }) => [
+                    s.preferenceRetryButton,
+                    {
+                      borderColor: colors.amber + "88",
+                      backgroundColor: pressed
+                        ? colors.amber + "24"
+                        : colors.background,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: "Inter_800ExtraBold",
+                      fontSize: 12.5,
+                    }}
+                  >
+                    Retry
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
-              time as chunky pip meters. Every fill derives from real logged
-              care - the same truth the old chips carried, now at a glance.
-              The headline row is still the Today Command surface. */}
-          <Reanimated.View entering={enterUp(0)}>
+              time as chunky pip meters. Missing evidence stays at zero with
+              an explicit No data/No target label. */}
+          <Reanimated.View entering={reducedMotion ? undefined : enterUp(0)}>
             <BoardCard style={s.careSenseCard}>
               <View style={s.careSenseHeader}>
                 <Text
@@ -2025,8 +2472,9 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Open Trends and Insights"
                     accessibilityHint="Charts these meters over time from real logged care."
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
-                    onPress={() => router.push("/trends" as never)}
+                    onPress={() =>
+                      router.push(canonicalHealthRoute("trends") as never)
+                    }
                     style={({ pressed }) => [
                       s.careSenseTrendsLink,
                       { opacity: pressed ? 0.6 : 1 },
@@ -2040,19 +2488,25 @@ export default function HomeScreen() {
                     >
                       Trends
                     </Text>
-                    <Ionicons name="chevron-forward" size={13} color={colors.sage} />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={13}
+                      color={colors.sage}
+                    />
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="How Care Sense works"
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() =>
                       notifyDialog(
                         "Care Sense",
-                        `Every meter reads from real logged care only. Mood and energy derive from today's walks, meals, potty, and notes. Hunger tracks meals against ${petName}'s daily target. Alone Time fills while an away session is open. Nothing here is invented.`,
+                        `Care Sense uses care data available on this device. Mood needs an explicit mood or return outcome. Energy needs an energy level from a mood check-in; walks, play, and symptom categories do not invent either reading. Meals are compared only when ${petName} has a daily target. Alone Time fills only while an away session is open. Missing evidence stays marked as No data or No target.`,
                       )
                     }
-                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                    style={({ pressed }) => [
+                      s.homeInlineIconAction,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
                   >
                     <Ionicons
                       name="information-circle-outline"
@@ -2064,9 +2518,8 @@ export default function HomeScreen() {
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Today Command. ${petName} is ${homeMoodWord}. ${glanceLine}`}
+                accessibilityLabel={`Today Command. ${careSenseHeadline} ${careSenseSubline}`}
                 accessibilityHint="Opens the exact care workflow behind today's recommended action."
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={() =>
                   router.push(todayCommand.primaryAction.route as never)
                 }
@@ -2077,10 +2530,13 @@ export default function HomeScreen() {
               >
                 <View style={s.careSenseHeadlineCopy}>
                   <Text
-                    numberOfLines={1}
+                    numberOfLines={2}
                     style={[
                       s.careSenseHeadline,
-                      { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Fredoka_700Bold",
+                      },
                     ]}
                   >
                     {careSenseHeadline}
@@ -2095,7 +2551,7 @@ export default function HomeScreen() {
                       },
                     ]}
                   >
-                    {petName} is {homeMoodWord}. {glanceLine}
+                    {careSenseSubline}
                   </Text>
                 </View>
                 <Ionicons
@@ -2108,40 +2564,53 @@ export default function HomeScreen() {
                 <StatusMeter
                   label="Mood"
                   icon={MOOD_ICON[status.mood]}
-                  value={careSenseMoodRatio}
-                  valueLabel={status.meta.label}
+                  value={hasMoodEvidence ? careSenseMoodRatio : 0}
+                  valueLabel={hasMoodEvidence ? status.meta.label : "No data"}
                   tone={colors.meterMood}
                   onPress={() =>
                     router.push(todayCommand.primaryAction.route as never)
                   }
-                  accessibilityLabel={`Mood ${status.meta.label}`}
+                  accessibilityLabel={
+                    hasMoodEvidence
+                      ? `Mood ${status.meta.label}`
+                      : "Mood, no data"
+                  }
                   accessibilityHint="Opens today's recommended care workflow."
                 />
                 <StatusMeter
                   label="Energy"
                   icon="energy"
-                  value={status.energy / 100}
-                  valueLabel={`${status.energy}%`}
+                  value={energyEvidenceProgress}
+                  valueLabel={energyEvidenceLabel}
                   tone={colors.meterEnergy}
                   onPress={() =>
-                    router.push(homeLogDetailRoute("walk", now) as never)
+                    router.push(homeLogDetailRoute("mood", now) as never)
                   }
-                  accessibilityLabel={`Energy ${status.energy} percent`}
-                  accessibilityHint="Opens the walk detail flow - activity builds energy."
+                  accessibilityLabel={
+                    hasEnergyEvidence
+                      ? `Energy ${energyEvidenceLabel}`
+                      : "Energy, no logged energy level"
+                  }
+                  accessibilityHint="Opens the mood check-in to log an energy observation."
                 />
                 <StatusMeter
                   label="Hunger"
                   icon="hunger"
-                  value={careSenseMealsRatio}
-                  valueLabel={`${status.counts.meals.done}/${Math.max(
-                    status.counts.meals.target,
+                  value={hasMealTarget ? careSenseMealsRatio : 0}
+                  valueLabel={formatHomeCompletion(
                     status.counts.meals.done,
-                  )}`}
-                  tone={colors.meterHunger}
+                    status.counts.meals.target,
+                  )}
+                  tone={
+                    hasMealTarget ? colors.meterHunger : colors.mutedForeground
+                  }
                   onPress={() =>
                     router.push(homeLogDetailRoute("meal", now) as never)
                   }
-                  accessibilityLabel={`Meals ${status.counts.meals.done} of ${status.counts.meals.target} logged`}
+                  accessibilityLabel={`Meals ${formatHomeCompletion(
+                    status.counts.meals.done,
+                    status.counts.meals.target,
+                  )}`}
                   accessibilityHint="Opens the meal detail flow."
                 />
                 <StatusMeter
@@ -2150,7 +2619,9 @@ export default function HomeScreen() {
                   value={careSenseAloneRatio}
                   polarity="inverse"
                   valueLabel={
-                    openAloneSession ? formatDuration(openAloneMinutes) : "OK"
+                    openAloneSession
+                      ? formatDuration(openAloneMinutes)
+                      : "None active"
                   }
                   tone={colors.meterAlone}
                   onPress={() =>
@@ -2163,7 +2634,7 @@ export default function HomeScreen() {
                   accessibilityLabel={
                     openAloneSession
                       ? `Alone time active, ${formatDuration(openAloneMinutes)}`
-                      : "Alone time none logged today"
+                      : "No active alone time session"
                   }
                   accessibilityHint={
                     openAloneSession
@@ -2179,13 +2650,16 @@ export default function HomeScreen() {
             {/* Mock-board Quick Log card: Meal · Potty · Walk · Meds · More
                 as springy medallion tiles inside one cream card. More opens
                 the fast-log sheet where Water, Note, and the rest live. */}
-            <Reanimated.View entering={enterUp(1)}>
+            <Reanimated.View entering={reducedMotion ? undefined : enterUp(1)}>
               <BoardCard style={s.quickHomeCard}>
                 <View style={s.quickSectionHeader}>
                   <Text
                     style={[
                       s.quickSectionTitle,
-                      { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Fredoka_700Bold",
+                      },
                     ]}
                   >
                     Quick Log
@@ -2193,9 +2667,11 @@ export default function HomeScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Open full Quick Log"
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => router.push("/log")}
-                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                    style={({ pressed }) => [
+                      s.homeInlineIconAction,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
                   >
                     <Ionicons
                       name="chevron-forward"
@@ -2222,7 +2698,11 @@ export default function HomeScreen() {
                       style={s.homeQuickTile}
                     >
                       {hasMedallion(item.icon) ? (
-                        <BoardMedallion name={item.icon} size={54} style={s.softShadow} />
+                        <BoardMedallion
+                          name={item.icon}
+                          size={54}
+                          style={s.softShadow}
+                        />
                       ) : (
                         <View
                           style={[
@@ -2241,7 +2721,10 @@ export default function HomeScreen() {
                         numberOfLines={1}
                         style={[
                           s.homeQuickText,
-                          { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                          {
+                            color: colors.navy,
+                            fontFamily: "Inter_600SemiBold",
+                          },
                         ]}
                       >
                         {item.label}
@@ -2250,9 +2733,14 @@ export default function HomeScreen() {
                   ))}
                   <PressScale
                     accessibilityRole="button"
-                    accessibilityLabel="More quick log options"
+                    accessibilityLabel="Log care"
                     accessibilityHint="Opens the fast log sheet with water, notes, and every other care lane."
-                    onPress={() => router.push("/fastlog" as never)}
+                    onPress={() =>
+                      executePrimaryTabTaskPath("fast-log", {
+                        navigate: (route) => router.push(route as never),
+                        selectLogView: () => undefined,
+                      })
+                    }
                     scaleTo={0.92}
                     containerStyle={s.homeQuickTileLayout}
                     style={s.homeQuickTile}
@@ -2280,7 +2768,7 @@ export default function HomeScreen() {
                         { color: colors.navy, fontFamily: "Inter_600SemiBold" },
                       ]}
                     >
-                      More
+                      Log care
                     </Text>
                   </PressScale>
                 </View>
@@ -2293,7 +2781,11 @@ export default function HomeScreen() {
                 accessory={
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Open Plan. 1 of ${nextCount} next up.`}
+                    accessibilityLabel={
+                      nextCount > 0
+                        ? `Open Plans. 1 of ${nextCount} next up.`
+                        : "Open Plans. No schedulable next items."
+                    }
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => router.push("/calendar")}
                     style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
@@ -2306,69 +2798,106 @@ export default function HomeScreen() {
                   </Pressable>
                 }
               />
+              {homeRoutinePlan.correctionSummary ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${homeRoutinePlan.correctionSummary} Review Plans.`}
+                  accessibilityHint="Opens Plans to correct saved routine times."
+                  onPress={() => router.push("/calendar")}
+                  style={({ pressed }) => [
+                    s.nextMoreRow,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <Ionicons
+                    name="warning-outline"
+                    size={16}
+                    color={colors.amber}
+                  />
+                  <Text
+                    style={[
+                      s.nextMoreText,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {homeRoutinePlan.correctionSummary}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={13}
+                    color={colors.mutedForeground}
+                  />
+                </Pressable>
+              ) : null}
               {pendingMealOpenLoop ? (
                 <Reanimated.View
                   pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
                   style={[{ overflow: "hidden" }, mealChipAnimatedStyle]}
                 >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Update ${pendingMealOpenLoop.label}. Outcome pending.`}
-                  accessibilityHint="Opens the served meal log so the outcome can be confirmed."
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                    router.push(pendingMealOpenLoop.route as never);
-                  }}
-                  style={({ pressed }) => [
-                    s.nextOpenLoopChip,
-                    {
-                      backgroundColor: pressed
-                        ? colors.secondary
-                        : colors.amberSoft,
-                      borderColor: colors.amber,
-                    },
-                  ]}
-                >
-                  <PixelIcon name={pendingMealOpenLoop.icon} size={20} />
-                  <View style={s.nextOpenLoopCopy}>
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        s.nextOpenLoopTitle,
-                        { color: colors.navy, fontFamily: "Inter_700Bold" },
-                      ]}
-                    >
-                      {pendingMealOpenLoop.label}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        s.nextOpenLoopMeta,
-                        {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      {pendingMealOpenLoop.time}
-                    </Text>
-                  </View>
-                  <View
-                    style={[s.nextButton, { backgroundColor: colors.primary }]}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Update ${pendingMealOpenLoop.label}. Outcome pending.`}
+                    accessibilityHint="Opens the served meal log so the outcome can be confirmed."
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      router.push(pendingMealOpenLoop.route as never);
+                    }}
+                    style={({ pressed }) => [
+                      s.nextOpenLoopChip,
+                      {
+                        backgroundColor: pressed
+                          ? colors.secondary
+                          : colors.amberSoft,
+                        borderColor: colors.amber,
+                      },
+                    ]}
                   >
-                    <Text
+                    <PixelIcon name={pendingMealOpenLoop.icon} size={20} />
+                    <View style={s.nextOpenLoopCopy}>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          s.nextOpenLoopTitle,
+                          { color: colors.navy, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        {pendingMealOpenLoop.label}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          s.nextOpenLoopMeta,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {pendingMealOpenLoop.time}
+                      </Text>
+                    </View>
+                    <View
                       style={[
-                        s.nextButtonText,
-                        {
-                          color: colors.primaryForeground,
-                          fontFamily: "Inter_700Bold",
-                        },
+                        s.nextButton,
+                        { backgroundColor: colors.primary },
                       ]}
                     >
-                      Update
-                    </Text>
-                  </View>
-                </Pressable>
+                      <Text
+                        style={[
+                          s.nextButtonText,
+                          {
+                            color: colors.primaryForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        Update
+                      </Text>
+                    </View>
+                  </Pressable>
                 </Reanimated.View>
               ) : null}
               {nextPrimary ? (
@@ -2379,7 +2908,10 @@ export default function HomeScreen() {
                       numberOfLines={1}
                       style={[
                         s.nextPrimaryTitle,
-                        { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" },
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Fredoka_600SemiBold",
+                        },
                       ]}
                     >
                       {nextPrimary.label}
@@ -2388,7 +2920,10 @@ export default function HomeScreen() {
                       numberOfLines={2}
                       style={[
                         s.nextPrimaryMeta,
-                        { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
                       ]}
                     >
                       {nextPrimary.kind === "open-loop"
@@ -2436,11 +2971,6 @@ export default function HomeScreen() {
                             nextPrimary.kind !== "open-loop" &&
                             !openWalkSession
                           ) {
-                            if (Platform.OS !== "web") {
-                              Haptics.impactAsync(
-                                Haptics.ImpactFeedbackStyle.Light,
-                              );
-                            }
                             startWalkSessionFromHome({
                               routineId: nextPrimary.routineId,
                               routineLabel:
@@ -2460,7 +2990,15 @@ export default function HomeScreen() {
                           },
                         ]}
                       >
-                        <Text style={[s.nextButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                        <Text
+                          style={[
+                            s.nextButtonText,
+                            {
+                              color: colors.primaryForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
                           {nextPrimary.meta ?? "Start"}
                         </Text>
                       </Pressable>
@@ -2474,28 +3012,48 @@ export default function HomeScreen() {
                               s.nextButton,
                               s.nextButtonSoft,
                               {
-                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                                backgroundColor: pressed
+                                  ? colors.muted
+                                  : colors.secondary,
                               },
                             ]}
                           >
-                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                            <Text
+                              style={[
+                                s.nextButtonText,
+                                {
+                                  color: colors.navy,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
                               Snooze
                             </Text>
                           </Pressable>
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`Reassign ${nextPrimary.label} in Plan`}
-                            accessibilityHint="Opens the Plan tab, where routines and owners are edited."
+                            accessibilityLabel={`Reassign ${nextPrimary.label} in Plans`}
+                            accessibilityHint="Opens the Plans tab, where routines and owners are edited."
                             onPress={() => router.push("/calendar")}
                             style={({ pressed }) => [
                               s.nextButton,
                               s.nextButtonSoft,
                               {
-                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                                backgroundColor: pressed
+                                  ? colors.muted
+                                  : colors.secondary,
                               },
                             ]}
                           >
-                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                            <Text
+                              style={[
+                                s.nextButtonText,
+                                {
+                                  color: colors.navy,
+                                  fontFamily: "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
                               Reassign
                             </Text>
                           </Pressable>
@@ -2508,29 +3066,43 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     s.nextEmptyText,
-                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
                   ]}
                 >
-                  Everything scheduled is snoozed. It returns in 30 minutes, or
-                  open Plan to review.
+                  {homeRoutinePlan.correctionCount > 0
+                    ? "No routines can be scheduled until their times are corrected in Plans."
+                    : "Everything scheduled is snoozed. It returns in 30 minutes, or open Plans to review."}
                 </Text>
               )}
               {nextUp.length > 1 ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`View ${nextUp.length - 1} more planned ${nextUp.length - 1 === 1 ? "item" : "items"} in Plan`}
+                  accessibilityLabel={`View ${nextUp.length - 1} more planned ${nextUp.length - 1 === 1 ? "item" : "items"} in Plans`}
                   onPress={() => router.push("/calendar")}
-                  style={({ pressed }) => [s.nextMoreRow, { opacity: pressed ? 0.6 : 1 }]}
+                  style={({ pressed }) => [
+                    s.nextMoreRow,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
                 >
                   <Text
                     style={[
                       s.nextMoreText,
-                      { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
                     ]}
                   >
-                    {nextUp.length - 1} more in Plan
+                    {nextUp.length - 1} more in Plans
                   </Text>
-                  <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={13}
+                    color={colors.mutedForeground}
+                  />
                 </Pressable>
               ) : null}
             </BoardCard>
@@ -2538,9 +3110,9 @@ export default function HomeScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
-            accessibilityHint={`Opens ${petName}'s living story.`}
-            onPress={() => router.push("/story" as never)}
+            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story & Progress.`}
+            accessibilityHint={`Opens ${petName}'s Story & Progress.`}
+            onPress={() => router.push(canonicalMoreRoute("story-progress"))}
             style={({ pressed }) => [
               s.todayStoryCard,
               s.softShadow,
@@ -2559,7 +3131,13 @@ export default function HomeScreen() {
               <Text
                 style={[
                   s.todayStoryKicker,
-                  { color: colors.sage, fontFamily: "Inter_700Bold", letterSpacing: 1.1, textTransform: "uppercase", fontSize: 9 },
+                  {
+                    color: colors.sage,
+                    fontFamily: "Inter_700Bold",
+                    letterSpacing: 1.1,
+                    textTransform: "uppercase",
+                    fontSize: 9,
+                  },
                 ]}
               >
                 Today's Story
@@ -2575,22 +3153,46 @@ export default function HomeScreen() {
               </Text>
               <View style={s.todayStoryChips}>
                 {careCareer.todayXp > 0 ? (
-                  <View style={[s.todayStoryChip, { backgroundColor: colors.amberSoft }]}>
-                    <Text style={[s.todayStoryChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                  <View
+                    style={[
+                      s.todayStoryChip,
+                      { backgroundColor: colors.amberSoft },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.todayStoryChipText,
+                        { color: colors.amber, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
                       +{careCareer.todayXp} XP
                     </Text>
                   </View>
                 ) : null}
                 {careStreak >= 2 ? (
-                  <View style={[s.todayStoryChip, { backgroundColor: colors.sageSoft }]}>
-                    <Text style={[s.todayStoryChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                  <View
+                    style={[
+                      s.todayStoryChip,
+                      { backgroundColor: colors.sageSoft },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.todayStoryChipText,
+                        { color: colors.forest, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
                       {careStreak}-day streak
                     </Text>
                   </View>
                 ) : null}
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.mutedForeground}
+            />
           </Pressable>
 
           {/* Presence panel: who Phoenix is with right now, still one tap
@@ -2598,99 +3200,108 @@ export default function HomeScreen() {
               Up already owns the live "Finish" CTA, so the panel steps aside
               instead of echoing the same walk status a second time. */}
           {openWalkSession ? null : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
-            accessibilityHint={presenceActionHint}
-            onPress={openPresencePanel}
-            style={[
-              s.presencePanel,
-              s.softShadow,
-              {
-                minHeight: homeFirstScreenLayout.presencePanelMinHeight,
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
+              accessibilityHint={presenceActionHint}
+              onPress={openPresencePanel}
               style={[
-                s.presenceAvatar,
+                s.presencePanel,
+                s.softShadow,
                 {
-                  backgroundColor: openAloneSession
-                    ? colors.amber
-                    : openWalkSession
-                      ? colors.sage
-                      : colors.copper,
+                  minHeight: homeFirstScreenLayout.presencePanelMinHeight,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
                 },
               ]}
             >
-              {openAloneSession ? (
-                <Ionicons name="home-outline" size={18} color="#FFFFFF" />
-              ) : openWalkSession ? (
-                <PixelIcon name="walk" size={21} />
-              ) : (
-                <Text
-                  style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}
-                >
-                  {caregiver.charAt(0).toUpperCase()}
-                </Text>
-              )}
-            </View>
-            <View style={s.presenceCopy}>
-              <Text
-                numberOfLines={1}
+              <View
                 style={[
-                  s.presenceText,
-                  { color: colors.navy, fontFamily: "Inter_700Bold" },
-                ]}
-              >
-                {openAloneSession
-                  ? `${petName} is home alone`
-                  : openWalkSession
-                    ? `${petName} is on a walk`
-                    : `${petName} is with ${caregiver}`}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[
-                  s.presenceSub,
+                  s.presenceAvatar,
                   {
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_500Medium",
+                    backgroundColor: openAloneSession
+                      ? colors.amber
+                      : openWalkSession
+                        ? colors.sage
+                        : colors.copper,
                   },
                 ]}
               >
-                {presenceSub}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={17} color={colors.navy} />
-          </Pressable>
+                {openAloneSession ? (
+                  <Ionicons name="home-outline" size={18} color="#FFFFFF" />
+                ) : openWalkSession ? (
+                  <PixelIcon name="walk" size={21} />
+                ) : (
+                  <Text
+                    style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}
+                  >
+                    {caregiver.charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={s.presenceCopy}>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    s.presenceText,
+                    { color: colors.navy, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  {openAloneSession
+                    ? `${petName} is home alone`
+                    : openWalkSession
+                      ? `${petName} is on a walk`
+                      : presenceLabel}
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    s.presenceSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  {presenceSub}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={17} color={colors.navy} />
+            </Pressable>
           )}
 
           {/* Care Status keeps only what Care Sense doesn't already show:
-              the presence pill, the Bond meter, and the diet-profile door.
-              Mood/energy/hunger live in the Care Sense card up top - one
-              meters surface, exactly like the mock boards. */}
+              presence, logged bond evidence, and the diet-profile door. */}
           <BoardCard style={s.careStatusCard}>
             <BoardSectionHeader
               title="Care Status"
-              accessory={<BoardPill label={careStatusLabel} tone={careStatusTone} />}
+              accessory={
+                <BoardPill label={careStatusLabel} tone={careStatusTone} />
+              }
             />
-            <StatusMeter
-              label="Bond"
+            <CareRow
               icon="heart"
-              value={bondScore / 100}
-              valueLabel={bondLabel}
-              tone={colors.rose}
+              title="Bond evidence"
+              detail={
+                bondEvidenceCount > 0
+                  ? `${bondEvidenceCount} play or training ${bondEvidenceCount === 1 ? "moment" : "moments"} logged today`
+                  : "No play or training logged today"
+              }
               onPress={() => openStatusTile("bond")}
-              accessibilityLabel={`Bond ${bondLabel}`}
-              accessibilityHint="Opens play details - shared play grows the bond."
+              accessibilityLabel={
+                bondEvidenceCount > 0
+                  ? `Bond evidence, ${bondEvidenceCount} moments logged today`
+                  : "Bond evidence, no play or training logged today"
+              }
             />
             <CareRow
               icon="meal"
               title="Diet profile"
-              detail="Meals, portions, and sensitivities on file"
+              detail={
+                Object.values(state.dietProfile).some((value) => value.trim())
+                  ? "Meals, portions, and sensitivities on file"
+                  : "No diet profile saved yet"
+              }
               onPress={() => openStatusTile("diet")}
               accessibilityLabel="Open Diet Profile"
             />
@@ -2702,11 +3313,32 @@ export default function HomeScreen() {
               accessibilityLabel={`Care level ${careCareer.level}, ${careCareer.title}. ${careCareer.levelXp} of ${careCareer.levelSpanXp} XP toward the next level.${careCareer.todayXp > 0 ? ` ${careCareer.todayXp} XP earned today.` : ""}`}
               style={s.careerRow}
             >
-              <View style={[s.careerBadge, { backgroundColor: colors.amberSoft, borderColor: colors.amber }]}>
-                <Text style={[s.careerBadgeKicker, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+              <View
+                style={[
+                  s.careerBadge,
+                  {
+                    backgroundColor: colors.amberSoft,
+                    borderColor: colors.amber,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.careerBadgeKicker,
+                    { color: colors.amber, fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
                   LV
                 </Text>
-                <Text style={[s.careerBadgeLevel, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}>
+                <Text
+                  style={[
+                    s.careerBadgeLevel,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Fraunces_700Bold",
+                    },
+                  ]}
+                >
                   {careCareer.level}
                 </Text>
               </View>
@@ -2714,12 +3346,23 @@ export default function HomeScreen() {
                 <View style={s.careerTitleRow}>
                   <Text
                     numberOfLines={1}
-                    style={[s.careerTitle, { color: colors.navy, fontFamily: "Fredoka_600SemiBold" }]}
+                    style={[
+                      s.careerTitle,
+                      { color: colors.navy, fontFamily: "Fredoka_600SemiBold" },
+                    ]}
                   >
                     {careCareer.title}
                   </Text>
                   {careCareer.todayXp > 0 ? (
-                    <Text style={[s.careerToday, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text
+                      style={[
+                        s.careerToday,
+                        {
+                          color: colors.sage,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
                       +{careCareer.todayXp} XP today
                     </Text>
                   ) : null}
@@ -2744,8 +3387,17 @@ export default function HomeScreen() {
                     />
                   ))}
                 </View>
-                <Text style={[s.careerXp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
+                <Text
+                  style={[
+                    s.careerXp,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  {careCareer.levelXp.toLocaleString()} /{" "}
+                  {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
                   {careStreak >= 2
                     ? `${careStreak}-day care streak`
                     : "every point from real care logs"}
@@ -2838,7 +3490,7 @@ export default function HomeScreen() {
                     <View style={s.missionCopy}>
                       <View style={s.missionCopyTop}>
                         <Text
-                          numberOfLines={1}
+                          numberOfLines={2}
                           style={[
                             s.missionLabel,
                             { fontFamily: "Inter_800ExtraBold" },
@@ -2852,7 +3504,7 @@ export default function HomeScreen() {
                             "Adventure" category label. */}
                         {mission.key === "adventure" ? null : (
                           <Text
-                            numberOfLines={1}
+                            numberOfLines={2}
                             style={[
                               s.missionStatus,
                               { color: tone, fontFamily: "Inter_800ExtraBold" },
@@ -2863,7 +3515,7 @@ export default function HomeScreen() {
                         )}
                       </View>
                       <Text
-                        numberOfLines={1}
+                        numberOfLines={2}
                         style={[
                           s.missionRowTitle,
                           { fontFamily: "Fredoka_700Bold" },
@@ -2872,7 +3524,7 @@ export default function HomeScreen() {
                         {mission.title}
                       </Text>
                       <Text
-                        numberOfLines={missionLayout.detailLines}
+                        numberOfLines={Math.max(2, missionLayout.detailLines)}
                         style={[
                           s.missionDetail,
                           { fontFamily: "Inter_600SemiBold" },
@@ -2966,7 +3618,7 @@ export default function HomeScreen() {
                       { color: colors.navy, fontFamily: "Inter_700Bold" },
                     ]}
                   >
-                    {completionLabel(meals.done, meals.target || 2)}
+                    {formatHomeCompletion(meals.done, meals.target)}
                   </Text>
                   <Text
                     style={[
@@ -3003,9 +3655,9 @@ export default function HomeScreen() {
                       { color: colors.navy, fontFamily: "Inter_700Bold" },
                     ]}
                   >
-                    {completionLabel(
+                    {formatHomeCompletion(
                       status.counts.potty.done,
-                      status.counts.potty.target || 3,
+                      status.counts.potty.target,
                     )}
                   </Text>
                   <Text
@@ -3146,7 +3798,13 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     s.questKicker,
-                    { color: colors.sage, fontFamily: "Inter_700Bold", letterSpacing: 1.1, textTransform: "uppercase", fontSize: 9 },
+                    {
+                      color: colors.sage,
+                      fontFamily: "Inter_700Bold",
+                      letterSpacing: 1.1,
+                      textTransform: "uppercase",
+                      fontSize: 9,
+                    },
                   ]}
                 >
                   Care quest
@@ -3294,11 +3952,13 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open Adventure Mode. ${adventureQuest.title}. ${adventureMode.summary}`}
-              onPress={() => router.push("/adventure" as never)}
+              onPress={() => router.push(canonicalMoreRoute("adventure"))}
               style={({ pressed }) => [
                 s.adventureInline,
                 {
-                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  backgroundColor: pressed
+                    ? colors.secondary
+                    : colors.background,
                   borderColor: colors.border,
                   opacity: pressed ? 0.78 : 1,
                 },
@@ -3385,14 +4045,18 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Undo ${quickFeedback.title} quick log`}
+                accessibilityState={{ disabled: quickFeedbackUndoBusy }}
+                disabled={quickFeedbackUndoBusy}
                 onPress={undoQuickFeedback}
                 style={({ pressed }) => [
                   s.toastAction,
                   {
-                    backgroundColor: pressed
-                      ? "rgba(255,249,239,0.16)"
-                      : "rgba(255,249,239,0.1)",
+                    backgroundColor:
+                      pressed && !quickFeedbackUndoBusy
+                        ? "rgba(255,249,239,0.16)"
+                        : "rgba(255,249,239,0.1)",
                     borderColor: "rgba(255,249,239,0.34)",
+                    opacity: quickFeedbackUndoBusy ? 0.5 : 1,
                   },
                 ]}
               >
@@ -3408,14 +4072,18 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Add details to ${quickFeedback.title}`}
+                accessibilityState={{ disabled: quickFeedbackUndoBusy }}
+                disabled={quickFeedbackUndoBusy}
                 onPress={openQuickFeedbackDetails}
                 style={({ pressed }) => [
                   s.toastAction,
                   {
-                    backgroundColor: pressed
-                      ? colors.copper + "DD"
-                      : colors.copper,
+                    backgroundColor:
+                      pressed && !quickFeedbackUndoBusy
+                        ? colors.copper + "DD"
+                        : colors.copper,
                     borderColor: colors.copper,
+                    opacity: quickFeedbackUndoBusy ? 0.5 : 1,
                   },
                 ]}
               >
@@ -3452,6 +4120,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 4,
     marginBottom: 10,
     borderRadius: 20,
     paddingHorizontal: 10,
@@ -3477,10 +4146,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  badgeText: { color: "#FFFFFF", fontSize: 10 },
+  badgeText: { fontSize: 10 },
   identityWrap: {
     flex: 1,
     minWidth: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -3527,8 +4197,9 @@ const s = StyleSheet.create({
     bottom: 12,
     right: 12,
     zIndex: 8,
-    width: 40,
-    height: 40,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     borderWidth: 1,
     alignItems: "center",
@@ -3587,10 +4258,10 @@ const s = StyleSheet.create({
   },
   welcomeDismiss: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    width: 28,
-    height: 28,
+    top: 2,
+    right: 2,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -3598,16 +4269,25 @@ const s = StyleSheet.create({
     // an explicit z-order the full-width kicker Text sits on top and eats
     // every tap - the X looked tappable but was dead.
     zIndex: 5,
+  },
+  welcomeDismissVisual: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.14)",
   },
   welcomeKicker: {
     fontSize: 11,
     letterSpacing: 1.3,
     marginBottom: 4,
+    paddingRight: MIN_MOBILE_TOUCH_TARGET,
   },
   welcomeTitle: {
     fontSize: 22,
     marginBottom: 6,
+    paddingRight: MIN_MOBILE_TOUCH_TARGET,
   },
   welcomeBody: {
     fontSize: 13,
@@ -3618,10 +4298,14 @@ const s = StyleSheet.create({
   },
   welcomeActions: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
+    flexWrap: "wrap",
     gap: 10,
   },
   welcomePrimary: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    maxWidth: "100%",
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -3631,10 +4315,15 @@ const s = StyleSheet.create({
   },
   welcomePrimaryText: {
     fontSize: 14,
+    flexShrink: 1,
   },
   welcomeGhost: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    maxWidth: "100%",
+    flexShrink: 1,
     paddingHorizontal: 10,
     paddingVertical: 11,
+    justifyContent: "center",
   },
   welcomeGhostText: {
     fontSize: 13,
@@ -3657,6 +4346,20 @@ const s = StyleSheet.create({
     fontSize: 12.5,
     lineHeight: 17,
   },
+  preferenceWarningBody: {
+    flex: 1,
+    gap: 8,
+  },
+  preferenceRetryButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    justifyContent: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+  },
   careSenseCard: {
     marginTop: 12,
     marginBottom: 4,
@@ -3674,9 +4377,18 @@ const s = StyleSheet.create({
     gap: 12,
   },
   careSenseTrendsLink: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 1,
+  },
+  homeInlineIconAction: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
   },
   careSenseTrendsText: {
     fontSize: 11.5,
@@ -4153,11 +4865,14 @@ const s = StyleSheet.create({
   },
   nextButtonRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginTop: 10,
   },
   nextButton: {
-    minHeight: 34,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    maxWidth: "100%",
+    flexShrink: 1,
     borderRadius: 999,
     paddingHorizontal: 15,
     alignItems: "center",
@@ -4174,6 +4889,7 @@ const s = StyleSheet.create({
   nextMoreRow: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     gap: 3,
     marginTop: 10,
     alignSelf: "flex-start",

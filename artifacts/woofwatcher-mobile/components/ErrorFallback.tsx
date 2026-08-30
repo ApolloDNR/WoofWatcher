@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import { reloadAppAsync } from "expo";
 import React, { useState } from "react";
 import {
@@ -11,9 +11,17 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 
 import { useColors } from "@/hooks/useColors";
-import { getModalSheetBottomPadding } from "@/lib/mobileLayout";
+import {
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
+import {
+  getModalSheetBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+} from "@/lib/mobileLayout";
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -23,6 +31,7 @@ export type ErrorFallbackProps = {
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -84,6 +93,8 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
         <Pressable
           onPress={handleRestart}
+          accessibilityRole="button"
+          accessibilityLabel="Try again"
           style={({ pressed }) => [
             styles.button,
             {
@@ -94,10 +105,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           ]}
         >
           <Text
-            style={[
-              styles.buttonText,
-              { color: colors.primaryForeground },
-            ]}
+            style={[styles.buttonText, { color: colors.primaryForeground }]}
           >
             Try Again
           </Text>
@@ -107,12 +115,18 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
       {__DEV__ ? (
         <Modal
           visible={isModalVisible}
-          animationType="slide"
+          animationType={reducedMotion ? "none" : "slide"}
           transparent={true}
           onRequestClose={() => setIsModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View
+          <ModalBackdropPressable
+            style={styles.modalOverlay}
+            onPress={() => setIsModalVisible(false)}
+          >
+            <ModalSheetPressable
+              visible={isModalVisible}
+              onRequestClose={() => setIsModalVisible(false)}
+              closeAccessibilityLabel="Close error details"
               style={[
                 styles.modalContainer,
                 { backgroundColor: colors.background },
@@ -124,20 +138,12 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                   { borderBottomColor: colors.border },
                 ]}
               >
-                <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                <Text
+                  accessibilityRole="header"
+                  style={[styles.modalTitle, { color: colors.foreground }]}
+                >
                   Error Details
                 </Text>
-                <Pressable
-                  onPress={() => setIsModalVisible(false)}
-                  accessibilityLabel="Close error details"
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.closeButton,
-                    { opacity: pressed ? 0.6 : 1 },
-                  ]}
-                >
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </Pressable>
               </View>
 
               <ScrollView
@@ -168,8 +174,8 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                   </Text>
                 </View>
               </ScrollView>
-            </View>
-          </View>
+            </ModalSheetPressable>
+          </ModalBackdropPressable>
         </Modal>
       ) : null}
     </View>
@@ -206,8 +212,8 @@ const styles = StyleSheet.create({
   topButton: {
     position: "absolute",
     right: 16,
-    width: 44,
-    height: 44,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
@@ -256,12 +262,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "600",
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
   },
   modalScrollView: {
     flex: 1,

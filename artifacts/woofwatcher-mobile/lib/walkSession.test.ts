@@ -54,6 +54,60 @@ test("finds the newest active household-visible walk session", () => {
   assert.equal(findOpenWalkSession([completed, privateOpen, older, active])?.id, "active");
 });
 
+test("walk find and finish fail closed for every malformed-present household visibility value", () => {
+  const malformedValues: unknown[] = ["true", "false", null, 0, 1, {}, []];
+
+  for (const householdVisible of malformedValues) {
+    const entry = walk({
+      details: {
+        householdVisible,
+        walkLifecycle: "in-progress",
+        walkStartedAt: START,
+      },
+    });
+
+    assert.equal(
+      findOpenWalkSession([entry]),
+      null,
+      `find: ${JSON.stringify(householdVisible)}`,
+    );
+    assert.equal(
+      buildWalkSessionFinishPatch(entry, {
+        caregiver: "Apollo",
+        now: END,
+      }).details.householdVisible,
+      false,
+      `finish: ${JSON.stringify(householdVisible)}`,
+    );
+  }
+});
+
+test("walk visibility preserves only legacy absence and literal true as shared", () => {
+  const legacy = walk({
+    details: { walkLifecycle: "in-progress", walkStartedAt: START },
+  });
+  const explicit = walk({
+    details: {
+      householdVisible: true,
+      walkLifecycle: "in-progress",
+      walkStartedAt: START,
+    },
+  });
+
+  assert.equal(findOpenWalkSession([legacy])?.id, "walk-1");
+  assert.equal(findOpenWalkSession([explicit])?.id, "walk-1");
+  assert.equal(
+    buildWalkSessionFinishPatch(legacy, { caregiver: "Apollo", now: END })
+      .details.householdVisible,
+    true,
+  );
+  assert.equal(
+    buildWalkSessionFinishPatch(explicit, { caregiver: "Apollo", now: END })
+      .details.householdVisible,
+    true,
+  );
+});
+
 test("finishes an active walk session with route, duration, social context, and audit history", () => {
   const patch = buildWalkSessionFinishPatch(walk(), {
     caregiver: "Apollo",

@@ -41,10 +41,10 @@ test("maps accessory ids to visual overlay kinds", () => {
   assert.deepEqual(
     layers.map((layer) => [layer.id, layer.kind, layer.fitLabel]),
     [
-      ["navy-collar", "collar", "Template-fitted"],
-      ["birthday-hat", "hat", "Template-fitted"],
-      ["sleepy-mask", "mask", "Template-fitted"],
-      ["training-vest", "vest", "Template-fitted"],
+      ["navy-collar", "collar", "Tailored fit"],
+      ["birthday-hat", "hat", "Tailored fit"],
+      ["sleepy-mask", "mask", "Tailored fit"],
+      ["training-vest", "vest", "Tailored fit"],
     ],
   );
 });
@@ -64,11 +64,11 @@ test("marks accessories without a template overlay as inventory-ready for non-sh
   assert.deepEqual(
     layers.map((layer) => [layer.id, layer.fitStatus, layer.fitLabel]),
     [
-      ["forest-bandana", "inventory-ready", "Pack pending"],
-      ["birthday-hat", "inventory-ready", "Pack pending"],
+      ["forest-bandana", "inventory-ready", "Standard preview"],
+      ["birthday-hat", "inventory-ready", "Standard preview"],
     ],
   );
-  assert.match(layers[0]?.fitDetail ?? "", /shared inventory icon/);
+  assert.match(layers[0]?.fitDetail ?? "", /standard Retriever preview/);
 });
 
 test("derives preview mood copy and colors", () => {

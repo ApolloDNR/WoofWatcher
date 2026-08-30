@@ -1,6 +1,6 @@
 /**
- * Pack supplies checklist: the pure model behind the Pack tab's "Essentials"
- * and "Travel bag" boards from Apollo's mockup Pack page.
+ * Supplies checklist: the pure model behind More > Care Team & Supplies'
+ * "Essentials" and "Travel bag" boards.
  *
  * Honesty rule: every status here is USER-SET. WoofWatcher cannot see the
  * pantry, so the mockup's predicted countdowns ("2 days left") are replaced
@@ -17,6 +17,8 @@ export type EssentialsSupplyStatus = "plenty" | "low" | "out";
 /** Checklist state for the Travel bag list. */
 export type TravelSupplyStatus = "packed" | "unpacked";
 export type SupplyStatus = EssentialsSupplyStatus | TravelSupplyStatus;
+
+export { PACK_SUPPLIES_KEY } from "./devicePreferences.ts";
 
 export interface SupplyItem {
   id: string;
@@ -210,7 +212,7 @@ function parseItem(raw: unknown): SupplyItem | null {
  * wrong version, missing fields, a status that does not belong to the item's
  * group, a bad timestamp, duplicate ids, or duplicate names within a group -
  * silently falls back to a fresh copy of DEFAULT_SUPPLIES. It never throws,
- * so a corrupted key can never crash the Pack tab. A well-formed empty list
+ * so a corrupted key can never crash Care Team & Supplies. A well-formed empty list
  * is a legitimate user state and parses to [].
  */
 export function parseSupplies(raw: string | null | undefined): SupplyItem[] {

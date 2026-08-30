@@ -1,4 +1,8 @@
 import { normalizeCareEventType } from "@workspace/care-domain";
+import {
+  parseHouseholdMemberRole,
+  type HouseholdMemberRole,
+} from "./household-role-authority.ts";
 
 type CareEntryWriteAction = "create" | "update" | "delete";
 
@@ -15,60 +19,25 @@ export interface CareEntryWritePolicyResult {
   details: Record<string, unknown>;
 }
 
-function clean(value: unknown): string {
-  return String(value ?? "").replace(/\s+/g, " ").trim();
+function isAdultRole(role: HouseholdMemberRole | null): boolean {
+  return role === "adult" || role === "owner";
 }
 
-function normalizeRole(role: string | null | undefined): string {
-  return clean(role).toLowerCase();
+function isKidRole(role: HouseholdMemberRole | null): boolean {
+  return role === "kid" || role === "teen";
 }
 
-function isAdultRole(role: string): boolean {
-  return (
-    role === "member" ||
-    role === "adult" ||
-    role === "owner" ||
-    role === "admin" ||
-    role === "adult admin" ||
-    role.includes("owner") ||
-    role.includes("admin") ||
-    role.includes("primary caregiver")
-  );
+function isHelperRole(role: HouseholdMemberRole | null): boolean {
+  return role === "sitter" || role === "trainer" || role === "walker";
 }
 
-function isKidRole(role: string): boolean {
-  return role === "kid" || role === "teen" || role === "minor" || role === "child";
+function isReadOnlyRole(role: HouseholdMemberRole | null): boolean {
+  return role === null || role === "vet viewer";
 }
 
-function isHelperRole(role: string): boolean {
-  return (
-    role === "sitter" ||
-    role === "trainer" ||
-    role === "walker" ||
-    role === "helper" ||
-    role === "temporary helper" ||
-    role.includes("sitter") ||
-    role.includes("trainer") ||
-    role.includes("walker")
-  );
-}
-
-function isReadOnlyRole(role: string): boolean {
-  return (
-    !role ||
-    role === "viewer" ||
-    role === "read-only" ||
-    role === "readonly" ||
-    role === "vet viewer" ||
-    role === "veterinary viewer" ||
-    role === "expired access pass" ||
-    role.includes("read-only") ||
-    role.includes("vet viewer") ||
-    role.includes("expired access pass")
-  );
-}
-
-function roleConfirmationReason(role: string): "kid-log" | "helper-log" | null {
+function roleConfirmationReason(
+  role: HouseholdMemberRole | null,
+): "kid-log" | "helper-log" | null {
   if (isKidRole(role)) return "kid-log";
   if (isHelperRole(role)) return "helper-log";
   return null;
@@ -87,7 +56,10 @@ function safetyCriticalReason(type: string | null | undefined): "safety-critical
   return null;
 }
 
-function forbiddenReason(role: string, action: CareEntryWriteAction): string | null {
+function forbiddenReason(
+  role: HouseholdMemberRole | null,
+  action: CareEntryWriteAction,
+): string | null {
   if (isReadOnlyRole(role)) return "Role is read-only for care log writes.";
   if (action === "delete" && !isAdultRole(role)) {
     return "Only an adult owner can delete shared care logs.";
@@ -98,7 +70,7 @@ function forbiddenReason(role: string, action: CareEntryWriteAction): string | n
 export function applyCareEntryWritePolicy(
   input: CareEntryWritePolicyInput,
 ): CareEntryWritePolicyResult {
-  const role = normalizeRole(input.role);
+  const role = parseHouseholdMemberRole(input.role);
   const action = input.action ?? "create";
   const denied = forbiddenReason(role, action);
   const details = { ...(input.details ?? {}) };

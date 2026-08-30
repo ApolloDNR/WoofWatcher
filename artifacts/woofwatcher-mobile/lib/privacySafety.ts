@@ -88,6 +88,15 @@ export interface PrivacyExportContext {
   householdName?: string | null;
 }
 
+export type PrivacyDeviceFileInventory =
+  | { status: "complete"; fileCount: number }
+  | { status: "unsupported-platform" };
+
+export interface PrivacyExportDeviceFileInventory {
+  status: "not-inspected" | "complete" | "unsupported-platform";
+  fileCount: number | null;
+}
+
 export interface PrivacyExportBundle {
   app: "WoofWatcher";
   formatVersion: 1;
@@ -118,6 +127,7 @@ export interface PrivacyExportBundle {
     attachmentQueue: AttachmentLaunchQueue;
     attachmentReviewRows: AttachmentReviewRow[];
     attachmentSummary: string;
+    deviceFileInventory: PrivacyExportDeviceFileInventory;
   };
   care: {
     profile: PrivacyExportProfile | null;
@@ -186,8 +196,8 @@ function safeArray<T>(value: readonly T[] | undefined): readonly T[] {
 
 function dogName(state: PrivacyExportState): string {
   // Route through the canonical pet-name rule so exports and deletion
-  // requests say "Phoenix" (or the real name), matching every app surface
-  // instead of leaking the "My Dog" placeholder.
+  // requests use the real name or the neutral "your dog" fallback, matching
+  // every consumer surface instead of leaking the "My Dog" placeholder.
   return resolvePetName(state.profile?.name);
 }
 
@@ -284,6 +294,10 @@ export function buildPrivacyExportBundle(
       attachmentQueue: attachmentManifest.launchQueue,
       attachmentReviewRows: buildAttachmentReviewRows(attachmentManifest),
       attachmentSummary,
+      deviceFileInventory: {
+        status: "not-inspected",
+        fileCount: null,
+      },
     },
     care: {
       profile: state.profile ?? null,
@@ -308,6 +322,40 @@ export function buildPrivacyExportBundle(
       ai: "WoofGuide may summarize owner-entered care context and draft owner-reviewed notes. It is not a veterinary diagnosis or emergency triage.",
       documents: `${attachmentSummary} Record metadata can be exported here. Real document uploads require approved storage rules before public launch.`,
       deletion: "Account deletion is not self-serve until provider-backed deletion and audit rules are enabled. Export data before deletion.",
+    },
+  };
+}
+
+export function withPrivacyDeviceFileInventory(
+  bundle: PrivacyExportBundle,
+  inventory: PrivacyDeviceFileInventory,
+): PrivacyExportBundle {
+  let deviceFileInventory: PrivacyExportDeviceFileInventory;
+  if (inventory.status === "complete") {
+    if (
+      !Number.isSafeInteger(inventory.fileCount) ||
+      inventory.fileCount < 0
+    ) {
+      throw new Error("The physical local-file count is invalid.");
+    }
+    deviceFileInventory = {
+      status: "complete",
+      fileCount: inventory.fileCount,
+    };
+  } else if (inventory.status === "unsupported-platform") {
+    deviceFileInventory = {
+      status: "unsupported-platform",
+      fileCount: null,
+    };
+  } else {
+    throw new Error("The physical local-file inventory status is invalid.");
+  }
+
+  return {
+    ...bundle,
+    storage: {
+      ...bundle.storage,
+      deviceFileInventory,
     },
   };
 }

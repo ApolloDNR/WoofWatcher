@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { CareHelperInputContext } from './careHelperInputContext';
+import type { CareHelperInputContext } from "./careHelperInputContext";
 
 export interface CareHelperInput {
   question?: string;

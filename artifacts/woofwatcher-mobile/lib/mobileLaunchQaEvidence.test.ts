@@ -72,18 +72,24 @@ test("derives a launch native QA summary from saved mobile QA session proof", ()
         {
           uri: "file:///qa/ios-home.png",
           fileName: "ios-home.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-21T09:00:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
       ],
       "care-pass": [
         {
           uri: "file:///qa/care-pass.png",
           fileName: "care-pass.png",
-          source: "library",
-          targetPlatform: "unknown",
+          source: "camera",
+          targetPlatform: "ios",
           capturedAtIso: "2026-06-21T09:02:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
       ],
     },
@@ -145,16 +151,22 @@ test("builds a prioritized capture plan from missing native QA evidence", () => 
         {
           uri: "file:///qa/ios-home.png",
           fileName: "ios-home.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-21T09:00:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
         {
           uri: "file:///qa/android-home.png",
           fileName: "android-home.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "android",
           capturedAtIso: "2026-06-21T09:02:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "Android QA",
         },
       ],
     },
@@ -173,7 +185,7 @@ test("builds a prioritized capture plan from missing native QA evidence", () => 
       qaReturnRoute: "/records?qaReturn=care-twin-qa&qaSurface=care-pass&qaTitle=Care%20Pass",
       priority: "release-polish",
       status: "pass",
-      missingEvidence: ["Attach 1 screenshot for Care Pass."],
+      missingEvidence: ["Attach 1 exact-device screenshot for Care Pass."],
       setupSteps: ["Open Records with visible report history."],
       verificationSteps: ["Open Records.", "Preview Care Pass."],
       acceptanceCriteria: ["Care Pass preview is readable and shareable."],
@@ -199,8 +211,8 @@ test("prioritizes launch-critical unreviewed targets before release-polish targe
   assert.equal(plan.openSurfaces, 2);
   assert.equal(plan.nextTargets[0]?.surfaceId, "home");
   assert.deepEqual(plan.nextTargets[0]?.missingEvidence, [
-    "Attach 1 iOS screenshot for Home.",
-    "Attach 1 Android screenshot for Home.",
+    "Attach 1 exact-device iOS screenshot for Home.",
+    "Attach 1 exact-device Android screenshot for Home.",
   ]);
   assert.equal(plan.nextTargets[1]?.surfaceId, "care-pass");
 });
@@ -274,9 +286,12 @@ test("keeps pass-pending-proof targets as the primary mission until evidence is 
         {
           uri: "file:///qa/ios-home.png",
           fileName: "ios-home.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-29T09:00:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
       ],
     },
@@ -286,7 +301,7 @@ test("keeps pass-pending-proof targets as the primary mission until evidence is 
 
   assert.equal(plan.primaryMission.kind, "proof-pending");
   assert.equal(plan.primaryMission.target?.surfaceId, "home");
-  assert.match(plan.primaryMission.detail, /Attach 1 Android screenshot for Home/);
+  assert.match(plan.primaryMission.detail, /Attach 1 exact-device Android screenshot for Home/);
 });
 
 test("preserves release surface order inside each priority group", () => {
@@ -367,13 +382,13 @@ test("builds a shareable native QA capture script for Apollo and device testers"
   assert.match(text, /1\. Home \(\/\)/);
   assert.match(text, /Open with QA return: \/\?qaReturn=care-twin-qa&qaSurface=home&qaTitle=Home/);
   assert.match(text, /Priority: launch-critical/);
-  assert.match(text, /Missing: Attach 1 iOS screenshot for Home\. Attach 1 Android screenshot for Home\./);
+  assert.match(text, /Missing: Attach 1 exact-device iOS screenshot for Home\. Attach 1 exact-device Android screenshot for Home\./);
   assert.match(text, /Setup: Use a local preview household with Phoenix sample care data\./);
   assert.match(text, /Steps: Open Home\. Capture iOS and Android screenshots\./);
   assert.match(text, /Pass criteria: Home is readable above the fold on both platforms\./);
   assert.match(text, /Needs tune if: Mark Needs tune if Home clips under the safe area or hides the main action\./);
   assert.match(text, /2\. Care Pass \(\/records\)/);
-  assert.match(text, /Done condition: capture iOS and Android proof in \/care-twin-qa/);
+  assert.match(text, /record exact-binary iOS and Android device proof separately from Photos-library references/);
 });
 
 test("keeps store screenshot proof visible even when normal native targets fill the capture list", () => {
@@ -429,14 +444,14 @@ test("keeps store screenshot proof visible even when normal native targets fill 
   assert.equal(plan.storeScreenshotProofStatus.open, 1);
   assert.equal(plan.storeScreenshotProofStatus.statusLabel, "Store proof open");
   assert.equal(plan.storeScreenshotProofStatus.nextTarget?.surfaceId, "store-health-watch");
-  assert.match(plan.storeScreenshotProofStatus.missingEvidence.join(" "), /Attach 1 iOS screenshot for Store: Health Watch/);
+  assert.match(plan.storeScreenshotProofStatus.missingEvidence.join(" "), /Attach 1 exact-device iOS screenshot for Store: Health Watch/);
 
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-27T09:30:00.000Z");
 
   assert.match(text, /Store screenshot proof: Store proof open/);
   assert.match(text, /Next store screenshot: Store: Health Watch \(\/health\)/);
   assert.match(text, /Next store screenshot route: \/health\?qaReturn=care-twin-qa&qaSurface=store-health-watch&qaTitle=Store%3A%20Health%20Watch/);
-  assert.match(text, /Store screenshot missing: Attach 1 iOS screenshot for Store: Health Watch/);
+  assert.match(text, /Store screenshot missing: Attach 1 exact-device iOS screenshot for Store: Health Watch/);
 });
 
 test("builds a focused QA target for deep-linked launch readiness rows", () => {
@@ -471,7 +486,7 @@ test("builds a focused QA target for deep-linked launch readiness rows", () => {
   assert.deepEqual(focused.target.setupSteps, [
     "Open Health and keep Review packet visible before capturing the store screenshot.",
   ]);
-  assert.match(focused.target.missingEvidence.join(" "), /Attach 1 iOS screenshot for Store: Health Watch/);
+  assert.match(focused.target.missingEvidence.join(" "), /Attach 1 exact-device iOS screenshot for Store: Health Watch/);
   assert.equal(buildMobileLaunchQaFocusedTarget(null, "missing-surface", surfaces), null);
 });
 
@@ -507,10 +522,11 @@ test("builds a focused target checklist for phone and handoff QA", () => {
   assert.match(text, /Focused cockpit: \/care-twin-qa\?qaSurface=store-health-watch/);
   assert.match(text, /Open route: \/health/);
   assert.match(text, /Open with QA return: \/health\?qaReturn=care-twin-qa&qaSurface=store-health-watch&qaTitle=Store%3A%20Health%20Watch/);
-  assert.match(text, /Proof needed: Attach 1 iOS screenshot for Store: Health Watch\./);
-  assert.match(text, /Attached proof: 0 screenshot/);
+  assert.match(text, /Proof needed: Attach 1 exact-device iOS screenshot for Store: Health Watch\./);
+  assert.match(text, /Manual screenshot references: 0 attachments/);
   assert.match(text, /Pass when: Health Review Packet shows owner prompts/);
   assert.match(text, /After capture: return to \/care-twin-qa\?qaSurface=store-health-watch/);
+  assert.match(text, /Exact-device attestation stays separate/);
   assert.match(text, /Keep App Store\/Play Store approval separate/);
 });
 
@@ -527,33 +543,34 @@ test("preserves owner preview route-loop details in the capture plan and share s
   assert.deepEqual(
     target?.routeChecklist?.map((item) => `${item.label}:${item.route}`),
     [
+      "Home:/",
       "Log:/log",
-      "Plan:/calendar",
-      "Today:/",
-      "Pack:/pack",
-      "Story:/story",
+      "Plans:/calendar",
       "Health:/health",
       "More:/more",
-      "Adventure:/adventure",
-      "Records:/records",
-      "Avatar Studio:/portrait",
-      "Care Pass:/records",
+      "Dog Profile:/more?section=dog-profile",
+      "Privacy & Data:/more?section=privacy",
+      "Care Team & Supplies:/more?section=care-team-supplies",
+      "Story & Progress:/more?section=story-progress",
+      "Adventure:/more?section=adventure",
+      "Records:/health?section=records",
+      "Avatar Studio:/more?section=avatar-studio",
+      "Care Pass:/health?section=care-pass",
     ],
   );
-  assert.match(target?.routeChecklist?.[0]?.expected ?? "", /Quick-log one safe care event/);
-  assert.match(target?.routeChecklist?.[6]?.proof ?? "", /Android Launch Readiness screenshot/);
-  assert.match(target?.routeChecklist?.[7]?.expected ?? "", /private care quests/);
+  assert.match(target?.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
+  assert.match(target?.routeChecklist?.[4]?.proof ?? "", /Android Launch Readiness screenshot/);
+  assert.match(target?.routeChecklist?.[9]?.expected ?? "", /private care quests/);
 
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-25T09:30:00.000Z");
 
   assert.match(text, /Route loop:/);
-  assert.match(text, /Today \(\/\): Confirm Phoenix status/);
+  assert.match(text, /Home \(\/\): Confirm Phoenix status/);
   assert.match(text, /Log \(\/log\): Quick-log one safe care event/);
-  assert.match(text, /Pack \(\/pack\): Confirm pets, people, household access/);
-  assert.match(text, /Story \(\/story\): Confirm care career, adventure trail/);
-  assert.match(text, /More \(\/more\): Open More from Today's header menu or the Pack links/);
-  assert.match(text, /Adventure \(\/adventure\): Confirm private care quests/);
-  assert.match(text, /Care Pass \(\/records\): Confirm sitter\/vet\/trainer handoff/);
+  assert.match(text, /More \(\/more\): Use the visible directory/);
+  assert.match(text, /Story & Progress \(\/more\?section=story-progress\): Confirm care career, adventure trail/);
+  assert.match(text, /Adventure \(\/more\?section=adventure\): Confirm private care quests/);
+  assert.match(text, /Care Pass \(\/health\?section=care-pass\): Confirm sitter\/vet\/trainer handoff/);
 });
 
 test("expands route visual consistency into route-by-route native screenshot proof", () => {
@@ -567,8 +584,8 @@ test("expands route visual consistency into route-by-route native screenshot pro
 
   assert.equal(target?.surfaceId, "route-visual-consistency");
   assert.deepEqual(target?.missingEvidence.slice(0, 3), [
-    "Attach 8 iOS screenshots for Route Visual Consistency.",
-    "Attach 8 Android screenshots for Route Visual Consistency.",
+    "Attach 8 exact-device iOS screenshots for Route Visual Consistency.",
+    "Attach 8 exact-device Android screenshots for Route Visual Consistency.",
     "Add QA note for Route Visual Consistency.",
   ]);
   assert.ok(target?.routeChecklist?.every((item) => item.requiredNativePlatforms?.join(",") === "ios,android"));
@@ -576,13 +593,13 @@ test("expands route visual consistency into route-by-route native screenshot pro
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-07-03T09:30:00.000Z");
 
   assert.match(text, /Route Visual Consistency/);
-  assert.match(text, /Missing: Attach 8 iOS screenshots for Route Visual Consistency\./);
-  assert.match(text, /Attach 8 Android screenshots for Route Visual Consistency\./);
-  assert.match(text, /Today \(\/\): Phoenix Room/);
-  assert.match(text, /Pack \(\/pack\): Pack keeps pets, people, household access/);
-  assert.match(text, /Story \(\/story\): Story keeps care career, adventure trail/);
+  assert.match(text, /Missing: Attach 8 exact-device iOS screenshots for Route Visual Consistency\./);
+  assert.match(text, /Attach 8 exact-device Android screenshots for Route Visual Consistency\./);
+  assert.match(text, /Home \(\/\): Phoenix Room/);
+  assert.match(text, /Story & Progress \(\/more\?section=story-progress\): Care career, adventure trail/);
+  assert.match(text, /Care Team & Supplies \(\/more\?section=care-team-supplies\): Household supplies and travel controls/);
   assert.match(text, /Proof: iOS \+ Android native screenshot required\./);
-  assert.match(text, /More \(\/more\): Command Directory maps the app/);
+  assert.match(text, /More \(\/more\): The visible directory maps Dog Profile/);
 });
 
 test("keeps note-required owner preview evidence open until the QA note is written", () => {
@@ -604,16 +621,22 @@ test("keeps note-required owner preview evidence open until the QA note is writt
         {
           uri: "file:///qa/ios-owner-log.png",
           fileName: "ios-owner-log.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-25T09:00:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
         {
           uri: "file:///qa/android-launch-readiness.png",
           fileName: "android-launch-readiness.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "android",
           capturedAtIso: "2026-06-25T09:02:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "Android QA",
         },
       ],
     },
@@ -749,16 +772,22 @@ test("keeps owner preview beta proof visible even when it is outside the visible
         {
           uri: "file:///qa/ios-log.png",
           fileName: "ios-log.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-26T09:00:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
         {
           uri: "file:///qa/android-launch-readiness.png",
           fileName: "android-launch-readiness.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "android",
           capturedAtIso: "2026-06-26T09:02:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "Android QA",
         },
       ],
     },
@@ -798,9 +827,12 @@ test("builds a focused fix brief for the first Needs tune target", () => {
         {
           uri: "file:///qa/android-care-pass.png",
           fileName: "android-care-pass.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "android",
           capturedAtIso: "2026-06-25T12:00:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "Android QA",
         },
       ],
     },

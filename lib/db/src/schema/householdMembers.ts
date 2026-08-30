@@ -1,4 +1,12 @@
-import { pgTable, text, timestamp, uuid, unique } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import {
+  check,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { householdsTable } from "./households";
 import { usersTable } from "./users";
 
@@ -13,7 +21,7 @@ export const householdMembersTable = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    role: text("role").notNull().default("member"),
+    role: text("role").notNull().default("adult"),
     displayName: text("display_name"),
     accessPassExpiresAt: timestamp("access_pass_expires_at", {
       withTimezone: true,
@@ -22,7 +30,13 @@ export const householdMembersTable = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [unique().on(t.householdId, t.userId)],
+  (t) => [
+    unique().on(t.householdId, t.userId),
+    check(
+      "household_members_role_canonical_check",
+      sql`${t.role} in ('owner', 'adult', 'teen', 'kid', 'sitter', 'trainer', 'walker', 'vet viewer')`,
+    ),
+  ],
 );
 
 export type HouseholdMember = typeof householdMembersTable.$inferSelect;

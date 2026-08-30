@@ -6,7 +6,7 @@ import type {
 import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 import { cleanQaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 
-export const MOBILE_QA_SESSION_STORAGE_KEY = "woofwatcher.mobileReleaseQaSession.v1";
+export { MOBILE_QA_SESSION_STORAGE_KEY } from "./devicePreferences.ts";
 
 export interface MobileQaSessionInput {
   careTwinStatusById: Record<string, CareTwinQaReviewStatus>;
@@ -26,6 +26,35 @@ export interface MobileQaSessionSnapshot {
 
 export interface MobileQaSessionState extends MobileQaSessionInput {
   savedAtIso?: string;
+}
+
+export interface MobileQaSessionHydrationTicket {
+  readonly generation: number;
+  readonly editRevision: number;
+}
+
+export type MobileQaSessionHydrationApplyResult = "applied" | "stale";
+export type MobileQaSessionAutosaveDecision = "suppress-hydration" | "save";
+
+export interface MobileQaSessionPersistenceGate {
+  beginHydration(): Readonly<MobileQaSessionHydrationTicket>;
+  isHydrationCurrent(
+    ticket: Readonly<MobileQaSessionHydrationTicket>,
+  ): boolean;
+  markRealEdit(): void;
+  applyHydrationIfCurrent(
+    ticket: Readonly<MobileQaSessionHydrationTicket>,
+    state: MobileQaSessionState,
+    apply: (state: MobileQaSessionState) => void,
+  ): MobileQaSessionHydrationApplyResult;
+  consumeAutosaveDecision(
+    input: MobileQaSessionInput,
+  ): MobileQaSessionAutosaveDecision;
+}
+
+export interface MobileQaSessionSaveQueue {
+  save(value: string, write: (value: string) => Promise<void>): Promise<void>;
+  isPending(): boolean;
 }
 
 export interface MobileQaSessionProofSummary {
@@ -81,6 +110,112 @@ function stableStringify(value: unknown): string {
     .filter((key) => record[key] !== undefined)
     .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
     .join(",")}}`;
+}
+
+function copyEvidenceById(
+  source: Readonly<Record<string, readonly QaScreenshotEvidence[]>>,
+): Record<string, QaScreenshotEvidence[]> {
+  return Object.fromEntries(
+    Object.entries(source).map(([id, evidence]) => [
+      id,
+      evidence.map((item) => ({ ...item })),
+    ]),
+  );
+}
+
+function copyMobileQaSessionState(
+  state: MobileQaSessionState,
+): MobileQaSessionState {
+  return {
+    careTwinStatusById: { ...state.careTwinStatusById },
+    careTwinNotes: { ...state.careTwinNotes },
+    careTwinEvidenceById: copyEvidenceById(state.careTwinEvidenceById),
+    surfaceStatusById: { ...state.surfaceStatusById },
+    surfaceNotes: { ...state.surfaceNotes },
+    surfaceEvidenceById: copyEvidenceById(state.surfaceEvidenceById),
+    savedAtIso: state.savedAtIso,
+  };
+}
+
+function mobileQaSessionContentSignature(input: MobileQaSessionInput): string {
+  return stableStringify({
+    careTwinStatusById: input.careTwinStatusById,
+    careTwinNotes: input.careTwinNotes,
+    careTwinEvidenceById: input.careTwinEvidenceById,
+    surfaceStatusById: input.surfaceStatusById,
+    surfaceNotes: input.surfaceNotes,
+    surfaceEvidenceById: input.surfaceEvidenceById,
+  });
+}
+
+export function createEmptyMobileQaSessionState(): MobileQaSessionState {
+  return {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {},
+    surfaceNotes: {},
+    surfaceEvidenceById: {},
+  };
+}
+
+export function createMobileQaSessionPersistenceGate(): MobileQaSessionPersistenceGate {
+  let generation = 0;
+  let editRevision = 0;
+  let hydratedContentSignature: string | null = null;
+
+  const isHydrationCurrent = (
+    ticket: Readonly<MobileQaSessionHydrationTicket>,
+  ) =>
+    ticket.generation === generation &&
+    ticket.editRevision === editRevision;
+
+  return {
+    beginHydration() {
+      generation += 1;
+      return Object.freeze({ generation, editRevision });
+    },
+    isHydrationCurrent,
+    markRealEdit() {
+      editRevision += 1;
+      hydratedContentSignature = null;
+    },
+    applyHydrationIfCurrent(ticket, state, apply) {
+      if (!isHydrationCurrent(ticket)) return "stale";
+      const copiedState = copyMobileQaSessionState(state);
+      hydratedContentSignature = mobileQaSessionContentSignature(copiedState);
+      apply(copiedState);
+      return "applied";
+    },
+    consumeAutosaveDecision(input) {
+      const expectedSignature = hydratedContentSignature;
+      hydratedContentSignature = null;
+      return expectedSignature !== null &&
+        expectedSignature === mobileQaSessionContentSignature(input)
+        ? "suppress-hydration"
+        : "save";
+    },
+  };
+}
+
+export function createMobileQaSessionSaveQueue(): MobileQaSessionSaveQueue {
+  let tail: Promise<void> = Promise.resolve();
+  let pending = 0;
+
+  return Object.freeze({
+    save(value: string, write: (value: string) => Promise<void>) {
+      pending += 1;
+      const operation = tail.then(() => write(value));
+      const settled = operation.finally(() => {
+        pending = Math.max(0, pending - 1);
+      });
+      tail = settled.catch(() => undefined);
+      return settled;
+    },
+    isPending() {
+      return pending > 0;
+    },
+  });
 }
 
 function proofFingerprint(snapshot: MobileQaSessionSnapshot): string {
@@ -178,6 +313,21 @@ export function buildMobileQaSessionSnapshot(
   };
 }
 
+export function buildPersistedMobileQaSessionSnapshot(
+  input: MobileQaSessionInput,
+  savedAtIso: string | undefined,
+): MobileQaSessionSnapshot | null {
+  if (!savedAtIso) return null;
+  const savedAt = new Date(savedAtIso);
+  if (
+    Number.isNaN(savedAt.getTime()) ||
+    savedAt.toISOString() !== savedAtIso
+  ) {
+    return null;
+  }
+  return buildMobileQaSessionSnapshot(input, savedAtIso);
+}
+
 export function parseMobileQaSessionSnapshot(raw: string | null): MobileQaSessionState | null {
   if (!raw) return null;
 
@@ -263,7 +413,7 @@ export function buildMobileQaSessionProofManifest(
     careTwin,
     release,
     totalEvidenceFiles: careTwin.evidenceFiles + release.evidenceFiles,
-    platformEvidenceLabel: `iOS ${iosEvidence}, Android ${androidEvidence}, Web ${webEvidence}, Unknown ${unknownEvidence}`,
+    platformEvidenceLabel: `manual self-attested tags: iOS ${iosEvidence}, Android ${androidEvidence}, Web ${webEvidence}, Unknown ${unknownEvidence}`,
   };
 }
 
@@ -271,14 +421,14 @@ export function buildMobileQaSessionProofManifestShareText(
   manifest: MobileQaSessionProofManifest,
 ): string {
   return [
-    "WoofWatcher QA Proof Manifest",
-    `Proof ID: ${manifest.proofId}`,
+    "WoofWatcher QA Evidence Manifest",
+    `Manifest ID: ${manifest.proofId}`,
     `Generated: ${manifest.generatedAtIso}`,
     `Saved session: ${manifest.savedAtIso}`,
     proofLine("Care twin", manifest.careTwin),
     proofLine("Release", manifest.release),
-    `Platform evidence: ${manifest.platformEvidenceLabel}.`,
+    `Attachment metadata: ${manifest.platformEvidenceLabel}.`,
     `Total attached evidence: ${evidenceWord(manifest.totalEvidenceFiles)}.`,
-    "Boundary: this manifest summarizes local QA evidence metadata only; it does not prove App Store or Play Store approval, provider-backed storage, live AI, payments, push notifications, generated PDF output, or public launch readiness.",
+    "Boundary: Photos-library attachments are manual self-attested metadata. This manifest is not bound to an exact binary or device, cannot close iOS/Android release gates, and does not prove store approval, provider-backed storage, live AI, payments, push notifications, generated PDF output, or public launch readiness.",
   ].join("\n");
 }

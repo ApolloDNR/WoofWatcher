@@ -26,45 +26,6 @@ export interface CareAuditEventInput {
   entryOccurredAt?: string;
 }
 
-export interface CareLogAuditSubject {
-  id: string;
-  type: string;
-  title: string;
-  caregiver?: string;
-  occurredAt: string;
-  note?: string;
-  details?: Record<string, unknown>;
-}
-
-export interface CareLogDeletionAuditInput {
-  id?: string;
-  caregiver?: string;
-  occurredAt?: string;
-  entry: CareLogAuditSubject;
-}
-
-export interface CareLogDeletionAuditEntry {
-  type: "note";
-  title: string;
-  caregiver: string;
-  occurredAt: string;
-  note: string;
-  details: {
-    auditAction: "deleted";
-    auditSubjectId: string;
-    householdVisible: true;
-    deletedEntrySnapshot: {
-      id: string;
-      type: string;
-      title: string;
-      caregiver?: string;
-      occurredAt: string;
-      note?: string;
-    };
-    auditTrail: CareAuditEvent[];
-  };
-}
-
 const AUDIT_ACTIONS = new Set<CareAuditAction>(["created", "updated", "sticky-note-added", "deleted"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -147,53 +108,5 @@ export function appendCareAuditEvent<T extends Record<string, unknown>>(
   return {
     ...(details ?? ({} as T)),
     auditTrail: [...getCareAuditTrail(details), cleaned],
-  };
-}
-
-export function buildCareLogDeletionAuditEntry(input: CareLogDeletionAuditInput): CareLogDeletionAuditEntry {
-  const caregiver = cleanActor(input.caregiver);
-  const occurredAt = cleanOccurredAt(input.occurredAt);
-  const entryTitle = cleanString(input.entry.title) || "Care log";
-  const entryType = cleanString(input.entry.type) || "note";
-  const entryId = cleanString(input.entry.id) || "unknown";
-  const entryOccurredAt = cleanOccurredAt(input.entry.occurredAt);
-  const summary = `${caregiver} deleted "${entryTitle}" from the shared care log.`;
-
-  const event: CareAuditEvent = {
-    id: cleanAuditId(input.id),
-    action: "deleted",
-    caregiver,
-    occurredAt,
-    summary,
-    entryId,
-    entryTitle,
-    entryType,
-    entryOccurredAt,
-  };
-
-  const snapshot: CareLogDeletionAuditEntry["details"]["deletedEntrySnapshot"] = {
-    id: entryId,
-    type: entryType,
-    title: entryTitle,
-    occurredAt: entryOccurredAt,
-  };
-  const entryCaregiver = cleanString(input.entry.caregiver);
-  if (entryCaregiver) snapshot.caregiver = entryCaregiver;
-  const entryNote = cleanString(input.entry.note);
-  if (entryNote) snapshot.note = entryNote;
-
-  return {
-    type: "note",
-    title: `Deleted log - ${entryTitle}`,
-    caregiver,
-    occurredAt,
-    note: summary,
-    details: {
-      auditAction: "deleted",
-      auditSubjectId: entryId,
-      householdVisible: true,
-      deletedEntrySnapshot: snapshot,
-      auditTrail: [event],
-    },
   };
 }

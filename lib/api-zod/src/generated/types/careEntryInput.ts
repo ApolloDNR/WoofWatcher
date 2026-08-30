@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { CareEntryInputDetails } from './careEntryInputDetails';
+import type { CareEntryInputDetails } from "./careEntryInputDetails";
 
 export interface CareEntryInput {
   petId?: string;

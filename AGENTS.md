@@ -1,40 +1,44 @@
 # WoofWatcher Agent Operating Notes
 
-> **PICKING THIS UP FRESH? START HERE:** `docs/handoff/HANDOFF_2026-07-18.md`
-> is the current state-of-the-app brief (quality/data-hardening work on branch
-> `claude/session-01e3syeprsxqa9xivhnffc6j-jscvid`, 715/716 focused tests
-> green on Node 22 — the one miss is the Node-24 doctor gate — Node 24
-> required for the full pass). Read it before anything else, then the vision
-> doc below. A paste-ready kickoff prompt for a new assistant is at
+> **PICKING THIS UP FRESH? START HERE:** `docs/release/STATUS.md` is the
+> current release truth. Its exact release-branch SHA and browser/native
+> verdicts override every dated handoff. Then read
+> `docs/handoff/HANDOFF_2026-07-18.md` for historical context and the vision
+> documents below. A paste-ready kickoff prompt for a new assistant is at
 > `docs/handoff/NEXT_AGENT_PROMPT.md`.
 
 ## Source Of Truth Order
 
 When working in this repo, use this order:
 
-0. `docs/handoff/HANDOFF_2026-07-18.md` (latest handoff — current state)
-1. `AGENTS.md`
-2. `docs/V1_COMPLETION_AUDIT.md`
-3. `docs/V1_PLAN.md`
-4. `docs/FIGMA_BRIEF.md`
-5. `docs/strategy/LOCKED_BUSINESS_PLAN_AND_PRD.md`
-6. `docs/strategy/CODEX_BUILD_HANDOFF.md`
-7. `docs/design/WOOFWATCHER_UI_DIRECTION_LOCK.md`
-8. `docs/APOLLO_VISION_SYNTHESIS.md`
-9. `docs/30_YEAR_NORTH_STAR.md`
-10. `docs/MONEY_RELEASE_PLAN.md`
-11. `docs/AUTONOMOUS_BUILD_QUEUE.md`
-12. `docs/QUALITY_GATES.md`
-13. `docs/QA_TEST_PLAN.md`
-14. `docs/ULTIMATE_RELEASE_PLAN.md`
-15. `docs/PRODUCT_QUALITY_GATES.md`
-16. `docs/DECISION_LOG.md`
-17. `docs/BLOCKERS_FOR_APOLLO.md`
-18. `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
-19. `README.md` and `replit.md`
-20. Product specs and implementation plans in `docs/superpowers`
-21. Current app, API, package, test, CI, schema, and migration state
-22. Brand/design screenshots and external references Apollo provides
+0. `docs/release/STATUS.md` (current exact release-branch SHA and verdicts)
+1. `docs/handoff/HANDOFF_2026-07-18.md` (dated historical handoff)
+2. `AGENTS.md`
+3. `docs/V1_COMPLETION_AUDIT.md`
+4. `docs/V1_PLAN.md`
+5. `docs/FIGMA_BRIEF.md`
+6. `docs/strategy/LOCKED_BUSINESS_PLAN_AND_PRD.md`
+7. `docs/strategy/CODEX_BUILD_HANDOFF.md`
+8. `docs/design/WOOFWATCHER_UI_DIRECTION_LOCK.md`
+9. `docs/APOLLO_VISION_SYNTHESIS.md`
+10. `docs/30_YEAR_NORTH_STAR.md`
+11. `docs/MONEY_RELEASE_PLAN.md`
+12. `docs/AUTONOMOUS_BUILD_QUEUE.md`
+13. `docs/QUALITY_GATES.md`
+14. `docs/QA_TEST_PLAN.md`
+15. `docs/ULTIMATE_RELEASE_PLAN.md`
+16. `docs/PRODUCT_QUALITY_GATES.md`
+17. `docs/DECISION_LOG.md`
+18. `docs/BLOCKERS_FOR_APOLLO.md`
+19. `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+20. `README.md` and `replit.md`
+21. Product specs and implementation plans in `docs/superpowers`
+22. Current app, API, package, test, CI, schema, and migration state
+23. Brand/design screenshots and external references Apollo provides
+
+Dated handoffs and the Premium Revenue Product Builder journal retain history,
+but cannot override the exact release-branch SHA and browser/native verdict in
+`docs/release/STATUS.md`.
 
 ## Product Identity
 

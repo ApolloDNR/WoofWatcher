@@ -1,5 +1,10 @@
 import { AccessibilityInfo, Platform } from "react-native";
 
+import {
+  announceOnWeb,
+  clearWebAnnouncements,
+} from "./webAnnouncementRuntime.ts";
+
 /**
  * Screen-reader announcement for state changes with no focused element -
  * the core care loop's "logged" feedback, storage warnings, validation.
@@ -11,35 +16,7 @@ import { AccessibilityInfo, Platform } from "react-native";
  * announcements must never break a care flow.
  */
 
-let webRegion: HTMLElement | null = null;
-
-function announceOnWeb(text: string): void {
-  if (typeof document === "undefined") return;
-  if (!webRegion || !document.body.contains(webRegion)) {
-    webRegion = document.createElement("div");
-    webRegion.setAttribute("role", "status");
-    webRegion.setAttribute("aria-live", "polite");
-    // Visually hidden but kept in the accessibility tree.
-    Object.assign(webRegion.style, {
-      position: "absolute",
-      width: "1px",
-      height: "1px",
-      margin: "-1px",
-      border: "0",
-      padding: "0",
-      overflow: "hidden",
-      clip: "rect(0 0 0 0)",
-      whiteSpace: "nowrap",
-    });
-    document.body.appendChild(webRegion);
-  }
-  // Clear first so logging the same item twice re-announces.
-  webRegion.textContent = "";
-  const region = webRegion;
-  window.setTimeout(() => {
-    region.textContent = text;
-  }, 30);
-}
+export { clearWebAnnouncements };
 
 export function announce(message: string): void {
   const text = message.trim();

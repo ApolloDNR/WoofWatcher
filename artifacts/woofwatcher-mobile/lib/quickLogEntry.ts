@@ -1,9 +1,11 @@
 import {
   deriveRoutineBoard,
+  isRoutineBoardScheduledItem,
   normalizeCareEventType,
   type CareEventType,
   type RoutineBoardItem,
 } from "../../../lib/care-domain/src/index.ts";
+import { parseStrictPositiveAmountWithUnit } from "./inputValidation.ts";
 
 export interface QuickLogConfig {
   type: CareEventType;
@@ -181,6 +183,7 @@ function nextOpenRoutineOfType(
   });
   return (
     board.items
+      .filter(isRoutineBoardScheduledItem)
       .filter((routine) => routine.normalizedType === type && (routine.status === "overdue" || routine.status === "due"))
       .sort((a, b) => statusRank(a) - statusRank(b) || a.minutesFromNow - b.minutesFromNow)[0] ?? null
   );
@@ -189,27 +192,6 @@ function nextOpenRoutineOfType(
 function portionAmountText(amount: number): string {
   const rounded = Math.round(amount * 100) / 100;
   return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-function parsePortion(portion: string): { amount: number; unit: string } | null {
-  const trimmed = portion.replace(/\s+/g, " ").trim();
-  if (!trimmed) return null;
-  const match = trimmed.match(/^(\d+(?:\.\d+)?|\d+\s*\/\s*\d+)\s*([a-zA-Z]+)?/);
-  if (!match) return null;
-
-  const rawAmount = match[1].replace(/\s+/g, "");
-  let amount: number;
-  if (rawAmount.includes("/")) {
-    const [top, bottom] = rawAmount.split("/").map((part) => Number.parseFloat(part));
-    if (!Number.isFinite(top) || !Number.isFinite(bottom) || bottom === 0) return null;
-    amount = top / bottom;
-  } else {
-    amount = Number.parseFloat(rawAmount);
-  }
-
-  if (!Number.isFinite(amount) || amount <= 0) return null;
-  const unit = (match[2] ?? "serving").toLowerCase().replace(/[.,]$/, "").replace(/s$/, "");
-  return { amount, unit };
 }
 
 function routineDetails(routine: RoutineBoardItem | null): Record<string, unknown> {
@@ -342,7 +324,7 @@ export function describeQuickLogDetailSheet(
     return {
       ...base,
       subtitle: "Fast bowl drop now, accurate outcome later.",
-      quickSummary: "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what Phoenix ate.",
+      quickSummary: "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what your dog ate.",
       detailChecklist: [
         "Meal uses a served -> outcome lifecycle so a bowl on the floor is not treated as eaten.",
         "Track portion offered, expected portion, and food notes before saving.",
@@ -441,7 +423,7 @@ export function buildQuickLogEntry(
     details.householdVisible = true;
     if (expectedPortion) details.expectedPortion = expectedPortion;
 
-    const parsed = parsePortion(expectedPortion);
+    const parsed = parseStrictPositiveAmountWithUnit(expectedPortion);
     if (parsed) {
       details.servedAmount = parsed.amount;
       details.servedUnit = parsed.unit;

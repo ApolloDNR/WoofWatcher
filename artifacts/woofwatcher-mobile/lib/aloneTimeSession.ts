@@ -1,4 +1,7 @@
-import { appendCareAuditEvent } from "../../../lib/care-domain/src/index.ts";
+import {
+  appendCareAuditEvent,
+  isHouseholdVisibleCareEvidence,
+} from "../../../lib/care-domain/src/index.ts";
 
 export type AloneTimeReturnOutcome =
   | "calm"
@@ -116,7 +119,7 @@ export function buildAloneTimeStartEntry(options: AloneTimeStartOptions): AloneT
   const caregiver = clean(options.caregiver) || "Care team";
   return {
     type: "alone",
-    title: "Alone Time - Phoenix home alone",
+    title: "Alone Time - home alone",
     caregiver,
     occurredAt,
     mood: "home_alone",
@@ -140,7 +143,7 @@ export function findOpenAloneTimeSession(entries: readonly AloneTimeEntryLike[])
       .filter((entry) => entry.type === "alone")
       .filter((entry) => {
         const details = isRecord(entry.details) ? entry.details : {};
-        return details.householdVisible !== false && details.aloneLifecycle === "active";
+        return isHouseholdVisibleCareEvidence(entry) && details.aloneLifecycle === "active";
       })
       .sort((a, b) => new Date(startTime(b)).getTime() - new Date(startTime(a)).getTime())[0] ?? null
   );
@@ -172,7 +175,7 @@ export function buildAloneTimeReturnPatch(
       outcomeAt: endedAt,
       presenceState: "with-human",
       supervisedBy: caregiver,
-      householdVisible: existing.householdVisible !== false,
+      householdVisible: isHouseholdVisibleCareEvidence(entry),
       ...(recoveryMinutes != null ? { recoveryMinutes } : {}),
     },
     {

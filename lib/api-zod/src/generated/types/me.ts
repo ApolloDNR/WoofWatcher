@@ -5,11 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { Household } from './household';
-import type { Member } from './member';
-import type { User } from './user';
+import type { Household } from "./household";
+import type { Member } from "./member";
+import type { User } from "./user";
 
 export interface Me {
+  /** Exact transactional database-clock instant used to evaluate Access Pass expiry for this authority snapshot. Clients must pair it with a monotonic request interval and must not substitute device wall-clock time. */
+  authorityObservedAt: Date;
   user: User;
   household: Household;
   members: Member[];

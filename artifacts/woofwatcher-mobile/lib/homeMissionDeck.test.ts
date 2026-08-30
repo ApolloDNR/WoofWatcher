@@ -43,7 +43,7 @@ test("builds a care-RPG mission deck from real open care state", () => {
   assert.equal(missions[0].tone, "copper");
   assert.match(missions[0].detail, /Outcome pending/);
 
-  assert.equal(missions[1].route, "/adventure");
+  assert.equal(missions[1].route, "/more?section=adventure");
   assert.equal(missions[1].cta, "Start quest");
   // The Adventure mission speaks in "Quest level"/"quest XP" (the daily
   // quest track), never bare "Level"/"XP", so Home cannot show the same
@@ -52,11 +52,11 @@ test("builds a care-RPG mission deck from real open care state", () => {
   assert.match(missions[1].detail, /50 quest XP today/);
   assert.match(missions[1].detail, /18 memories/);
 
-  assert.equal(missions[2].route, "/health?tab=bile");
+  assert.equal(missions[2].route, "/health?section=bile-watch");
   assert.equal(missions[2].tone, "amber");
   assert.equal(missions[2].cta, "Review");
 
-  assert.equal(missions[3].route, "/records");
+  assert.equal(missions[3].route, "/health?section=care-pass");
   assert.equal(missions[3].cta, "Open pass");
 });
 
@@ -97,7 +97,42 @@ test("keeps mission copy useful when the day has no urgent open loop", () => {
   assert.match(missions[0].title, /Walk with Apollo/);
 
   assert.equal(missions[2].tone, "sage");
-  assert.equal(missions[2].route, "/health?tab=health");
+  assert.equal(missions[2].route, "/health?section=overview");
   assert.equal(missions[2].statusLabel, "Stable");
   assert.equal(missions[3].statusLabel, "Build pass");
+});
+
+test("keeps unnamed fresh-install mission copy neutral", () => {
+  const missions = buildHomeMissionDeck({
+    petName: "My Dog",
+    caregiverName: "",
+    nextCare: {
+      label: "",
+      detail: "",
+      icon: "meal",
+      route: "/calendar",
+      openLoop: false,
+    },
+    adventure: {
+      title: "",
+      level: 1,
+      todayXp: 0,
+      memoriesCount: 0,
+    },
+    health: {
+      label: "",
+      status: "",
+      detail: "",
+      needsReview: false,
+    },
+    carePass: {
+      label: "",
+      detail: "",
+      ready: false,
+    },
+  });
+
+  assert.equal(missions[0].title, "your dog's next care");
+  assert.equal(missions[1].title, "your dog's next quest");
+  assert.doesNotMatch(JSON.stringify(missions), /Phoenix|My Dog/);
 });

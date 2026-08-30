@@ -19,18 +19,25 @@ test("Access Pass activation rejects expired helper windows", () => {
     lifecycleState: "access-pass-active",
   });
 
-  assert.deepEqual(assertAccessPassExpiryAllowed("2026-06-24T12:30:00.000Z", now), {
-    allowed: true,
-    expiresAt: "2026-06-24T12:30:00.000Z",
-    lifecycleState: "access-pass-active",
-  });
+  assert.deepEqual(
+    assertAccessPassExpiryAllowed("2026-06-24T12:30:00.000Z", now),
+    {
+      allowed: true,
+      expiresAt: "2026-06-24T12:30:00.000Z",
+      lifecycleState: "access-pass-active",
+    },
+  );
 
-  assert.deepEqual(assertAccessPassExpiryAllowed("2026-06-24T11:59:59.000Z", now), {
-    allowed: false,
-    expiresAt: "2026-06-24T11:59:59.000Z",
-    lifecycleState: "access-pass-expired",
-    reason: "Access Pass expiration must be in the future before helper access can be activated.",
-  });
+  assert.deepEqual(
+    assertAccessPassExpiryAllowed("2026-06-24T11:59:59.000Z", now),
+    {
+      allowed: false,
+      expiresAt: "2026-06-24T11:59:59.000Z",
+      lifecycleState: "access-pass-expired",
+      reason:
+        "Access Pass expiration must be in the future before helper access can be activated.",
+    },
+  );
 
   assert.deepEqual(assertAccessPassExpiryAllowed("not a date", now), {
     allowed: false,
@@ -81,6 +88,24 @@ test("household audit events map to durable provider insert records", () => {
       storage: "provider-durable",
     },
   });
+});
+
+test("identical household audit events created in the same millisecond receive collision-safe ids", () => {
+  const input = {
+    action: "invitation-created" as const,
+    actorUserId: "user_owner",
+    householdId: "11111111-1111-4111-8111-111111111111",
+    nextRole: "adult",
+  };
+  const now = new Date("2026-08-28T12:00:00.000Z");
+
+  const first = buildHouseholdAuditEvent(input, now);
+  const second = buildHouseholdAuditEvent(input, now);
+
+  assert.notEqual(first.id, second.id);
+  assert.match(first.id, /^household_audit_[0-9a-f-]{36}$/i);
+  assert.match(second.id, /^household_audit_[0-9a-f-]{36}$/i);
+  assert.equal(first.createdAt, second.createdAt);
 });
 
 test("household audit review queries clamp limits and preserve safe filters", () => {

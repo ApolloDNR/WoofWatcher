@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { AvatarEmotionImage } from './avatarEmotionImage';
+import type { AvatarEmotionImage } from "./avatarEmotionImage";
 
-export type AvatarEmotionsResponseImages = {[key: string]: AvatarEmotionImage};
+export type AvatarEmotionsResponseImages = {
+  [key: string]: AvatarEmotionImage;
+};

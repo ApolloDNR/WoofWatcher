@@ -233,3 +233,17 @@ test("normalizes production setup to a polished device-only care record", () => 
     /preview|coming soon|join invite/i,
   );
 });
+
+test("setup completion actions send every owner to Home", () => {
+  const sharedConfirmation = buildSetupWizardConfirmation(defaultDoc());
+  const consumerConfirmation = buildSetupWizardConfirmation(defaultDoc(), {
+    consumerRelease: true,
+  });
+
+  for (const confirmation of [sharedConfirmation, consumerConfirmation]) {
+    assert.ok(
+      confirmation.nextActions.includes("Open Home to start logging real care."),
+    );
+    assert.doesNotMatch(confirmation.nextActions.join(" "), /Open Today/);
+  }
+});

@@ -48,7 +48,7 @@ Use the v1.5 palette:
 ## Mobile Notes
 
 - Mobile remains canonical.
-- Keep Home, Log, Plans, Health, More as bottom nav.
+- Keep Home, Log, Plans, Health, More as the exact bottom-nav order.
 - Put overflow tools under More.
 - Continue moving reusable rules into `lib/care-domain`.
 - Prioritize the actual Expo mobile screens before polishing the PWA because mobile is the primary product surface.
@@ -62,7 +62,7 @@ Use the v1.5 palette:
 - Use segmented HUD meters for energy, hunger, hydration, bile risk, bond, and similar status signals.
 - Use pixel icons and Phoenix room art as product identity, but keep care copy readable.
 - No button should be introduced unless it has a real action, route, or honest setup explanation.
-- Phoenix should read as hard-pixel game art, not a soft illustration or photo-derived portrait. If a user uploads a dog photo, show it as a scan reference only; the avatar hero must stay a PixelLab/template care twin.
+- Phoenix should read as hard-pixel game art, not a soft illustration or photo-derived portrait. If a user chooses a dog photo, show it only as a local photo reference; it must not analyze or change the PixelLab/template care twin.
 - Do not promote a new still dog into Home unless the matching animation strips exist. The live care twin should remain one coherent sprite family, not a still avatar plus mismatched motion.
 
 ## 2026-06-14 Mobile Foundation Pass
@@ -2988,3 +2988,22 @@ Verification:
 - Chrome loaded the route DOM locally, but headless screenshot capture did not
   emit a PNG in this pass. Fresh visual proof remains blocked until screenshot
   capture or native device proof is available.
+
+## 2026-08-06 Universal Navigation Contract
+
+- The only visible bottom tabs are Home, Log, Plans, Health, and More, in that
+  exact order. Each uses a visible label, a minimum 48 px touch target, and a
+  selected state communicated by both shape and color.
+- Health owns Overview, Health Watch, Bile Watch, Medications, Diet, Trends,
+  Records, Dog ID, and Care Pass. More owns Dog Profile, Avatar Studio, Care
+  Team, Care Team & Supplies, Story & Progress, Adventure, WoofGuide, Settings,
+  Privacy & Data, and Legal.
+- Pack is only a legacy URL for Care Team & Supplies; Story is only a legacy URL
+  for Story & Progress. Other legacy URLs remain replace-only compatibility
+  boundaries and never become visible tabs.
+- Static export/HTTP checks prove that the Expo shell is available at canonical
+  and legacy paths. Rendered proof must separately verify selected-parent,
+  re-tap, redirect, Back, and history behavior at phone and desktop widths.
+- Physical VoiceOver and TalkBack checks remain required for tab order, useful
+  labels and hints, selected state, and large-text layout. Web accessibility
+  inspection cannot substitute for native-device evidence.

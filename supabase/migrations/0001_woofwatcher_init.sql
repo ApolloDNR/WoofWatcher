@@ -2,11 +2,11 @@
 -- Postgres 16/17. Safe to run on a fresh, DEDICATED WoofWatcher database.
 -- gen_random_uuid() is built into Postgres 13+; no extension needed.
 --
--- NOTE: you can create these tables either by running this file, OR by running
--- `pnpm --filter @workspace/db run push` (drizzle-kit) with DATABASE_URL set.
--- Both produce the same tables. This file exists so you can apply via the
--- Supabase SQL editor and so the schema is reviewable in the repo. Run
--- 0002_woofwatcher_rls.sql AFTER this.
+-- NOTE: this is the first file in the canonical ordered migration sequence.
+-- `drizzle-kit push` can create the declared development schema, but it does
+-- not perform later data backfills, role normalization, or RLS/revocations.
+-- Apply every numbered migration exactly once in lexical order for a release
+-- database; 0002_woofwatcher_rls.sql follows this file.
 
 begin;
 

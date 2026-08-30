@@ -7,12 +7,16 @@ import {
   resolveBuildChannel,
 } from "./buildChannel.ts";
 
-test("development always wins so local work keeps every surface", () => {
+test("development keeps every surface unless consumer preview is explicit", () => {
   assert.equal(
     resolveBuildChannel({ isDev: true, buildProfile: "production" }),
     "development",
   );
   assert.equal(resolveBuildChannel({ isDev: true }), "development");
+  assert.equal(
+    resolveBuildChannel({ isDev: true, consumerPreview: true }),
+    "production",
+  );
 });
 
 test("production requires the explicit store profile label", () => {
@@ -29,11 +33,19 @@ test("production requires the explicit store profile label", () => {
     resolveBuildChannel({ isDev: false, buildProfile: "store" }),
     "production",
   );
+  assert.equal(
+    resolveBuildChannel({ isDev: false, buildProfile: "candidate" }),
+    "production",
+    "release candidates must fail closed to the consumer surface",
+  );
 });
 
 test("unlabeled release builds stay internal so owner tooling survives", () => {
   assert.equal(resolveBuildChannel({ isDev: false }), "internal");
-  assert.equal(resolveBuildChannel({ isDev: false, buildProfile: "" }), "internal");
+  assert.equal(
+    resolveBuildChannel({ isDev: false, buildProfile: "" }),
+    "internal",
+  );
   assert.equal(
     resolveBuildChannel({ isDev: false, buildProfile: "preview" }),
     "internal",
@@ -47,7 +59,10 @@ test("owner-ops tooling renders everywhere except store production", () => {
 });
 
 test("channel descriptions state the review boundary", () => {
-  assert.match(describeBuildChannel("production"), /consumer care surfaces only/);
+  assert.match(
+    describeBuildChannel("production"),
+    /consumer care surfaces only/,
+  );
   assert.match(describeBuildChannel("internal"), /owner launch tooling/);
   assert.match(describeBuildChannel("development"), /QA cockpits/);
 });

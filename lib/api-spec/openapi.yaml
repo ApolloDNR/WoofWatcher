@@ -268,6 +268,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Authenticated user no longer has valid access to the active household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Active household identity or membership authority is internally inconsistent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     patch:
       operationId: updateMe
       tags: [household]
@@ -297,11 +309,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Authenticated user no longer has valid access to the active household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Active household identity or membership authority changed during the update or exact response snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household:
     patch:
       operationId: updateHousehold
       tags: [household]
       summary: Rename the current household
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -327,6 +353,110 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only the household owner can rename the household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority changed during rename or response construction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
+  /household/memberships:
+    get:
+      operationId: listMyHouseholdMemberships
+      tags: [household]
+      summary: List the authenticated user's switchable households
+      description: >-
+        Returns only the authenticated user's currently valid household
+        memberships. The expected-household capability is compared exactly
+        with the persisted active source before any membership rows are
+        exposed. Expired helper access and unknown legacy roles are omitted.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
+      responses:
+        "200":
+          description: Safe retained-household choices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyHouseholdMembershipList"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Authenticated household identity is unprovisioned or membership authority is internally inconsistent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
+  /household/activate:
+    post:
+      operationId: activateHousehold
+      tags: [household]
+      summary: Activate one retained household membership
+      description: >-
+        Atomically moves the authenticated user's active pointer from the exact
+        expected source to a currently valid target membership. The target is
+        revalidated inside the source-CAS transaction, and the response is an
+        exact target household snapshot rather than guessed client state.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseholdActivationInput"
+      responses:
+        "200":
+          description: Exact newly active household context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: Malformed household activation target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Target membership is missing, revoked, expired, or otherwise unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority changed during activation or exact response construction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /household/invitations:
     get:
       operationId: listHouseholdInvitations
@@ -338,6 +468,7 @@ paths:
         Supabase migration, RLS, retention, export/deletion policy, and
         notification delivery remain launch approval gates.
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: limit
           in: query
           schema:
@@ -374,6 +505,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
     post:
       operationId: createHouseholdInvitation
       tags: [household]
@@ -383,6 +518,8 @@ paths:
         invitations may start approved or pending owner approval, and the join
         flow only creates caregiver memberships after the row is approved and
         unexpired.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -414,16 +551,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority or invitation state changed before the atomic create completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /household/invitations/{id}/revoke:
     post:
       operationId: revokeHouseholdInvitation
       tags: [household]
       summary: Revoke a household invitation
       description: >-
-        Owner/admin-only revocation of a provider-durable invitation before or
-        after acceptance. The returned invitation reflects the revoked lifecycle
-        state and includes the household audit event for owner review.
+        Owner/admin-only revocation of a provider-durable invitation before
+        acceptance. Accepted invitations are terminal; remove accepted access
+        through the household member revocation route. The returned invitation
+        reflects the revoked lifecycle state and includes the household audit
+        event for owner review.
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: id
           in: path
           required: true
@@ -466,14 +616,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Invitation was already accepted or otherwise reached a terminal lifecycle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /household/join:
     post:
       operationId: joinHousehold
       tags: [household]
       summary: Join an existing household by invite code
       description: >-
-        Accepts a household invite code, creates or reuses the caregiver
-        membership, and returns a HouseholdAuditEvent for invitation acceptance.
+        Accepts only a provider-durable invitation code, creates or reuses the
+        caregiver membership, and returns the persisted HouseholdAuditEvent for
+        invitation acceptance. The expected-household capability identifies the
+        exact source household and is compared again inside the join transaction.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -499,8 +663,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Invitation is not approved for this authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Invite code not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household membership or active authority changed during join
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
+        "503":
+          description: Provider-backed household join storage is temporarily unavailable
           content:
             application/json:
               schema:
@@ -515,6 +701,7 @@ paths:
         scopes, and vet viewer read-only access. This is the server contract
         foundation for future Access Pass enforcement.
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: id
           in: path
           required: true
@@ -557,6 +744,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority changed while constructing the response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
     delete:
       operationId: revokeHouseholdMember
       tags: [household]
@@ -565,6 +762,7 @@ paths:
         Owner/admin-only helper revocation. Self-revocation and protected owner
         role changes remain blocked until last-owner-safe account flows exist.
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: id
           in: path
           required: true
@@ -601,6 +799,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority changed while constructing the response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /household/access-passes/activate:
     post:
       operationId: activateHouseholdAccessPass
@@ -610,6 +818,8 @@ paths:
         Owner/admin-only helper activation for existing household members. This
         assigns a sitter, trainer, walker, or vet viewer role and returns helper
         audit trail metadata backed by the durable provider audit contract.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -647,6 +857,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority changed while constructing the response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /household/access-passes/revoke:
     post:
       operationId: revokeHouseholdAccessPass
@@ -656,6 +876,8 @@ paths:
         Owner/admin-only helper revocation for active sitter, trainer, walker,
         and vet viewer roles. Core household members should use the normal
         member-management flow instead.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -693,6 +915,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority changed while constructing the response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /household/sharing-cleanup:
     get:
       operationId: listHouseholdSharingCleanup
@@ -706,6 +938,7 @@ paths:
         retention/export/deletion policy, notification delivery, and
         legal/privacy approval remain launch gates.
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: limit
           in: query
           schema:
@@ -742,6 +975,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /household/audit-events:
     get:
       operationId: listHouseholdAuditEvents
@@ -753,6 +990,7 @@ paths:
         Production migration, RLS, retention, export, and deletion policy remain
         launch approval gates.
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: limit
           in: query
           schema:
@@ -810,11 +1048,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /care-state:
     get:
       operationId: getCareState
       tags: [care-state]
       summary: Get the household's synced care document
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       responses:
         "200":
           description: Care state document
@@ -828,16 +1072,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Authenticated user has no valid role in the expected household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Care state document not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority became internally inconsistent before the read completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
     put:
       operationId: putCareState
       tags: [care-state]
       summary: Replace the household's synced care document
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -863,6 +1125,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Authenticated household role is not allowed to update shared Care state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Care state document not found
           content:
@@ -870,17 +1138,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
         "409":
-          description: Version conflict - refetch and retry
+          description: Version conflict or household authority integrity failure; refetch before retrying
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CareStateEnvelope"
+                oneOf:
+                  - $ref: "#/components/schemas/CareStateEnvelope"
+                  - $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /care-entries:
     get:
       operationId: listCareEntries
       tags: [care-entries]
       summary: List the household's care log entries
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: since
           in: query
           required: false
@@ -922,10 +1197,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Authenticated user has no valid role in the expected household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority became internally inconsistent before the list completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
     post:
       operationId: createCareEntry
       tags: [care-entries]
       summary: Append a care log entry
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -933,6 +1226,12 @@ paths:
             schema:
               $ref: "#/components/schemas/CareEntryInput"
       responses:
+        "200":
+          description: Existing entry returned after an idempotent create retry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntry"
         "201":
           description: Created entry
           content:
@@ -957,12 +1256,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority became internally inconsistent before the create completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "410":
+          description: The creator-scoped client key belongs to a durably deleted care entry and must not be retried
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryCreateRevoked"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /care-entries/tombstones:
     get:
       operationId: listCareEntryTombstones
       tags: [care-entries]
       summary: List deleted care log tombstones for household sync
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: updatedSince
           in: query
           required: false
@@ -998,12 +1314,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Authenticated user has no valid role in the expected household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority became internally inconsistent before the tombstone list completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
+  /care-entries/client-key/{clientKey}:
+    delete:
+      operationId: deleteCareEntryByClientKey
+      tags: [care-entries]
+      summary: Commit deletion of a creator-scoped care entry client identity
+      description: Deletes the authenticated creator's matching live row when present and durably revokes the normalized client key even when the create has not committed yet.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
+        - name: clientKey
+          in: path
+          required: true
+          description: Opaque client-generated idempotency identity, normalized by the server and scoped to the authenticated creator and exact expected household.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "204":
+          description: The creator-scoped deletion intent is durably committed
+        "400":
+          description: Invalid or empty care entry client key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to delete shared care logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority became internally inconsistent before the deletion intent completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
   /care-entries/{id}:
     patch:
       operationId: updateCareEntry
       tags: [care-entries]
       summary: Update a care log entry (e.g. add a quick note)
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: id
           in: path
           required: true
@@ -1047,16 +1426,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
         "409":
-          description: A newer care entry update already exists
+          description: A newer care entry update exists or household authority became internally inconsistent
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CareEntryConflict"
+                anyOf:
+                  - $ref: "#/components/schemas/CareEntryConflict"
+                  - $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
     delete:
       operationId: deleteCareEntry
       tags: [care-entries]
       summary: Delete a care log entry
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: id
           in: path
           required: true
@@ -1083,13 +1469,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "412":
+          $ref: "#/components/responses/ExpectedHouseholdMismatch"
+        "428":
+          $ref: "#/components/responses/ExpectedHouseholdRequired"
         "404":
           description: Entry not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Household authority became internally inconsistent before the delete completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 components:
+  parameters:
+    ExpectedHouseholdId:
+      name: X-WoofWatcher-Expected-Household-Id
+      in: header
+      required: true
+      description: Exact opaque active household identity previously resolved by the authenticated client. Values are compared byte-for-byte and are never trimmed or case-folded.
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+  responses:
+    ExpectedHouseholdMismatch:
+      description: The authenticated user's active household no longer matches the expected household.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ExpectedHouseholdRequired:
+      description: An exact expected-household capability is required before accessing household-scoped data.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
   schemas:
     HealthStatus:
       type: object
@@ -1287,10 +1706,27 @@ components:
           type: string
         inviteCode:
           type: string
+          description: Deprecated compatibility field. Always empty; durable HouseholdInvitation rows are the only production join credentials.
+          deprecated: true
+          maxLength: 0
       required:
         - id
         - name
         - inviteCode
+    HouseholdMemberRole:
+      type: string
+      description: Canonical household membership role shared by household, invitation, and retained-membership contracts.
+      enum: [owner, adult, teen, kid, sitter, trainer, walker, vet viewer]
+    HouseholdMemberUpdateRole:
+      description: Deprecated compatibility alias for HouseholdMemberRole. New consumers should use HouseholdMemberRole.
+      deprecated: true
+      allOf:
+        - $ref: "#/components/schemas/HouseholdMemberRole"
+    MyHouseholdMembershipRole:
+      description: Deprecated compatibility alias for HouseholdMemberRole. New consumers should use HouseholdMemberRole.
+      deprecated: true
+      allOf:
+        - $ref: "#/components/schemas/HouseholdMemberRole"
     Member:
       type: object
       properties:
@@ -1299,7 +1735,7 @@ components:
         userId:
           type: string
         role:
-          type: string
+          $ref: "#/components/schemas/HouseholdMemberRole"
         displayName:
           type: ["string", "null"]
         email:
@@ -1308,7 +1744,7 @@ components:
           type: boolean
         accessPassExpiresAt:
           type: ["string", "null"]
-          description: Active Access Pass expiry for temporary helpers, if one is set.
+          description: Active Access Pass expiry for a temporary helper. At this instant all household access ends until an owner grants a new pass.
         accessPassExpired:
           type: boolean
           description: True when a temporary helper's Access Pass has lapsed and writes should be blocked until renewed.
@@ -1320,6 +1756,10 @@ components:
     Me:
       type: object
       properties:
+        authorityObservedAt:
+          type: string
+          format: date-time
+          description: Exact transactional database-clock instant used to evaluate Access Pass expiry for this authority snapshot. Clients must pair it with a monotonic request interval and must not substitute device wall-clock time.
         user:
           $ref: "#/components/schemas/User"
         household:
@@ -1329,6 +1769,7 @@ components:
           items:
             $ref: "#/components/schemas/Member"
       required:
+        - authorityObservedAt
         - user
         - household
         - members
@@ -1476,7 +1917,7 @@ components:
         invitedUserId:
           type: ["string", "null"]
         role:
-          type: string
+          $ref: "#/components/schemas/HouseholdMemberRole"
         lifecycleState:
           $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
         runtimeLifecycleState:
@@ -1560,7 +2001,7 @@ components:
           type: ["string", "null"]
           format: email
         role:
-          type: string
+          $ref: "#/components/schemas/HouseholdMemberRole"
         lifecycleState:
           $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
         expiresAt:
@@ -1688,8 +2129,54 @@ components:
         name:
           type: string
           minLength: 1
+          pattern: '.*\S.*'
+          description: Leading and trailing whitespace is trimmed by the server; the submitted name must contain at least one non-whitespace character.
       required:
         - name
+    MyHouseholdMembership:
+      type: object
+      additionalProperties: false
+      properties:
+        householdId:
+          type: string
+          format: uuid
+        householdName:
+          type: string
+          minLength: 1
+        role:
+          $ref: "#/components/schemas/HouseholdMemberRole"
+        accessPassExpiresAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Exact active Access Pass expiry for helper roles, otherwise null. At expiry all access to this household ends until an owner grants a new pass.
+      required:
+        - householdId
+        - householdName
+        - role
+        - accessPassExpiresAt
+    MyHouseholdMembershipList:
+      type: object
+      additionalProperties: false
+      properties:
+        activeHouseholdId:
+          type: string
+          format: uuid
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/MyHouseholdMembership"
+      required:
+        - activeHouseholdId
+        - memberships
+    HouseholdActivationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        householdId:
+          type: string
+          format: uuid
+      required:
+        - householdId
     JoinHouseholdInput:
       type: object
       properties:
@@ -1702,8 +2189,7 @@ components:
       type: object
       properties:
         role:
-          type: string
-          enum: [owner, adult, teen, kid, sitter, trainer, walker, vet viewer]
+          $ref: "#/components/schemas/HouseholdMemberRole"
           description: "Owner-reviewed household role such as adult, kid, sitter, trainer, walker, or vet viewer."
         displayName:
           type: ["string", "null"]
@@ -1722,7 +2208,7 @@ components:
           minLength: 1
         expiresAt:
           type: ["string", "null"]
-          description: Optional owner-reviewed expiry metadata for future enforcement.
+          description: Optional owner-reviewed expiry. At this instant all household access for the helper ends until an owner grants a new pass.
         note:
           type: ["string", "null"]
       required:
@@ -1753,6 +2239,7 @@ components:
           enum: [active, revoked]
         expiresAt:
           type: ["string", "null"]
+          description: At this instant all household access for the helper ends until an owner grants a new pass.
         note:
           type: ["string", "null"]
       required:
@@ -1775,8 +2262,14 @@ components:
     CareStateEnvelope:
       type: object
       properties:
+        householdId:
+          type: string
         version:
           type: integer
+          format: int32
+          minimum: 1
+          maximum: 2147483647
+          multipleOf: 1
         updatedAt:
           type: string
           format: date-time
@@ -1786,6 +2279,7 @@ components:
           type: object
           additionalProperties: true
       required:
+        - householdId
         - version
         - updatedAt
         - doc
@@ -1794,6 +2288,10 @@ components:
       properties:
         version:
           type: integer
+          format: int32
+          minimum: 1
+          maximum: 2147483646
+          multipleOf: 1
         doc:
           type: object
           additionalProperties: true
@@ -1804,6 +2302,8 @@ components:
       type: object
       properties:
         id:
+          type: string
+        householdId:
           type: string
         petId:
           type: ["string", "null"]
@@ -1833,6 +2333,7 @@ components:
           format: date-time
       required:
         - id
+        - householdId
         - type
         - occurredAt
         - createdAt
@@ -1847,6 +2348,21 @@ components:
       required:
         - error
         - entry
+    CareEntryCreateRevoked:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          enum: [care_entry_create_revoked]
+        clientKey:
+          type: string
+          minLength: 1
+      required:
+        - error
+        - code
+        - clientKey
     CareEntryTombstone:
       type: object
       properties:

@@ -192,3 +192,25 @@ test("an open walk remains authoritative after reload even when its start log pr
   assert.equal(motion.cue, "walk-cycle");
   assert.equal(motion.speech, "Out exploring.");
 });
+
+test("uses the current or neutral pet identity in standing motion copy", () => {
+  const freshWalk = deriveAvatarMotion({
+    now: NOW,
+    petName: "My Dog",
+    activeWalk: true,
+    entries: [],
+    routines: [],
+  });
+  const namedRoutine = deriveAvatarMotion({
+    now: localTime(8, 45),
+    petName: "Luna",
+    entries: [],
+    routines: [
+      { id: "walk", label: "Morning walk", type: "walk", time: "9:00 AM", owner: "Emma" },
+    ],
+  });
+
+  assert.match(freshWalk.line, /Your dog keeps moving/);
+  assert.match(namedRoutine.line, /Luna is watching/);
+  assert.doesNotMatch(`${freshWalk.line} ${namedRoutine.line}`, /Phoenix|My Dog/);
+});

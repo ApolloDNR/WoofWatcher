@@ -1,5 +1,6 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
 import { resolvePetName } from "./pet-identity.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type WeightTrendStatus = "needs-baseline" | "needs-log" | "tracking" | "steady";
 export type WeightTrendDirection = "baseline" | "gain" | "reduce" | "hold";
@@ -36,7 +37,7 @@ export interface WeightTrendInput {
   now?: number;
   lookbackDays?: number;
   limit?: number;
-  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  /** Display name for owner-facing copy; resolved to the current name or neutral fresh-install fallback. */
   petName?: string | null;
 }
 
@@ -93,7 +94,7 @@ function roundTenth(value: number): number {
 }
 
 function isVisible(entry: WeightTrendEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isInLookback(iso: string | null | undefined, now: number, lookbackDays: number): boolean {

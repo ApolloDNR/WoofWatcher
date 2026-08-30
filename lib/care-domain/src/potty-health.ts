@@ -1,5 +1,6 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
 import { resolvePetName } from "./pet-identity.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type PottyHealthStatus = "steady" | "watch" | "missing";
 export type PottyKind = "pee" | "poop" | "both" | "unknown";
@@ -18,7 +19,7 @@ export interface PottyHealthEntry {
 export interface PottyHealthInput {
   entries: readonly PottyHealthEntry[];
   now?: number;
-  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  /** Display name for owner-facing copy; resolved to the current name or neutral fresh-install fallback. */
   petName?: string | null;
 }
 
@@ -91,7 +92,7 @@ function sameLocalDay(iso: string | null | undefined, now: number): boolean {
 }
 
 function visible(entry: PottyHealthEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isPotty(entry: PottyHealthEntry): boolean {

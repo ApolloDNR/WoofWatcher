@@ -108,6 +108,59 @@ test("builds a sitter care pass with routine, diet, and next action context", ()
   assert.match(pass.message, /Keep meals calm/);
 });
 
+test("shared Care Pass excludes future, malformed, and private logs before deriving any section", () => {
+  const privateEntry = {
+    id: "private-entry",
+    type: "meal",
+    get title(): string {
+      throw new Error("private title must not be observed");
+    },
+    get occurredAt(): string {
+      throw new Error("private timestamp must not be observed");
+    },
+    details: { householdVisible: false },
+  };
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    entries: [
+      {
+        id: "past-meal",
+        type: "meal",
+        title: "PAST_MEAL_ALLOWED",
+        caregiver: "Emma",
+        occurredAt: new Date(NOW - 60 * 60 * 1000).toISOString(),
+        details: { householdVisible: true },
+      },
+      {
+        id: "future-meal",
+        type: "meal",
+        title: "FUTURE_MEAL_MUST_NOT_EXPORT",
+        caregiver: "Future caregiver",
+        occurredAt: new Date(NOW + 60 * 60 * 1000).toISOString(),
+        details: { householdVisible: true },
+      },
+      {
+        id: "malformed-urgent",
+        type: "symptom",
+        title: "MALFORMED_URGENT_MUST_NOT_EXPORT",
+        caregiver: "Invalid caregiver",
+        occurredAt: "not-a-date",
+        severity: "urgent",
+        details: { householdVisible: true },
+      },
+      privateEntry,
+    ],
+  });
+
+  assert.match(pass.message, /PAST_MEAL_ALLOWED/);
+  assert.match(pass.message, /logged 1 item today\./);
+  assert.doesNotMatch(
+    pass.message,
+    /FUTURE_MEAL_MUST_NOT_EXPORT|MALFORMED_URGENT_MUST_NOT_EXPORT|Future caregiver|Invalid caregiver|Invalid Date/,
+  );
+});
+
 test("resolves the stored pet-name placeholder so the pass matches the app", () => {
   const pass = buildCarePass({
     ...baseInput(),
@@ -115,11 +168,10 @@ test("resolves the stored pet-name placeholder so the pass matches the app", () 
     profile: { ...baseInput().profile, name: "My Dog" },
   });
 
-  // "My Dog" is the stored profile default, not a name; every app surface
-  // shows "Phoenix" until the owner personalizes it, and the flagship share
-  // artifact has to agree.
-  assert.equal(pass.title, "Phoenix Sitter Care Pass");
-  assert.match(pass.summary, /^Phoenix care handoff/);
+  // "My Dog" is the stored profile default, not a name; every consumer
+  // surface stays neutral until the household supplies a real name.
+  assert.equal(pass.title, "Sitter Care Pass for your dog");
+  assert.match(pass.summary, /^Care handoff for your dog/);
   assert.doesNotMatch(pass.message, /My Dog/);
 
   const empty = buildCarePass({
@@ -127,7 +179,7 @@ test("resolves the stored pet-name placeholder so the pass matches the app", () 
     audience: "sitter",
     profile: { ...baseInput().profile, name: "" },
   });
-  assert.equal(empty.title, "Phoenix Sitter Care Pass");
+  assert.equal(empty.title, "Sitter Care Pass for your dog");
 });
 
 test("a renamed dog's care pass never reads Phoenix in derived copy", () => {
@@ -334,6 +386,29 @@ test("builds a vet care pass with health signals and records", () => {
   assert.match(pass.message, /not a diagnosis/i);
 });
 
+test("vet care pass keeps current and newest records before truncating historical append order", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    records: [
+      { id: "visit-1", type: "vet", title: "Oldest visit", due: "2021-01-01" },
+      { id: "visit-2", type: "vet", title: "Visit 2022", due: "2022-01-01" },
+      { id: "visit-3", type: "vet", title: "Visit 2023", due: "2023-01-01" },
+      { id: "visit-4", type: "vet", title: "Visit 2024", due: "2024-01-01" },
+      { id: "visit-5", type: "vet", title: "Visit 2025", due: "2025-01-01" },
+      { id: "visit-6", type: "vet", title: "Newest visit", due: "2026-01-01" },
+      { id: "rabies-current", type: "vaccine", title: "Current rabies", due: "2027-01-01" },
+    ],
+  });
+  const records = pass.sections.find((section) => section.title === "Records");
+
+  assert.equal(records?.lines.length, 6);
+  assert.ok(records?.lines.some((line) => /Current rabies due 2027-01-01/.test(line)));
+  assert.ok(records?.lines.some((line) => /Newest visit date 2026-01-01/.test(line)));
+  assert.ok(records?.lines.every((line) => !/Oldest visit/.test(line)));
+  assert.ok(records?.lines.every((line) => !/Newest visit due /.test(line)));
+});
+
 test("vet care pass includes health pattern review next steps", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
 
@@ -375,6 +450,35 @@ test("care pass includes medication adherence and follow-up language", () => {
   assert.match(pass.message, /Apoquel: taken/);
   assert.match(pass.message, /Probiotic: upcoming/);
   assert.match(pass.message, /Apoquel refill due soon/);
+});
+
+test("care pass preserves a corrected record without claiming its invalid date is due", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    now: new Date("2026-02-20T12:00:00.000Z").getTime(),
+    records: [
+      {
+        id: "legacy-refill",
+        type: "medication",
+        title: "Legacy refill",
+        due: "2026-02-31",
+        note: "Preserve this record",
+        correctionIssues: [
+          {
+            field: "due",
+            rawValue: "2026-02-31",
+            message: "Enter a valid record date.",
+          },
+        ],
+      },
+    ],
+  });
+
+  const records = pass.sections.find((section) => section.title === "Records");
+  assert.ok(records?.lines.some((line) => /Legacy refill/.test(line)));
+  assert.ok(records?.lines.some((line) => /date needs correction/i.test(line)));
+  assert.doesNotMatch(pass.message, /Legacy refill (?:is )?due|Legacy refill overdue/i);
 });
 
 test("care pass includes daily hydration language", () => {
@@ -830,18 +934,56 @@ test("returns stored print source for current care pass artifacts", () => {
   assert.equal(printable.html, artifact.printHtml);
 });
 
-test("describes Care Pass artifact export readiness without claiming PDF generation", () => {
+test("bounds hostile Care Pass fields before message and HTML persistence", () => {
+  const enormous = `START-${"W".repeat(1_000_000)}-DECISIVE-TAIL`;
+  const pass = buildCarePass({
+    ...baseInput(),
+    entries: [],
+    routines: [],
+    records: [],
+    audience: "vet",
+    profile: {
+      name: enormous,
+      breed: enormous,
+      careFocus: enormous,
+      vetBoundary: enormous,
+      weight: { current: 42, unit: enormous },
+    },
+  });
+  const artifact = createCarePassArtifact(
+    pass,
+    "2026-06-08T06:30:00.000Z",
+  );
+
+  assert.ok(pass.title.length <= 192);
+  assert.ok(pass.summary.length <= 1_024);
+  assert.ok(pass.message.length <= 65_536);
+  assert.ok((artifact.printHtml?.length ?? 0) < 200_000);
+  assert.ok((artifact.printFileName?.length ?? 0) <= 96);
+  assert.match(pass.message, /DECISIVE-TAIL/);
+});
+
+test("describes a generated local Care Pass PDF without claiming native or provider proof", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
-  const exportView = describeCarePassArtifactExport(artifact, { storageProviderConfigured: true });
+  const exportView = describeCarePassArtifactExport(artifact, {
+    storageProviderConfigured: true,
+    generatedPdf: {
+      fileName: "phoenix-vet-care-pass-2026-06-08.pdf",
+      mimeType: "application/pdf",
+      byteSize: 4_096,
+    },
+  });
 
   assert.equal(exportView.fileName, "phoenix-vet-care-pass-2026-06-08.html");
   assert.equal(exportView.mimeType, "text/html");
   assert.equal(exportView.formatLabel, "Printable HTML");
   assert.equal(exportView.sourceStatus, "ready");
   assert.ok(exportView.byteSize > 500);
-  assert.equal(exportView.pdfStatus, "not-generated");
-  assert.match(exportView.pdfDetail, /PDF export still needs native or provider-backed generation/);
+  assert.equal(exportView.pdfStatus, "generated-local");
+  assert.match(exportView.pdfDetail, /generated locally/);
+  assert.match(exportView.pdfDetail, /native share and reopen proof still required/);
+  assert.match(exportView.pdfDetail, /provider storage is not enabled/i);
   assert.equal(exportView.storage.label, "Saved locally");
   assert.equal(exportView.providerBacked, false);
   assert.deepEqual(
@@ -850,9 +992,9 @@ test("describes Care Pass artifact export readiness without claiming PDF generat
   );
   assert.equal(exportView.manifestRows[0]?.value, "Printable HTML");
   assert.equal(exportView.manifestRows[1]?.value, "Print-ready");
-  assert.equal(exportView.manifestRows[2]?.value, "PDF pending");
+  assert.equal(exportView.manifestRows[2]?.value, "PDF generated locally");
   assert.equal(exportView.manifestRows[3]?.value, "Saved locally");
-  assert.match(exportView.manifestRows[2]?.detail ?? "", /native or provider-backed generation/);
+  assert.match(exportView.manifestRows[2]?.detail ?? "", /4,096 bytes/);
 });
 
 test("restores escaped print source for older care pass artifacts", () => {

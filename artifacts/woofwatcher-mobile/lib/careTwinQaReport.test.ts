@@ -87,8 +87,8 @@ test("summarizes care twin QA review status for device evidence", () => {
   assert.deepEqual(summarizeCareTwinQaReviews(results, reviews), {
     total: 3,
     passed: 1,
-    passedWithNativeProof: 1,
-    passPendingProof: 0,
+    passedWithNativeProof: 0,
+    passPendingProof: 1,
     needsReview: 1,
     unreviewed: 1,
     readyLayered: 2,
@@ -99,7 +99,7 @@ test("summarizes care twin QA review status for device evidence", () => {
   });
 });
 
-test("keeps passed care twin states pending until native proof is attached", () => {
+test("keeps passed care twin states pending until exact-device proof is attached", () => {
   const pendingPass: CareTwinQaReview = {
     scenarioId: "happy",
     status: "pass",
@@ -113,7 +113,7 @@ test("keeps passed care twin states pending until native proof is attached", () 
       },
     ],
   };
-  const nativePass: CareTwinQaReview = {
+  const manualNativeTagPass: CareTwinQaReview = {
     scenarioId: "health",
     status: "pass",
     screenshotEvidence: [
@@ -127,17 +127,36 @@ test("keeps passed care twin states pending until native proof is attached", () 
     ],
   };
 
+  const exactDevicePass: CareTwinQaReview = {
+    scenarioId: "health",
+    status: "pass",
+    screenshotEvidence: [
+      {
+        uri: "file:///qa/android-health-watch-exact.png",
+        fileName: "android-health-watch-exact.png",
+        source: "camera",
+        targetPlatform: "android",
+        capturedAtIso: "2026-06-20T12:04:00.000Z",
+        verification: "exact-binary-device",
+        nativeBuildIdentifier: "com.woofwatcher:42",
+        deviceIdentifier: "Pixel 9",
+      },
+    ],
+  };
+
   assert.equal(careTwinQaReviewStatusLabel(pendingPass), "Pass pending proof");
   assert.deepEqual(careTwinQaMissingNativeProof(pendingPass), [
-    "Attach at least one iOS or Android screenshot for this care-twin state before treating Pass as native launch proof.",
+    "Capture at least one exact-binary iOS or Android device screenshot for this care-twin state before treating Pass as native launch proof; Photos-library attachments are manual self-attested references only.",
   ]);
-  assert.equal(careTwinQaReviewStatusLabel(nativePass), "Pass");
-  assert.deepEqual(careTwinQaMissingNativeProof(nativePass), []);
+  assert.equal(careTwinQaReviewStatusLabel(manualNativeTagPass), "Pass pending proof");
+  assert.notDeepEqual(careTwinQaMissingNativeProof(manualNativeTagPass), []);
+  assert.equal(careTwinQaReviewStatusLabel(exactDevicePass), "Pass");
+  assert.deepEqual(careTwinQaMissingNativeProof(exactDevicePass), []);
 
   assert.deepEqual(summarizeCareTwinQaReviews([
     qaResult("happy", "Steady happy idle", true),
     qaResult("health", "Health Watch signal", true),
-  ], [pendingPass, nativePass]), {
+  ], [pendingPass, exactDevicePass]), {
     total: 2,
     passed: 2,
     passedWithNativeProof: 1,
@@ -177,8 +196,8 @@ test("builds a shareable care twin QA report without claiming native QA is compl
   const text = buildCareTwinQaShareText(results, reviews, "2026-06-19T12:00:00.000Z");
 
   assert.match(text, /WoofWatcher Care Twin QA/);
-  assert.match(text, /Summary: 1\/2 passed, 1 native-proof pass, 0 pass pending proof, 1 needs tune, 0 unreviewed/);
-  assert.match(text, /Steady happy idle: Pass/);
+  assert.match(text, /Summary: 1\/2 passed, 0 exact-device pass, 1 pass pending exact-device proof, 1 needs tune, 0 unreviewed/);
+  assert.match(text, /Steady happy idle: Pass pending proof/);
   assert.match(text, /Health Watch signal: Needs tune/);
   assert.match(text, /Motion recipe: tail wag/);
   assert.match(text, /bob 1\.8px/);
@@ -188,8 +207,8 @@ test("builds a shareable care twin QA report without claiming native QA is compl
   assert.match(text, /phone screenshot/);
   assert.match(text, /Health room crop needs 8px more bottom padding/);
   assert.match(text, /Attached screenshots: 1 \(iOS 1, Android 0/);
-  assert.match(text, /Screenshots: ios-happy-idle\.png \(iOS\)/);
-  assert.match(text, /Native screenshot evidence still required before launch/);
+  assert.match(text, /Screenshots: ios-happy-idle\.png \(iOS, manual self-attested\)/);
+  assert.match(text, /Exact-binary native device evidence still required before launch/);
 });
 
 test("uses owner-readable review labels", () => {

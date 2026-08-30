@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   db,
@@ -10,6 +10,21 @@ import {
   type User,
 } from "@workspace/db";
 import { deriveAccessPassRuntimeStatus } from "./household-access-pass";
+import { ensureActiveHouseholdIdentity } from "./household-active-identity";
+import {
+  type ExactHouseholdSnapshot,
+} from "./household-me-snapshot.ts";
+import { buildExactHouseholdSnapshotInDrizzleTransaction } from "./household-snapshot-drizzle-transaction.ts";
+import {
+  loadFreshVerifiedHouseholdJoinIdentity,
+  type FreshVerifiedHouseholdJoinIdentity,
+} from "./household-verified-identity.ts";
+import {
+  confirmUserHouseholdTransactionsLocked,
+  lockUserHouseholdTransactions,
+} from "./household-transaction-serializer.ts";
+import { updateHouseholdProfileAtomically as updateHouseholdProfileWithStore } from "./household-profile-update.ts";
+import { createDrizzleHouseholdProfileUpdateStore } from "./household-profile-update-drizzle-store.ts";
 
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -22,10 +37,10 @@ function generateInviteCode(): string {
   return code;
 }
 
-async function uniqueInviteCode(): Promise<string> {
+async function uniqueInviteCode(database: any = db): Promise<string> {
   for (let i = 0; i < 12; i++) {
     const code = generateInviteCode();
-    const [existing] = await db
+    const [existing] = await database
       .select({ id: householdsTable.id })
       .from(householdsTable)
       .where(eq(householdsTable.inviteCode, code));
@@ -66,8 +81,21 @@ async function ensureUser(userId: string): Promise<User> {
   return user;
 }
 
-async function ensureCareState(householdId: string, userId: string): Promise<void> {
-  await db
+export async function getFreshVerifiedHouseholdJoinIdentity(
+  userId: string,
+): Promise<FreshVerifiedHouseholdJoinIdentity> {
+  return loadFreshVerifiedHouseholdJoinIdentity({
+    userId,
+    getUser: (expectedUserId) => clerkClient.users.getUser(expectedUserId),
+  });
+}
+
+async function ensureCareState(
+  householdId: string,
+  userId: string,
+  database: any = db,
+): Promise<void> {
+  await database
     .insert(careStateTable)
     .values({ householdId, doc: {}, version: 1, updatedBy: userId })
     .onConflictDoNothing();
@@ -76,39 +104,109 @@ async function ensureCareState(householdId: string, userId: string): Promise<voi
 /**
  * Ensures the user exists and belongs to at least one household, creating a
  * default household + membership + care state on first sign-in. Returns the
- * user's active (earliest) household id.
+ * user's persisted active household id. The active pointer is trusted only
+ * while an exact membership for this same user still exists. Missing/stale
+ * pointers fall back deterministically under a per-user row lock.
  */
 export async function ensureUserAndHousehold(
   userId: string,
 ): Promise<{ user: User; householdId: string }> {
-  const user = await ensureUser(userId);
+  await ensureUser(userId);
 
-  const [membership] = await db
-    .select()
-    .from(householdMembersTable)
-    .where(eq(householdMembersTable.userId, userId))
-    .orderBy(householdMembersTable.createdAt)
-    .limit(1);
-
-  if (membership) {
-    await ensureCareState(membership.householdId, userId);
-    return { user, householdId: membership.householdId };
-  }
-
-  const inviteCode = await uniqueInviteCode();
-  const name = user.displayName ? `${user.displayName}'s Pack` : "My Pack";
-  const [household] = await db
-    .insert(householdsTable)
-    .values({ name, inviteCode })
-    .returning();
-  await db.insert(householdMembersTable).values({
-    householdId: household.id,
+  const resolution = await ensureActiveHouseholdIdentity<User>({
     userId,
-    role: "owner",
-    displayName: user.displayName,
+    store: {
+      transaction: (work) =>
+        db.transaction(async (transaction: any) =>
+          work({
+            async lockUserHouseholds(expectedUserId) {
+              return lockUserHouseholdTransactions({
+                transaction,
+                householdMembersTable,
+                userId: expectedUserId,
+              });
+            },
+            async getCurrentTime() {
+              const [row] = await transaction.select({
+                now: sql<Date>`clock_timestamp()`,
+              });
+              return new Date(row.now);
+            },
+            async lockUser(expectedUserId) {
+              const [user] = await transaction
+                .select()
+                .from(usersTable)
+                .where(eq(usersTable.id, expectedUserId))
+                .for("update");
+              return user ?? null;
+            },
+            async confirmUserHouseholdsLocked(
+              expectedUserId,
+              lockedHouseholdIds,
+            ) {
+              return confirmUserHouseholdTransactionsLocked({
+                transaction,
+                householdMembersTable,
+                userId: expectedUserId,
+                lockedHouseholdIds,
+              });
+            },
+            async listMemberships(expectedUserId) {
+              return transaction
+                .select()
+                .from(householdMembersTable)
+                .where(eq(householdMembersTable.userId, expectedUserId))
+                .for("update");
+            },
+            async createDefaultHousehold({ name }) {
+              const inviteCode = await uniqueInviteCode(transaction);
+              const [household] = await transaction
+                .insert(householdsTable)
+                .values({ name, inviteCode })
+                .returning();
+              return { householdId: household.id };
+            },
+            async createOwnerMembership(input) {
+              const [membership] = await transaction
+                .insert(householdMembersTable)
+                .values({
+                  householdId: input.householdId,
+                  userId: input.userId,
+                  role: "owner",
+                  displayName: input.displayName,
+                })
+                .returning();
+              return membership;
+            },
+            async ensureCareState(householdId, expectedUserId) {
+              await ensureCareState(householdId, expectedUserId, transaction);
+            },
+            async setActiveHousehold(expectedUserId, householdId) {
+              const [membership] = await transaction
+                .select({ id: householdMembersTable.id })
+                .from(householdMembersTable)
+                .where(
+                  and(
+                    eq(householdMembersTable.userId, expectedUserId),
+                    eq(householdMembersTable.householdId, householdId),
+                  ),
+                )
+                .for("update");
+              if (!membership) return false;
+
+              const [updated] = await transaction
+                .update(usersTable)
+                .set({ activeHouseholdId: householdId })
+                .where(eq(usersTable.id, expectedUserId))
+                .returning({ id: usersTable.id });
+              return Boolean(updated);
+            },
+          }),
+        ),
+    },
   });
-  await ensureCareState(household.id, userId);
-  return { user, householdId: household.id };
+
+  return { user: resolution.user, householdId: resolution.householdId };
 }
 
 export async function getActiveHouseholdId(userId: string): Promise<string> {
@@ -183,71 +281,40 @@ export async function getHouseholdMemberAuthz(
   };
 }
 
-export interface MePayload {
-  user: { id: string; email: string | null; displayName: string | null };
-  household: { id: string; name: string; inviteCode: string };
-  members: Array<{
-    id: string;
-    userId: string;
-    role: string;
-    displayName: string | null;
-    email: string | null;
-    isSelf: boolean;
-    accessPassExpiresAt: string | null;
-    accessPassExpired: boolean;
-  }>;
+export type MePayload = ExactHouseholdSnapshot;
+
+export async function buildMeInTransaction(
+  transaction: any,
+  userId: string,
+  householdId: string,
+): Promise<MePayload> {
+  return buildExactHouseholdSnapshotInDrizzleTransaction({
+    transaction,
+    tables: { usersTable, householdsTable, householdMembersTable },
+    userId,
+    householdId,
+  });
 }
 
 export async function buildMe(
   userId: string,
   householdId: string,
 ): Promise<MePayload> {
-  const [[user], [household], memberRows] = await Promise.all([
-    db.select().from(usersTable).where(eq(usersTable.id, userId)),
-    db.select().from(householdsTable).where(eq(householdsTable.id, householdId)),
-    db
-      .select({
-        id: householdMembersTable.id,
-        userId: householdMembersTable.userId,
-        role: householdMembersTable.role,
-        accessPassExpiresAt: householdMembersTable.accessPassExpiresAt,
-        memberName: householdMembersTable.displayName,
-        userName: usersTable.displayName,
-        email: usersTable.email,
-      })
-      .from(householdMembersTable)
-      .leftJoin(usersTable, eq(usersTable.id, householdMembersTable.userId))
-      .where(eq(householdMembersTable.householdId, householdId))
-      .orderBy(householdMembersTable.createdAt),
-  ]);
+  return db.transaction((transaction: any) =>
+    buildMeInTransaction(transaction, userId, householdId),
+  );
+}
 
-  return {
-    user: {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-    },
-    household: {
-      id: household.id,
-      name: household.name,
-      inviteCode: household.inviteCode,
-    },
-    members: memberRows.map((m) => {
-      const runtime = deriveAccessPassRuntimeStatus({
-        role: m.role,
-        accessPassExpiresAt: m.accessPassExpiresAt,
-      });
-
-      return {
-        id: m.id,
-        userId: m.userId,
-        role: runtime.role,
-        displayName: m.memberName ?? m.userName ?? null,
-        email: m.email ?? null,
-        isSelf: m.userId === userId,
-        accessPassExpiresAt: runtime.accessPassExpiresAt,
-        accessPassExpired: runtime.accessPassExpired,
-      };
+export async function updateHouseholdProfileAtomically(input: {
+  userId: string;
+  displayName?: string | null;
+}): Promise<MePayload> {
+  return updateHouseholdProfileWithStore({
+    ...input,
+    store: createDrizzleHouseholdProfileUpdateStore({
+      database: db,
+      tables: { usersTable, householdMembersTable },
+      buildExactMeSnapshot: buildMeInTransaction,
     }),
-  };
+  });
 }

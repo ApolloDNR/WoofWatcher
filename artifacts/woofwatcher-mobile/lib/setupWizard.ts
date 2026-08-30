@@ -250,7 +250,7 @@ export function buildSetupWizardConfirmation(
         "This version does not create an account, send invites, or share care data with other people.",
       nextActions: [
         "Save the dog profile, diet baseline, starter routine, and caregiver.",
-        "Open Today to start logging real care.",
+        "Open Home to start logging real care.",
         "Export a backup before changing or resetting this device.",
       ],
     };
@@ -301,7 +301,7 @@ export function buildSetupWizardConfirmation(
     providerBoundary: "Setup stores the household plan now; remote member invites are coming soon, so everything stays on this device for now.",
     nextActions: [
       "Save the dog profile, diet baseline, starter routine, and caregiver.",
-      "Open Today to start logging real care.",
+      "Open Home to start logging real care.",
       "Remote household invites are coming soon - the plan is saved and ready for them.",
     ],
   };

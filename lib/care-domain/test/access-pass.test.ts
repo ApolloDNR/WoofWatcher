@@ -76,6 +76,31 @@ test("builds a local Access Pass draft without pretending cloud sharing is live"
   assert.match(draft.notes, /Local draft/);
 });
 
+test("keeps unnamed fresh-install access and care copy neutral", () => {
+  const draft = buildAccessPassDraft({
+    holderName: "Aunt Lina",
+    petName: "My Dog",
+    nowIso: "2026-06-11T09:15:00.000Z",
+  });
+  const plan = deriveAccessPassPlan({
+    petName: "My Dog",
+    passes: [],
+    now: NOW,
+  });
+  const today = deriveMyCareToday({
+    personName: "",
+    petName: "My Dog",
+    routines: [],
+    entries: [],
+    now: NOW,
+  });
+
+  assert.equal(draft.petName, "your dog");
+  assert.match(plan.summary, /cares for your dog\./);
+  assert.equal(today.petName, "your dog");
+  assert.doesNotMatch(`${plan.summary}\n${today.summary}`, /Phoenix|My Dog/);
+});
+
 test("derives My Care Today from assigned routines and visible logs", () => {
   const today = deriveMyCareToday({
     now: NOW,
@@ -123,4 +148,44 @@ test("derives My Care Today from assigned routines and visible logs", () => {
       ["dinner", "Dinner", "upcoming"],
     ],
   );
+});
+
+test("uses natural self-reference when no caregiver name exists", () => {
+  const today = deriveMyCareToday({
+    now: NOW,
+    personName: "  ",
+    petName: "Phoenix",
+    routines: [],
+    entries: [],
+  });
+
+  assert.equal(today.personName, "You");
+  assert.equal(today.title, "Your care today");
+  assert.equal(today.summary, "No routines are assigned to you today.");
+  assert.doesNotMatch(
+    `${today.title}\n${today.summary}\n${today.nextStep}`,
+    /You's|to You|for You/,
+  );
+});
+
+test("keeps an assigned invalid-time routine visible as a correction item", () => {
+  const today = deriveMyCareToday({
+    now: NOW,
+    personName: "Apollo",
+    petName: "Phoenix",
+    routines: [
+      { id: "legacy", label: "Legacy care", type: "walk", time: "9x:30 AM", owner: "Apollo" },
+    ],
+    entries: [],
+  });
+
+  assert.equal(today.assignedCount, 0);
+  assert.equal(today.correctionCount, 1);
+  assert.equal(today.doneCount, 0);
+  assert.equal(today.openCount, 0);
+  assert.equal(today.status, "needs-correction");
+  assert.equal(today.items[0].status, "needs-correction");
+  assert.equal(today.items[0].minutesFromNow, null);
+  assert.equal(today.summary, "0 schedulable routines assigned to Apollo. 1 routine needs correction.");
+  assert.equal(today.nextStep, "Correct Legacy care's saved time before it can be scheduled for Apollo.");
 });

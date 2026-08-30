@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type AloneTimeStatus = "needs-log" | "steady" | "watch" | "needs-support";
 export type AloneTimeOutcome = "calm" | "settled" | "anxious" | "distressed";
@@ -73,7 +74,7 @@ function asNumber(value: unknown): number {
 }
 
 function isVisible(entry: AloneTimeEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isInLookback(iso: string | null | undefined, now: number, lookbackDays: number): boolean {

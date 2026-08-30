@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -20,8 +20,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { isClerkEnabledForBuild } from "@/lib/auth";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+} from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
@@ -43,7 +48,8 @@ const TRUST_STEPS = [
   {
     icon: "sparkles-outline" as const,
     label: "CareTwin ready",
-    detail: "Set up Phoenix, then invite your household when providers are live.",
+    detail:
+      "Set up your dog, then invite your household when providers are live.",
   },
 ];
 
@@ -68,11 +74,14 @@ export function AuthShell({
     topInset: insets.top,
     surface: "auth",
   });
+  const ownerOps = isOwnerOpsBuild();
   const openAuthSetupProofMission = () => {
     Haptics.selectionAsync();
     router.push("/care-twin-qa?qaSurface=auth-setup-onboarding-proof" as never);
   };
-  const authSetupProofManifest = buildAuthSetupProofManifest();
+  const authSetupProofManifest = ownerOps
+    ? buildAuthSetupProofManifest()
+    : null;
 
   return (
     <ScrollView
@@ -88,14 +97,34 @@ export function AuthShell({
         style={[styles.gateway, { borderColor: colors.border }]}
       >
         <View style={styles.gatewayTop}>
-          <WoofWatcherLogo layout="row" size={42} wordmarkSize={28} navy={colors.foreground} copper={colors.copper} />
-          <View style={[styles.modePill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+          <WoofWatcherLogo
+            layout="row"
+            size={42}
+            wordmarkSize={28}
+            navy={colors.foreground}
+            copper={colors.copper}
+          />
+          <View
+            style={[
+              styles.modePill,
+              { backgroundColor: colors.secondary, borderColor: colors.border },
+            ]}
+          >
             <Ionicons
-              name={isClerkEnabledForBuild ? "cloud-done-outline" : "phone-portrait-outline"}
+              name={
+                isClerkEnabledForBuild
+                  ? "cloud-done-outline"
+                  : "phone-portrait-outline"
+              }
               size={13}
               color={colors.sage}
             />
-            <Text style={[styles.modePillText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+            <Text
+              style={[
+                styles.modePillText,
+                { color: colors.sage, fontFamily: "Inter_700Bold" },
+              ]}
+            >
               {isClerkEnabledForBuild ? "Account ready" : "Local preview"}
             </Text>
           </View>
@@ -107,11 +136,26 @@ export function AuthShell({
           imageStyle={[stageImageFill, styles.stageImage, pixelImageStyle]}
           style={styles.stage}
         >
-          <View style={[styles.speechBubble, { backgroundColor: colors.ivory, borderColor: BUBBLE_INK }]}>
-            <Text style={[styles.speechKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+          <View
+            style={[
+              styles.speechBubble,
+              { backgroundColor: colors.ivory, borderColor: BUBBLE_INK },
+            ]}
+          >
+            <Text
+              style={[
+                styles.speechKicker,
+                { color: colors.copper, fontFamily: DISPLAY_SEMI },
+              ]}
+            >
               CARETWIN ACCOUNT GATEWAY
             </Text>
-            <Text style={[styles.speechText, { color: BUBBLE_INK, fontFamily: "Inter_700Bold" }]}>
+            <Text
+              style={[
+                styles.speechText,
+                { color: BUBBLE_INK, fontFamily: "Inter_700Bold" },
+              ]}
+            >
               Real care. Pixel heart.
             </Text>
           </View>
@@ -121,10 +165,20 @@ export function AuthShell({
             fadeDuration={0}
             style={[styles.stageDog, pixelImageStyle]}
           />
-          <View style={[styles.stageHud, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.stageHud,
+              { backgroundColor: colors.ivory, borderColor: colors.border },
+            ]}
+          >
             <View style={[styles.stageDot, { backgroundColor: colors.sage }]} />
-            <Text style={[styles.stageHudText, { color: BUBBLE_INK, fontFamily: "Inter_700Bold" }]}>
-              Phoenix care starts here
+            <Text
+              style={[
+                styles.stageHudText,
+                { color: BUBBLE_INK, fontFamily: "Inter_700Bold" },
+              ]}
+            >
+              Your dog's care starts here
             </Text>
           </View>
         </ImageBackground>
@@ -133,71 +187,155 @@ export function AuthShell({
           {TRUST_STEPS.map((step) => (
             <View
               key={step.label}
-              style={[styles.trustTile, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                styles.trustTile,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
             >
               <Ionicons name={step.icon} size={16} color={colors.copper} />
-              <Text style={[styles.trustLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  styles.trustLabel,
+                  { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                ]}
+              >
                 {step.label}
               </Text>
-              <Text style={[styles.trustDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  styles.trustDetail,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 {step.detail}
               </Text>
             </View>
           ))}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open auth and setup proof mission"
-          onPress={openAuthSetupProofMission}
-          style={({ pressed }) => [
-            styles.proofButton,
-            { backgroundColor: colors.ivory, borderColor: colors.copper, opacity: pressed ? 0.76 : 1 },
-          ]}
-        >
-          <Ionicons name="shield-checkmark-outline" size={15} color={colors.copper} />
-          <Text style={[styles.proofButtonText, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
-            Open setup proof
-          </Text>
-        </Pressable>
-        <View style={[styles.proofManifest, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
-          <View style={styles.proofManifestHead}>
-            <Text style={[styles.proofManifestTitle, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
-              Auth/Setup proof manifest
-            </Text>
-            <Text style={[styles.proofManifestPill, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-              Native proof blocked
-            </Text>
-          </View>
-          <View style={styles.proofManifestGrid}>
-            {authSetupProofManifest.rows.map((row) => (
-              <View key={row.label} style={[styles.proofManifestCell, { borderColor: colors.border }]}>
-                <Text style={[styles.proofManifestLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                  {row.label}
-                </Text>
+        {ownerOps && authSetupProofManifest ? (
+          <>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open auth and setup proof mission"
+              onPress={openAuthSetupProofMission}
+              style={({ pressed }) => [
+                styles.proofButton,
+                {
+                  backgroundColor: colors.ivory,
+                  borderColor: colors.copper,
+                  opacity: pressed ? 0.76 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={15}
+                color={colors.copper}
+              />
+              <Text
+                style={[
+                  styles.proofButtonText,
+                  { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" },
+                ]}
+              >
+                Open setup proof
+              </Text>
+            </Pressable>
+            <View
+              style={[
+                styles.proofManifest,
+                { backgroundColor: colors.ivory, borderColor: colors.border },
+              ]}
+            >
+              <View style={styles.proofManifestHead}>
                 <Text
-                  numberOfLines={1}
                   style={[
-                    styles.proofManifestValue,
-                    { color: row.status === "ready" ? colors.sage : BUBBLE_INK, fontFamily: "Inter_800ExtraBold" },
+                    styles.proofManifestTitle,
+                    { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" },
                   ]}
                 >
-                  {row.value}
+                  Auth/Setup proof manifest
                 </Text>
-                <Text numberOfLines={2} style={[styles.proofManifestDetail, { color: BUBBLE_INK, fontFamily: "Inter_500Medium" }]}>
-                  {row.detail}
+                <Text
+                  style={[
+                    styles.proofManifestPill,
+                    { color: colors.copper, fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
+                  Native proof blocked
                 </Text>
               </View>
-            ))}
-          </View>
-          {authSetupProofManifest.blockers.map((blocker) => (
-            <Text key={blocker} numberOfLines={2} style={[styles.proofManifestBlocker, { color: BUBBLE_INK, fontFamily: "Inter_500Medium" }]}>
-              - {blocker}
-            </Text>
-          ))}
-        </View>
+              <View style={styles.proofManifestGrid}>
+                {authSetupProofManifest.rows.map((row) => (
+                  <View
+                    key={row.label}
+                    style={[
+                      styles.proofManifestCell,
+                      { borderColor: colors.border },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.proofManifestLabel,
+                        {
+                          color: colors.copper,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {row.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.proofManifestValue,
+                        {
+                          color:
+                            row.status === "ready" ? colors.sage : BUBBLE_INK,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {row.value}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        styles.proofManifestDetail,
+                        { color: BUBBLE_INK, fontFamily: "Inter_500Medium" },
+                      ]}
+                    >
+                      {row.detail}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              {authSetupProofManifest.blockers.map((blocker) => (
+                <Text
+                  key={blocker}
+                  numberOfLines={2}
+                  style={[
+                    styles.proofManifestBlocker,
+                    { color: BUBBLE_INK, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  - {blocker}
+                </Text>
+              ))}
+            </View>
+          </>
+        ) : null}
       </View>
 
-      <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.formCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
         <Text
           style={[
             styles.title,
@@ -223,6 +361,7 @@ export function AuthShell({
 export function Field({
   label,
   error,
+  accessibilityLabel,
   ...props
 }: TextInputProps & { label: string; error?: string }) {
   const colors = useColors();
@@ -237,6 +376,7 @@ export function Field({
         {label}
       </Text>
       <TextInput
+        accessibilityLabel={accessibilityLabel ?? label}
         placeholderTextColor={colors.mutedForeground}
         style={[
           styles.input,
@@ -280,6 +420,10 @@ export function PrimaryButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{
+        disabled: Boolean(isDisabled),
+        busy: Boolean(loading),
+      }}
       onPress={onPress}
       disabled={isDisabled}
       style={({ pressed }) => [
@@ -293,7 +437,15 @@ export function PrimaryButton({
       {loading ? (
         <ActivityIndicator color={colors.primaryForeground} />
       ) : (
-        <Text style={[styles.buttonText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          style={[
+            styles.buttonText,
+            {
+              color: colors.primaryForeground,
+              fontFamily: "Inter_600SemiBold",
+            },
+          ]}
+        >
           {label}
         </Text>
       )}
@@ -326,34 +478,44 @@ export function LocalPreviewGateway({ subtitle }: { subtitle: string }) {
 export function GoogleButton({
   onPress,
   loading,
+  disabled,
 }: {
   onPress: () => void;
   loading?: boolean;
+  disabled?: boolean;
 }) {
   const colors = useColors();
+  const isDisabled = Boolean(disabled || loading);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Continue with Google"
+      accessibilityLabel={
+        loading ? "Connecting to Google" : "Continue with Google"
+      }
+      accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
       onPress={onPress}
-      disabled={loading}
+      disabled={isDisabled}
       style={({ pressed }) => [
         styles.googleButton,
         {
           backgroundColor: colors.card,
           borderColor: colors.border,
-          opacity: loading ? 0.6 : pressed ? 0.9 : 1,
+          opacity: isDisabled ? 0.6 : pressed ? 0.9 : 1,
         },
       ]}
     >
-      <Ionicons name="logo-google" size={18} color={colors.foreground} />
+      {loading ? (
+        <ActivityIndicator color={colors.foreground} />
+      ) : (
+        <Ionicons name="logo-google" size={18} color={colors.foreground} />
+      )}
       <Text
         style={[
           styles.googleText,
           { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
         ]}
       >
-        Continue with Google
+        {loading ? "Connecting to Google…" : "Continue with Google"}
       </Text>
     </Pressable>
   );
@@ -382,15 +544,26 @@ export function FormError({ message }: { message?: string }) {
   if (!message) return null;
   return (
     <View
+      role="alert"
+      accessibilityRole="alert"
+      aria-live="assertive"
       style={[
         styles.formError,
-        { backgroundColor: colors.secondary, borderColor: colors.destructive },
+        {
+          backgroundColor: colors.destructive,
+          borderColor: colors.destructive,
+        },
       ]}
     >
       <Text
         style={[
           styles.formErrorText,
-          { color: colors.destructive, fontFamily: "Inter_500Medium" },
+          {
+            color: colors.isDark
+              ? colors.brandNavy
+              : colors.destructiveForeground,
+            fontFamily: "Inter_700Bold",
+          },
         ]}
       >
         {message}
@@ -510,7 +683,7 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
   proofButton: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 14,
     marginTop: 10,
@@ -633,12 +806,16 @@ const styles = StyleSheet.create({
     gap: 10,
     borderWidth: 1,
     borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 15,
     alignItems: "center",
     justifyContent: "center",
   },
   googleText: {
+    flexShrink: 1,
     fontSize: 15,
+    lineHeight: 20,
+    textAlign: "center",
   },
   dividerRow: {
     flexDirection: "row",

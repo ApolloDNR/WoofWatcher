@@ -110,9 +110,9 @@ test("builds a blocked App Store and Play Store prep packet without claiming app
     packet.screenshotChecklist.some(
       (item) =>
         item.screen === "Avatar Studio" &&
-        /Template overlay readiness/i.test(item.requirement) &&
-        /Template-fitted/i.test(item.requirement) &&
-        /Pack pending/i.test(item.requirement),
+        /How accessories fit/i.test(item.requirement) &&
+        /Tailored fit/i.test(item.requirement) &&
+        /Standard preview/i.test(item.requirement),
     ),
   );
   assert.ok(packet.reviewNotes.some((note) => /not approved for App Store or Play Store submission/i.test(note)));
@@ -134,7 +134,7 @@ test("builds share text that is safe for store reviewers and future builders", (
   assert.match(text, /Not approved for App Store or Play Store submission/);
   assert.match(text, /Short description:/);
   assert.match(text, /Screenshot checklist:/);
-  assert.match(text, /Template overlay readiness/);
+  assert.match(text, /How accessories fit/);
   assert.match(text, /Privacy disclosures:/);
   assert.doesNotMatch(text, /Ready for public download/i);
 });

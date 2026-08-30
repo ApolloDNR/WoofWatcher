@@ -41,6 +41,28 @@ test("derives medication adherence from routines and visible logs", () => {
   assert.equal(adherence.items.find((item) => item.id === "am-meds")?.dose, "1 tablet");
 });
 
+test("omits malformed legacy medication times from adherence and follow-up calculations", () => {
+  const input = {
+    now: NOW,
+    routines: [
+      { id: "bad-meds", label: "Legacy medicine", type: "medication", time: "8oops:00 PM", owner: "Apollo" },
+      { id: "valid-meds", label: "Valid medicine", type: "medication", time: "2:15 PM", owner: "Emma" },
+    ],
+    entries: [],
+  };
+
+  const adherence = deriveMedicationAdherence(input);
+  assert.deepEqual(adherence.items.map((item) => item.id), ["valid-meds"]);
+  assert.equal(adherence.total, 1);
+  assert.equal(adherence.missedCount, 0);
+  assert.equal(adherence.dueCount, 1);
+  assert.equal(adherence.upcomingCount, 0);
+  assert.equal(adherence.next?.id, "valid-meds");
+
+  const followUps = deriveMedicationFollowUps(input);
+  assert.deepEqual(followUps.map((item) => item.routineId), ["valid-meds"]);
+});
+
 test("marks overdue medication as missed and ignores private logs", () => {
   const adherence = deriveMedicationAdherence({
     now: new Date("2026-06-06T11:00:00-07:00").getTime(),
@@ -119,6 +141,31 @@ test("derives medication follow-ups for missed doses and refill records", () => 
   assert.equal(followUps[2].recordId, "apoquel-refill");
   assert.equal(followUps[2].daysUntil, 4);
   assert.match(followUps[2].action, /refill/i);
+});
+
+test("does not turn a correction-marked medication date into a refill", () => {
+  const followUps = deriveMedicationFollowUps({
+    now: new Date("2026-02-20T12:00:00.000Z").getTime(),
+    routines: [],
+    entries: [],
+    records: [
+      {
+        id: "legacy-refill",
+        type: "medication",
+        title: "Legacy refill",
+        due: "2026-02-31",
+        correctionIssues: [
+          {
+            field: "due",
+            rawValue: "2026-02-31",
+            message: "Enter a valid record date.",
+          },
+        ],
+      },
+    ],
+  });
+
+  assert.deepEqual(followUps, []);
 });
 
 test("derives visible medication history with dose, outcome, caregiver, and notes", () => {

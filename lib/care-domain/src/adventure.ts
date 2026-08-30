@@ -1,3 +1,7 @@
+import { normalizeCareEventType, type CareEventType } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
+
 export type AdventureQuestStatus = "available" | "complete" | "locked";
 export type AdventureModeStatus = "needs-outing" | "quest-ready" | "memory-ready";
 export type AdventureMemoryStorageStatus = "local-draft" | "provider-ready" | "provider-saved";
@@ -111,7 +115,48 @@ function isSameLocalDay(iso: string, now: number): boolean {
 }
 
 function visible(entry: AdventureEntry): boolean {
-  return entry.details?.householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
+}
+
+export function adventureQuestCareType(quest: AdventureQuest): CareEventType | null {
+  if (quest.action === "start-walk") return "walk";
+  if (quest.action === "log-training") return "training";
+  if (quest.action === "log-play") return "play";
+  return null;
+}
+
+export function findAdventureQuestProofEntryId(
+  quest: AdventureQuest,
+  entries: readonly AdventureEntry[],
+  now: number,
+): string | null {
+  const careType = adventureQuestCareType(quest);
+  if (!careType) return null;
+
+  return (
+    [...entries]
+      .filter((entry) => {
+        if (!entry.id || !isSameLocalDay(entry.occurredAt, now)) return false;
+        if (!isHouseholdVisibleCareEvidence(entry)) return false;
+        return normalizeCareEventType(entry.type, entry.details) === careType;
+      })
+      .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0]
+      ?.id ?? null
+  );
+}
+
+export function buildAdventureEvidenceDetails(
+  quest: AdventureQuest,
+  current?: Record<string, unknown> | null,
+): Record<string, unknown> {
+  return {
+    ...(current ?? {}),
+    householdVisible: isHouseholdVisibleCareEvidence({ details: current }),
+    adventureQuestId: quest.id,
+    adventureQuestTitle: quest.title,
+    adventureRewardXp: quest.rewardXp,
+    careAdventure: true,
+  };
 }
 
 function normalizedType(entry: AdventureEntry): string {
@@ -164,7 +209,7 @@ export function buildAdventureMemoryDraft(input: AdventureMemoryDraftInput): Adv
 
   return {
     id: `memory_${slug(title) || "adventure"}_${Date.parse(nowIso) || Date.now()}`,
-    petName: clean(input.petName) || "Phoenix",
+    petName: resolvePetName(clean(input.petName)),
     questId: clean(input.questId) || "free-memory",
     title,
     note: clean(input.note),
@@ -179,7 +224,7 @@ export function buildAdventureMemoryDraft(input: AdventureMemoryDraftInput): Adv
 
 export function deriveAdventureMode(input: AdventureInput): AdventureMode {
   const now = input.now ?? Date.now();
-  const petName = clean(input.petName) || "Phoenix";
+  const petName = resolvePetName(clean(input.petName));
   const memories = [...(input.memories ?? [])].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   const todays = (input.entries ?? []).filter((entry) => visible(entry) && isSameLocalDay(entry.occurredAt, now));
   const walkEntries = todays.filter((entry) => normalizedType(entry) === "walk");

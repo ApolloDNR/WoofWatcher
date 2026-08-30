@@ -1,15 +1,32 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { normalizeCareEventType } from "@workspace/care-domain";
 
 import { useCare, type Entry } from "@/context/CareContext";
+import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import {
   cancelWalkRouteCapture,
   finishWalkRouteCapture,
   getWalkRouteCaptureSnapshot,
+  retryRetainedWalkRouteStopHandles,
   startWalkRouteCapture,
   subscribeWalkRouteCapture,
+  walkRouteLocalDataResetParticipant,
   type WalkRouteCaptureSnapshot,
 } from "@/lib/walkRoute";
+import {
+  captureWalkRouteOperationAuthority,
+  createWalkRouteRecorderAdmissionGate,
+  isWalkRouteRecorderAuthorityCurrent,
+  isWalkRouteRecorderIdentityAdmitted,
+  planWalkRouteRecorderTransition,
+  resolveWalkRouteRecorderIdentity,
+} from "@/lib/walkRouteRecorderLifecycle";
 import { findOpenWalkSession } from "@/lib/walkSession";
 
 /**
@@ -41,40 +58,135 @@ function walkSessionKey(entry: Entry | null): string | null {
 export function useWalkRouteCaptureStatus(): WalkRouteCaptureSnapshot {
   const [snapshot, setSnapshot] = useState(getWalkRouteCaptureSnapshot);
   useEffect(
-    () => subscribeWalkRouteCapture(() => setSnapshot(getWalkRouteCaptureSnapshot())),
+    () =>
+      subscribeWalkRouteCapture(() =>
+        setSnapshot(getWalkRouteCaptureSnapshot()),
+      ),
     [],
   );
   return snapshot;
 }
 
 export function WalkRouteRecorderBridge() {
-  const { state, updateEntry, isLoaded } = useCare();
-  const openWalk = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
+  const {
+    state,
+    careMutationsBlocked,
+    updateEntry,
+    isLoaded,
+    identityScopeKey,
+    identityScopeStatus,
+    initialSyncStatus,
+    storageWarning,
+    captureCareOperationPermit,
+    isCareOperationPermitCurrent,
+  } = useCare();
+  const {
+    attachRequiredParticipant,
+    captureLocalDataIntent,
+    isLocalDataIntentCurrent,
+  } = useLocalDataReset();
+  const openWalk = useMemo(
+    () => findOpenWalkSession(state.entries),
+    [state.entries],
+  );
   const entriesRef = useRef(state.entries);
   entriesRef.current = state.entries;
   const activeKeyRef = useRef<string | null>(null);
+  const activeIdentityRef = useRef<string | null>(null);
+  const captureAdmissionGate = useMemo(
+    () => createWalkRouteRecorderAdmissionGate(),
+    [],
+  );
 
-  const sessionKey = isLoaded ? walkSessionKey(openWalk) : null;
+  const captureAdmitted = isWalkRouteRecorderIdentityAdmitted({
+    isLoaded,
+    identityScopeState: identityScopeStatus.state,
+    initialSyncSettled: initialSyncStatus.isSettled,
+    storageWarning,
+  });
+  const sessionKey = captureAdmitted ? walkSessionKey(openWalk) : null;
+
+  // Native callback authority belongs to committed layout only. A discarded
+  // concurrent render cannot open or close the live recorder; identity is an
+  // explicit dependency so A closes before the committed B setup reopens it.
+  useLayoutEffect(
+    () => captureAdmissionGate.commit(captureAdmitted),
+    [captureAdmissionGate, captureAdmitted, identityScopeKey],
+  );
+
+  useEffect(
+    () =>
+      attachRequiredParticipant(
+        "walk-capture",
+        walkRouteLocalDataResetParticipant,
+      ),
+    [attachRequiredParticipant],
+  );
 
   useEffect(() => {
-    if (!isLoaded) return;
-    const previousKey = activeKeyRef.current;
-    if (sessionKey === previousKey) return;
-    activeKeyRef.current = sessionKey;
+    const carePermit = captureCareOperationPermit();
+    const currentIdentityKey = resolveWalkRouteRecorderIdentity({
+      isLoaded: captureAdmitted,
+      identityScopeKey,
+      carePermit,
+    });
+    const transition = planWalkRouteRecorderTransition({
+      active: {
+        identityKey: activeIdentityRef.current,
+        sessionKey: activeKeyRef.current,
+      },
+      currentIdentityKey,
+      currentSessionKey: sessionKey,
+      captureStatus: getWalkRouteCaptureSnapshot().status,
+      careMutationsBlocked,
+    });
+    activeIdentityRef.current = transition.next.identityKey;
+    activeKeyRef.current = transition.next.sessionKey;
 
-    if (previousKey) {
-      const result = finishWalkRouteCapture(previousKey);
+    if (transition.cancelCapture) {
+      // This is intentionally synchronous: it revokes the route generation
+      // before a stale A callback can run under B. Fail-once native stop
+      // handles are retained and retried by the cancellation primitive.
+      cancelWalkRouteCapture();
+    }
+    if (!currentIdentityKey) return;
+    // A reset prepare barrier pauses the native/web watch without deleting
+    // its captured points. Do not treat that temporary barrier as the walk
+    // ending. If a peer cannot prepare, resume the same session once local
+    // writes reopen; a successful reset clears it in the owner's commit.
+    if (careMutationsBlocked) return;
+
+    const captureAuthority = () =>
+      captureWalkRouteOperationAuthority({
+        isLoaded: captureAdmitted,
+        identityScopeKey,
+        captureCarePermit: captureCareOperationPermit,
+        captureLocalDataIntent,
+      });
+    const isAuthorityCurrent = (
+      authority: NonNullable<ReturnType<typeof captureAuthority>>,
+    ) =>
+      isWalkRouteRecorderAuthorityCurrent(authority, {
+        isRecorderAdmitted: captureAdmissionGate.isAdmitted,
+        isCarePermitCurrent: isCareOperationPermitCurrent,
+        isLocalDataIntentCurrent,
+      });
+
+    if (transition.finishSessionKey) {
+      const result = finishWalkRouteCapture(transition.finishSessionKey);
       // Persist only when the walk actually completed; a deleted or undone
       // walk discards its capture.
       const finished = entriesRef.current.find((entry) => {
-        if (normalizeCareEventType(entry.type, entry.details) !== "walk") return false;
+        if (normalizeCareEventType(entry.type, entry.details) !== "walk")
+          return false;
         const details = entry.details ?? {};
         return (
           details.walkLifecycle === "completed" &&
-          details.walkStartedAt === previousKey
+          details.walkStartedAt === transition.finishSessionKey
         );
       });
-      if (result && finished) {
+      const authority = captureAuthority();
+      if (result && finished && authority && isAuthorityCurrent(authority)) {
         updateEntry(finished.id, {
           details: {
             ...finished.details,
@@ -85,11 +197,39 @@ export function WalkRouteRecorderBridge() {
       }
     }
 
-    if (sessionKey) void startWalkRouteCapture(sessionKey);
-  }, [sessionKey, isLoaded, updateEntry]);
+    if (transition.startSessionKey) {
+      const authority = captureAuthority();
+      if (!authority || authority.identityKey !== currentIdentityKey) return;
+      void startWalkRouteCapture(transition.startSessionKey, () =>
+        isAuthorityCurrent(authority),
+      ).catch(() => {
+        // A deferred A watch may resolve only after B is active. Its late stop
+        // failure stays retained; retry it without touching B's active watch.
+        retryRetainedWalkRouteStopHandles();
+      });
+    }
+  }, [
+    captureCareOperationPermit,
+    captureAdmissionGate,
+    captureLocalDataIntent,
+    careMutationsBlocked,
+    captureAdmitted,
+    identityScopeKey,
+    isCareOperationPermitCurrent,
+    isLocalDataIntentCurrent,
+    sessionKey,
+    updateEntry,
+  ]);
 
   // Never leave a location watch running after the app tree unmounts.
-  useEffect(() => () => cancelWalkRouteCapture(), []);
+  useEffect(
+    () => () => {
+      activeIdentityRef.current = null;
+      activeKeyRef.current = null;
+      cancelWalkRouteCapture();
+    },
+    [],
+  );
 
   return null;
 }

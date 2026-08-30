@@ -1,14 +1,18 @@
+import {
+  canonicalHealthRoute,
+  canonicalMoreRoute,
+} from "./canonicalRouteBuilders.ts";
+import { resolveConsumerPetName } from "./petIdentity.ts";
+
 export type HomeMissionTone = "sage" | "copper" | "amber" | "rose" | "navy";
 
 export type HomeMissionRoute =
-  | "/adventure"
   | "/calendar"
-  | "/health?tab=health"
-  | "/health?tab=bile"
+  | ReturnType<typeof canonicalHealthRoute>
+  | ReturnType<typeof canonicalMoreRoute>
   | "/log"
   | `/log?entry=${string}`
-  | `/log?type=${string}&detail=1&intent=${number}`
-  | "/records";
+  | `/log?type=${string}&detail=1&intent=${number}`;
 
 export type HomeMissionIcon =
   | "bile"
@@ -95,7 +99,7 @@ function safeNumber(value: number): number {
 }
 
 export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[] {
-  const petName = clean(input.petName, "Phoenix");
+  const petName = resolveConsumerPetName(input.petName);
   const caregiverName = clean(input.caregiverName, "caregiver");
   const nextCareTitle = clean(input.nextCare.label, `${petName}'s next care`);
   const nextCareDetail = clean(input.nextCare.detail, `${caregiverName} can review today's plan.`);
@@ -127,7 +131,7 @@ export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[]
       statusLabel: "Care RPG",
       cta: "Start quest",
       icon: "walk",
-      route: "/adventure",
+      route: canonicalMoreRoute("adventure"),
       tone: todayXp > 0 ? "copper" : "navy",
     },
     {
@@ -138,7 +142,9 @@ export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[]
       statusLabel: clean(input.health.status, input.health.needsReview ? "Review" : "Stable"),
       cta: input.health.needsReview ? "Review" : "Open health",
       icon: input.health.needsReview ? "bile" : "health",
-      route: input.health.needsReview ? "/health?tab=bile" : "/health?tab=health",
+      route: canonicalHealthRoute(
+        input.health.needsReview ? "bile-watch" : "overview",
+      ),
       tone: input.health.needsReview ? "amber" : "sage",
     },
     {
@@ -149,7 +155,7 @@ export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[]
       statusLabel: input.carePass.ready ? "Ready" : "Build pass",
       cta: "Open pass",
       icon: "note",
-      route: "/records",
+      route: canonicalHealthRoute("care-pass"),
       tone: input.carePass.ready ? "sage" : "amber",
     },
   ];

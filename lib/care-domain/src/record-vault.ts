@@ -1,3 +1,8 @@
+import {
+  DEFAULT_PET_DISPLAY_NAME,
+  resolvePetName,
+} from "./pet-identity.ts";
+
 export type RecordKind =
   | "vaccine"
   | "vet"
@@ -14,6 +19,7 @@ export interface CareRecord {
   title: string;
   due?: string;
   note?: string;
+  correctionIssues?: readonly unknown[];
 }
 
 export interface RecordVaultSection {
@@ -115,6 +121,20 @@ export interface PetCredentialImageView {
   boundary: string;
 }
 
+// SVG uses proportional system fonts, so these character limits are sized for
+// worst-case wide glyphs (for example, repeated "W") within the actual column.
+export const PET_CREDENTIAL_SVG_BODY_GLYPH_LIMIT = 16;
+export const PET_CREDENTIAL_SVG_BODY_MAX_VISIBLE_LINES = 8;
+export const PET_CREDENTIAL_SVG_TITLE_GLYPH_LIMIT = 16;
+export const PET_CREDENTIAL_SVG_TITLE_MAX_VISIBLE_LINES = 3;
+export const PET_CREDENTIAL_SVG_BOUNDARY_GLYPH_LIMIT = 45;
+export const PET_CREDENTIAL_SVG_BOUNDARY_MAX_VISIBLE_LINES = 6;
+const PET_CREDENTIAL_IDENTITY_MAX_CHARS = 128;
+const PET_CREDENTIAL_FIELD_MAX_CHARS = 512;
+const PET_CREDENTIAL_BLOCK_MAX_CHARS = 32_768;
+const PET_CREDENTIAL_FILE_STEM_MAX_CHARS = 80;
+const PET_CREDENTIAL_TRUNCATION_MARKER = " ... [content shortened] ... ";
+
 const SECTION_DEFS: { kind: RecordKind; label: string; critical?: boolean }[] = [
   { kind: "vaccine", label: "Vaccines", critical: true },
   { kind: "vet", label: "Vet Visits" },
@@ -126,12 +146,67 @@ const SECTION_DEFS: { kind: RecordKind; label: string; critical?: boolean }[] = 
   { kind: "document", label: "Documents" },
 ];
 
+function stripInvalidXmlCharacters(value: unknown): string {
+  const text = String(value ?? "");
+  let output = "";
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = text.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        output += text[index] + text[index + 1];
+        index += 1;
+      }
+      continue;
+    }
+    if (
+      (code >= 0xdc00 && code <= 0xdfff) ||
+      code === 0xfffe ||
+      code === 0xffff ||
+      (code <= 0x8) ||
+      code === 0xb ||
+      code === 0xc ||
+      (code >= 0xe && code <= 0x1f) ||
+      (code >= 0x7f && code <= 0x9f)
+    ) {
+      continue;
+    }
+    output += text[index];
+  }
+  return output;
+}
+
 function clean(value: unknown): string {
-  return String(value ?? "").replace(/\s+/g, " ").trim();
+  return stripInvalidXmlCharacters(value)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function boundTextPreservingEnds(value: unknown, maxChars: number): string {
+  const text = String(value ?? "");
+  if (text.length <= maxChars) return text;
+  if (maxChars <= PET_CREDENTIAL_TRUNCATION_MARKER.length) {
+    return text.slice(0, maxChars);
+  }
+  const remaining = maxChars - PET_CREDENTIAL_TRUNCATION_MARKER.length;
+  const headLength = Math.ceil(remaining * 0.6);
+  return `${text.slice(0, headLength)}${PET_CREDENTIAL_TRUNCATION_MARKER}${text.slice(-(remaining - headLength))}`;
+}
+
+function boundedClean(value: unknown, maxChars: number): string {
+  return clean(boundTextPreservingEnds(value, maxChars));
+}
+
+function capFileStem(stem: string): string {
+  if (stem.length <= PET_CREDENTIAL_FILE_STEM_MAX_CHARS) return stem;
+  const marker = "---";
+  const remaining = PET_CREDENTIAL_FILE_STEM_MAX_CHARS - marker.length;
+  const headLength = Math.ceil(remaining * 0.65);
+  return `${stem.slice(0, headLength)}${marker}${stem.slice(-(remaining - headLength))}`;
 }
 
 function escapeHtml(value: unknown): string {
-  return clean(value)
+  return boundedClean(value, PET_CREDENTIAL_FIELD_MAX_CHARS)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -139,8 +214,23 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
+export function getPetCredentialTitle(
+  name: string | null | undefined,
+): string {
+  const resolvedName = resolvePetName(name);
+  const displayName = boundedClean(
+    resolvedName,
+    PET_CREDENTIAL_IDENTITY_MAX_CHARS,
+  );
+  return displayName === DEFAULT_PET_DISPLAY_NAME
+    ? "Your Dog's ID"
+    : `${displayName} Dog ID`;
+}
+
 function escapeHtmlBlock(value: unknown): string {
-  return String(value ?? "")
+  return stripInvalidXmlCharacters(
+    boundTextPreservingEnds(value, PET_CREDENTIAL_BLOCK_MAX_CHARS),
+  )
     .replace(/\r\n/g, "\n")
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
@@ -153,11 +243,19 @@ function escapeHtmlBlock(value: unknown): string {
 }
 
 function slugify(value: string): string {
-  return clean(value)
+  return boundedClean(value, PET_CREDENTIAL_FIELD_MAX_CHARS)
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "") || "dog";
+}
+
+function petCredentialFileStem(name: string | null | undefined): string {
+  const displayName = resolvePetName(name);
+  const stem = displayName === DEFAULT_PET_DISPLAY_NAME
+    ? "your-dog-id"
+    : `${slugify(displayName)}-dog-id`;
+  return capFileStem(stem);
 }
 
 function dateStamp(value: string): string {
@@ -176,6 +274,23 @@ function recordKind(type: string): RecordKind {
   if (normalized.includes("med")) return "medication";
   if (normalized.includes("weight")) return "weight";
   return "document";
+}
+
+const RENEWABLE_RECORD_KINDS = new Set<RecordKind>([
+  "vaccine",
+  "insurance",
+  "medication",
+]);
+
+/**
+ * Only records whose saved date represents a renewal deadline participate in
+ * expiry and due-soon calculations. Other record forms intentionally store a
+ * historical event date in the legacy `due` field.
+ */
+export function isRenewableCareRecord(
+  record: Pick<CareRecord, "type">,
+): boolean {
+  return RENEWABLE_RECORD_KINDS.has(recordKind(record.type));
 }
 
 function recordValue(record: CareRecord | undefined): string {
@@ -262,11 +377,34 @@ function formatDueDate(ms: number): string {
   });
 }
 
+export function recordDueNeedsCorrection(
+  record: Pick<CareRecord, "correctionIssues">,
+): boolean {
+  if (!Array.isArray(record.correctionIssues)) return false;
+  return Boolean(
+    record.correctionIssues.some(
+      (issue) =>
+        issue !== null &&
+        typeof issue === "object" &&
+        !Array.isArray(issue) &&
+        (issue as { field?: unknown }).field === "due",
+    ),
+  );
+}
+
 export function getRecordDueStatus(
-  record: CareRecord | Pick<CareRecord, "due">,
+  record:
+    | CareRecord
+    | (Pick<CareRecord, "due" | "correctionIssues"> & Partial<Pick<CareRecord, "type">>),
   now: number = Date.now(),
   dueSoonDays = 45,
 ): RecordDueStatus {
+  if (recordDueNeedsCorrection(record)) {
+    return {
+      status: "reference",
+      label: "Reference",
+    };
+  }
   const dueMs = parseDueDateMs(record.due);
   if (dueMs == null) {
     return {
@@ -276,6 +414,19 @@ export function getRecordDueStatus(
   }
 
   const daysUntil = Math.ceil((dueMs - now) / 86400000);
+  // `due` predates the record-specific form labels and remains the persisted
+  // field for both deadlines and historical dates. Presence of a record type
+  // lets current clients distinguish those meanings without rewriting older
+  // documents. Callers holding the older due-only shape keep the legacy due
+  // behavior until they can supply the record type.
+  if (typeof record.type === "string" && !isRenewableCareRecord({ type: record.type })) {
+    return {
+      status: "reference",
+      label: "Recorded",
+      daysUntil,
+      date: formatDueDate(dueMs),
+    };
+  }
   if (daysUntil < 0) {
     return {
       status: "expired",
@@ -300,6 +451,49 @@ export function getRecordDueStatus(
   };
 }
 
+type CareRecordSelectionShape = Pick<CareRecord, "type" | "due" | "correctionIssues">;
+
+/**
+ * Orders saved records for bounded current-record surfaces. Renewable records
+ * prefer current deadlines over expired copies; historical records prefer the
+ * newest saved event date (and newest append as the migration-safe fallback).
+ */
+export function orderCareRecordsCurrentFirst<T extends CareRecordSelectionShape>(
+  records: readonly T[],
+  now: number = Date.now(),
+): T[] {
+  const indexed = records.map((record, index) => {
+    const status = getRecordDueStatus(record, now);
+    const rank = status.status === "current" || status.status === "due_soon"
+      ? 0
+      : status.status === "expired"
+        ? 2
+        : 1;
+    return {
+      record,
+      index,
+      kind: recordKind(record.type),
+      rank,
+      dateMs: parseDueDateMs(record.due),
+    };
+  });
+
+  indexed.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    if (
+      a.kind === b.kind &&
+      a.dateMs != null &&
+      b.dateMs != null &&
+      a.dateMs !== b.dateMs
+    ) {
+      return b.dateMs - a.dateMs;
+    }
+    return b.index - a.index;
+  });
+
+  return indexed.map((item) => item.record);
+}
+
 export function summarizeRecordVault(records: readonly CareRecord[] = []): RecordVaultSummary {
   const normalized = records.map((record) => ({
     ...record,
@@ -310,7 +504,9 @@ export function summarizeRecordVault(records: readonly CareRecord[] = []): Recor
   }));
 
   const sections = SECTION_DEFS.map((def) => {
-    const sectionRecords = normalized.filter((record) => record.type === def.kind);
+    const sectionRecords = orderCareRecordsCurrentFirst(
+      normalized.filter((record) => record.type === def.kind),
+    );
     const latest = sectionRecords.find((record) => record.due)?.due;
     return {
       kind: def.kind,
@@ -327,8 +523,8 @@ export function summarizeRecordVault(records: readonly CareRecord[] = []): Recor
     .map((section) => section.label);
 
   const priorityKinds: RecordKind[] = ["vaccine", "microchip", "insurance", "vet", "receipt", "document", "medication", "weight"];
-  const priorityRecords = [...normalized].sort(
-    (a, b) => priorityKinds.indexOf(recordKind(a.type)) - priorityKinds.indexOf(recordKind(b.type)),
+  const priorityRecords = priorityKinds.flatMap(
+    (kind) => sections.find((section) => section.kind === kind)?.records ?? [],
   );
 
   return {
@@ -403,34 +599,53 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
   const profile = input.profile ?? {};
   const records = input.records ?? [];
   const generatedAt = input.generatedAt ?? new Date().toISOString();
-  const name = clean(profile.name) || "Dog";
-  const breed = clean(profile.breed) || "Breed not set";
+  const generatedAtMs = new Date(generatedAt).getTime();
+  const currentRecords = orderCareRecordsCurrentFirst(
+    records,
+    Number.isFinite(generatedAtMs) ? generatedAtMs : Date.now(),
+  );
+  const name = resolvePetName(
+    boundedClean(profile.name, PET_CREDENTIAL_IDENTITY_MAX_CHARS),
+  );
+  const title = getPetCredentialTitle(name);
+  const breed = boundedClean(profile.breed, PET_CREDENTIAL_FIELD_MAX_CHARS) || "Breed not set";
+  const requestedWeightUnit = boundedClean(profile.weight?.unit, 8).toLowerCase();
+  const weightUnit = requestedWeightUnit === "kg" ? "kg" : "lb";
   const weight =
-    profile.weight?.current != null && profile.weight.current > 0
-      ? `${profile.weight.current} ${clean(profile.weight.unit) || "lb"}`
+    Number.isFinite(profile.weight?.current) && Number(profile.weight?.current) > 0
+      ? `${profile.weight?.current} ${weightUnit}`
       : "Not on file";
   const primaryCaregiver =
-    input.caregivers?.map((caregiver) => clean(caregiver.name)).find(Boolean) ?? "Household";
-  const microchipRecord = records.find((record) => recordKind(record.type) === "microchip");
-  const insuranceRecord = records.find((record) => recordKind(record.type) === "insurance");
-  const microchip = microchipRecord ? recordValue(microchipRecord) : clean(profile.microchipNumber) || "Not on file";
+    input.caregivers
+      ?.map((caregiver) => boundedClean(caregiver.name, PET_CREDENTIAL_FIELD_MAX_CHARS))
+      .find(Boolean) ?? "Household";
+  const microchipRecord = currentRecords.find((record) => recordKind(record.type) === "microchip");
+  const insuranceRecord = currentRecords.find((record) => recordKind(record.type) === "insurance");
+  const microchip = boundedClean(
+    microchipRecord ? recordValue(microchipRecord) : profile.microchipNumber,
+    PET_CREDENTIAL_FIELD_MAX_CHARS,
+  ) || "Not on file";
   const insurance =
     insuranceRecord
-      ? recordValue(insuranceRecord)
-      : [clean(profile.insuranceProvider), clean(profile.insurancePolicy)].filter(Boolean).join(" - ") || "Not on file";
+      ? boundedClean(recordValue(insuranceRecord), PET_CREDENTIAL_FIELD_MAX_CHARS)
+      : boundedClean(
+          [clean(profile.insuranceProvider), clean(profile.insurancePolicy)].filter(Boolean).join(" - "),
+          PET_CREDENTIAL_FIELD_MAX_CHARS,
+        ) || "Not on file";
   const vaccines =
-    records
+    currentRecords
       .filter((record) => recordKind(record.type) === "vaccine")
       .slice(0, 4)
       .map((record) => recordValue(record))
-      .join("; ") || "Not on file";
-  const careFocus = clean(profile.careFocus) || "Routine care";
-  const primaryVet = clean(profile.primaryVet) || "Not on file";
-  const emergencyContact = clean(profile.emergencyContact) || "Not on file";
-  const boundary = clean(profile.vetBoundary);
+      .join("; ");
+  const boundedVaccines = boundedClean(vaccines, PET_CREDENTIAL_FIELD_MAX_CHARS) || "Not on file";
+  const careFocus = boundedClean(profile.careFocus, PET_CREDENTIAL_FIELD_MAX_CHARS) || "Routine care";
+  const primaryVet = boundedClean(profile.primaryVet, PET_CREDENTIAL_FIELD_MAX_CHARS) || "Not on file";
+  const emergencyContact = boundedClean(profile.emergencyContact, PET_CREDENTIAL_FIELD_MAX_CHARS) || "Not on file";
+  const boundary = boundedClean(profile.vetBoundary, PET_CREDENTIAL_FIELD_MAX_CHARS);
 
   const message = [
-    `${name} Dog ID`,
+    title,
     `Generated: ${shortDate(generatedAt)}`,
     "",
     `Name: ${name}`,
@@ -443,7 +658,7 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
     "",
     `Microchip: ${microchip}`,
     `Insurance: ${insurance}`,
-    `Vaccines: ${vaccines}`,
+    `Vaccines: ${boundedVaccines}`,
     boundary ? "" : null,
     boundary || null,
   ]
@@ -460,13 +675,14 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
     emergencyContact,
     microchip,
     insurance,
-    vaccines,
+    vaccines: boundedVaccines,
     generatedAt,
     message,
   };
 }
 
 export function getPetCredentialPrintView(credential: PetCredential): PetCredentialPrintView {
+  const title = getPetCredentialTitle(credential.name);
   const rows = [
     ["Breed", credential.breed],
     ["Weight", credential.weight],
@@ -488,13 +704,13 @@ export function getPetCredentialPrintView(credential: PetCredential): PetCredent
     .join("\n");
 
   return {
-    fileName: `${slugify(credential.name)}-dog-id-${dateStamp(credential.generatedAt)}.html`,
+    fileName: `${petCredentialFileStem(credential.name)}-${dateStamp(credential.generatedAt)}.html`,
     html: `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(credential.name)} Dog ID</title>
+  <title>${escapeHtml(title)}</title>
   <style>
     :root {
       color-scheme: light;
@@ -603,7 +819,7 @@ export function getPetCredentialPrintView(credential: PetCredential): PetCredent
     <section class="card">
       <header>
         <div class="brand">WoofWatcher Dog ID</div>
-        <h1>${escapeHtml(credential.name)} Dog ID</h1>
+        <h1>${escapeHtml(title)}</h1>
         <div class="generated">Generated ${escapeHtml(shortDate(credential.generatedAt))}</div>
       </header>
       <section class="grid">
@@ -622,15 +838,94 @@ ${rowHtml}
   };
 }
 
-function svgCredentialRow(label: string, value: string, y: number): string {
-  return `
+export function wrapPetCredentialSvgText(
+  value: string,
+  glyphLimit: number,
+  maxVisibleLines = Number.POSITIVE_INFINITY,
+): string[] {
+  if (!Number.isInteger(glyphLimit) || glyphLimit < 1) {
+    throw new RangeError("SVG credential glyph limit must be a positive integer");
+  }
+  if (
+    maxVisibleLines !== Number.POSITIVE_INFINITY &&
+    (!Number.isInteger(maxVisibleLines) || maxVisibleLines < 1)
+  ) {
+    throw new RangeError("SVG credential line limit must be a positive integer");
+  }
+  const sourceLimit = Number.isFinite(maxVisibleLines)
+    ? Math.max(256, glyphLimit * maxVisibleLines * 4)
+    : PET_CREDENTIAL_FIELD_MAX_CHARS;
+  const normalized = boundedClean(value, sourceLimit);
+  if (!normalized) return [""];
+  const words = normalized.split(" ").flatMap((word) => {
+    const chunks: string[] = [];
+    for (let index = 0; index < word.length; index += glyphLimit) {
+      chunks.push(word.slice(index, index + glyphLimit));
+    }
+    return chunks;
+  });
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > glyphLimit && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  const wrapped = lines.length ? lines : [""];
+  if (wrapped.length <= maxVisibleLines) return wrapped;
+  const omissionPrefix = glyphLimit >= 4 ? "... " : ".".repeat(glyphLimit);
+  const tailCapacity = Math.max(0, glyphLimit - omissionPrefix.length);
+  const tail = tailCapacity > 0 ? normalized.slice(-tailCapacity) : "";
+  return [
+    ...wrapped.slice(0, maxVisibleLines - 1),
+    `${omissionPrefix}${tail}`,
+  ];
+}
+
+function svgTextTspans(lines: readonly string[], x: number, lineHeight: number): string {
+  return lines
+    .map((line, index) => `<tspan x="${x}" dy="${index === 0 ? 0 : lineHeight}">${escapeHtml(line)}</tspan>`)
+    .join("");
+}
+
+function svgCredentialRow(label: string, value: string, y: number): { markup: string; height: number } {
+  const valueLines = wrapPetCredentialSvgText(
+    value,
+    PET_CREDENTIAL_SVG_BODY_GLYPH_LIMIT,
+    PET_CREDENTIAL_SVG_BODY_MAX_VISIBLE_LINES,
+  );
+  return {
+    height: 58 + Math.max(0, valueLines.length - 1) * 32,
+    markup: `
     <g transform="translate(64 ${y})">
       <text class="label" x="0" y="0">${escapeHtml(label)}</text>
-      <text class="value" x="0" y="34">${escapeHtml(value)}</text>
-    </g>`;
+      <text class="value" x="0" y="34">${svgTextTspans(valueLines, 0, 32)}</text>
+    </g>`,
+  };
+}
+
+function svgCredentialColumn(
+  rows: readonly (readonly [string, string])[],
+  x: number,
+  startY: number,
+): { markup: string; bottomY: number } {
+  let y = startY;
+  const markup: string[] = [];
+  for (const [label, value] of rows) {
+    const row = svgCredentialRow(label, value, y);
+    markup.push(row.markup.replace("translate(64", `translate(${x}`));
+    y += row.height;
+  }
+  return { markup: markup.join(""), bottomY: y };
 }
 
 export function getPetCredentialImageView(credential: PetCredential): PetCredentialImageView {
+  const title = getPetCredentialTitle(credential.name);
   const rows = [
     ["Breed", credential.breed],
     ["Weight", credential.weight],
@@ -642,14 +937,32 @@ export function getPetCredentialImageView(credential: PetCredential): PetCredent
     ["Insurance", credential.insurance],
     ["Vaccines", credential.vaccines],
   ];
-  const boundary = "PNG and PDF export still need native or provider-backed generation; this SVG is the local image source.";
+  const boundary =
+    "This SVG is a local image source. A generated PNG is available separately; both stay inside WoofWatcher unless you share them, and WoofWatcher cloud backup is not included.";
+  const titleLines = wrapPetCredentialSvgText(
+    title,
+    PET_CREDENTIAL_SVG_TITLE_GLYPH_LIMIT,
+    PET_CREDENTIAL_SVG_TITLE_MAX_VISIBLE_LINES,
+  );
+  const headerExtraHeight = Math.max(0, titleLines.length - 1) * 64;
+  const contentStartY = 252 + headerExtraHeight;
+  const leftColumn = svgCredentialColumn(rows.slice(0, 5) as [string, string][], 64, contentStartY);
+  const rightColumn = svgCredentialColumn(rows.slice(5) as [string, string][], 584, contentStartY);
+  const contentBottomY = Math.max(leftColumn.bottomY, rightColumn.bottomY);
+  const boundaryLines = wrapPetCredentialSvgText(
+    boundary,
+    PET_CREDENTIAL_SVG_BOUNDARY_GLYPH_LIMIT,
+    PET_CREDENTIAL_SVG_BOUNDARY_MAX_VISIBLE_LINES,
+  );
+  const boundaryY = contentBottomY + 52;
+  const height = boundaryY + Math.max(0, boundaryLines.length - 1) * 28 + 42;
 
   return {
-    fileName: `${slugify(credential.name)}-dog-id-${dateStamp(credential.generatedAt)}.svg`,
+    fileName: `${petCredentialFileStem(credential.name)}-${dateStamp(credential.generatedAt)}.svg`,
     mimeType: "image/svg+xml",
     formatLabel: "SVG image source",
     boundary,
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="680" viewBox="0 0 1080 680" role="img" aria-label="${escapeHtml(credential.name)} Dog ID">
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="${height}" viewBox="0 0 1080 ${height}" role="img" aria-label="${escapeHtml(title)}">
   <defs>
     <style>
       .bg { fill: #f7f5f1; }
@@ -664,17 +977,17 @@ export function getPetCredentialImageView(credential: PetCredential): PetCredent
       .line { stroke: #d4cfc4; stroke-width: 2; }
     </style>
   </defs>
-  <rect class="bg" width="1080" height="680" />
-  <rect class="card" x="32" y="32" width="1016" height="616" rx="30" />
-  <rect class="header" x="32" y="32" width="1016" height="170" rx="30" />
-  <rect class="header" x="32" y="132" width="1016" height="70" />
+  <rect class="bg" width="1080" height="${height}" />
+  <rect class="card" x="32" y="32" width="1016" height="${height - 64}" rx="30" />
+  <rect class="header" x="32" y="32" width="1016" height="${170 + headerExtraHeight}" rx="30" />
+  <rect class="header" x="32" y="132" width="1016" height="${70 + headerExtraHeight}" />
   <text class="brand" x="64" y="86">WOOFWATCHER DOG ID</text>
-  <text class="title" x="64" y="154">${escapeHtml(credential.name)} Dog ID</text>
+  <text class="title" x="64" y="154">${svgTextTspans(titleLines, 64, 64)}</text>
   <text class="generated" x="760" y="92">Generated ${escapeHtml(shortDate(credential.generatedAt))}</text>
-  <line class="line" x1="540" y1="224" x2="540" y2="534" />
-  ${rows.slice(0, 5).map((row, index) => svgCredentialRow(row[0], row[1], 252 + index * 58)).join("")}
-  ${rows.slice(5).map((row, index) => svgCredentialRow(row[0], row[1], 252 + index * 58).replace("translate(64", "translate(584")).join("")}
-  <text class="boundary" x="64" y="606">${escapeHtml(boundary)}</text>
+  <line class="line" x1="540" y1="${224 + headerExtraHeight}" x2="540" y2="${contentBottomY - 8}" />
+  ${leftColumn.markup}
+  ${rightColumn.markup}
+  <text class="boundary" x="64" y="${boundaryY}">${svgTextTspans(boundaryLines, 64, 28)}</text>
 </svg>`,
   };
 }

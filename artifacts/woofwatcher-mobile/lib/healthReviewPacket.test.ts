@@ -2,41 +2,168 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildHealthReviewPacketShareText,
-  deriveBileWatchStatus,
+  deriveMealLogIntervalEvidence,
   deriveHealthReviewPacket,
+  resolveHealthReviewPacketActionHref,
   type HealthReviewPacketInput,
 } from "./healthReviewPacket.ts";
-import { deriveHealthWatch } from "../../../lib/care-domain/src/index.ts";
+import {
+  deriveBileVomitEvidence30,
+  deriveBileWatchStatus,
+  deriveHealthWatch,
+} from "../../../lib/care-domain/src/index.ts";
 
 const baseInput: HealthReviewPacketInput = {
   dogName: "Phoenix",
   healthStatus: "good",
   healthSummary: "No health watch signals logged in the selected window.",
   healthCounts: {
-    vomit7: 0,
+    vomit30: 0,
     appetiteWatch7: 0,
     stoolWatch7: 0,
     anxiety7: 0,
   },
   redFlagCount: 0,
-  bileStatus: "Low Risk",
-  lastYellowBileLabel: "None logged",
-  longestFoodGapLabel: "Needs more meal logs",
-  bedtimeSnackLabel: "1 small bedtime snack",
+  bileStatus: "No data",
+  lastYellowBileLabel: "No data in 30 days",
+  longestMealLogIntervalLabel: "Needs at least two meal logs in 30 days",
+  bedtimeSnackPlanLabel: "1 small bedtime snack",
 };
+
+test("meal spacing and a configured snack stay labeled as logs and a plan", () => {
+  const now = Date.parse("2026-07-30T18:00:00.000Z");
+  let rejectedTypeRead = false;
+  let privateTimestampRead = false;
+  const interval = deriveMealLogIntervalEvidence({
+    now,
+    entries: [
+      {
+        details: { householdVisible: false },
+        get occurredAt(): string {
+          privateTimestampRead = true;
+          throw new Error("private meal timestamp must not be read");
+        },
+        get type(): string {
+          rejectedTypeRead = true;
+          throw new Error("private meal type must not be read");
+        },
+      },
+      {
+        occurredAt: "not-a-date",
+        get type(): string {
+          rejectedTypeRead = true;
+          throw new Error("invalid meal type must not be read");
+        },
+      },
+      {
+        occurredAt: new Date(now + 1).toISOString(),
+        get type(): string {
+          rejectedTypeRead = true;
+          throw new Error("future meal type must not be read");
+        },
+      },
+      {
+        occurredAt: new Date(now - 31 * 86_400_000).toISOString(),
+        get type(): string {
+          rejectedTypeRead = true;
+          throw new Error("out-of-window meal type must not be read");
+        },
+      },
+      { type: "meal", occurredAt: new Date(now - 29 * 86_400_000).toISOString() },
+      { type: "meal", occurredAt: new Date(now - 3_600_000).toISOString() },
+    ],
+  });
+
+  assert.deepEqual(interval, {
+    mealLogCount: 2,
+    longestIntervalHours: 695,
+    label: "695.0 hours",
+  });
+  assert.equal(privateTimestampRead, false);
+  assert.equal(rejectedTypeRead, false);
+
+  const packet = deriveHealthReviewPacket({
+    ...baseInput,
+    longestMealLogIntervalLabel: interval.label,
+  });
+  const share = buildHealthReviewPacketShareText(packet, {
+    dogName: "Phoenix",
+    generatedAtIso: new Date(now).toISOString(),
+  });
+  assert.match(share, /Longest interval between meal logs: 695\.0 hours/);
+  assert.match(share, /Bedtime snack plan: 1 small bedtime snack/);
+  assert.doesNotMatch(share, /food gap|snack proof/i);
+});
+
+test("routes packet actions through canonical owners and preserves only a validated WoofGuide prompt", () => {
+  const packet = deriveHealthReviewPacket(baseInput);
+  assert.deepEqual(packet.primaryAction, {
+    label: "Log health detail",
+    route: "/log?type=symptom&detail=1&intent=health-review",
+  });
+  assert.deepEqual(packet.secondaryAction, {
+    label: "Draft vet questions",
+    route: "/more?section=woofguide",
+    params: { prompt: "health-review" },
+  });
+  assert.deepEqual(resolveHealthReviewPacketActionHref(packet.secondaryAction), {
+    pathname: "/more",
+    params: { section: "woofguide", prompt: "health-review" },
+  });
+  assert.deepEqual(
+    resolveHealthReviewPacketActionHref({
+      label: "Untrusted prompt",
+      route: "/more?section=woofguide",
+      params: {
+        prompt: "\u202ehidden",
+        extra: "must-not-leak",
+        section: "privacy",
+      },
+    }),
+    {
+      pathname: "/more",
+      params: { section: "woofguide" },
+    },
+  );
+  assert.deepEqual(
+    resolveHealthReviewPacketActionHref({
+      label: "Repeated prompt",
+      route: "/more?section=woofguide",
+      params: {
+        prompt: ["health-review", "ignored"],
+      } as unknown as Record<string, string>,
+    }),
+    {
+      pathname: "/more",
+      params: { section: "woofguide" },
+    },
+  );
+  assert.deepEqual(
+    resolveHealthReviewPacketActionHref({
+      label: "Inherited prompt",
+      route: "/more?section=woofguide",
+      params: Object.create({ prompt: "health-review" }) as Record<string, string>,
+    }),
+    {
+      pathname: "/more",
+      params: { section: "woofguide" },
+    },
+  );
+});
 
 test("keeps a non-urgent 14-day yellow-bile pattern at Watch", () => {
   const now = Date.parse("2026-07-30T18:00:00.000Z");
+  const entries = [
+    {
+      id: "older_bile",
+      type: "vomit",
+      title: "Yellow bile vomit",
+      note: "Yellow bile noted",
+      occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
+    },
+  ];
   const healthWatch = deriveHealthWatch({
-    entries: [
-      {
-        id: "older_bile",
-        type: "vomit",
-        title: "Yellow bile vomit",
-        note: "Yellow bile noted",
-        occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
-      },
-    ],
+    entries,
     routines: [],
     now,
     petName: "Phoenix",
@@ -47,29 +174,25 @@ test("keeps a non-urgent 14-day yellow-bile pattern at Watch", () => {
   assert.ok(
     healthWatch.signals.some((signal) => signal.kind === "vomit-pattern"),
   );
-  assert.equal(
-    deriveBileWatchStatus({
-      vomit7: healthWatch.counts.vomit7,
-      recentYellowBileCount: 0,
-      signals: healthWatch.signals,
-    }),
-    "Watch",
-  );
+  const bileEvidence = deriveBileVomitEvidence30({ entries, now });
+  assert.equal(bileEvidence.vomitEntriesNewestFirst[0]?.occurredAt, entries[0].occurredAt);
+  assert.equal(deriveBileWatchStatus(bileEvidence), "Watch");
 });
 
 test("keeps an urgent 14-day yellow-bile event at Review", () => {
   const now = Date.parse("2026-07-30T18:00:00.000Z");
+  const entries = [
+    {
+      id: "older_urgent_bile",
+      type: "vomit",
+      title: "Yellow bile vomit",
+      note: "Yellow bile noted",
+      severity: "urgent",
+      occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
+    },
+  ];
   const healthWatch = deriveHealthWatch({
-    entries: [
-      {
-        id: "older_urgent_bile",
-        type: "vomit",
-        title: "Yellow bile vomit",
-        note: "Yellow bile noted",
-        severity: "urgent",
-        occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
-      },
-    ],
+    entries,
     routines: [],
     now,
     petName: "Phoenix",
@@ -78,14 +201,9 @@ test("keeps an urgent 14-day yellow-bile event at Review", () => {
   assert.equal(healthWatch.status, "alert");
   assert.equal(healthWatch.counts.vomit7, 0);
   assert.equal(healthWatch.redFlags.length, 1);
-  assert.equal(
-    deriveBileWatchStatus({
-      vomit7: healthWatch.counts.vomit7,
-      recentYellowBileCount: 0,
-      signals: healthWatch.signals,
-    }),
-    "Review",
-  );
+  const bileEvidence = deriveBileVomitEvidence30({ entries, now });
+  assert.equal(bileEvidence.urgentVomitEntriesNewestFirst.length, 1);
+  assert.equal(deriveBileWatchStatus(bileEvidence), "Review");
 });
 
 test("keeps one urgent non-bile vomit at Review throughout the 30-day window", () => {
@@ -93,19 +211,20 @@ test("keeps one urgent non-bile vomit at Review throughout the 30-day window", (
 
   for (const daysAgo of [1, 8]) {
     const entryId = `urgent_vomit_${daysAgo}`;
+    const entries = [
+      {
+        id: entryId,
+        type: "vomit",
+        title: "Urgent vomit",
+        note: "Clear fluid",
+        severity: "urgent",
+        occurredAt: new Date(
+          now - daysAgo * 86_400_000,
+        ).toISOString(),
+      },
+    ];
     const healthWatch = deriveHealthWatch({
-      entries: [
-        {
-          id: entryId,
-          type: "vomit",
-          title: "Urgent vomit",
-          note: "Clear fluid",
-          severity: "urgent",
-          occurredAt: new Date(
-            now - daysAgo * 86_400_000,
-          ).toISOString(),
-        },
-      ],
+      entries,
       routines: [],
       now,
       petName: "Phoenix",
@@ -120,38 +239,33 @@ test("keeps one urgent non-bile vomit at Review throughout the 30-day window", (
           signal.entryIds.includes(entryId),
       ),
     );
-    assert.equal(
-      deriveBileWatchStatus({
-        vomit7: healthWatch.counts.vomit7,
-        recentYellowBileCount: 0,
-        signals: healthWatch.signals,
-      }),
-      "Review",
-    );
+    const bileEvidence = deriveBileVomitEvidence30({ entries, now });
+    assert.equal(deriveBileWatchStatus(bileEvidence), "Review");
   }
 });
 
 test("keeps an unrelated urgent stool event out of Bile Watch", () => {
   const now = Date.parse("2026-07-30T18:00:00.000Z");
+  const entries = [
+    {
+      id: "older_bile",
+      type: "vomit",
+      title: "Yellow bile vomit",
+      note: "Yellow bile noted",
+      occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
+    },
+    {
+      id: "urgent_stool",
+      type: "potty",
+      title: "Urgent loose stool",
+      note: "Loose stool needs prompt review",
+      severity: "urgent",
+      occurredAt: new Date(now - 60_000).toISOString(),
+      details: { condition: "loose" },
+    },
+  ];
   const healthWatch = deriveHealthWatch({
-    entries: [
-      {
-        id: "older_bile",
-        type: "vomit",
-        title: "Yellow bile vomit",
-        note: "Yellow bile noted",
-        occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
-      },
-      {
-        id: "urgent_stool",
-        type: "potty",
-        title: "Urgent loose stool",
-        note: "Loose stool needs prompt review",
-        severity: "urgent",
-        occurredAt: new Date(now - 60_000).toISOString(),
-        details: { condition: "loose" },
-      },
-    ],
+    entries,
     routines: [],
     now,
     petName: "Phoenix",
@@ -170,60 +284,57 @@ test("keeps an unrelated urgent stool event out of Bile Watch", () => {
         signal.kind === "stool-watch" && signal.urgency === "alert",
     ),
   );
-  assert.equal(
-    deriveBileWatchStatus({
-      vomit7: healthWatch.counts.vomit7,
-      recentYellowBileCount: 0,
-      signals: healthWatch.signals,
-    }),
-    "Watch",
-  );
+  const bileEvidence = deriveBileVomitEvidence30({ entries, now });
+  assert.equal(bileEvidence.urgentVomitEntriesNewestFirst.length, 0);
+  assert.equal(deriveBileWatchStatus(bileEvidence), "Watch");
 });
 
-test("builds a steady non-diagnostic Health Review Packet", () => {
+test("keeps a no-evidence Health Review Packet neutral", () => {
   const packet = deriveHealthReviewPacket(baseInput);
 
   assert.equal(packet.title, "Review packet");
-  assert.equal(packet.statusLabel, "Steady");
+  assert.equal(packet.statusLabel, "More data needed");
   assert.equal(packet.languagePill, "Not veterinary advice");
   assert.match(packet.summary, /Phoenix/);
   assert.match(packet.summary, /owner observations/i);
-  assert.ok(packet.prompts.includes("Keep logging meals, stool, vomiting, energy, and medication."));
+  assert.ok(packet.prompts.includes("Log bile or vomiting observations to build the 30-day evidence window."));
   assert.ok(packet.vetShareChecklist.includes("Recent meals, portions, and appetite notes"));
-  assert.ok(packet.vetShareChecklist.includes("Last yellow bile event: None logged"));
+  assert.ok(packet.vetShareChecklist.includes("Last yellow bile event: No data in 30 days"));
+  assert.ok(packet.vetShareChecklist.includes("Vomiting logs in 30 days: 0"));
+  assert.doesNotMatch(JSON.stringify(packet), /steady|calm|low risk/i);
   assert.deepEqual(packet.primaryAction, {
     label: "Log health detail",
     route: "/log?type=symptom&detail=1&intent=health-review",
   });
   assert.deepEqual(packet.secondaryAction, {
     label: "Draft vet questions",
-    route: "/woofguide",
+    route: "/more?section=woofguide",
     params: { prompt: "health-review" },
   });
 });
 
-test("raises watch language when bile, food gap, or health signals need review", () => {
+test("raises watch language when bile, meal-log intervals, or health signals need review", () => {
   const packet = deriveHealthReviewPacket({
     ...baseInput,
     healthStatus: "watch",
     healthSummary: "1 vomit incident in 7 days, with yellow bile noted.",
     healthCounts: {
-      vomit7: 1,
+      vomit30: 1,
       appetiteWatch7: 2,
       stoolWatch7: 0,
       anxiety7: 1,
     },
     bileStatus: "Watch",
     lastYellowBileLabel: "Jun 26, 7:15 AM",
-    longestFoodGapLabel: "13.5 hours",
+    longestMealLogIntervalLabel: "13.5 hours",
   });
 
   assert.equal(packet.statusLabel, "Worth watching");
   assert.equal(packet.languagePill, "Pattern noticed");
   assert.match(packet.summary, /Pattern noticed/);
   assert.match(packet.summary, /13.5 hours/);
-  assert.ok(packet.prompts.includes("Capture timing, food gap, appetite after, energy after, stool detail, and hydration."));
-  assert.ok(packet.vetShareChecklist.includes("Longest food gap: 13.5 hours"));
+  assert.ok(packet.prompts.includes("Capture timing, time since the last logged meal, appetite after, energy after, stool detail, and hydration."));
+  assert.ok(packet.vetShareChecklist.includes("Longest interval between meal logs: 13.5 hours"));
   assert.ok(packet.vetShareChecklist.includes("Appetite watch logs: 2"));
   assert.ok(packet.vetShareChecklist.includes("Anxiety or alone-time signals: 1"));
   assert.ok(packet.boundary.includes("Consider sharing with your vet"));
@@ -238,7 +349,7 @@ test("uses review language without diagnosis or treatment claims for alert statu
     redFlagCount: 1,
     bileStatus: "Review",
     lastYellowBileLabel: "Jun 27, 6:10 AM",
-    longestFoodGapLabel: "15.0 hours",
+    longestMealLogIntervalLabel: "15.0 hours",
   });
 
   assert.equal(packet.statusLabel, "Consider sharing with your vet");
@@ -265,14 +376,14 @@ test("formats a shareable Health Review Packet without medical certainty", () =>
     healthStatus: "watch",
     healthSummary: "Yellow bile was logged once this week.",
     healthCounts: {
-      vomit7: 1,
+      vomit30: 1,
       appetiteWatch7: 1,
       stoolWatch7: 0,
       anxiety7: 0,
     },
     bileStatus: "Watch",
     lastYellowBileLabel: "Jun 27, 7:05 AM",
-    longestFoodGapLabel: "13.0 hours",
+    longestMealLogIntervalLabel: "13.0 hours",
   });
 
   const text = buildHealthReviewPacketShareText(packet, {
@@ -291,4 +402,18 @@ test("formats a shareable Health Review Packet without medical certainty", () =>
   assert.match(text, /Not veterinary advice/);
   assert.doesNotMatch(text, /\bdiagnose[sd]?\b/i);
   assert.doesNotMatch(text, /\btreat(?:ment|s|ed|ing)?\b/i);
+});
+
+test("keeps fresh-install review and share copy neutral", () => {
+  const packet = deriveHealthReviewPacket({
+    ...baseInput,
+    dogName: "My Dog",
+    healthStatus: "watch",
+    bileStatus: "Watch",
+  });
+  const text = buildHealthReviewPacketShareText(packet, { dogName: "My Dog" });
+
+  assert.match(packet.prompts.join(" "), /what your dog ate/);
+  assert.match(text, /Dog: your dog/);
+  assert.doesNotMatch(`${JSON.stringify(packet)} ${text}`, /Phoenix|My Dog/);
 });

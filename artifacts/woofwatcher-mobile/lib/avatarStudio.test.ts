@@ -6,17 +6,41 @@ import { join } from "node:path";
 import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
-  AVATAR_SCAN_WORKFLOW_STEPS,
   AVATAR_TEMPLATES,
-  buildTemplateScanSuggestion,
   createDefaultAvatarConfig,
   deriveAvatarAccessoryFit,
   describeAvatarConfig,
+  hasManualAvatarConfiguration,
   normalizeAvatarConfig,
+  shouldSyncAvatarStudioDraftFromContext,
   summarizeAvatarAccessoryFits,
 } from "./avatarStudio.ts";
 
-test("defines the launch template library for scan-assisted dog avatars", () => {
+test("external avatar hydration never overwrites a dirty or saving Studio draft", () => {
+  assert.equal(
+    shouldSyncAvatarStudioDraftFromContext({
+      draftDirty: false,
+      persistenceInFlight: false,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldSyncAvatarStudioDraftFromContext({
+      draftDirty: true,
+      persistenceInFlight: false,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSyncAvatarStudioDraftFromContext({
+      draftDirty: false,
+      persistenceInFlight: true,
+    }),
+    false,
+  );
+});
+
+test("defines the launch template library for manual dog avatars", () => {
   const ids = AVATAR_TEMPLATES.map((template) => template.id);
 
   assert.deepEqual(ids, [
@@ -81,19 +105,7 @@ test("creates and normalizes a Phoenix-first avatar config", () => {
   assert.equal(normalizeAvatarConfig({ templateId: "bully", emotePackId: "bully-starter" }, "Tank").emotePackId, "bully-starter");
 });
 
-test("keeps template-scan copy truthful and owner-approved", () => {
-  const suggestion = buildTemplateScanSuggestion("Phoenix", "2026-06-17T12:00:00.000Z");
-
-  assert.equal(suggestion.templateId, "shepherd");
-  assert.equal(suggestion.confidence, "high");
-  assert.equal(suggestion.suggestedConfig.scanAssisted, true);
-  assert.match(suggestion.copy, /suggest/i);
-  assert.match(suggestion.copy, /approve/i);
-  assert.doesNotMatch(suggestion.copy, /perfect/i);
-  assert.doesNotMatch(suggestion.copy, /instantly/i);
-});
-
-test("tracks which accessories are template-fitted versus inventory-ready", () => {
+test("presents tailored fits and standard previews without changing fit status", () => {
   const forestBandana = AVATAR_ACCESSORIES.find((item) => item.id === "forest-bandana");
   const copperCollar = AVATAR_ACCESSORIES.find((item) => item.id === "copper-collar");
 
@@ -104,36 +116,121 @@ test("tracks which accessories are template-fitted versus inventory-ready", () =
   const pending = deriveAvatarAccessoryFit("shepherd", copperCollar);
 
   assert.equal(fitted.status, "template-fitted");
-  assert.equal(fitted.label, "Template-fitted");
-  assert.match(fitted.detail, /PixelLab Shepherd overlay/);
-  assert.match(fitted.placementHint, /neck/i);
+  assert.equal(fitted.label, "Tailored fit");
+  assert.match(fitted.detail, /tailored to Shepherd/);
+  assert.match(fitted.placementHint, /jaw/i);
   assert.equal(fitted.needsDeviceQa, true);
 
   assert.equal(pending.status, "inventory-ready");
-  assert.equal(pending.label, "Pack pending");
-  assert.match(pending.detail, /shared inventory icon/);
-  assert.match(pending.detail, /template overlay pack ships/);
+  assert.equal(pending.label, "Standard preview");
+  assert.match(pending.detail, /standard Shepherd preview/);
 
   assert.equal(
     summarizeAvatarAccessoryFits("shepherd"),
-    "7/10 accessories template-fitted for Shepherd; 3 stay inventory-ready until their template overlay pack ships.",
+    "7 of 10 accessories are tailored to Shepherd. 3 use a standard preview.",
   );
   assert.equal(
     summarizeAvatarAccessoryFits("retriever"),
-    "0/10 accessories template-fitted for Retriever; 10 stay inventory-ready until their template overlay pack ships.",
+    "0 of 10 accessories are tailored to Retriever. 10 use a standard preview.",
   );
 });
 
-test("documents the scan-to-pixel workflow as owner-approved template matching", () => {
+test("drops legacy scan metadata while preserving every real manual v1 field", () => {
+  const legacyJson = JSON.stringify({
+    version: 1,
+    petName: "Scout",
+    templateId: "retriever",
+    style: "pixel",
+    coatPrimary: "#5B412F",
+    coatSecondary: "#F1E2C7",
+    faceMarkingId: "blaze",
+    earTypeId: "floppy",
+    muzzleTypeId: "long",
+    eyeColor: "#4F6B5E",
+    collarId: "navy-collar",
+    tagId: "bone",
+    bandanaId: "sage-bandana",
+    accessorySlots: {
+      head: "birthday-hat",
+      neck: "navy-collar",
+      room: "cozy-bed",
+      fx: "heart-sparkles",
+    },
+    emotePackId: "retriever-starter",
+    scanAssisted: true,
+    updatedAt: "2026-08-01T12:00:00.000Z",
+  });
+
+  const clean = normalizeAvatarConfig(JSON.parse(legacyJson), "Phoenix");
+  assert.equal("scanAssisted" in clean, false);
   assert.deepEqual(
-    AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.id),
-    ["photo-reference", "template-match", "pixel-twin", "owner-approval"],
+    {
+      version: clean.version,
+      petName: clean.petName,
+      templateId: clean.templateId,
+      coatPrimary: clean.coatPrimary,
+      coatSecondary: clean.coatSecondary,
+      faceMarkingId: clean.faceMarkingId,
+      earTypeId: clean.earTypeId,
+      muzzleTypeId: clean.muzzleTypeId,
+      eyeColor: clean.eyeColor,
+      collarId: clean.collarId,
+      tagId: clean.tagId,
+      bandanaId: clean.bandanaId,
+      accessorySlots: clean.accessorySlots,
+      emotePackId: clean.emotePackId,
+      updatedAt: clean.updatedAt,
+    },
+    {
+      version: 1,
+      petName: "Scout",
+      templateId: "retriever",
+      coatPrimary: "#5B412F",
+      coatSecondary: "#F1E2C7",
+      faceMarkingId: "blaze",
+      earTypeId: "floppy",
+      muzzleTypeId: "long",
+      eyeColor: "#4F6B5E",
+      collarId: "navy-collar",
+      tagId: "bone",
+      bandanaId: "sage-bandana",
+      accessorySlots: {
+        neck: "navy-collar",
+        room: "cozy-bed",
+        fx: "heart-sparkles",
+        head: "birthday-hat",
+      },
+      emotePackId: "retriever-starter",
+      updatedAt: "2026-08-01T12:00:00.000Z",
+    },
   );
-  assert.ok(AVATAR_SCAN_WORKFLOW_STEPS.every((step) => step.label && step.detail));
-  assert.match(AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.detail).join(" "), /PixelLab/i);
-  assert.match(AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.detail).join(" "), /owner approval/i);
-  assert.doesNotMatch(AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.detail).join(" "), /live AI/i);
-  assert.doesNotMatch(AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.detail).join(" "), /photo filter/i);
+
+  const nextSaveJson = JSON.stringify({ ...clean, updatedAt: "2026-08-02T12:00:00.000Z" });
+  const resetJson = JSON.stringify(createDefaultAvatarConfig("Scout", "2026-08-02T12:00:00.000Z"));
+  assert.equal(nextSaveJson.includes('"scanAssisted"'), false);
+  assert.equal(resetJson.includes('"scanAssisted"'), false);
+});
+
+test("derives configured state only from manual avatar choices", () => {
+  const base = createDefaultAvatarConfig("Phoenix", "2026-08-01T00:00:00.000Z");
+  assert.equal(hasManualAvatarConfiguration(base), false);
+  assert.equal(hasManualAvatarConfiguration({ ...base, petName: "Renamed dog", updatedAt: "2026-08-02T00:00:00.000Z" }), false);
+
+  const fieldChanges = [
+    { templateId: "retriever" as const }, { coatPrimary: "#FFFFFF" }, { coatSecondary: "#FFFFFF" },
+    { faceMarkingId: "blaze" as const }, { earTypeId: "floppy" as const }, { muzzleTypeId: "light" as const },
+    { eyeColor: "#4F6B5E" }, { collarId: "navy-collar" as const }, { tagId: "bone" as const },
+    { bandanaId: "sage-bandana" as const }, { emotePackId: "starter-care-twin" as const },
+  ];
+  for (const patch of fieldChanges) assert.equal(hasManualAvatarConfiguration({ ...base, ...patch }), true);
+  for (const slot of ["head", "face", "neck", "body", "room", "fx"] as const) {
+    assert.equal(hasManualAvatarConfiguration({ ...base, accessorySlots: { ...base.accessorySlots, [slot]: `manual-${slot}` } }), true);
+  }
+
+  const legacyDefault = normalizeAvatarConfig({ ...base, scanAssisted: true }, "Phoenix");
+  const legacyManual = normalizeAvatarConfig({ ...base, templateId: "retriever", scanAssisted: true }, "Phoenix");
+  assert.equal(hasManualAvatarConfiguration(legacyDefault), false);
+  assert.equal(hasManualAvatarConfiguration(legacyManual), true);
 });
 
 test("documents the first emote state set for the living care twin", () => {

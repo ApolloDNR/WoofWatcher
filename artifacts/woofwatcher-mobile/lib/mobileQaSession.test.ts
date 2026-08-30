@@ -4,10 +4,37 @@ import assert from "node:assert/strict";
 import {
   buildMobileQaSessionProofManifest,
   buildMobileQaSessionProofManifestShareText,
+  buildPersistedMobileQaSessionSnapshot,
   buildMobileQaSessionSnapshot,
+  createEmptyMobileQaSessionState,
+  createMobileQaSessionSaveQueue,
+  createMobileQaSessionPersistenceGate,
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
+  type MobileQaSessionInput,
+  type MobileQaSessionState,
 } from "./mobileQaSession.ts";
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
+
+function qaInput(state: MobileQaSessionState): MobileQaSessionInput {
+  return {
+    careTwinStatusById: state.careTwinStatusById,
+    careTwinNotes: state.careTwinNotes,
+    careTwinEvidenceById: state.careTwinEvidenceById,
+    surfaceStatusById: state.surfaceStatusById,
+    surfaceNotes: state.surfaceNotes,
+    surfaceEvidenceById: state.surfaceEvidenceById,
+  };
+}
 
 test("builds a compact local mobile QA snapshot", () => {
   const snapshot = buildMobileQaSessionSnapshot(
@@ -67,6 +94,7 @@ test("builds a compact local mobile QA snapshot", () => {
           source: "library",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T13:00:05.000Z",
+          verification: "manual-self-attested",
         },
       ],
     },
@@ -84,6 +112,7 @@ test("builds a compact local mobile QA snapshot", () => {
           source: "library",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T13:00:10.000Z",
+          verification: "manual-self-attested",
         },
       ],
     },
@@ -93,6 +122,20 @@ test("builds a compact local mobile QA snapshot", () => {
       note: "Follow-up row needs touch review.",
     },
   ]);
+});
+
+test("a proof snapshot exists only for an exact durable saved timestamp", () => {
+  const input = qaInput(createEmptyMobileQaSessionState());
+
+  assert.equal(buildPersistedMobileQaSessionSnapshot(input, undefined), null);
+  assert.equal(buildPersistedMobileQaSessionSnapshot(input, "Saved locally"), null);
+  assert.equal(
+    buildPersistedMobileQaSessionSnapshot(
+      input,
+      "2026-08-23T21:04:05.000Z",
+    )?.savedAtIso,
+    "2026-08-23T21:04:05.000Z",
+  );
 });
 
 test("parses a saved mobile QA snapshot into screen state maps", () => {
@@ -261,10 +304,230 @@ test("builds a deterministic handoff proof manifest for saved device QA", () => 
     unknownEvidence: 0,
   });
   assert.equal(manifest.totalEvidenceFiles, 3);
-  assert.equal(manifest.platformEvidenceLabel, "iOS 1, Android 1, Web 1, Unknown 0");
-  assert.match(text, /WoofWatcher QA Proof Manifest/);
-  assert.match(text, /Proof ID: wwqa-/);
+  assert.equal(manifest.platformEvidenceLabel, "manual self-attested tags: iOS 1, Android 1, Web 1, Unknown 0");
+  assert.match(text, /WoofWatcher QA Evidence Manifest/);
+  assert.match(text, /Manifest ID: wwqa-/);
   assert.match(text, /Care twin: 1 pass, 1 needs tune, 1 evidence file/);
   assert.match(text, /Release: 2 pass, 0 needs tune, 2 evidence files/);
-  assert.match(text, /does not prove App Store or Play Store approval/);
+  assert.match(text, /cannot close iOS\/Android release gates/);
+});
+
+test("creates six fresh non-aliased QA content maps", () => {
+  const first = createEmptyMobileQaSessionState();
+  const second = createEmptyMobileQaSessionState();
+  const firstMaps = [
+    first.careTwinStatusById,
+    first.careTwinNotes,
+    first.careTwinEvidenceById,
+    first.surfaceStatusById,
+    first.surfaceNotes,
+    first.surfaceEvidenceById,
+  ];
+  const secondMaps = [
+    second.careTwinStatusById,
+    second.careTwinNotes,
+    second.careTwinEvidenceById,
+    second.surfaceStatusById,
+    second.surfaceNotes,
+    second.surfaceEvidenceById,
+  ];
+
+  for (let index = 0; index < firstMaps.length; index += 1) {
+    assert.notEqual(firstMaps[index], secondMaps[index]);
+    for (let peer = index + 1; peer < firstMaps.length; peer += 1) {
+      assert.notEqual(firstMaps[index], firstMaps[peer]);
+    }
+  }
+  first.careTwinNotes.happy = "local edit";
+  assert.deepEqual(first.surfaceNotes, {});
+  assert.deepEqual(second.careTwinNotes, {});
+});
+
+test("hydration deep-copies six maps, preserves savedAtIso, and suppresses one matching autosave", () => {
+  const gate = createMobileQaSessionPersistenceGate();
+  const source: MobileQaSessionState = {
+    careTwinStatusById: { happy: "pass" },
+    careTwinNotes: { happy: "Looks good" },
+    careTwinEvidenceById: {
+      happy: [
+        {
+          uri: "file:///qa/happy.png",
+          fileName: "happy.png",
+          source: "library",
+          targetPlatform: "ios",
+          capturedAtIso: "2026-08-13T10:00:00.000Z",
+        },
+      ],
+    },
+    surfaceStatusById: { home: "needs-review" },
+    surfaceNotes: { home: "Retest crop" },
+    surfaceEvidenceById: {
+      home: [
+        {
+          uri: "file:///qa/home.png",
+          fileName: "home.png",
+          source: "library",
+          targetPlatform: "android",
+          capturedAtIso: "2026-08-13T10:01:00.000Z",
+        },
+      ],
+    },
+    savedAtIso: "2026-08-13T10:02:00.000Z",
+  };
+  const ticket = gate.beginHydration();
+  let applied: MobileQaSessionState | undefined;
+
+  assert.equal(
+    gate.applyHydrationIfCurrent(ticket, source, (state) => {
+      applied = state;
+    }),
+    "applied",
+  );
+  assert.ok(applied);
+  assert.equal(applied.savedAtIso, source.savedAtIso);
+  assert.notEqual(applied.careTwinStatusById, source.careTwinStatusById);
+  assert.notEqual(applied.careTwinNotes, source.careTwinNotes);
+  assert.notEqual(applied.careTwinEvidenceById, source.careTwinEvidenceById);
+  assert.notEqual(applied.careTwinEvidenceById.happy, source.careTwinEvidenceById.happy);
+  assert.notEqual(applied.careTwinEvidenceById.happy[0], source.careTwinEvidenceById.happy[0]);
+  assert.notEqual(applied.surfaceStatusById, source.surfaceStatusById);
+  assert.notEqual(applied.surfaceNotes, source.surfaceNotes);
+  assert.notEqual(applied.surfaceEvidenceById, source.surfaceEvidenceById);
+  assert.notEqual(applied.surfaceEvidenceById.home, source.surfaceEvidenceById.home);
+  assert.notEqual(applied.surfaceEvidenceById.home[0], source.surfaceEvidenceById.home[0]);
+
+  source.careTwinNotes.happy = "mutated source";
+  source.careTwinEvidenceById.happy[0].fileName = "mutated.png";
+  assert.equal(applied.careTwinNotes.happy, "Looks good");
+  assert.equal(applied.careTwinEvidenceById.happy[0].fileName, "happy.png");
+  assert.equal(gate.consumeAutosaveDecision(qaInput(applied)), "suppress-hydration");
+  assert.equal(gate.consumeAutosaveDecision(qaInput(applied)), "save");
+});
+
+test("a mismatched autosave is never suppressed and consumes the hydration marker", () => {
+  const gate = createMobileQaSessionPersistenceGate();
+  const hydrated = createEmptyMobileQaSessionState();
+  hydrated.careTwinNotes.happy = "hydrated";
+  const ticket = gate.beginHydration();
+  assert.equal(gate.applyHydrationIfCurrent(ticket, hydrated, () => {}), "applied");
+
+  const changed = createEmptyMobileQaSessionState();
+  changed.careTwinNotes.happy = "real edit that bypassed mark";
+  assert.equal(gate.consumeAutosaveDecision(qaInput(changed)), "save");
+  assert.equal(gate.consumeAutosaveDecision(qaInput(hydrated)), "save");
+});
+
+test("an immediate edit in each QA map category saves after hydration", () => {
+  const cases: Array<(state: MobileQaSessionState) => void> = [
+    (state) => {
+      state.careTwinStatusById.happy = "pass";
+    },
+    (state) => {
+      state.careTwinNotes.happy = "Ready";
+    },
+    (state) => {
+      state.careTwinEvidenceById.happy = [];
+    },
+    (state) => {
+      state.surfaceStatusById.home = "needs-review";
+    },
+    (state) => {
+      state.surfaceNotes.home = "Retest";
+    },
+    (state) => {
+      state.surfaceEvidenceById.home = [];
+    },
+  ];
+
+  for (const edit of cases) {
+    const gate = createMobileQaSessionPersistenceGate();
+    const hydrated = createEmptyMobileQaSessionState();
+    const ticket = gate.beginHydration();
+    assert.equal(gate.applyHydrationIfCurrent(ticket, hydrated, () => {}), "applied");
+    gate.markRealEdit();
+    edit(hydrated);
+    assert.equal(gate.consumeAutosaveDecision(qaInput(hydrated)), "save");
+  }
+});
+
+test("real edits and newer hydration tickets invalidate delayed QA hydration", () => {
+  const gate = createMobileQaSessionPersistenceGate();
+  const editedTicket = gate.beginHydration();
+  let applies = 0;
+  gate.markRealEdit();
+  assert.equal(gate.isHydrationCurrent(editedTicket), false);
+  assert.equal(
+    gate.applyHydrationIfCurrent(editedTicket, createEmptyMobileQaSessionState(), () => {
+      applies += 1;
+    }),
+    "stale",
+  );
+
+  const olderTicket = gate.beginHydration();
+  const newerTicket = gate.beginHydration();
+  assert.equal(olderTicket.editRevision, editedTicket.editRevision + 1);
+  assert.equal(newerTicket.editRevision, olderTicket.editRevision);
+  assert.equal(newerTicket.generation, olderTicket.generation + 1);
+  assert.equal(gate.isHydrationCurrent(olderTicket), false);
+  assert.equal(gate.isHydrationCurrent(newerTicket), true);
+  assert.equal(
+    gate.applyHydrationIfCurrent(olderTicket, createEmptyMobileQaSessionState(), () => {
+      applies += 1;
+    }),
+    "stale",
+  );
+  assert.equal(
+    gate.applyHydrationIfCurrent(newerTicket, createEmptyMobileQaSessionState(), () => {
+      applies += 1;
+    }),
+    "applied",
+  );
+  assert.equal(applies, 1);
+});
+
+test("serializes QA saves so an older write cannot finish after a newer write", async () => {
+  const queue = createMobileQaSessionSaveQueue();
+  const first = deferred<void>();
+  const second = deferred<void>();
+  const started: string[] = [];
+
+  const firstSave = queue.save("older", async (value) => {
+    started.push(value);
+    await first.promise;
+  });
+  const secondSave = queue.save("newer", async (value) => {
+    started.push(value);
+    await second.promise;
+  });
+
+  await Promise.resolve();
+  assert.deepEqual(started, ["older"]);
+  assert.equal(queue.isPending(), true);
+
+  first.resolve();
+  await firstSave;
+  await Promise.resolve();
+  assert.deepEqual(started, ["older", "newer"]);
+
+  second.resolve();
+  await secondSave;
+  assert.equal(queue.isPending(), false);
+});
+
+test("a rejected QA save does not block a legitimate later save", async () => {
+  const queue = createMobileQaSessionSaveQueue();
+  const saved: string[] = [];
+
+  await assert.rejects(
+    queue.save("failed", async () => {
+      throw new Error("disk unavailable");
+    }),
+    /disk unavailable/,
+  );
+  await queue.save("later", async (value) => {
+    saved.push(value);
+  });
+
+  assert.deepEqual(saved, ["later"]);
+  assert.equal(queue.isPending(), false);
 });
