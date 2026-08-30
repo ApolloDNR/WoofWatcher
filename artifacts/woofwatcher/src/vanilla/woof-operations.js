@@ -89,6 +89,7 @@ export function createAuditEvent(input = {}, now = new Date().toISOString()) {
 export function buildTalkToLogDraft(text = "", options = {}, now = new Date().toISOString()) {
   const original = cleanText(text, 1000);
   const caregiver = cleanText(options.caregiver || options.defaultCaregiver, 80) || "Unassigned";
+  const petName = resolvePetName(options.petName);
   const type = inferEntryType(original);
   const entryDraft = createEntry({
     type,
@@ -114,7 +115,7 @@ export function buildTalkToLogDraft(text = "", options = {}, now = new Date().to
     entryDraft,
     reviewPrompt: needsReview
       ? "Review before saving. For urgent symptoms, contact a veterinarian instead of relying on WoofWatcher."
-      : "Review before saving so Phoenix's care log stays accurate.",
+      : `Review before saving so ${petName}'s care log stays accurate.`,
     boundary: "Talk-to-log drafts organize caregiver notes. They are not a diagnosis, veterinary advice, or an automatic saved record."
   };
 }

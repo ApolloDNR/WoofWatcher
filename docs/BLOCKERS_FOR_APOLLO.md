@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-30 PWA talk-to-log identity boundary
+
+Source/tests clear the renamed-dog identity leak in normal-care talk-to-log review prompts. Live browser/native draft review, screen-reader traversal, provider-backed AI/action proof, store evidence, and Apollo approval remain open; drafts remain owner-reviewed and unsaved.
+
 ## 2026-08-14 PWA Household Pulse presence identity boundary
 
 Source/tests clear raw placeholder and padded renamed identity from supervised and home-alone Household Pulse status. Live browser/native interaction, provider-backed household refresh, VoiceOver/TalkBack review, store evidence, and Apollo approval remain open.

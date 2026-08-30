@@ -204,7 +204,7 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
     operations: {
       reportArtifact,
       hostedNudges,
-      talkToLogDraft: buildTalkToLogDraft("", { source: "product_contract" }, now),
+      talkToLogDraft: buildTalkToLogDraft("", { source: "product_contract", petName }, now),
       auditTrail: [
         createAuditEvent(
           {

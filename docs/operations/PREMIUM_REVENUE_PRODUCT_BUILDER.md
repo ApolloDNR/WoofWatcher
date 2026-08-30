@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-30 PWA talk-to-log draft identity slice
+
+The shared talk-to-log builder now resolves Dog Profile identity before producing its normal-care owner-review prompt, and the canonical product contract supplies the resolved dog name. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed. Talk-to-log remains a local, unsaved, owner-reviewed draft; live AI, automatic actions, providers, diagnosis, payments, native/store proof, and Apollo approval remain gated.
+
+Red-first coverage failed because renamed Mochi still received Phoenix review copy, then focused PWA behavior passed `36/36` after the minimal implementation. Broad partial-checkout execution passed `829/831`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Local TypeScript retained the established missing `@tanstack/react-query` and `zod` dependency blockers. JSON doctor source guards passed while local readiness remained blocked on pnpm `11.19.0` versus pinned `10.24.0` and missing Expo. Dependency-complete branch CI remains to be recorded.
+
 ## 2026-08-14 PWA Household Pulse presence identity slice
 
 The live Household Pulse presence card now consumes a shared, deterministic status builder instead of reading raw Dog Profile text in the renderer. Placeholder identity becomes Phoenix, renamed identity is trimmed, and supervised/home-alone copy stays aligned with the source of truth. Provider sync, live browser/native interaction, accessibility proof, store evidence, and Apollo approval remain gated.

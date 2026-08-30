@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-30 PWA talk-to-log draft identity boundary
+
+- DONE: Owner-reviewed talk-to-log drafts now resolve Dog Profile identity before formatting the normal-care review prompt, and the product contract passes its canonical dog name into the shared builder.
+- VERIFIED: Red-first coverage reproduced renamed Mochi receiving Phoenix review copy, then focused PWA behavior passed `36/36` for `My Dog` -> Phoenix and a whitespace-trimmed rename.
+- BOUNDARY: This changes local draft review copy only. It does not auto-save a log, enable live AI, deliver provider actions, diagnose, clear native/accessibility/store gates, or grant Apollo approval.
+- VERIFIED: Broad partial-checkout execution passed `829/831`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; PixelLab passed `ok=150 missing=0 invalid=0`; `git diff --check` passed. Local TypeScript retained the established missing `@tanstack/react-query` and `zod` dependency blockers, and JSON doctor remained blocked on pnpm `11.19.0` versus pinned `10.24.0` plus missing Expo.
+- NEXT: Run dependency-complete branch CI, then keep real browser/native owner-review evidence as an external gate.
+
 ## 2026-08-14 PWA Household Pulse presence identity boundary
 
 - DONE: The live Household Pulse presence status now resolves Dog Profile identity before rendering supervised and home-alone states.

@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-30 PWA talk-to-log review follows Dog Profile
+
+Decision: Resolve the active dog inside `buildTalkToLogDraft` and pass the canonical product-contract identity into it. Blank and `My Dog` retain Phoenix; renamed identity is trimmed before owner-review copy is produced.
+
+Boundary: Talk-to-log remains an unsaved, owner-reviewed local draft. This does not enable automatic writes, live AI, providers, diagnosis, payments, native/store proof, or launch approval.
+
 ## 2026-08-14 PWA Household Pulse presence follows Dog Profile
 
 Decision: Move supervised, unknown, and home-alone presence presentation into a shared builder that resolves Dog Profile identity and accepts an explicit clock. Blank and `My Dog` retain Phoenix; renamed identity is trimmed.

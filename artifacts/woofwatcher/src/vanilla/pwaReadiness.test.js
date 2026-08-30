@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import {
   buildHostedNudgePlan,
   buildReportArtifact,
+  buildTalkToLogDraft,
   buildWoofGuideVetNoteDraft,
 } from "./woof-operations.js";
 import {
@@ -39,6 +40,24 @@ const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const app = readFileSync(join(here, "app.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
+
+test("keeps Dog Profile identity canonical in owner-reviewed talk-to-log drafts", () => {
+  const placeholder = buildTalkToLogDraft(
+    "Breakfast was finished",
+    { petName: "My Dog" },
+    "2026-08-30T12:00:00.000Z",
+  );
+  const renamed = buildTalkToLogDraft(
+    "Breakfast was finished",
+    { petName: "  Mochi  " },
+    "2026-08-30T12:00:00.000Z",
+  );
+
+  assert.match(placeholder.reviewPrompt, /Phoenix's care log/);
+  assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
+  assert.match(renamed.reviewPrompt, /Mochi's care log/);
+  assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
+});
 
 test("keeps Dog Profile identity canonical in the PWA avatar next-moment fallback", () => {
   const recentMeal = {
