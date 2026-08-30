@@ -98,6 +98,16 @@ const releaseQaSource = readText(
 const qaRouteSource = readText(
   join(root, "artifacts", "woofwatcher-mobile", "app", "care-twin-qa.tsx"),
 );
+const qaScreenSource = readText(
+  join(
+    root,
+    "artifacts",
+    "woofwatcher-mobile",
+    "components",
+    "owner",
+    "CareTwinQaScreen.tsx",
+  ),
+);
 check(
   "Focused native QA targets are source-backed",
   [
@@ -135,7 +145,8 @@ check(
       "Attach focused QA screenshot reference",
       "Pass pending exact-device proof",
       "A Photos attachment alone does not count.",
-    ].every((value) => qaRouteSource.includes(value)),
+    ].every((value) => qaScreenSource.includes(value)) &&
+    qaRouteSource.includes("CareTwinQaScreen"),
   "focused /care-twin-qa targets must stay wired before native proof can be collected",
 );
 

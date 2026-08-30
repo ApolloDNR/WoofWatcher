@@ -1398,7 +1398,8 @@ export default function CalendarScreen() {
           );
           return true;
         },
-        scrollTo: (y) => scrollRef.current?.scrollTo({ y, animated: true }),
+        scrollTo: (y) =>
+          scrollRef.current?.scrollTo({ y, animated: !reducedMotion }),
         navigate: () => undefined,
         editRoutine: () => undefined,
         writeCare: () => {
@@ -1406,7 +1407,7 @@ export default function CalendarScreen() {
         },
       },
     });
-  }, [reminderFocusRequestKey]);
+  }, [reducedMotion, reminderFocusRequestKey]);
   useEffect(
     () => () => reminderFocusLifecycle.dispose(),
     [reminderFocusLifecycle],

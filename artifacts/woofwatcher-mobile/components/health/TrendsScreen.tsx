@@ -190,11 +190,14 @@ function AnimatedBar({
       withTiming(1, { duration: 460, easing: Easing.out(Easing.cubic) }),
     );
   }, [targetHeight, reduced, index, grow]);
+  const barHeight = targetHeight > 0 ? Math.max(targetHeight, 3) : 0;
   const style = useAnimatedStyle(() => ({
-    height: (targetHeight > 0 ? Math.max(targetHeight, 3) : 0) * grow.value,
+    transform: [{ translateY: barHeight * (1 - grow.value) }],
   }));
   return (
-    <Animated.View style={[styles.bar, { backgroundColor: color }, style]} />
+    <Animated.View
+      style={[styles.bar, { backgroundColor: color, height: barHeight }, style]}
+    />
   );
 }
 
@@ -766,6 +769,7 @@ const styles = StyleSheet.create({
   barCell: {
     flex: 1,
     justifyContent: "flex-end",
+    overflow: "hidden",
   },
   bar: {
     width: "100%",

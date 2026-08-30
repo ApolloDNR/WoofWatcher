@@ -126,6 +126,54 @@ test("raw layout entrances honor Reduce Motion in the trail and sleep bubble", (
   assert.match(room, /exiting=\{reduced \? undefined : FadeOut\}/);
 });
 
+test("Avatar Studio image transitions honor Reduce Motion", () => {
+  const avatarStudio = readMobile(
+    "components",
+    "more",
+    "AvatarStudioScreen.tsx",
+  );
+  const transitions = [...avatarStudio.matchAll(/transition=\{([^}]+)\}/g)].map(
+    ([, expression]) => expression.trim(),
+  );
+
+  assert.ok(
+    transitions.length >= 6,
+    "expected Avatar Studio image transitions",
+  );
+  for (const transition of transitions) {
+    assert.match(
+      transition,
+      /^(?:0|reduced\s*\?\s*0\s*:\s*\d+)$/,
+      `unguarded Avatar Studio image transition: ${transition}`,
+    );
+  }
+});
+
+test("care navigation scrolling honors Reduce Motion", () => {
+  for (const path of [
+    ["app", "(tabs)", "calendar.tsx"],
+    ["app", "(tabs)", "log.tsx"],
+    ["app", "(tabs)", "health.tsx"],
+  ]) {
+    const source = readMobile(...path);
+    assert.match(source, /const reducedMotion = useReducedMotion\(\)/);
+    assert.doesNotMatch(
+      source,
+      /animated:\s*true/,
+      `${path.join("/")} still forces smooth scrolling`,
+    );
+    assert.match(source, /animated:\s*!reducedMotion/);
+  }
+});
+
+test("dense trend bars reveal with transforms instead of layout animation", () => {
+  const trends = readMobile("components", "health", "TrendsScreen.tsx");
+
+  assert.doesNotMatch(trends, /height:\s*[^,\n]*\* grow\.value/);
+  assert.match(trends, /transform:\s*\[\{ translateY:/);
+  assert.match(trends, /barCell:\s*\{[\s\S]*?overflow:\s*"hidden"[\s\S]*?\}/);
+});
+
 test("screen entrances have one owner and the remaining legacy entrance uses shared tokens", () => {
   for (const path of [
     ["app", "(tabs)", "calendar.tsx"],

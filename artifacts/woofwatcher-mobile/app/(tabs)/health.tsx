@@ -23,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import {
   deriveBileVomitEvidence30,
   deriveBileWatchStatus,
@@ -298,6 +299,7 @@ function HealthCoreScreen({
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
   const { state } = useCare();
   const now = useActiveCurrentTime();
   const healthWeek = useMemo(() => buildTrendWindow("week", now), [now]);
@@ -331,10 +333,10 @@ function HealthCoreScreen({
     if (medicationAnchorYRef.current == null) return false;
     scrollRef.current?.scrollTo({
       y: Math.max(0, medicationAnchorYRef.current - 8),
-      animated: true,
+      animated: !reducedMotion,
     });
     return true;
-  }, []);
+  }, [reducedMotion]);
   const registerSectionAnchor = useCallback(
     (target: "medications") => (event: LayoutChangeEvent) => {
       medicationAnchorYRef.current = event.nativeEvent.layout.y;

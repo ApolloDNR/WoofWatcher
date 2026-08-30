@@ -9,6 +9,7 @@
     "doctor:mobile-beta:json": "node scripts/mobile-beta-doctor.mjs --json",
     "doctor:native-qa": "node scripts/native-qa-tooling-doctor.mjs",
     "doctor:native-qa:json": "node scripts/native-qa-tooling-doctor.mjs --json",
+    "dev": "node scripts/replit-preview.mjs --rebuild",
     "proof:live-preview": "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
     "preview": "node scripts/replit-preview.mjs",
     "preview:rebuild": "node scripts/replit-preview.mjs --rebuild",

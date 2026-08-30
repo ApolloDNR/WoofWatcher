@@ -5843,7 +5843,7 @@ test("moves the full safe Reminder Center into Plans and leaves a replace-only l
   assert.match(calendar, /createPlanReminderFocusLifecycle/);
   assert.match(
     calendar,
-    /useEffect\(\(\) => \{[\s\S]*reminderFocusLifecycle\.update[\s\S]*\}, \[reminderFocusRequestKey\]\);/,
+    /useEffect\(\(\) => \{[\s\S]*reminderFocusLifecycle\.update[\s\S]*\}, \[reducedMotion, reminderFocusRequestKey\]\);/,
   );
   assert.match(
     calendar,
@@ -7664,6 +7664,12 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
     ),
   );
   assert.ok(payload.checks?.some((check) => check.label === "JAVA_HOME set"));
+  assert.equal(
+    payload.checks?.find(
+      (check) => check.label === "Focused native QA targets are source-backed",
+    )?.status,
+    "PASS",
+  );
   assert.ok(
     payload.nativeProofTargets?.includes(
       "/care-twin-qa?qaSurface=records-local-file-handoff",

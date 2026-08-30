@@ -2771,12 +2771,12 @@ export default function LogScreen() {
     const timer = setTimeout(() => {
       scrollRef.current?.scrollTo({
         y: Math.max(0, walkCardYRef.current - 84),
-        animated: true,
+        animated: !reducedMotion,
       });
       announce("Finish details are ready.");
     }, 380);
     return () => clearTimeout(timer);
-  }, [routeWalkParam, openWalkSession]);
+  }, [openWalkSession, reducedMotion, routeWalkParam]);
 
   // Honest route-recorder state: only ever says "recording" while location
   // fixes are actually landing; otherwise it explains what would enable it.
@@ -3327,9 +3327,9 @@ export default function LogScreen() {
   const scrollToComposer = useCallback(() => {
     scrollRef.current?.scrollTo({
       y: Math.max((composerSectionY.current ?? 620) - 12, 0),
-      animated: true,
+      animated: !reducedMotion,
     });
-  }, []);
+  }, [reducedMotion]);
 
   const focusFullComposerForLauncherAction = (action: LauncherAction) => {
     selectLauncherAction(action);
@@ -3377,7 +3377,7 @@ export default function LogScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       beginComposerIntent({ kind: "selection", type: "alone" });
       setSelectedLauncherKey("alone:Alone Time");
-      scrollRef.current?.scrollTo({ y: 360, animated: true });
+      scrollRef.current?.scrollTo({ y: 360, animated: !reducedMotion });
       return;
     }
     if (careMutationsBlocked) {
@@ -3407,6 +3407,7 @@ export default function LogScreen() {
     now,
     openAloneSession,
     petDisplayName,
+    reducedMotion,
     showCareReadOnly,
   ]);
 
@@ -3461,7 +3462,7 @@ export default function LogScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       beginComposerIntent({ kind: "selection", type: "walk" });
       setSelectedLauncherKey("walk:Walk");
-      scrollRef.current?.scrollTo({ y: 360, animated: true });
+      scrollRef.current?.scrollTo({ y: 360, animated: !reducedMotion });
       return;
     }
     if (careMutationsBlocked) {
@@ -3490,6 +3491,7 @@ export default function LogScreen() {
     markQuickSave,
     now,
     openWalkSession,
+    reducedMotion,
     showCareReadOnly,
   ]);
 
@@ -4975,7 +4977,10 @@ export default function LogScreen() {
                         if (firstReviewId) {
                           setDetailEntryId(firstReviewId);
                         }
-                        scrollRef.current?.scrollTo({ y: 0, animated: true });
+                        scrollRef.current?.scrollTo({
+                          y: 0,
+                          animated: !reducedMotion,
+                        });
                       }}
                       disabled={
                         isSyncing || syncOutbox.status !== "needs-retry"

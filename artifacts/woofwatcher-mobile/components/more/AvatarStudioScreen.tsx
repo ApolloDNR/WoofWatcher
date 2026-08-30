@@ -823,7 +823,7 @@ export default function AvatarStudioScreen({
                   source={PIXEL_ROOM_SOURCE}
                   style={[StyleSheet.absoluteFill, pixelImageStyle]}
                   contentFit="cover"
-                  transition={220}
+                  transition={reduced ? 0 : 220}
                 />
                 <View
                   style={[
@@ -844,7 +844,7 @@ export default function AvatarStudioScreen({
                         source={layer.source}
                         style={[s.templateAccessoryLayer, pixelImageStyle]}
                         contentFit="contain"
-                        transition={150}
+                        transition={reduced ? 0 : 150}
                         pointerEvents="none"
                       />
                     ))
@@ -935,7 +935,7 @@ export default function AvatarStudioScreen({
                                 pixelImageStyle,
                               ]}
                               contentFit="contain"
-                              transition={150}
+                              transition={reduced ? 0 : 150}
                               pointerEvents="none"
                             />
                           );
@@ -1394,7 +1394,7 @@ export default function AvatarStudioScreen({
                           source={getAvatarTemplateDisplaySource(template.id)}
                           style={[s.templateArt, pixelImageStyle]}
                           contentFit="contain"
-                          transition={140}
+                          transition={reduced ? 0 : 140}
                         />
                         <View
                           style={[
@@ -1805,7 +1805,7 @@ export default function AvatarStudioScreen({
                         source={moodStill ?? PIXEL_HEAD_SOURCE}
                         style={[s.moodThumb, pixelImageStyle]}
                         contentFit="contain"
-                        transition={150}
+                        transition={reduced ? 0 : 150}
                       />
                       <View
                         pointerEvents="none"

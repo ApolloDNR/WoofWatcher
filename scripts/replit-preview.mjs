@@ -14,8 +14,15 @@
  */
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { constants } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  resolvePreviewBuildCommand,
+  resolvePreviewRuntime,
+  resolvePreviewServerCommand,
+  startPreviewServer,
+} from "./preview-runtime.mjs";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const exportIndex = join(
@@ -26,18 +33,27 @@ const exportIndex = join(
   "index.html",
 );
 
-function run(cmd, args) {
-  const res = spawnSync(cmd, args, { stdio: "inherit", cwd: repoRoot });
+function run(cmd, args, env = process.env) {
+  const res = spawnSync(cmd, args, {
+    stdio: "inherit",
+    cwd: repoRoot,
+    env,
+  });
   if (res.status !== 0) process.exit(res.status ?? 1);
 }
 
 const rebuild = process.argv.includes("--rebuild");
+const previewRuntime = resolvePreviewRuntime(
+  process.argv.slice(2),
+  process.env,
+);
 
 if (rebuild || !existsSync(exportIndex)) {
   console.log(
     "[replit-preview] Building the web export (one-time, a few minutes)...",
   );
-  run("pnpm", ["--filter", "@workspace/woofwatcher-mobile", "run", "smoke:web"]);
+  const previewBuild = resolvePreviewBuildCommand();
+  run(previewBuild.command, previewBuild.args);
 } else {
   console.log(
     "[replit-preview] Reusing existing web export (pass --rebuild to force).",
@@ -45,6 +61,27 @@ if (rebuild || !existsSync(exportIndex)) {
 }
 
 console.log(
-  `[replit-preview] Serving on 0.0.0.0:${process.env.PORT || 4194} ...`,
+  `[replit-preview] Serving on ${previewRuntime.host}:${previewRuntime.port} ...`,
 );
-run("pnpm", ["--filter", "@workspace/woofwatcher-mobile", "run", "preview:web"]);
+const previewServer = resolvePreviewServerCommand({
+  repoRoot,
+  execPath: process.execPath,
+  runtime: previewRuntime,
+  env: process.env,
+});
+try {
+  const result = await startPreviewServer({
+    ...previewServer,
+    cwd: repoRoot,
+  });
+  const signalNumber = result.signal
+    ? constants.signals[result.signal]
+    : undefined;
+  process.exitCode =
+    result.code ?? (signalNumber == null ? 1 : 128 + signalNumber);
+} catch (error) {
+  console.error(
+    `[replit-preview] Preview server failed: ${error instanceof Error ? error.message : String(error)}`,
+  );
+  process.exitCode = 1;
+}
