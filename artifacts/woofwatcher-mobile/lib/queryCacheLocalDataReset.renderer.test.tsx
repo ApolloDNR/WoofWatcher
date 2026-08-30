@@ -1233,13 +1233,16 @@ async function waitForRendered<T>(
   condition: () => T | null | undefined | false,
   description: string,
 ): Promise<T> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  const deadline = Date.now() + 5_000;
+  do {
     const result = condition();
     if (result) return result;
     await act(async () => {
-      await new Promise<void>((resolve) => setImmediate(resolve));
+      // TanStack Query batches observer notifications onto the timer queue.
+      // Yield there instead of spinning only through Node's check phase.
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     });
-  }
+  } while (Date.now() < deadline);
   throw new Error(`Timed out waiting for ${description}.`);
 }
 
