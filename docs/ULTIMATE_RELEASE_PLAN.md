@@ -10,7 +10,9 @@ ScrollView without native-only offset props.
 Red-first deterministic proof is green (`191/191` focused, `150/150`
 PixelLab, clean whitespace). The local broad run is `867/870` only because the
 partial checkout cannot resolve `express` and two `@workspace/care-domain`
-consumers. Current-tip dependency-complete CI remains required.
+consumers. Dependency-complete `WoofWatcher Verify` run `33365007108`, job
+`99403724260`, passed implementation/docs commit `22f8fe92` through release
+doctor, focused tests, typecheck, CI-safe builds, and completion.
 
 Release is not approved by this slice. Next capture compact-iPhone reach,
 nested-scroll behavior, numeric-keyboard exit, and VoiceOver focus before any

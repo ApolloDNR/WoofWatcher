@@ -7,8 +7,10 @@
   ScrollView fallback.
 - PASS (deterministic): Red-first clearance coverage and focused mobile
   layout/readiness pass `191/191`; PixelLab passes `150/150`.
-- PENDING (dependency-complete): Current-tip keyboard-controller typecheck and
-  mobile export/build proof.
+- PASS (dependency-complete): `WoofWatcher Verify` run `33365007108`, job
+  `99403724260`, passed implementation/docs commit `22f8fe92` through the
+  release doctor, focused tests, keyboard-controller typecheck, CI-safe builds,
+  and completion.
 - PENDING (native): Compact-iPhone reach, nested-scroll feel, numeric-keyboard
   exit, VoiceOver focus return, screenshots, and visual approval.
 

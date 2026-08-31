@@ -21,7 +21,12 @@
 - NEXT: Run dependency-complete CI, then capture the routine, event, and record
   forms on a compact real iPhone; add a dedicated numeric-keyboard Done affordance
   only if device QA shows drag dismissal is insufficient.
-- CI: Current-tip dependency-complete proof pending.
+- CI: Dependency-complete `WoofWatcher Verify` run `33365007108`, job
+  `99403724260`, passed implementation/docs commit `22f8fe92` through pinned
+  install, release doctor, focused tests, keyboard-controller typecheck,
+  CI-safe builds, post steps, and Complete job.
+- NEXT: Rerun after this proof-record commit so final-tip dependency proof is
+  current before native compact-iPhone capture.
 
 ## 2026-08-30 iOS form keyboard interaction boundary
 

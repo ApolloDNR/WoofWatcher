@@ -14,8 +14,10 @@ minimal implementation. Focused mobile layout/readiness then passed
 `191/191`; broad local execution passed `867/870`, with only missing
 partial-checkout `express` and `@workspace/care-domain` links; PixelLab passed
 `ok=150 missing=0 invalid=0`; and `git diff --check` passed. The local checkout
-cannot authoritatively compile the Expo/keyboard-controller surface, so
-current-tip dependency-complete branch CI remains required.
+cannot authoritatively compile the Expo/keyboard-controller surface.
+Dependency-complete `WoofWatcher Verify` run `33365007108`, job
+`99403724260`, passed implementation/docs commit `22f8fe92` through release
+doctor, focused tests, typecheck, CI-safe builds, post steps, and Complete job.
 
 This does not claim native approval. Compact-iPhone caret reach, nested-scroll
 feel, numeric-keyboard exit, VoiceOver focus return, screenshots, store review,

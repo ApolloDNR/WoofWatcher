@@ -5,8 +5,10 @@
 - Deterministic: Native keyboard-aware form props must preserve the platform
   dismissal contract and a 16-point caret gutter; web must return a zero
   native offset. Wrong platform or offset branches must fail the focused test.
-- Integration: Dependency-complete CI must typecheck the shared wrapper's
-  native/web prop split and complete mobile export/build smoke.
+- Integration: Dependency-complete `WoofWatcher Verify` run `33365007108`, job
+  `99403724260`, typechecked the shared wrapper's native/web prop split and
+  completed release doctor plus CI-safe export/build gates for commit
+  `22f8fe92`.
 - Compact iPhone: In Plans, focus routine Note and event Location; in Records,
   focus Notes. Confirm each field scrolls above the keyboard and its primary
   save action remains reachable without dismissing the sheet.

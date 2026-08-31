@@ -4,8 +4,10 @@
 
 Source/tests now make the Plans routine/event editors and Records add-record
 sheet vertically keyboard-aware with a 16-point native caret gutter, inherited
-interactive dismissal, and a web-safe fallback. Dependency-complete typecheck
-and export/build proof are pending for the current revision.
+interactive dismissal, and a web-safe fallback. Dependency-complete
+`WoofWatcher Verify` run `33365007108`, job `99403724260`, passed
+implementation/docs commit `22f8fe92` through release doctor, focused tests,
+typecheck, CI-safe builds, and completion.
 
 Real-iPhone compact-height reach, nested scroll feel, numeric-keyboard exit,
 VoiceOver focus return, screenshots, store review, and Apollo visual approval
