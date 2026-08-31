@@ -9,6 +9,10 @@ to include the toolbar. Static root wiring and shared layout coverage pass
 `193/193`; PixelLab passes `ok=150 missing=0 invalid=0`; and whitespace
 validation is clean.
 
+Dependency-complete `WoofWatcher Verify` run `33370008141`, job `99418712173`,
+passed implementation/docs commit `bb481787` through install, doctor, focused
+tests, typecheck, CI-safe builds, and completion.
+
 This does not claim native approval. Real-iPhone compact-height reach,
 toolbar/focus behavior, VoiceOver traversal, screenshots, store review, and
 Apollo approval remain evidence gates.

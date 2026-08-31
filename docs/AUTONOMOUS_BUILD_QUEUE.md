@@ -2906,5 +2906,6 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - DONE: The app root now mounts the keyboard-controller completion toolbar only on iOS, with safe-area insets for landscape controls and a Done action for number/decimal keyboards that do not provide one.
 - VERIFIED LOCALLY: Shared layout plus static root-wiring coverage passes `193/193`; PixelLab passes `ok=150 missing=0 invalid=0`; `git diff --check` passes with expected Windows line-ending warnings.
+- VERIFIED CI: Dependency-complete `WoofWatcher Verify` run `33370008141`, job `99418712173`, passed implementation/docs commit `bb481787` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: This is source-level reach and completion hardening. Real-iPhone compact-height reach, toolbar appearance, focus order/return, VoiceOver, screenshots, store review, and Apollo approval remain open.
-- NEXT: Require dependency-complete branch CI, then capture route-named iPhone numeric-keyboard and VoiceOver evidence when native tooling is available.
+- NEXT: Rerun branch CI after this proof-record commit, then capture route-named iPhone numeric-keyboard and VoiceOver evidence when native tooling is available.

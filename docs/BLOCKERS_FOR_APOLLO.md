@@ -8,6 +8,10 @@ entry, compact-height reach, toolbar appearance, focus order and return,
 VoiceOver, screenshots, store review, and Apollo approval remain open; source
 contracts are not native-device proof.
 
+Dependency-complete `WoofWatcher Verify` run `33370008141`, job `99418712173`,
+passed implementation/docs commit `bb481787` through install, doctor, focused
+tests, typecheck, CI-safe builds, and completion.
+
 ## 2026-08-30 iOS keyboard-aware form-sheet boundary
 
 Source/tests now make the Plans routine/event editors and Records add-record

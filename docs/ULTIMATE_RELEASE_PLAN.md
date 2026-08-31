@@ -10,6 +10,8 @@ Focused layout/readiness proof passes `193/193`, PixelLab passes
 `ok=150 missing=0 invalid=0`, and whitespace validation is clean. Release
 acceptance still requires real-iPhone compact-height reach, toolbar/focus
 behavior, VoiceOver traversal, screenshots, store review, and Apollo approval.
+Dependency-complete `WoofWatcher Verify` run `33370008141`, job `99418712173`,
+passed implementation/docs commit `bb481787` end to end.
 
 ## 2026-08-30 iOS keyboard-aware form-sheet increment
 
