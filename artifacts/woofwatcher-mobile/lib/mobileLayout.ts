@@ -111,8 +111,14 @@ export function getKeyboardAwareFormScrollProps(
 ): KeyboardAwareFormScrollProps {
   return {
     ...getFormKeyboardScrollProps(platform),
-    bottomOffset: isWebPlatform(platform) ? 0 : 16,
+    bottomOffset: platform === "ios" ? 35 : isWebPlatform(platform) ? 0 : 16,
   };
+}
+
+export function shouldRenderKeyboardToolbar(
+  platform: MobileRuntimePlatform,
+): boolean {
+  return platform === "ios";
 }
 
 function normalizeBottomInset(platform: MobileRuntimePlatform, bottomInset = 0): number {

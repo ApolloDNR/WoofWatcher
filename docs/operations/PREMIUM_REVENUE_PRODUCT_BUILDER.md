@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-08-31 iOS numeric-keyboard completion slice
+
+The app root now mounts the keyboard-controller toolbar only on iOS, passes
+safe-area insets to keep landscape controls reachable, and gives number and
+decimal keyboards an explicit Done path. Keyboard-aware form clearance grows
+to include the toolbar. Static root wiring and shared layout coverage pass
+`193/193`; PixelLab passes `ok=150 missing=0 invalid=0`; and whitespace
+validation is clean.
+
+This does not claim native approval. Real-iPhone compact-height reach,
+toolbar/focus behavior, VoiceOver traversal, screenshots, store review, and
+Apollo approval remain evidence gates.
+
 ## 2026-08-30 iOS keyboard-aware form-sheet slice
 
 The shared `KeyboardAwareScrollViewCompat` now resolves its platform contract

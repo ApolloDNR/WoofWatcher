@@ -1,5 +1,16 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-08-31 iOS numeric-keyboard completion increment
+
+The native root now provides an iOS-only keyboard toolbar with safe-area-aware
+Previous, Next, and Done controls. Keyboard-aware forms reserve the toolbar's
+height, closing the source-level exit gap for number and decimal keyboards.
+
+Focused layout/readiness proof passes `193/193`, PixelLab passes
+`ok=150 missing=0 invalid=0`, and whitespace validation is clean. Release
+acceptance still requires real-iPhone compact-height reach, toolbar/focus
+behavior, VoiceOver traversal, screenshots, store review, and Apollo approval.
+
 ## 2026-08-30 iOS keyboard-aware form-sheet increment
 
 Plans routine/event editors and the Records add-record sheet now use the shared

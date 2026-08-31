@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-08-31 iOS numeric-keyboard completion boundary
+
+Source/tests now add a safe-area-aware iOS keyboard toolbar with a Done action
+and reserve its height in keyboard-aware forms. Real-iPhone numeric/decimal
+entry, compact-height reach, toolbar appearance, focus order and return,
+VoiceOver, screenshots, store review, and Apollo approval remain open; source
+contracts are not native-device proof.
+
 ## 2026-08-30 iOS keyboard-aware form-sheet boundary
 
 Source/tests now make the Plans routine/event editors and Records add-record

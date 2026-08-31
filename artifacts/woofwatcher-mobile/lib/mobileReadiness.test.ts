@@ -5948,6 +5948,25 @@ test("keeps Living Phoenix room rasters inside its labeled controls", () => {
   );
 });
 
+test("keeps the iOS numeric-keyboard completion toolbar wired at the app root", () => {
+  const rootLayout = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "app",
+      "_layout.tsx",
+    ),
+    "utf8",
+  );
+
+  assert.match(rootLayout, /KeyboardProvider, KeyboardToolbar/);
+  assert.match(rootLayout, /useSafeAreaInsets/);
+  assert.match(rootLayout, /shouldRenderKeyboardToolbar\(Platform\.OS\)/);
+  assert.match(rootLayout, /<KeyboardToolbar insets=\{insets\} \/>/);
+  assert.match(rootLayout, /<IosKeyboardToolbar \/>/);
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

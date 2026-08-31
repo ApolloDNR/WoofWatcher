@@ -18,6 +18,7 @@ import {
   getTabbedRouteBottomPadding,
   MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
+  shouldRenderKeyboardToolbar,
 } from "./mobileLayout.ts";
 
 test("lets owners dismiss form keyboards with the platform-native drag gesture", () => {
@@ -37,7 +38,7 @@ test("lets owners dismiss form keyboards with the platform-native drag gesture",
 
 test("keeps keyboard-aware form fields clear of native keyboards", () => {
   assert.deepEqual(getKeyboardAwareFormScrollProps("ios"), {
-    bottomOffset: 16,
+    bottomOffset: 35,
     keyboardDismissMode: "interactive",
     keyboardShouldPersistTaps: "handled",
   });
@@ -51,6 +52,12 @@ test("keeps keyboard-aware form fields clear of native keyboards", () => {
     keyboardDismissMode: "none",
     keyboardShouldPersistTaps: "handled",
   });
+});
+
+test("adds an accessible completion toolbar only where iOS keyboards need it", () => {
+  assert.equal(shouldRenderKeyboardToolbar("ios"), true);
+  assert.equal(shouldRenderKeyboardToolbar("android"), false);
+  assert.equal(shouldRenderKeyboardToolbar("web"), false);
 });
 
 test("names the active dog in the shared Today tab hint", () => {

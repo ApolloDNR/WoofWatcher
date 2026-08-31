@@ -2902,3 +2902,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Canonical Dog Profile identity now reaches durable report privacy copy; `My Dog` remains Phoenix and padded renamed identity is trimmed.
 - PROOF: WoofWatcher Verify run `31799022606`, job `94762394283`, passed implementation/docs commit `6ed93c4a`.
 - OPEN: Real browser/native download, share/reopen, recipient review, provider storage, veterinary review, store, and Apollo evidence remain required.
+# 2026-08-31 iOS numeric-keyboard completion
+
+- DONE: The app root now mounts the keyboard-controller completion toolbar only on iOS, with safe-area insets for landscape controls and a Done action for number/decimal keyboards that do not provide one.
+- VERIFIED LOCALLY: Shared layout plus static root-wiring coverage passes `193/193`; PixelLab passes `ok=150 missing=0 invalid=0`; `git diff --check` passes with expected Windows line-ending warnings.
+- BOUNDARY: This is source-level reach and completion hardening. Real-iPhone compact-height reach, toolbar appearance, focus order/return, VoiceOver, screenshots, store review, and Apollo approval remain open.
+- NEXT: Require dependency-complete branch CI, then capture route-named iPhone numeric-keyboard and VoiceOver evidence when native tooling is available.

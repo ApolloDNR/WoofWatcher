@@ -3674,3 +3674,8 @@ Owner: Codex.
 
 - Decision: Resolve identity inside `buildReportArtifact` and use that canonical value in every owner/recipient-visible artifact field, including the privacy boundary.
 - Boundary: This does not prove file download, native sharing, recipient review, provider storage, veterinary acceptance, or launch approval.
+# 2026-08-31 - Provide iOS keyboard completion globally
+
+- Decision: Mount the keyboard-controller toolbar at the native app root on iOS and reserve its height in shared keyboard-aware forms.
+- Why: Number and decimal keyboards can omit a native return key; one safe-area-aware Done path prevents owners from becoming trapped while preserving Android and web behavior.
+- Boundary: Device focus behavior, VoiceOver, screenshots, store review, and Apollo approval still require real-iPhone evidence.

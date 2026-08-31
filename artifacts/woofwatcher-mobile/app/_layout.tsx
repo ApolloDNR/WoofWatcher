@@ -25,8 +25,8 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { KeyboardProvider, KeyboardToolbar } from "react-native-keyboard-controller";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -44,6 +44,7 @@ import {
   useWoofAuth,
 } from "@/lib/auth";
 import { resolveWebAppViewport } from "@/lib/webAppViewport";
+import { shouldRenderKeyboardToolbar } from "@/lib/mobileLayout";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -342,6 +343,13 @@ function AppFrame() {
   );
 }
 
+function IosKeyboardToolbar() {
+  const insets = useSafeAreaInsets();
+  if (!shouldRenderKeyboardToolbar(Platform.OS)) return null;
+
+  return <KeyboardToolbar insets={insets} />;
+}
+
 export default function RootLayout() {
   const scheme = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({
@@ -380,6 +388,7 @@ export default function RootLayout() {
                   <KeyboardProvider>
                     <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
                     <AppFrame />
+                    <IosKeyboardToolbar />
                   </KeyboardProvider>
                 </GestureHandlerRootView>
               </AvatarProvider>
