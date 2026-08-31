@@ -5967,6 +5967,22 @@ test("keeps the iOS numeric-keyboard completion toolbar wired at the app root", 
   assert.match(rootLayout, /<IosKeyboardToolbar \/>/);
 });
 
+test("keeps Setup fields and save actions reachable above compact native keyboards", () => {
+  const setup = readAppFile("setup.tsx");
+
+  assert.match(setup, /KeyboardAwareScrollViewCompat/);
+  assert.match(
+    setup,
+    /<KeyboardAwareScrollViewCompat[\s\S]*?style=\{s\.scroll\}[\s\S]*?>[\s\S]*?Save foundation[\s\S]*?<\/KeyboardAwareScrollViewCompat>/,
+    "Setup must keep its complete form and save actions inside the shared keyboard-aware scroller",
+  );
+  assert.doesNotMatch(
+    setup,
+    /<ScrollView[\s\S]*?Save foundation[\s\S]*?<\/ScrollView>/,
+    "Setup must not fall back to a plain ScrollView that can strand lower fields behind a compact-height keyboard",
+  );
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

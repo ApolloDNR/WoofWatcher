@@ -313,3 +313,6 @@ No payment implementation should start until product scope, privacy terms, suppo
 The source-level fixed-light preview boundary is hardened and covered. Native
 Avatar Studio screenshots, phone-size proportions, sprite/gait timing,
 accessibility traversal, and Apollo visual approval remain release gates.
+## 2026-08-31 Setup keyboard-aware reachability increment
+
+Setup now uses the shared native keyboard-aware scroller for the whole onboarding flow, including the decimal weight field and final save controls. The web path retains a standard scroll fallback. Real compact-height iPhone/Android rendering, keyboard animation, focus order, VoiceOver/TalkBack, and route-named evidence remain required.

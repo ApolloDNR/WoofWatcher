@@ -7,7 +7,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -19,6 +18,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import {
@@ -27,7 +27,6 @@ import {
 } from "@/lib/breedTemplateMatch";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
-  getFormKeyboardScrollProps,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -277,8 +276,7 @@ export default function SetupScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={keyboardOffset}
       >
-        <ScrollView
-          {...getFormKeyboardScrollProps(Platform.OS)}
+        <KeyboardAwareScrollViewCompat
           style={s.scroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: 20 }}
@@ -605,7 +603,7 @@ export default function SetupScreen() {
               </Pressable>
             ) : null}
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollViewCompat>
       </KeyboardAvoidingView>
 
       {/* Save celebration: an in-app board sheet instead of a native alert,

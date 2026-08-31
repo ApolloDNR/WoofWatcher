@@ -2909,3 +2909,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED CI: Dependency-complete `WoofWatcher Verify` run `33370008141`, job `99418712173`, passed implementation/docs commit `bb481787` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: This is source-level reach and completion hardening. Real-iPhone compact-height reach, toolbar appearance, focus order/return, VoiceOver, screenshots, store review, and Apollo approval remain open.
 - NEXT: Rerun branch CI after this proof-record commit, then capture route-named iPhone numeric-keyboard and VoiceOver evidence when native tooling is available.
+## 2026-08-31 Setup keyboard-aware reachability
+
+- DONE: Setup now keeps the complete onboarding form, numeric weight field, and save/later actions inside the shared native keyboard-aware scroller while preserving web fallback behavior.
+- VERIFIED: Red-first readiness coverage failed on the plain Setup `ScrollView`, then the focused layout/readiness suite passed 194/194 after the shared wrapper was wired.
+- NEXT: Run aggregate verification and dependency-complete branch CI. Real compact-height iPhone Setup reach, toolbar focus order, VoiceOver return, and route-named iOS/Android evidence remain external gates.

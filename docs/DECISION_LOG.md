@@ -3679,3 +3679,7 @@ Owner: Codex.
 - Decision: Mount the keyboard-controller toolbar at the native app root on iOS and reserve its height in shared keyboard-aware forms.
 - Why: Number and decimal keyboards can omit a native return key; one safe-area-aware Done path prevents owners from becoming trapped while preserving Android and web behavior.
 - Boundary: Device focus behavior, VoiceOver, screenshots, store review, and Apollo approval still require real-iPhone evidence.
+## 2026-08-31 - Keep Setup inside the shared keyboard-aware form contract
+
+- Decision: Replace Setup's plain form `ScrollView` with `KeyboardAwareScrollViewCompat` so native focus tracking can keep every onboarding field and the final actions above compact keyboards.
+- Boundary: This is source/test reachability hardening. It does not prove real-device keyboard motion, toolbar focus order, VoiceOver behavior, provider setup, store review, or Apollo approval.

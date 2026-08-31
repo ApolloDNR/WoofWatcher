@@ -1111,3 +1111,6 @@ Dependency-complete `WoofWatcher Verify` run `31775219339`, job `94689152045`, p
 ## 2026-08-14 PWA report privacy identity remainder
 
 Source coverage now protects canonical Dog Profile identity across durable report content and privacy copy. Real browser/native artifact download, share/reopen, trusted-recipient review, provider storage, veterinary review, store evidence, and Apollo approval remain blocked on external evidence.
+## 2026-08-31 Setup keyboard reachability boundary
+
+Source/tests now keep the complete Setup form and final actions inside the shared keyboard-aware scroller. Real compact-height iPhone and Android Setup completion, numeric-toolbar focus order, VoiceOver/TalkBack traversal, screenshots, provider proof, store review, and Apollo approval remain blocked on external evidence.
