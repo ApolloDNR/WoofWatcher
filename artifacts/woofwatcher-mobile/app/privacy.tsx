@@ -20,6 +20,7 @@ import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
+  getFormKeyboardScrollProps,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getStandaloneRouteBottomPadding,
@@ -306,6 +307,7 @@ export default function PrivacyScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        {...getFormKeyboardScrollProps(Platform.OS)}
         showsVerticalScrollIndicator={false}
         // 16 matches the tab screens' shared side gutter (Home/Log/Records
         // all use 16), so modal routes stop sitting 4px narrower.
@@ -701,7 +703,11 @@ export default function PrivacyScreen() {
                 <Ionicons name="close" size={23} color={colors.mutedForeground} />
               </Pressable>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.modalScroll}>
+            <ScrollView
+              {...getFormKeyboardScrollProps(Platform.OS)}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={s.modalScroll}
+            >
               <ProfileInput
                 label="Support email"
                 value={launchDraft.supportEmail}

@@ -1,5 +1,17 @@
 # Quality Gates
 
+## 2026-08-30 iOS form keyboard interaction gate
+
+- Shared behavior: PASS. iOS vertical forms dismiss interactively, Android
+  dismisses on drag, web remains unchanged, and form actions stay tappable.
+- Focused source proof: PASS `190/190`; PixelLab: PASS `150/150`; whitespace:
+  PASS.
+- Broad local proof: PARTIAL PASS `866/869`; only unresolved partial-checkout
+  `express` and `@workspace/care-domain` dependency links fail.
+- Dependency-complete branch proof: PENDING current-tip CI.
+- Native and approval proof: PENDING real-iPhone field reach, fixed-sheet and
+  numeric-keyboard QA, VoiceOver, screenshots, store review, and Apollo signoff.
+
 ## 2026-08-30 iOS keyboard-safe floating navigation gate
 
 - Source behavior: PASS. The custom bottom bar hides with the keyboard and the

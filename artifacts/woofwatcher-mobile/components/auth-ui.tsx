@@ -22,7 +22,7 @@ import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { useCare } from "@/context/CareContext";
 import { isClerkEnabledForBuild } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getFormKeyboardScrollProps, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { buildAuthGatewayIdentityCopy } from "@/lib/petIdentity";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
@@ -83,12 +83,12 @@ export function AuthShell({
 
   return (
     <ScrollView
+      {...getFormKeyboardScrollProps(Platform.OS)}
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
         styles.scroll,
         { paddingTop: topPadding, paddingBottom: bottomPadding },
       ]}
-      keyboardShouldPersistTaps="handled"
     >
       <View
         accessibilityLabel="WoofWatcher CareTwin account gateway"

@@ -1,5 +1,21 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-08-30 iOS form keyboard interaction increment
+
+The scrollable form layer now has one platform contract: interactive dismissal
+on iOS, on-drag dismissal on Android, unchanged web behavior, and handled form
+taps. It is wired across the account/onboarding and primary care, schedule,
+records, pack, settings, privacy, and native-QA surfaces.
+
+Source proof is green (`190/190` focused, `150/150` PixelLab, clean whitespace).
+The local broad run is `866/869` only because the partial checkout cannot
+resolve `express` and two `@workspace/care-domain` consumers. Current-tip
+dependency-complete CI remains required.
+
+Release is not approved by this slice. Next close the remaining fixed-height
+form-sheet reach and numeric-keyboard completion gaps, then record real-iPhone
+gesture/VoiceOver screenshots before store submission or Apollo approval.
+
 ## 2026-08-30 iOS keyboard-safe floating navigation increment
 
 The launch shell now removes both halves of its floating navigation from form

@@ -1,5 +1,17 @@
 # Blockers For Apollo
 
+## 2026-08-30 iOS form keyboard interaction boundary
+
+Source/tests now clear the inconsistent drag-dismiss behavior on WoofWatcher's
+scrollable form surfaces: iOS follows the keyboard interactively, Android
+dismisses on drag, and web behavior stays unchanged. Real-iPhone focused-field
+reach, fixed-height sheet behavior, number/decimal keyboard completion,
+VoiceOver focus return, screenshots, store review, and Apollo visual approval
+remain open; deterministic source behavior is not device proof.
+
+Dependency-complete current-tip CI is still required before this slice clears
+its branch compile/build gate.
+
 ## 2026-08-30 iOS keyboard-safe floating navigation boundary
 
 Source/tests now clear the known custom-navigation overlap: React Navigation

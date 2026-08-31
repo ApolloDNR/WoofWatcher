@@ -1,5 +1,27 @@
 # Premium Revenue Product Builder
 
+## 2026-08-30 iOS form keyboard interaction slice
+
+The scrollable form layer now consumes a pure shared
+`getFormKeyboardScrollProps` contract. iOS uses `interactive` dismissal so the
+keyboard follows the owner's drag, Android dismisses on drag, web retains its
+existing behavior, and form actions remain tappable while editing. Account
+entry, Setup, Log, Plans, Records, Pack, More, Privacy, and native-QA surfaces
+now share the rule; horizontal choice rails remain untouched.
+
+Red-first coverage failed on the absent production boundary before the helper
+was implemented. Focused mobile layout/readiness then passed `190/190`; broad
+local execution passed `866/869`, with only missing partial-checkout `express`
+and `@workspace/care-domain` links; PixelLab passed
+`ok=150 missing=0 invalid=0`; and `git diff --check` passed. The local checkout
+cannot provide authoritative Expo TypeScript/build proof, so current-tip
+dependency-complete branch CI remains required.
+
+This is not native approval. Fixed-height routine/event/record sheets still
+need focused-field reach and numeric-keyboard completion review, followed by
+real-iPhone gesture timing, VoiceOver focus return, screenshots, store review,
+and Apollo approval.
+
 ## 2026-08-30 iOS keyboard-safe floating navigation slice
 
 The custom tab shell now treats the software keyboard as a complete navigation

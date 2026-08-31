@@ -46,6 +46,7 @@ import {
   buildReminderNotificationPreferencesForCenter,
 } from "@/lib/reminderNotificationPreferences";
 import {
+  getFormKeyboardScrollProps,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -910,6 +911,7 @@ export default function CalendarScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        {...getFormKeyboardScrollProps(Platform.OS)}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}

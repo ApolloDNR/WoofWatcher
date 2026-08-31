@@ -27,6 +27,7 @@ import {
 } from "@/lib/breedTemplateMatch";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
+  getFormKeyboardScrollProps,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -277,9 +278,9 @@ export default function SetupScreen() {
         keyboardVerticalOffset={keyboardOffset}
       >
         <ScrollView
+          {...getFormKeyboardScrollProps(Platform.OS)}
           style={s.scroll}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: 20 }}
         >
           <BoardRouteHeader

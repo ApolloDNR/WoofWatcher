@@ -5,6 +5,7 @@ import {
   buildTodayTabAccessibilityHint,
   getCenteredModalBackdropPadding,
   getDockedComposerBottomPadding,
+  getFormKeyboardScrollProps,
   getFloatingDebugButtonTopOffset,
   getFloatingFeedbackBottomOffset,
   getFloatingTabChromeMetrics,
@@ -17,6 +18,21 @@ import {
   MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
 } from "./mobileLayout.ts";
+
+test("lets owners dismiss form keyboards with the platform-native drag gesture", () => {
+  assert.deepEqual(getFormKeyboardScrollProps("ios"), {
+    keyboardDismissMode: "interactive",
+    keyboardShouldPersistTaps: "handled",
+  });
+  assert.deepEqual(getFormKeyboardScrollProps("android"), {
+    keyboardDismissMode: "on-drag",
+    keyboardShouldPersistTaps: "handled",
+  });
+  assert.deepEqual(getFormKeyboardScrollProps("web"), {
+    keyboardDismissMode: "none",
+    keyboardShouldPersistTaps: "handled",
+  });
+});
 
 test("names the active dog in the shared Today tab hint", () => {
   assert.equal(

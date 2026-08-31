@@ -89,6 +89,7 @@ import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from 
 import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
 import { shareTextPayload } from "@/lib/shareText";
 import {
+  getFormKeyboardScrollProps,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -1569,6 +1570,7 @@ export default function MoreScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        {...getFormKeyboardScrollProps(Platform.OS)}
         ref={scrollRef}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
@@ -3506,6 +3508,7 @@ export default function MoreScreen() {
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDietEditOpen(false)}>
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <ScrollView
+              {...getFormKeyboardScrollProps(Platform.OS)}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
@@ -3714,6 +3717,7 @@ export default function MoreScreen() {
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <ScrollView
+              {...getFormKeyboardScrollProps(Platform.OS)}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
@@ -3830,6 +3834,7 @@ export default function MoreScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <ScrollView
+              {...getFormKeyboardScrollProps(Platform.OS)}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}

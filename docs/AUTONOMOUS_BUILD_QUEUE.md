@@ -1,5 +1,28 @@
 # Autonomous Build Queue
 
+## 2026-08-30 iOS form keyboard interaction boundary
+
+- DONE: Shared form scroll behavior now uses interactive drag dismissal on
+  iOS, on-drag dismissal on Android, and no native keyboard policy on web;
+  taps on actionable form content remain handled while the keyboard is open.
+- WIRED: The contract now reaches account entry, Setup, Log, Plans, Records,
+  Pack, More, Privacy, and the native-QA recorder, including the scrollable
+  More and Privacy form sheets.
+- VERIFIED: The red test failed because the shared contract did not exist,
+  then focused mobile layout/readiness passed `190/190`. Broad local execution
+  passed `866/869`; its three failures are the partial checkout's unresolved
+  `express` and `@workspace/care-domain` links. PixelLab passed
+  `ok=150 missing=0 invalid=0`, and `git diff --check` passed.
+- LOCAL LIMIT: The dependency-incomplete Windows checkout cannot provide an
+  authoritative Expo TypeScript build; current-tip branch CI must prove the
+  dependency-complete compile, export, and build gates.
+- BOUNDARY: Source tests do not prove real-iPhone gesture timing, focused-field
+  reach inside every fixed-height sheet, numeric-keyboard completion,
+  VoiceOver focus return, screenshots, store review, or Apollo approval.
+- NEXT: Make the remaining fixed-height routine, event, and record form sheets
+  keyboard-aware, then capture the full form loop on a real iPhone.
+- CI: Current-tip dependency-complete proof pending.
+
 ## 2026-08-30 iOS keyboard-safe floating navigation boundary
 
 - DONE: The standard floating tab bar now hides when a form keyboard opens,

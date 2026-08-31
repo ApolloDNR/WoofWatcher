@@ -1,5 +1,31 @@
 # WoofWatcher Decision Log
 
+### 2026-08-30: Centralize Platform-Native Form Keyboard Gestures
+
+Decision: Vertical input-bearing scroll surfaces consume one shared mobile
+layout contract: `interactive` dismissal on iOS, `on-drag` on Android,
+`none` on web, and `handled` taps on all platforms.
+
+Scope: Account entry, Setup, Log, Plans, Records, Pack, More, Privacy, and
+native QA now consume the contract. Horizontal choice rails and read-only
+scrollers retain their existing behavior.
+
+Reason: The previous navigation fix removed overlapping bottom chrome, but the
+form itself still inherited React Native's non-dismissable iOS default.
+Central ownership keeps the gesture consistent without coupling pure layout
+tests to React Native runtime imports.
+
+Proof: Red-first coverage failed on the absent contract, then mobile
+layout/readiness passed `190/190`; broad local execution passed `866/869`
+apart from missing partial-checkout dependency links, PixelLab passed
+`150/150`, and whitespace validation passed.
+
+Boundary: This does not claim focused-field visibility in every modal,
+numeric-keyboard completion, native timing, VoiceOver, store, or Apollo
+approval. Those remain separate device/evidence gates.
+
+Owner: Codex.
+
 ### 2026-08-30: Floating Navigation Leaves Keyboard And Accessibility Flow
 
 Decision: Set the custom bottom tabs to hide on keyboard presentation and move

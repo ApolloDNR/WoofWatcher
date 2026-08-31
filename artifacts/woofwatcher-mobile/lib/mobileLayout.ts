@@ -28,6 +28,11 @@ export interface FloatingTabKeyboardPresentation {
   importantForAccessibility: "auto" | "no-hide-descendants";
 }
 
+export interface FormKeyboardScrollProps {
+  keyboardDismissMode: "interactive" | "none" | "on-drag";
+  keyboardShouldPersistTaps: "handled";
+}
+
 export const MIN_MOBILE_TOUCH_TARGET = 48;
 export const MOBILE_INLINE_HIT_SLOP = 10;
 
@@ -80,6 +85,21 @@ const WEB_FLOATING_DEBUG_TOP_INSET = 24;
 
 function isWebPlatform(platform: MobileRuntimePlatform): boolean {
   return platform === "web";
+}
+
+export function getFormKeyboardScrollProps(
+  platform: MobileRuntimePlatform,
+): FormKeyboardScrollProps {
+  const keyboardDismissMode = platform === "ios"
+    ? "interactive"
+    : isWebPlatform(platform)
+      ? "none"
+      : "on-drag";
+
+  return {
+    keyboardDismissMode,
+    keyboardShouldPersistTaps: "handled",
+  };
 }
 
 function normalizeBottomInset(platform: MobileRuntimePlatform, bottomInset = 0): number {

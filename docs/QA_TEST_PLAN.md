@@ -1,5 +1,22 @@
 # QA Test Plan
 
+## 2026-08-30 iOS form keyboard interaction coverage
+
+- Deterministic: `getFormKeyboardScrollProps` must return `interactive` plus
+  handled taps for iOS, `on-drag` plus handled taps for Android, and `none`
+  plus handled taps for web. Mutation of any platform branch must fail the
+  focused test.
+- Integration: Dependency-complete CI must typecheck the contract on every
+  wired ScrollView and complete mobile export/build smoke.
+- Native iPhone: Open account, Setup, Log, Plans, Records, Pack, More, and
+  Privacy forms; drag each vertical form while editing and confirm the
+  keyboard tracks the finger without blocking save/cancel actions.
+- Native follow-up: Confirm routine/event/record fixed-height sheets keep the
+  focused field and primary action reachable; verify number and decimal
+  keyboards have a clear completion path.
+- Accessibility: With VoiceOver, verify focus remains on the edited control or
+  returns predictably after dismissal, and no hidden tab control is announced.
+
 ## 2026-08-30 iOS keyboard-safe floating navigation coverage
 
 - Automated: `mobileLayout.test.ts` proves the custom Today control is fully

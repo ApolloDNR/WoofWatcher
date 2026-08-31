@@ -47,6 +47,7 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import {
   getCenteredModalBackdropPadding,
+  getFormKeyboardScrollProps,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
@@ -2499,11 +2500,11 @@ export default function LogScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        {...getFormKeyboardScrollProps(Platform.OS)}
         ref={scrollRef}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader

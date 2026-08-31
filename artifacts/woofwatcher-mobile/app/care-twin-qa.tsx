@@ -80,7 +80,7 @@ import {
 } from "@/lib/careTwinChoreography";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { deriveLaunchReadiness } from "@/lib/launchReadiness";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
+import { getFormKeyboardScrollProps, getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 import {
   buildQaScreenshotEvidence,
   qaScreenshotEvidencePlatformLabel,
@@ -799,6 +799,7 @@ function CareTwinQaScreenBody() {
   return (
     <>
       <ScrollView
+        {...getFormKeyboardScrollProps(Platform.OS)}
         style={[s.screen, { backgroundColor: colors.background }]}
         contentContainerStyle={[s.content, { paddingTop: topPadding, paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}

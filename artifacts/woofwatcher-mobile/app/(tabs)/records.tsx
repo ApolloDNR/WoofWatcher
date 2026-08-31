@@ -66,6 +66,7 @@ import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
+  getFormKeyboardScrollProps,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -1046,6 +1047,7 @@ export default function RecordsScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        {...getFormKeyboardScrollProps(Platform.OS)}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}

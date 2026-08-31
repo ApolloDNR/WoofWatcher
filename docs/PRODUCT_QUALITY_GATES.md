@@ -1,5 +1,16 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-30 iOS form keyboard interaction gate
+
+- PASS (source): Form scrolls use a shared platform contract with interactive
+  iOS dismissal, on-drag Android dismissal, unchanged web behavior, and
+  handled taps while editing.
+- PASS (deterministic): Red-first mobile layout coverage and the focused
+  mobile layout/readiness suite pass `190/190`; PixelLab passes `150/150`.
+- PENDING (dependency-complete): Current-tip CI typecheck/build/export proof.
+- PENDING (native): Real-iPhone focused-field reach, fixed-sheet behavior,
+  numeric keyboard completion, VoiceOver focus return, and visual approval.
+
 ## 2026-08-30 iOS keyboard-safe floating navigation gate
 
 - PASS (source): The navigator-owned floating bar hides for the software

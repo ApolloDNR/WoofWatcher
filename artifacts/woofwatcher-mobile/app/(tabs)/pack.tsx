@@ -54,6 +54,7 @@ import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { deriveCareCareer, deriveCareStreak } from "@/lib/careCareer";
 import {
+  getFormKeyboardScrollProps,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
@@ -821,6 +822,7 @@ export default function PackScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        {...getFormKeyboardScrollProps(Platform.OS)}
         style={s.container}
         contentContainerStyle={{
           paddingTop: getRouteTopPadding({
