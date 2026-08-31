@@ -4,6 +4,8 @@
 
 The Records add-record form now gives each field an explicit screen-reader label and a title -> due/reference -> notes keyboard path ending in Done. Focused red/green source proof passes; native VoiceOver/TalkBack, compact-height, attachment, and screenshot proof remain release gates.
 
+Dependency-complete `WoofWatcher Verify` run `33416586578`, job `99568580359`, passed implementation/docs commit `90d74a72` end to end. Final-tip CI must be rerun after this proof record.
+
 ## 2026-08-31 iOS numeric-keyboard completion increment
 
 The native root now provides an iOS-only keyboard toolbar with safe-area-aware
