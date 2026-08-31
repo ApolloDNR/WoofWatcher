@@ -1,5 +1,16 @@
 # Blockers For Apollo
 
+## 2026-08-30 iOS keyboard-aware form-sheet boundary
+
+Source/tests now make the Plans routine/event editors and Records add-record
+sheet vertically keyboard-aware with a 16-point native caret gutter, inherited
+interactive dismissal, and a web-safe fallback. Dependency-complete typecheck
+and export/build proof are pending for the current revision.
+
+Real-iPhone compact-height reach, nested scroll feel, numeric-keyboard exit,
+VoiceOver focus return, screenshots, store review, and Apollo visual approval
+remain open; framework configuration is not native-device proof.
+
 ## 2026-08-30 iOS form keyboard interaction boundary
 
 Source/tests now clear the inconsistent drag-dismiss behavior on WoofWatcher's

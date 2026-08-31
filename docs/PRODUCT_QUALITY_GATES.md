@@ -1,5 +1,17 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-30 iOS keyboard-aware form-sheet gate
+
+- PASS (source): Routine, event, and record sheets are bounded vertical
+  keyboard-aware forms with shared native caret clearance and a web-safe
+  ScrollView fallback.
+- PASS (deterministic): Red-first clearance coverage and focused mobile
+  layout/readiness pass `191/191`; PixelLab passes `150/150`.
+- PENDING (dependency-complete): Current-tip keyboard-controller typecheck and
+  mobile export/build proof.
+- PENDING (native): Compact-iPhone reach, nested-scroll feel, numeric-keyboard
+  exit, VoiceOver focus return, screenshots, and visual approval.
+
 ## 2026-08-30 iOS form keyboard interaction gate
 
 - PASS (source): Form scrolls use a shared platform contract with interactive

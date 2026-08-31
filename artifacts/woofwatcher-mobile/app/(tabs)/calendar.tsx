@@ -34,6 +34,7 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { PressScale, ProgressFill } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { deriveCareStreak } from "@/lib/careCareer";
 import { confirmThroughSteps } from "@/lib/confirmDialog";
 import { parseLocalDate } from "@/lib/time";
@@ -1999,6 +2000,11 @@ export default function CalendarScreen() {
       <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
         <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
           <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+            <KeyboardAwareScrollViewCompat
+              style={s.modalSheetScroll}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
             <View style={s.modalHandle} />
             <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
               {routineEditId ? "Edit Routine" : "New Routine"}
@@ -2139,6 +2145,7 @@ export default function CalendarScreen() {
                 <Text style={[s.deleteBtnText, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>Delete Routine</Text>
               </Pressable>
             )}
+            </KeyboardAwareScrollViewCompat>
           </Pressable>
         </Pressable>
       </Modal>
@@ -2147,6 +2154,11 @@ export default function CalendarScreen() {
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
         <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
           <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+            <KeyboardAwareScrollViewCompat
+              style={s.modalSheetScroll}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
             <View style={s.modalHandle} />
             <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
 
@@ -2231,6 +2243,7 @@ export default function CalendarScreen() {
                 {dateError}
               </Text>
             ) : null}
+            </KeyboardAwareScrollViewCompat>
           </Pressable>
         </Pressable>
       </Modal>
@@ -2855,7 +2868,8 @@ const s = StyleSheet.create({
   routineFeedbackButtonText: { fontSize: 12.5 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
+  modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, maxHeight: "92%" },
+  modalSheetScroll: { flexShrink: 1 },
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   modalTitle: { fontSize: 22, marginBottom: 16 },
   fieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },

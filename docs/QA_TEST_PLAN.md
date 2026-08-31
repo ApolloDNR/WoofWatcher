@@ -1,5 +1,21 @@
 # QA Test Plan
 
+## 2026-08-30 iOS keyboard-aware form-sheet coverage
+
+- Deterministic: Native keyboard-aware form props must preserve the platform
+  dismissal contract and a 16-point caret gutter; web must return a zero
+  native offset. Wrong platform or offset branches must fail the focused test.
+- Integration: Dependency-complete CI must typecheck the shared wrapper's
+  native/web prop split and complete mobile export/build smoke.
+- Compact iPhone: In Plans, focus routine Note and event Location; in Records,
+  focus Notes. Confirm each field scrolls above the keyboard and its primary
+  save action remains reachable without dismissing the sheet.
+- Gestures: Confirm the vertical sheet and nested horizontal choice rails do
+  not fight, interactive drag dismissal tracks the finger, and reopening the
+  keyboard restores the correct field.
+- Accessibility: With VoiceOver, verify the modal boundary stays announced,
+  focus does not jump behind the sheet, and dismissal returns predictably.
+
 ## 2026-08-30 iOS form keyboard interaction coverage
 
 - Deterministic: `getFormKeyboardScrollProps` must return `interactive` plus

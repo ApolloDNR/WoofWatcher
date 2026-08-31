@@ -1,5 +1,26 @@
 # Premium Revenue Product Builder
 
+## 2026-08-30 iOS keyboard-aware form-sheet slice
+
+The shared `KeyboardAwareScrollViewCompat` now resolves its platform contract
+centrally: native keyboard-controller scrolls keep a 16-point caret gutter and
+inherit the platform dismissal/tap rules, while web uses a normal ScrollView
+without the native-only offset. Plans routine/event editors and the Records
+add-record sheet now use the bounded vertical wrapper instead of relying on a
+fixed sheet to remain reachable after keyboard resize.
+
+Red-first coverage failed on the absent keyboard-aware contract before the
+minimal implementation. Focused mobile layout/readiness then passed
+`191/191`; broad local execution passed `867/870`, with only missing
+partial-checkout `express` and `@workspace/care-domain` links; PixelLab passed
+`ok=150 missing=0 invalid=0`; and `git diff --check` passed. The local checkout
+cannot authoritatively compile the Expo/keyboard-controller surface, so
+current-tip dependency-complete branch CI remains required.
+
+This does not claim native approval. Compact-iPhone caret reach, nested-scroll
+feel, numeric-keyboard exit, VoiceOver focus return, screenshots, store review,
+and Apollo approval remain explicit evidence gates.
+
 ## 2026-08-30 iOS form keyboard interaction slice
 
 The scrollable form layer now consumes a pure shared

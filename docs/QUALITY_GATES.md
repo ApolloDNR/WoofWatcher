@@ -1,5 +1,18 @@
 # Quality Gates
 
+## 2026-08-30 iOS keyboard-aware form-sheet gate
+
+- Shared behavior: PASS. Plans routine/event and Records add-record sheets now
+  auto-scroll focused native inputs with a 16-point caret gutter and preserve
+  a normal web fallback.
+- Focused source proof: PASS `191/191`; PixelLab: PASS `150/150`; whitespace:
+  PASS.
+- Broad local proof: PARTIAL PASS `867/870`; only unresolved partial-checkout
+  `express` and `@workspace/care-domain` dependency links fail.
+- Dependency-complete branch proof: PENDING current-tip CI.
+- Native/approval proof: PENDING compact-iPhone reach, nested-scroll feel,
+  numeric-keyboard exit, VoiceOver, screenshots, store review, and Apollo signoff.
+
 ## 2026-08-30 iOS form keyboard interaction gate
 
 - Shared behavior: PASS. iOS vertical forms dismiss interactively, Android

@@ -1,5 +1,21 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-08-30 iOS keyboard-aware form-sheet increment
+
+Plans routine/event editors and the Records add-record sheet now use the shared
+keyboard-aware vertical form wrapper. Native focus tracking keeps a 16-point
+caret gutter while inheriting interactive dismissal; web keeps an ordinary
+ScrollView without native-only offset props.
+
+Red-first deterministic proof is green (`191/191` focused, `150/150`
+PixelLab, clean whitespace). The local broad run is `867/870` only because the
+partial checkout cannot resolve `express` and two `@workspace/care-domain`
+consumers. Current-tip dependency-complete CI remains required.
+
+Release is not approved by this slice. Next capture compact-iPhone reach,
+nested-scroll behavior, numeric-keyboard exit, and VoiceOver focus before any
+store submission or Apollo approval claim.
+
 ## 2026-08-30 iOS form keyboard interaction increment
 
 The scrollable form layer now has one platform contract: interactive dismissal

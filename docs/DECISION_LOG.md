@@ -1,5 +1,28 @@
 # WoofWatcher Decision Log
 
+### 2026-08-30: Use Keyboard-Aware Scrolling For Bounded Form Sheets
+
+Decision: Plans routine/event editors and the Records add-record sheet use the
+shared `KeyboardAwareScrollViewCompat`. Native forms inherit the common
+dismissal contract and keep a 16-point gap between the focused caret and the
+keyboard; web keeps a normal ScrollView and receives no native offset.
+
+Reason: A bounded sheet plus KeyboardAvoidingView can resize the panel without
+making its final fields or save action reachable. Focus tracking belongs in a
+shared wrapper so every migrated sheet receives the same behavior and the web
+fallback never leaks keyboard-controller-only props.
+
+Proof: Red-first coverage failed on the missing keyboard-aware contract, then
+focused mobile layout/readiness passed `191/191`; broad local execution passed
+`867/870` apart from missing partial-checkout dependencies, PixelLab passed
+`150/150`, and whitespace validation passed.
+
+Boundary: Real-device timing, nested-scroll feel, VoiceOver focus, numeric
+keyboard ergonomics, screenshots, store review, and Apollo approval remain
+separate evidence gates.
+
+Owner: Codex.
+
 ### 2026-08-30: Centralize Platform-Native Form Keyboard Gestures
 
 Decision: Vertical input-bearing scroll surfaces consume one shared mobile

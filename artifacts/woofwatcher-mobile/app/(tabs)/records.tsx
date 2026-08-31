@@ -77,6 +77,7 @@ import {
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PetPortrait } from "@/components/PetPortrait";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -3023,6 +3024,11 @@ export default function RecordsScreen() {
         <Pressable style={s.modalBackdrop} onPress={() => setRecordOpen(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
             <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={() => {}}>
+              <KeyboardAwareScrollViewCompat
+                style={s.recordSheetFormScroll}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
               <View style={s.sheetHandle} />
               <View style={s.sheetHeader}>
                 <View style={[s.rowIconWrap, { backgroundColor: colors.primary + "14" }]}>
@@ -3107,6 +3113,7 @@ export default function RecordsScreen() {
                   <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save record</Text>
                 </Pressable>
               </View>
+              </KeyboardAwareScrollViewCompat>
             </Pressable>
           </KeyboardAvoidingView>
         </Pressable>
@@ -3694,6 +3701,7 @@ const s = StyleSheet.create({
   modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)" },
   modalDock: { flex: 1, justifyContent: "flex-end" },
   recordSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, maxHeight: "92%" },
+  recordSheetFormScroll: { flexShrink: 1 },
   sheetHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   sheetHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   sheetTitle: { fontSize: 20, letterSpacing: -0.2 },

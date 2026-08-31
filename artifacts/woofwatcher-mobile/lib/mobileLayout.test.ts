@@ -6,6 +6,7 @@ import {
   getCenteredModalBackdropPadding,
   getDockedComposerBottomPadding,
   getFormKeyboardScrollProps,
+  getKeyboardAwareFormScrollProps,
   getFloatingDebugButtonTopOffset,
   getFloatingFeedbackBottomOffset,
   getFloatingTabChromeMetrics,
@@ -29,6 +30,24 @@ test("lets owners dismiss form keyboards with the platform-native drag gesture",
     keyboardShouldPersistTaps: "handled",
   });
   assert.deepEqual(getFormKeyboardScrollProps("web"), {
+    keyboardDismissMode: "none",
+    keyboardShouldPersistTaps: "handled",
+  });
+});
+
+test("keeps keyboard-aware form fields clear of native keyboards", () => {
+  assert.deepEqual(getKeyboardAwareFormScrollProps("ios"), {
+    bottomOffset: 16,
+    keyboardDismissMode: "interactive",
+    keyboardShouldPersistTaps: "handled",
+  });
+  assert.deepEqual(getKeyboardAwareFormScrollProps("android"), {
+    bottomOffset: 16,
+    keyboardDismissMode: "on-drag",
+    keyboardShouldPersistTaps: "handled",
+  });
+  assert.deepEqual(getKeyboardAwareFormScrollProps("web"), {
+    bottomOffset: 0,
     keyboardDismissMode: "none",
     keyboardShouldPersistTaps: "handled",
   });

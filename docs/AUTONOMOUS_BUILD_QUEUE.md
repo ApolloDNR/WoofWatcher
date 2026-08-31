@@ -1,5 +1,28 @@
 # Autonomous Build Queue
 
+## 2026-08-30 iOS keyboard-aware form-sheet boundary
+
+- DONE: The shared keyboard-aware form wrapper now owns native caret clearance
+  and platform dismissal behavior while stripping the native-only offset from
+  its web fallback.
+- WIRED: Plans routine/event editors and the Records add-record sheet now have
+  bounded vertical scrolling that follows the focused input and keeps later
+  fields/actions reachable on compact screens.
+- VERIFIED: The red test failed because the keyboard-aware contract did not
+  exist, then focused mobile layout/readiness passed `191/191`. Broad local
+  execution passed `867/870`; only unresolved partial-checkout `express` and
+  `@workspace/care-domain` links failed. PixelLab passed
+  `ok=150 missing=0 invalid=0`, and `git diff --check` passed.
+- LOCAL LIMIT: Dependency-complete branch CI must prove the React Native
+  keyboard-controller types plus mobile export/build for this exact revision.
+- BOUNDARY: Source/configuration proof does not prove real-iPhone auto-scroll
+  timing, caret position, nested horizontal rails, VoiceOver focus return,
+  screenshots, store review, or Apollo approval.
+- NEXT: Run dependency-complete CI, then capture the routine, event, and record
+  forms on a compact real iPhone; add a dedicated numeric-keyboard Done affordance
+  only if device QA shows drag dismissal is insufficient.
+- CI: Current-tip dependency-complete proof pending.
+
 ## 2026-08-30 iOS form keyboard interaction boundary
 
 - DONE: Shared form scroll behavior now uses interactive drag dismissal on

@@ -33,6 +33,10 @@ export interface FormKeyboardScrollProps {
   keyboardShouldPersistTaps: "handled";
 }
 
+export interface KeyboardAwareFormScrollProps extends FormKeyboardScrollProps {
+  bottomOffset: number;
+}
+
 export const MIN_MOBILE_TOUCH_TARGET = 48;
 export const MOBILE_INLINE_HIT_SLOP = 10;
 
@@ -99,6 +103,15 @@ export function getFormKeyboardScrollProps(
   return {
     keyboardDismissMode,
     keyboardShouldPersistTaps: "handled",
+  };
+}
+
+export function getKeyboardAwareFormScrollProps(
+  platform: MobileRuntimePlatform,
+): KeyboardAwareFormScrollProps {
+  return {
+    ...getFormKeyboardScrollProps(platform),
+    bottomOffset: isWebPlatform(platform) ? 0 : 16,
   };
 }
 
