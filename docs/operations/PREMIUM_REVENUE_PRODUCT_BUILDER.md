@@ -4,7 +4,7 @@
 
 The shared Home identity model now owns its visible status and location headings alongside the existing canonical presence and room copy. Placeholder identity remains Phoenix, while whitespace-padded renamed identity is trimmed before Home renders either heading. Internal Phoenix components/assets/routes remain stable; browser/native accessibility, provider, store, and Apollo approval proof remain gated.
 
-Red-first coverage failed because the shared model did not expose canonical headings, then focused PWA behavior passed `36/36` after the renderer consumed them. Broad partial-checkout execution passed `829/831`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; root TypeScript passed; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Dependency-complete branch CI remains the next proof step.
+Red-first coverage failed because the shared model did not expose canonical headings, then focused PWA behavior passed `36/36` after the renderer consumed them. Broad partial-checkout execution passed `829/831`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; root TypeScript passed; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Dependency-complete `WoofWatcher Verify` run `33348673552`, job `99357619856`, passed implementation/docs commit `0b9a9a13` through install, doctor, focused tests, typecheck, CI-safe builds, post steps, and Complete job.
 
 ## 2026-08-30 PWA talk-to-log draft identity slice
 
