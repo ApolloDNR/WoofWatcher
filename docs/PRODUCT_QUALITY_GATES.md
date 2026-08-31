@@ -7,7 +7,9 @@
   handled taps while editing.
 - PASS (deterministic): Red-first mobile layout coverage and the focused
   mobile layout/readiness suite pass `190/190`; PixelLab passes `150/150`.
-- PENDING (dependency-complete): Current-tip CI typecheck/build/export proof.
+- PASS (dependency-complete): `WoofWatcher Verify` run `33364019294`, job
+  `99400859164`, passed implementation/docs commit `0332e507` through release
+  doctor, focused tests, typecheck, CI-safe builds, and completion.
 - PENDING (native): Real-iPhone focused-field reach, fixed-sheet behavior,
   numeric keyboard completion, VoiceOver focus return, and visual approval.
 

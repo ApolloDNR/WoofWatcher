@@ -14,8 +14,10 @@ was implemented. Focused mobile layout/readiness then passed `190/190`; broad
 local execution passed `866/869`, with only missing partial-checkout `express`
 and `@workspace/care-domain` links; PixelLab passed
 `ok=150 missing=0 invalid=0`; and `git diff --check` passed. The local checkout
-cannot provide authoritative Expo TypeScript/build proof, so current-tip
-dependency-complete branch CI remains required.
+cannot provide authoritative Expo TypeScript/build proof. Dependency-complete
+`WoofWatcher Verify` run `33364019294`, job `99400859164`, passed
+implementation/docs commit `0332e507` through install, release doctor,
+focused tests, typecheck, CI-safe builds, post steps, and Complete job.
 
 This is not native approval. Fixed-height routine/event/record sheets still
 need focused-field reach and numeric-keyboard completion review, followed by

@@ -21,7 +21,12 @@
   VoiceOver focus return, screenshots, store review, or Apollo approval.
 - NEXT: Make the remaining fixed-height routine, event, and record form sheets
   keyboard-aware, then capture the full form loop on a real iPhone.
-- CI: Current-tip dependency-complete proof pending.
+- CI: Dependency-complete `WoofWatcher Verify` run `33364019294`, job
+  `99400859164`, passed implementation/docs commit `0332e507` through pinned
+  install, release doctor, focused tests, typecheck, CI-safe builds, post
+  steps, and Complete job.
+- NEXT: Rerun after this proof-record commit so final-tip dependency proof is
+  current before moving to the fixed-height form-sheet slice.
 
 ## 2026-08-30 iOS keyboard-safe floating navigation boundary
 

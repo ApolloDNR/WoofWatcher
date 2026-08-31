@@ -9,8 +9,10 @@ records, pack, settings, privacy, and native-QA surfaces.
 
 Source proof is green (`190/190` focused, `150/150` PixelLab, clean whitespace).
 The local broad run is `866/869` only because the partial checkout cannot
-resolve `express` and two `@workspace/care-domain` consumers. Current-tip
-dependency-complete CI remains required.
+resolve `express` and two `@workspace/care-domain` consumers.
+Dependency-complete `WoofWatcher Verify` run `33364019294`, job
+`99400859164`, passed implementation/docs commit `0332e507` through install,
+release doctor, focused tests, typecheck, CI-safe builds, and completion.
 
 Release is not approved by this slice. Next close the remaining fixed-height
 form-sheet reach and numeric-keyboard completion gaps, then record real-iPhone

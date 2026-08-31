@@ -9,8 +9,11 @@ reach, fixed-height sheet behavior, number/decimal keyboard completion,
 VoiceOver focus return, screenshots, store review, and Apollo visual approval
 remain open; deterministic source behavior is not device proof.
 
-Dependency-complete current-tip CI is still required before this slice clears
-its branch compile/build gate.
+Dependency-complete `WoofWatcher Verify` run `33364019294`, job
+`99400859164`, passed implementation/docs commit `0332e507` through install,
+release doctor, focused tests, typecheck, CI-safe builds, post steps, and job
+completion. This clears the branch compile/build gate only; the native and
+approval gates above remain open.
 
 ## 2026-08-30 iOS keyboard-safe floating navigation boundary
 

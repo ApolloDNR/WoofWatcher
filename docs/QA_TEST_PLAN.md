@@ -6,8 +6,10 @@
   handled taps for iOS, `on-drag` plus handled taps for Android, and `none`
   plus handled taps for web. Mutation of any platform branch must fail the
   focused test.
-- Integration: Dependency-complete CI must typecheck the contract on every
-  wired ScrollView and complete mobile export/build smoke.
+- Integration: Dependency-complete `WoofWatcher Verify` run `33364019294`,
+  job `99400859164`, typechecked the contract on every wired ScrollView and
+  completed the release doctor and CI-safe export/build gates for commit
+  `0332e507`.
 - Native iPhone: Open account, Setup, Log, Plans, Records, Pack, More, and
   Privacy forms; drag each vertical form while editing and confirm the
   keyboard tracks the finger without blocking save/cancel actions.

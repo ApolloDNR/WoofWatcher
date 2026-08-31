@@ -8,7 +8,9 @@
   PASS.
 - Broad local proof: PARTIAL PASS `866/869`; only unresolved partial-checkout
   `express` and `@workspace/care-domain` dependency links fail.
-- Dependency-complete branch proof: PENDING current-tip CI.
+- Dependency-complete branch proof: PASS. `WoofWatcher Verify` run
+  `33364019294`, job `99400859164`, passed implementation/docs commit
+  `0332e507` end to end.
 - Native and approval proof: PENDING real-iPhone field reach, fixed-sheet and
   numeric-keyboard QA, VoiceOver, screenshots, store review, and Apollo signoff.
 
