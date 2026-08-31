@@ -6035,6 +6035,21 @@ test("keeps the Privacy support editor reachable and gives its fields keyboard p
   );
 });
 
+test("gives Calendar routine and event editors explicit keyboard progression", () => {
+  const calendar = readAppFile("(tabs)/calendar.tsx");
+
+  assert.match(
+    calendar,
+    /accessibilityLabel="Routine label"[\s\S]*?returnKeyType="next"[\s\S]*?accessibilityLabel="Routine time"[\s\S]*?returnKeyType="next"[\s\S]*?accessibilityLabel="Routine owner"[\s\S]*?returnKeyType="next"[\s\S]*?accessibilityLabel="Routine note"[\s\S]*?returnKeyType="done"/,
+    "the routine editor must announce a predictable label, time, owner, note keyboard flow",
+  );
+  assert.match(
+    calendar,
+    /accessibilityLabel="Event title"[\s\S]*?returnKeyType="next"[\s\S]*?accessibilityLabel="Event date"[\s\S]*?returnKeyType="next"[\s\S]*?accessibilityLabel="Event time"[\s\S]*?returnKeyType="next"[\s\S]*?accessibilityLabel="Event location"[\s\S]*?returnKeyType="done"/,
+    "the event editor must announce a predictable title, date, time, location keyboard flow",
+  );
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

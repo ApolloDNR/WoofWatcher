@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Animated,
   ImageBackground,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -322,6 +323,9 @@ export default function CalendarScreen() {
   const [evDate, setEvDate] = useState(today);
   const [evTime, setEvTime] = useState("");
   const [evLocation, setEvLocation] = useState("");
+  const eventDateRef = useRef<TextInput>(null);
+  const eventTimeRef = useRef<TextInput>(null);
+  const eventLocationRef = useRef<TextInput>(null);
 
   // Routine editor
   const [routineOpen, setRoutineOpen] = useState(false);
@@ -332,6 +336,9 @@ export default function CalendarScreen() {
   const [rOwner, setROwner] = useState("");
   const [rNote, setRNote] = useState("");
   const [rTimeError, setRTimeError] = useState<string | null>(null);
+  const routineTimeRef = useRef<TextInput>(null);
+  const routineOwnerRef = useRef<TextInput>(null);
+  const routineNoteRef = useRef<TextInput>(null);
   const [routineFeedback, setRoutineFeedback] = useState<{ id: string; title: string; type: string } | null>(null);
   const routineFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -2014,6 +2021,9 @@ export default function CalendarScreen() {
             <TextInput
               value={rLabel}
               onChangeText={setRLabel}
+              accessibilityLabel="Routine label"
+              returnKeyType="next"
+              onSubmitEditing={() => routineTimeRef.current?.focus()}
               placeholder="Morning walk"
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
@@ -2055,8 +2065,12 @@ export default function CalendarScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
                 <TextInput
+                  ref={routineTimeRef}
                   value={rTime}
                   onChangeText={(v) => { setRTime(v); setRTimeError(null); }}
+                  accessibilityLabel="Routine time"
+                  returnKeyType="next"
+                  onSubmitEditing={() => routineOwnerRef.current?.focus()}
                   placeholder="7:00 AM"
                   placeholderTextColor={colors.mutedForeground}
                   style={[s.field, { backgroundColor: colors.background, color: rTimeError ? colors.rose : colors.foreground, borderWidth: rTimeError ? 1 : 0, borderColor: rTimeError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
@@ -2068,8 +2082,12 @@ export default function CalendarScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>OWNER (OPTIONAL)</Text>
                 <TextInput
+                  ref={routineOwnerRef}
                   value={rOwner}
                   onChangeText={setROwner}
+                  accessibilityLabel="Routine owner"
+                  returnKeyType="next"
+                  onSubmitEditing={() => routineNoteRef.current?.focus()}
                   placeholder="Apollo, Maya..."
                   placeholderTextColor={colors.mutedForeground}
                   style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
@@ -2117,8 +2135,12 @@ export default function CalendarScreen() {
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTE (OPTIONAL)</Text>
             <TextInput
+              ref={routineNoteRef}
               value={rNote}
               onChangeText={setRNote}
+              accessibilityLabel="Routine note"
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
               placeholder="Any extra details..."
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
@@ -2166,6 +2188,9 @@ export default function CalendarScreen() {
             <TextInput
               value={evTitle}
               onChangeText={setEvTitle}
+              accessibilityLabel="Event title"
+              returnKeyType="next"
+              onSubmitEditing={() => eventDateRef.current?.focus()}
               placeholder="Beach day, vet visit, hike..."
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
@@ -2188,6 +2213,7 @@ export default function CalendarScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>DATE</Text>
                 <TextInput
+                  ref={eventDateRef}
                   value={evDate}
                   onChangeText={(raw) => {
                     setDateError(null);
@@ -2201,6 +2227,9 @@ export default function CalendarScreen() {
                   placeholder="YYYY-MM-DD"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="number-pad"
+                  accessibilityLabel="Event date"
+                  returnKeyType="next"
+                  onSubmitEditing={() => eventTimeRef.current?.focus()}
                   maxLength={10}
                   style={[s.field, { backgroundColor: colors.background, color: dateError ? colors.rose : colors.foreground, borderWidth: dateError ? 1 : 0, borderColor: dateError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
                 />
@@ -2211,8 +2240,12 @@ export default function CalendarScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
                 <TextInput
+                  ref={eventTimeRef}
                   value={evTime}
                   onChangeText={setEvTime}
+                  accessibilityLabel="Event time"
+                  returnKeyType="next"
+                  onSubmitEditing={() => eventLocationRef.current?.focus()}
                   placeholder="9:00 AM"
                   placeholderTextColor={colors.mutedForeground}
                   style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
@@ -2222,8 +2255,12 @@ export default function CalendarScreen() {
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LOCATION (OPTIONAL)</Text>
             <TextInput
+              ref={eventLocationRef}
               value={evLocation}
               onChangeText={setEvLocation}
+              accessibilityLabel="Event location"
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
               placeholder="Where?"
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}

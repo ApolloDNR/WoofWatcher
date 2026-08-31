@@ -3697,3 +3697,6 @@ Owner: Codex.
 - Decision: Wrap the complete AuthShell gateway and provider form in `KeyboardAwareScrollViewCompat` instead of a route-local plain ScrollView.
 - Why: Compact native keyboards must not strand sign-in/sign-up fields or submit actions, and auth should share Setup's iOS toolbar clearance, interactive dismissal, Android drag dismissal, and web fallback behavior.
 - Boundary: Source/tests do not prove real-device focus order, VoiceOver/TalkBack behavior, Clerk configuration, store readiness, or launch approval.
+# 2026-08-31 — Calendar editors use explicit keyboard flows
+
+Plans routine and event sheets treat visible captions as native accessibility labels and define ordered Next/Done actions. Event date remains a number-pad field but explicitly advances to event time; final note/location actions dismiss the keyboard. Device and assistive-technology proof remains a separate release gate.

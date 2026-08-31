@@ -2940,3 +2940,10 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED: Red-first readiness coverage failed on the plain ScrollView, then the focused mobile layout/readiness suite passed 195/195.
 - CI: Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, passed implementation/docs commit `0b1561a6` with install, doctor, focused tests, typecheck, and CI-safe builds green.
 - NEXT: Capture route-named compact-height iPhone and Android auth field reach, submit-action reach, focus order, interactive dismissal, and VoiceOver/TalkBack evidence when native tooling is available.
+
+## 2026-08-31 Calendar editor keyboard accessibility
+
+- DONE: Plans routine and event editors now expose explicit field labels, deterministic Next progression, and a final Done dismissal; the numeric event date advances to time instead of becoming a keyboard dead end.
+- VERIFIED LOCALLY: Red-first readiness coverage reproduced the missing contract, then the focused Calendar assertion passed after implementation.
+- BOUNDARY: This is source-level keyboard and accessibility hardening. Real compact-height iPhone/Android reach, date-keyboard behavior, VoiceOver/TalkBack focus return, route screenshots, store review, and Apollo approval remain open.
+- NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Plans routine/event editor proof when native tooling is available.

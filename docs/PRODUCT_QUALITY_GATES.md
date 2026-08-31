@@ -813,3 +813,7 @@ screen-reader traversal and route-named device proof remain open gates.
 
 - PASS (source/test): shared Notification Center copy and notification titles resolve Dog Profile identity at the builder boundary.
 - OPEN (runtime/provider): browser permission review, native iOS/Android notification rendering, Expo/APNs/FCM delivery, privacy/legal approval, and Apollo sign-off.
+# Calendar editor keyboard accessibility — 2026-08-31
+
+- Source gate: Plans routine and event sheets provide labeled, deterministic keyboard progression and final dismissal without changing routine/log semantics.
+- Remaining native gate: compact-height iOS/Android, numeric keyboard behavior, VoiceOver/TalkBack, and screenshot proof.

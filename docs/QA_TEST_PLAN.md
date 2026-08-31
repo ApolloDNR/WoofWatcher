@@ -3075,3 +3075,7 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Import a backup whose Dog Profile is `  Mochi  `; confirm the review guidance names Mochi and never Phoenix.
 - Confirm the normalized imported state is the same state persisted before guidance is built. Treat automated coverage as source proof; live browser file import, cross-device transfer, and native share/reopen review remain open.
 - Dependency-complete branch proof: `WoofWatcher Verify` run `31713497155`, job `94492214748`, passed implementation/docs commit `474a0a64` including install, doctor, focused tests, typecheck, and CI-safe builds.
+# Calendar editor keyboard accessibility — 2026-08-31
+
+- Source contract: routine label -> time -> owner -> note and event title -> date -> time -> location expose explicit accessibility labels and Next/Done keyboard actions.
+- Device gate: verify compact-height iPhone and Android reach, number-pad exit/advance, interactive dismissal, VoiceOver/TalkBack focus order and return, and route-named screenshots before claiming native completion.

@@ -6090,3 +6090,8 @@ Dependency-complete `WoofWatcher Verify` run `33384099037`, job `99462707278`, p
 AuthShell now routes the full account gateway and provider form through `KeyboardAwareScrollViewCompat`, retaining the web ScrollView fallback and shared native keyboard clearance/dismissal behavior. Red-first readiness coverage caught the former plain ScrollView; focused layout/readiness verification passed after the change. Native device, accessibility, provider, store, and Apollo proof remain separate gates.
 
 Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, passed implementation/docs commit `0b1561a6`; final-tip CI remains required after this proof record.
+# 2026-08-31 Calendar editor keyboard accessibility slice
+
+- Plans routine and event sheets now use explicit accessibility labels plus ordered Next/Done keyboard actions.
+- Red-first readiness coverage protects both flows, including numeric event date -> event time progression.
+- Native compact-height, VoiceOver/TalkBack, route screenshot, store, and Apollo evidence remain gated.
