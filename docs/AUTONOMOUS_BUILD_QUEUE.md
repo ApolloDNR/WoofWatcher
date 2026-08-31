@@ -2947,3 +2947,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED LOCALLY: Red-first readiness coverage reproduced the missing contract, then the focused Calendar assertion passed after implementation.
 - BOUNDARY: This is source-level keyboard and accessibility hardening. Real compact-height iPhone/Android reach, date-keyboard behavior, VoiceOver/TalkBack focus return, route screenshots, store review, and Apollo approval remain open.
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Plans routine/event editor proof when native tooling is available.
+- CI PROOF: Dependency-complete `WoofWatcher Verify` run `33448190682`, job `99671899772`, passed implementation/docs commit `28630cf1` through pinned install, JSON doctor, focused behavior tests, typecheck, CI-safe builds, post steps, and completion.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.

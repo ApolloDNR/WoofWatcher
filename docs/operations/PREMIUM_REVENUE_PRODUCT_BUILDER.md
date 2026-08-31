@@ -6095,3 +6095,4 @@ Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, p
 - Plans routine and event sheets now use explicit accessibility labels plus ordered Next/Done keyboard actions.
 - Red-first readiness coverage protects both flows, including numeric event date -> event time progression.
 - Native compact-height, VoiceOver/TalkBack, route screenshot, store, and Apollo evidence remain gated.
+- Dependency-complete proof: `WoofWatcher Verify` run `33448190682`, job `99671899772`, passed implementation/docs commit `28630cf1` with install, doctor, focused tests, typecheck, CI-safe builds, and completion green.
