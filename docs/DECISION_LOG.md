@@ -1,5 +1,30 @@
 # WoofWatcher Decision Log
 
+### 2026-08-30: Native Floating Tabs Preserve A Full Safe Content Band
+
+Decision: `getFloatingTabChromeMetrics` expands native tab-bar height to the
+greater of the compact 72-point baseline or the device bottom inset plus a
+50-point usable control band.
+
+Reason: React Navigation applies the native safe-area inset inside its
+built-in tab bar. Keeping the entire custom floating bar fixed at 72 points on
+a 34-point iPhone inset left only 38 usable points for icons and labels, below
+WoofWatcher's 48-point touch-target standard.
+
+Consequences:
+
+- iPhone-class 34-point bottom insets produce an 84-point bar and retain 50
+  usable points above the home indicator.
+- Existing center-paw position, iOS route clearance, and Android/web no-inset
+  geometry remain unchanged.
+- Source tests protect the arithmetic, but a real iPhone still owns visual,
+  touch, VoiceOver, and store-ready approval.
+
+Owner: Codex.
+
+Revisit trigger: the app adopts native bottom tabs, removes the floating paw,
+or device QA shows the 50-point content band needs platform-specific tuning.
+
 ## 2026-08-30 PWA Today handoff follows Dog Profile
 
 Decision: Resolve the active dog inside `getTodayPlan` before building its

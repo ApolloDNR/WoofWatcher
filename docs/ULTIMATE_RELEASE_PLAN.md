@@ -1,5 +1,13 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-08-30 iOS floating-tab safe-content status
+
+The shared floating-tab contract now preserves at least a full mobile touch
+target above native bottom insets instead of holding the total bar at 72
+points on home-indicator iPhones. Focused source/readiness proof passes; real
+iPhone screenshots, touch review, VoiceOver, store review, and Apollo visual
+approval remain separate release gates.
+
 ## 2026-08-14 PWA Alone Time identity status
 
 The local-first PWA now preserves canonical Dog Profile identity in durable Leaving Home history and empty return guidance. This does not activate provider sync or clear live browser, native, accessibility, store, or Apollo gates.

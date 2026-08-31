@@ -39,7 +39,11 @@ test("names the active dog in the shared Today tab hint", () => {
 test("derives iOS tabbed route padding from the floating paw and safe area", () => {
   const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
 
-  assert.equal(metrics.tabBarHeight, 72);
+  assert.equal(metrics.tabBarHeight, 84);
+  assert.ok(
+    metrics.tabBarHeight - 34 >= MIN_MOBILE_TOUCH_TARGET,
+    "the visible iOS tab controls must retain a full touch target above the home indicator",
+  );
   assert.equal(metrics.tabBarBottom, 12);
   assert.equal(metrics.centerFabBottom, 52);
   assert.equal(metrics.centerFabSize, 56);

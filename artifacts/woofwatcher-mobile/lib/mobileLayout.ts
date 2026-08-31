@@ -36,6 +36,7 @@ export function buildTodayTabAccessibilityHint({
 }
 
 const TAB_BAR_NATIVE_HEIGHT = 72;
+const TAB_BAR_NATIVE_MIN_CONTENT_HEIGHT = 50;
 const TAB_BAR_WEB_HEIGHT = 72;
 const TAB_BAR_NATIVE_BOTTOM = 12;
 const TAB_BAR_WEB_BOTTOM = 12;
@@ -87,7 +88,12 @@ export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingT
   const web = isWebPlatform(input.platform);
   const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
   const tabBarBottom = web ? TAB_BAR_WEB_BOTTOM : TAB_BAR_NATIVE_BOTTOM;
-  const tabBarHeight = web ? TAB_BAR_WEB_HEIGHT : TAB_BAR_NATIVE_HEIGHT;
+  const tabBarHeight = web
+    ? TAB_BAR_WEB_HEIGHT
+    : Math.max(
+        TAB_BAR_NATIVE_HEIGHT,
+        TAB_BAR_NATIVE_MIN_CONTENT_HEIGHT + bottomInset,
+      );
   const centerFabBottom =
     (bottomInset || CENTER_FAB_FALLBACK_SAFE_BOTTOM) + CENTER_FAB_BOTTOM_OFFSET;
   const chromeBottomClearance = Math.max(

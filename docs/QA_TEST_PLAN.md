@@ -1,5 +1,22 @@
 # QA Test Plan
 
+## 2026-08-30 iOS floating-tab safe-content proof
+
+- Red: `mobileLayout.test.ts` expected an 84-point iOS bar for a 34-point
+  bottom inset and failed against the previous fixed 72-point height.
+- Green: the shared layout helper now preserves 50 usable points above the
+  inset; focused layout/readiness execution passed `188/188`.
+- Regression boundary: Android/web no-inset metrics stay unchanged, PixelLab
+  passes `ok=150 missing=0 invalid=0`, and `git diff --check` passes.
+- Partial-checkout boundary: broad execution is `791/793` only because the
+  existing `@workspace/care-domain` package link is unavailable; root
+  TypeScript and Expo doctor retain the documented missing-dependency/pinned
+  pnpm blockers.
+- Manual remainder: capture Log, Plan, Today, Pack, and Story on a real
+  home-indicator iPhone; confirm icons and labels stay above the indicator,
+  every tab is comfortably tappable, the center paw remains visually
+  balanced, and VoiceOver announces the intended tab/action semantics.
+
 ## 2026-08-30 PWA Today handoff identity proof
 
 - Red-first behavior reproduced renamed `Mochi` receiving the Phoenix-specific

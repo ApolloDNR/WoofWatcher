@@ -1,5 +1,13 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-30 iOS floating-tab safe-content gate
+
+The shared native chrome now grows around device bottom insets so an
+iPhone-class home indicator cannot compress visible tab controls below the
+mobile touch-target floor. Red-first layout proof and the focused
+`188/188` readiness set pass. Real iPhone visual, touch, VoiceOver, store,
+and Apollo approval remain required before this gate is native-approved.
+
 ## 2026-08-14 PWA Household Pulse presence identity
 
 - PASS (source/test): supervised and home-alone presence status uses canonical Dog Profile identity and a deterministic clock boundary.

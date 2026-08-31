@@ -1,5 +1,23 @@
 # Premium Revenue Product Builder
 
+## 2026-08-30 iOS floating-tab safe-content slice
+
+The shared native tab geometry now expands around the device bottom inset
+instead of letting React Navigation's home-indicator padding compress the
+visible controls. With a 34-point iPhone inset, the bar grows from 72 to 84
+points and leaves a 50-point usable band; Android and web no-inset geometry is
+unchanged.
+
+Red-first `mobileLayout.test.ts` failed at `72 !== 84`, then passed after
+the minimal shared helper change. Focused mobile layout/readiness tests passed
+`188/188`; broad partial-checkout execution remained `791/793` only on the
+established missing `@workspace/care-domain` link; PixelLab passed
+`ok=150 missing=0 invalid=0`; and `git diff --check` passed. Root
+TypeScript retained the existing missing `@tanstack/react-query` and `zod`
+blockers, and the JSON beta doctor remained blocked on pnpm `11.19.0`
+versus pinned `10.24.0` plus unresolved Expo. Dependency-complete branch CI
+and real iPhone home-indicator/VoiceOver proof remain required.
+
 ## 2026-08-30 PWA Today handoff identity slice
 
 The shared Today plan now resolves Dog Profile identity before producing its

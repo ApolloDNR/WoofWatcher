@@ -1,5 +1,14 @@
 # Quality Gates
 
+## 2026-08-30 iOS floating-tab safe-content source gate
+
+- Native floating-tab height must retain at least
+  `MIN_MOBILE_TOUCH_TARGET` above the device bottom inset.
+- A 34-point iOS inset must produce 84 points of bar height and 50 usable
+  points without changing the established Android/web no-inset geometry.
+- Focused source proof does not clear real iPhone home-indicator fit,
+  VoiceOver, store, or Apollo approval.
+
 ## 2026-08-14 PWA caregiver invite identity source gate
 
 Local sitter, veterinarian, and trainer invite drafts now use canonical Dog Profile identity in their privacy notice. Provider delivery and recipient review remain separate gates.

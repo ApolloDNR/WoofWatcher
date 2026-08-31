@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-08-30 iOS floating-tab safe-content boundary
+
+Source and focused tests now ensure the floating tab bar expands around a
+native bottom inset instead of compressing its usable controls below the
+48-point touch-target floor. Real iPhone home-indicator screenshots,
+interaction/VoiceOver review, App Store review, and Apollo visual approval
+remain open; source geometry is not device proof.
+
 ## 2026-08-30 PWA Today handoff identity boundary
 
 Source/tests clear the renamed-dog identity leak in Today plan household

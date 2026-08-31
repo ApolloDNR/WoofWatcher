@@ -1,5 +1,27 @@
 # Autonomous Build Queue
 
+## 2026-08-30 iOS floating-tab safe-content boundary
+
+- DONE: Native floating-tab height now expands when a device bottom inset
+  would otherwise leave less than a full mobile touch target above the home
+  indicator. An iPhone-class 34-point inset now produces an 84-point bar with
+  50 usable points; Android and web no-inset geometry stays unchanged.
+- VERIFIED: Red-first layout coverage failed at the previous 72-point height,
+  then passed after the shared `mobileLayout.ts` fix. Focused mobile layout
+  and readiness tests passed `188/188`; PixelLab passed
+  `ok=150 missing=0 invalid=0`; and `git diff --check` passed.
+- BOUNDARY: This is shared source/layout proof. It does not replace a real
+  iPhone screenshot, home-indicator interaction review, VoiceOver traversal,
+  App Store review, or Apollo visual approval.
+- LOCAL LIMITS: The broad partial-checkout suite remains `791/793` only
+  because `careCareer` and `careSync` cannot resolve the missing
+  `@workspace/care-domain` link. Root TypeScript likewise retains missing
+  `@tanstack/react-query` and `zod`; the JSON beta doctor remains blocked
+  on pnpm `11.19.0` versus pinned `10.24.0` plus unresolved Expo.
+- NEXT: Require dependency-complete branch CI for this implementation, then
+  capture the floating tab on a home-indicator iPhone through Route Visual
+  Consistency before treating native fit as approved.
+
 ## 2026-08-30 PWA Today handoff identity boundary
 
 - DONE: The shared Today plan now resolves Dog Profile identity before building
