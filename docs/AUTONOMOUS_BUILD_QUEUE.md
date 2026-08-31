@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-31 Records add-record keyboard accessibility boundary
+
+- DONE: The title, record-specific due/reference, and notes fields expose explicit native accessibility labels.
+- DONE: Keyboard submission advances title to due/reference, then notes, with a final Done action.
+- VERIFIED: Red-first readiness coverage failed on the missing contract, then passed `183/183`.
+- BOUNDARY: Source proof does not replace native screen-reader, compact-height, screenshot, or approval evidence.
+- NEXT: Run dependency-complete branch CI, then capture this flow with VoiceOver and TalkBack.
+
 ## 2026-08-30 iOS keyboard-aware form-sheet boundary
 
 - DONE: The shared keyboard-aware form wrapper now owns native caret clearance

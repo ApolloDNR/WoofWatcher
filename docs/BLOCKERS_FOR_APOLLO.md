@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-08-31 Records form native accessibility evidence
+
+- Source/readiness coverage protects explicit labels and keyboard focus order.
+- BLOCKED on runtime evidence: route-named iOS/Android captures, VoiceOver/TalkBack focus, compact-height review, and Apollo approval remain required.
+
 ## 2026-08-31 iOS numeric-keyboard completion boundary
 
 Source/tests now add a safe-area-aware iOS keyboard toolbar with a Done action

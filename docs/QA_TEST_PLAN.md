@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-08-31 Records add-record keyboard accessibility QA
+
+- Automated: readiness coverage requires explicit labels and title -> due/reference -> notes -> Done progression.
+- OPEN native: confirm the record-specific due label is announced, focus moves in order, Done dismisses, and save/cancel remain reachable with VoiceOver and TalkBack.
+
 ## 2026-08-30 iOS keyboard-aware form-sheet coverage
 
 - Deterministic: Native keyboard-aware form props must preserve the platform

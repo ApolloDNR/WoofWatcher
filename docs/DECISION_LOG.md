@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+### 2026-08-31: Records Forms Own Explicit Labels And Focus Order
+
+Decision: The Records add-record sheet owns explicit input labels and deterministic keyboard progression ending in Done. Visible captions alone are not treated as native assistive-technology proof, and source coverage does not claim device approval.
+
 ### 2026-08-30: Use Keyboard-Aware Scrolling For Bounded Form Sheets
 
 Decision: Plans routine/event editors and the Records add-record sheet use the

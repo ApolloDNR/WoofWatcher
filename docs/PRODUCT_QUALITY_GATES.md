@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-31 Records add-record keyboard accessibility gate
+
+- PASS (source): all three inputs expose explicit labels and Next/Next/Done keyboard progression.
+- OPEN (native): VoiceOver/TalkBack focus, compact-height reach, iOS toolbar behavior, route-named screenshots, and Apollo approval.
+
 ## 2026-08-30 iOS keyboard-aware form-sheet gate
 
 - PASS (source): Routine, event, and record sheets are bounded vertical

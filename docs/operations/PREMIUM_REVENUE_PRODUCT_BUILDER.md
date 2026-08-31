@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-31 Records add-record accessibility slice
+
+Records now exposes explicit native labels for its add-record inputs and moves keyboard focus through title, due/reference, and notes before Done. Red-first readiness proof covers the contract; native screen-reader and route screenshot evidence remain open.
+
 ## 2026-08-31 iOS numeric-keyboard completion slice
 
 The app root now mounts the keyboard-controller toolbar only on iOS, passes

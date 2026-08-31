@@ -268,6 +268,8 @@ export default function RecordsScreen() {
   const [recordTitle, setRecordTitle] = useState("");
   const [recordDue, setRecordDue] = useState("");
   const [recordNote, setRecordNote] = useState("");
+  const recordDueRef = useRef<TextInput>(null);
+  const recordNoteRef = useRef<TextInput>(null);
   const [recordAttachmentUri, setRecordAttachmentUri] = useState("");
   const [carePassPreview, setCarePassPreview] = useState<CarePass | null>(null);
   const [medicationSearch, setMedicationSearch] = useState("");
@@ -3069,22 +3071,33 @@ export default function RecordsScreen() {
               <TextInput
                 value={recordTitle}
                 onChangeText={setRecordTitle}
+                accessibilityLabel="Record title"
+                returnKeyType="next"
+                onSubmitEditing={() => recordDueRef.current?.focus()}
                 placeholder={`${recordOption.label} name`}
                 placeholderTextColor={colors.mutedForeground}
                 style={[s.recordInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
               />
               <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{recordOption.dueLabel.toUpperCase()}</Text>
               <TextInput
+                ref={recordDueRef}
                 value={recordDue}
                 onChangeText={setRecordDue}
+                accessibilityLabel={recordOption.dueLabel}
+                returnKeyType="next"
+                onSubmitEditing={() => recordNoteRef.current?.focus()}
                 placeholder={recordOption.dueLabel}
                 placeholderTextColor={colors.mutedForeground}
                 style={[s.recordInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
               />
               <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTES</Text>
               <TextInput
+                ref={recordNoteRef}
                 value={recordNote}
                 onChangeText={setRecordNote}
+                accessibilityLabel="Record notes"
+                returnKeyType="done"
+                blurOnSubmit
                 placeholder="Dose, provider, receipt amount, card details, or anything useful"
                 placeholderTextColor={colors.mutedForeground}
                 multiline

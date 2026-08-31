@@ -5999,6 +5999,26 @@ test("keeps AuthShell fields and submit actions reachable above compact native k
   );
 });
 
+test("gives the Records add-record form explicit labels and keyboard progression", () => {
+  const records = readAppFile("(tabs)/records.tsx");
+
+  assert.match(
+    records,
+    /accessibilityLabel="Record title"[\s\S]*?returnKeyType="next"/,
+    "the record title input must announce its purpose and advance to the next field",
+  );
+  assert.match(
+    records,
+    /accessibilityLabel=\{recordOption\.dueLabel\}[\s\S]*?returnKeyType="next"/,
+    "the record due input must announce its active record-specific purpose and advance",
+  );
+  assert.match(
+    records,
+    /accessibilityLabel="Record notes"[\s\S]*?returnKeyType="done"/,
+    "the final notes input must expose a clear label and keyboard completion action",
+  );
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
