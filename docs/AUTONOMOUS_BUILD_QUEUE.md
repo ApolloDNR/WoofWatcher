@@ -2915,3 +2915,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED: Red-first readiness coverage failed on the plain Setup `ScrollView`, then the focused layout/readiness suite passed 194/194 after the shared wrapper was wired.
 - CI: Dependency-complete `WoofWatcher Verify` run `33384099037`, job `99462707278`, passed implementation/docs commit `3f9a78ec` with install, doctor, focused tests, typecheck, and CI-safe builds green.
 - NEXT: Run aggregate verification and dependency-complete branch CI. Real compact-height iPhone Setup reach, toolbar focus order, VoiceOver return, and route-named iOS/Android evidence remain external gates.
+
+# 2026-08-31 Auth keyboard-aware reachability
+
+- DONE: AuthShell now keeps the full sign-in/sign-up gateway and provider form inside the shared native keyboard-aware scroller while preserving the web fallback.
+- VERIFIED: Red-first readiness coverage failed on the plain ScrollView, then the focused mobile layout/readiness suite passed 195/195.
+- NEXT: Capture route-named compact-height iPhone and Android auth field reach, submit-action reach, focus order, interactive dismissal, and VoiceOver/TalkBack evidence when native tooling is available.

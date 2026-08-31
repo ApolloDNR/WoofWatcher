@@ -3683,3 +3683,9 @@ Owner: Codex.
 
 - Decision: Replace Setup's plain form `ScrollView` with `KeyboardAwareScrollViewCompat` so native focus tracking can keep every onboarding field and the final actions above compact keyboards.
 - Boundary: This is source/test reachability hardening. It does not prove real-device keyboard motion, toolbar focus order, VoiceOver behavior, provider setup, store review, or Apollo approval.
+
+## 2026-08-31 - Auth uses the shared keyboard-aware form contract
+
+- Decision: Wrap the complete AuthShell gateway and provider form in `KeyboardAwareScrollViewCompat` instead of a route-local plain ScrollView.
+- Why: Compact native keyboards must not strand sign-in/sign-up fields or submit actions, and auth should share Setup's iOS toolbar clearance, interactive dismissal, Android drag dismissal, and web fallback behavior.
+- Boundary: Source/tests do not prove real-device focus order, VoiceOver/TalkBack behavior, Clerk configuration, store readiness, or launch approval.

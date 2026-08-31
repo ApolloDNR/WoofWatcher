@@ -1114,3 +1114,7 @@ Source coverage now protects canonical Dog Profile identity across durable repor
 ## 2026-08-31 Setup keyboard reachability boundary
 
 Source/tests now keep the complete Setup form and final actions inside the shared keyboard-aware scroller. Real compact-height iPhone and Android Setup completion, numeric-toolbar focus order, VoiceOver/TalkBack traversal, screenshots, provider proof, store review, and Apollo approval remain blocked on external evidence.
+
+## 2026-08-31 Auth keyboard reachability boundary
+
+Source/tests now keep the complete AuthShell provider form inside the shared keyboard-aware scroller. Real compact-height iPhone and Android auth completion, keyboard focus order, VoiceOver/TalkBack traversal, provider-backed Clerk proof, screenshots, store review, and Apollo approval remain external gates.

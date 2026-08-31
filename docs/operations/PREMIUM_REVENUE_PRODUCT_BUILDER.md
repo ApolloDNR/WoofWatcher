@@ -6074,3 +6074,7 @@ Dependency-complete `WoofWatcher Verify` run `31775219339`, job `94689152045`, p
 The Setup route now uses `KeyboardAwareScrollViewCompat` across the full onboarding form so focused native fields and the final save/later controls can remain reachable above compact keyboards. Red-first readiness coverage caught the former plain `ScrollView`; focused layout/readiness verification passed after the change. Native device, accessibility, provider, store, and Apollo proof remain separate gates.
 
 Dependency-complete `WoofWatcher Verify` run `33384099037`, job `99462707278`, passed implementation/docs commit `3f9a78ec`; final-tip CI remains required after this proof record.
+
+## 2026-08-31 Auth keyboard-aware reachability slice
+
+AuthShell now routes the full account gateway and provider form through `KeyboardAwareScrollViewCompat`, retaining the web ScrollView fallback and shared native keyboard clearance/dismissal behavior. Red-first readiness coverage caught the former plain ScrollView; focused layout/readiness verification passed after the change. Native device, accessibility, provider, store, and Apollo proof remain separate gates.

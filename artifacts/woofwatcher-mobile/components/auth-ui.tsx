@@ -8,7 +8,6 @@ import {
   ImageBackground,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,11 +17,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { useCare } from "@/context/CareContext";
 import { isClerkEnabledForBuild } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
-import { getFormKeyboardScrollProps, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { buildAuthGatewayIdentityCopy } from "@/lib/petIdentity";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
@@ -82,8 +82,7 @@ export function AuthShell({
   const authSetupProofManifest = buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined);
 
   return (
-    <ScrollView
-      {...getFormKeyboardScrollProps(Platform.OS)}
+    <KeyboardAwareScrollViewCompat
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
         styles.scroll,
@@ -225,7 +224,7 @@ export function AuthShell({
         </Text>
         <View style={styles.form}>{children}</View>
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollViewCompat>
   );
 }
 

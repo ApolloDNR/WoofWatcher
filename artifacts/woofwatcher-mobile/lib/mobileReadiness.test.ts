@@ -5983,6 +5983,22 @@ test("keeps Setup fields and save actions reachable above compact native keyboar
   );
 });
 
+test("keeps AuthShell fields and submit actions reachable above compact native keyboards", () => {
+  const authUi = readAppFile("../components/auth-ui.tsx");
+
+  assert.match(authUi, /KeyboardAwareScrollViewCompat/);
+  assert.match(
+    authUi,
+    /<KeyboardAwareScrollViewCompat[\s\S]*?styles\.form[\s\S]*?\{children\}[\s\S]*?<\/KeyboardAwareScrollViewCompat>/,
+    "AuthShell must keep its complete provider form inside the shared keyboard-aware scroller",
+  );
+  assert.doesNotMatch(
+    authUi,
+    /<ScrollView[\s\S]*?styles\.form[\s\S]*?\{children\}[\s\S]*?<\/ScrollView>/,
+    "AuthShell must not use a plain ScrollView that can strand provider fields behind a compact-height keyboard",
+  );
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
