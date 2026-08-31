@@ -14,7 +14,10 @@ builder fix. The full vanilla PWA suite passed `39/39`; broad partial-checkout
 mobile/domain execution passed `791/793` with only the established
 `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`;
 PixelLab passed `ok=150 missing=0 invalid=0`. Dependency-complete branch proof
-remains next.
+passed implementation/docs commit `7ea86aa4` in `WoofWatcher Verify` run
+`33358553594`, job `99385298557`, including pinned install, JSON doctor,
+focused tests, typecheck plus CI-safe builds, post steps, and Complete job.
+Rerun after this proof-record commit before treating final-tip proof as current.
 
 ## 2026-08-30 PWA Home card-heading identity slice
 

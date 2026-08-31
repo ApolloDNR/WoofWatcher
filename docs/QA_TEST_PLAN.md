@@ -13,6 +13,9 @@
   pnpm `11.19.0` versus pinned `10.24.0` and unresolved Expo.
 - Live browser/native output, screen-reader traversal, provider delivery, and
   recipient review remain external evidence gates.
+- Dependency-complete `WoofWatcher Verify` run `33358553594`, job
+  `99385298557`, passed implementation/docs commit `7ea86aa4`; rerun after the
+  proof-record commit before treating final-tip CI as current.
 
 ## 2026-08-14 PWA Household Pulse presence identity
 
