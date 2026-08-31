@@ -322,3 +322,5 @@ Dependency-complete `WoofWatcher Verify` run `33384099037`, job `99462707278`, p
 ## 2026-08-31 Auth keyboard-aware reachability increment
 
 AuthShell now uses the shared keyboard-aware form scroller, so provider sign-in and sign-up fields plus submit actions have the same source-level compact-keyboard reach contract as Setup. Real-device keyboard motion, focus order, screen-reader traversal, and route-named screenshots remain required.
+
+Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, passed implementation/docs commit `0b1561a6`. Final-tip CI remains required after this proof record.
