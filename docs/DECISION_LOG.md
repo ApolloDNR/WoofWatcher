@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-30 PWA Home headings follow Dog Profile
+
+Decision: Keep Home's visible status and location card titles in `buildHomeIdentityCopy` beside the existing canonical pet name and presence copy. Blank and `My Dog` retain Phoenix; renamed identity is trimmed before either heading is rendered.
+
+Boundary: Internal Phoenix component, asset, and route identifiers remain unchanged. This is source-level PWA copy alignment, not browser/native accessibility, provider, store, or launch approval.
+
 ## 2026-08-30 PWA talk-to-log review follows Dog Profile
 
 Decision: Resolve the active dog inside `buildTalkToLogDraft` and pass the canonical product-contract identity into it. Blank and `My Dog` retain Phoenix; renamed identity is trimmed before owner-review copy is produced.

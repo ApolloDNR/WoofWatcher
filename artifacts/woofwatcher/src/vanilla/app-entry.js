@@ -1341,7 +1341,7 @@ function renderPhoenixTab(context) {
           </div>
         </section>
 
-        ${renderPhoenixStatusCard({ presenceLabel, mood, nextReminder, avatar, openMeal })}
+        ${renderPhoenixStatusCard({ homeCopy, presenceLabel, mood, nextReminder, avatar, openMeal })}
 
         <section class="card">
           <div class="card-head"><h3>Quick Log</h3></div>
@@ -1369,7 +1369,7 @@ function renderPhoenixTab(context) {
           </div>
         </section>
 
-        ${renderHomeHouseholdPulseCard({ pulse, avatar, presenceLabel })}
+        ${renderHomeHouseholdPulseCard({ homeCopy, pulse, avatar, presenceLabel })}
 
         <section class="card">
           <div class="card-head"><h3>Handoff Timeline</h3><button class="card-link" data-tab="more">View all</button></div>
@@ -1401,11 +1401,11 @@ function buildPhoenixRoomCopy({ homeCopy }) {
   return homeCopy.room;
 }
 
-function renderPhoenixStatusCard({ presenceLabel, mood, nextReminder, avatar, openMeal }) {
+function renderPhoenixStatusCard({ homeCopy, presenceLabel, mood, nextReminder, avatar, openMeal }) {
   return `
     <section class="card phoenix-status-card">
       <div class="card-head">
-        <h3>Phoenix Status</h3>
+        <h3>${escapeHtml(homeCopy.statusTitle)}</h3>
         <span class="pill ${escapeAttribute(avatar.urgency || "steady")}">${escapeHtml(mood.label)}</span>
       </div>
       <div class="status-answer-grid">
@@ -1423,14 +1423,14 @@ function renderPhoenixStatusCard({ presenceLabel, mood, nextReminder, avatar, op
   `;
 }
 
-function renderHomeHouseholdPulseCard({ pulse, avatar, presenceLabel }) {
+function renderHomeHouseholdPulseCard({ homeCopy, pulse, avatar, presenceLabel }) {
   const activeHuman = (pulse.humans || []).find((human) => human.todayLogs > 0);
   const status = avatar.mood === "home-alone" ? "home-alone" : activeHuman ? "with-human" : "unknown";
   const supervisedBy = avatar.mood === "home-alone" ? "Home alone" : activeHuman?.name || "Confirm status";
   return `
     <section class="card home-pulse-card">
       <div class="card-head">
-        <h3>Where Phoenix is</h3>
+        <h3>${escapeHtml(homeCopy.locationTitle)}</h3>
         <span class="pill ${status === "home-alone" ? "watch" : status === "with-human" ? "good" : "neutral"}">${escapeHtml(status.replace("-", " "))}</span>
       </div>
       <p class="home-card-copy">${escapeHtml(presenceLabel)}</p>

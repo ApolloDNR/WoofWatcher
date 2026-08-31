@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-30 PWA Home card-heading identity boundary
+
+- DONE: The shared Home identity model now supplies the prominent status and location headings, so renamed dogs no longer see `Phoenix Status` or `Where Phoenix is` above otherwise-canonical five-second answers.
+- VERIFIED: Red-first PWA coverage reproduced the missing canonical headings, then focused behavior passed `36/36` for `My Dog` -> Phoenix and a whitespace-trimmed Mochi rename, including renderer wiring.
+- BOUNDARY: This changes local PWA display/accessibility copy only. It does not rename internal Phoenix assets/routes, prove browser or native screen-reader output, enable providers, or clear store/Apollo gates.
+- VERIFIED: Broad partial-checkout execution passed `829/831`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; root TypeScript passed; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed.
+- NEXT: Run dependency-complete branch CI; retain real browser/native and screen-reader review as external evidence gates.
+
 ## 2026-08-30 PWA talk-to-log draft identity boundary
 
 - DONE: Owner-reviewed talk-to-log drafts now resolve Dog Profile identity before formatting the normal-care review prompt, and the product contract passes its canonical dog name into the shared builder.

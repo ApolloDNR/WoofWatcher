@@ -126,13 +126,20 @@ test("keeps Dog Profile identity canonical in the PWA Home five-second answer", 
   );
 
   assert.equal(placeholder.petName, "Phoenix");
+  assert.equal(placeholder.statusTitle, "Phoenix Status");
+  assert.equal(placeholder.locationTitle, "Where Phoenix is");
   assert.equal(placeholder.presenceLabel, "Phoenix is home alone");
   assert.match(placeholder.room.speech, /Phoenix is home alone/);
   assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
   assert.equal(renamed.petName, "Mochi");
+  assert.equal(renamed.statusTitle, "Mochi Status");
+  assert.equal(renamed.locationTitle, "Where Mochi is");
   assert.equal(renamed.presenceLabel, "Mochi is with Emma");
   assert.match(renamed.room.detail, /whether Mochi ate all/);
   assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
+  assert.match(appEntry, /renderPhoenixStatusCard\(\{ homeCopy,/);
+  assert.match(appEntry, /<h3>\$\{escapeHtml\(homeCopy\.statusTitle\)\}<\/h3>/);
+  assert.match(appEntry, /<h3>\$\{escapeHtml\(homeCopy\.locationTitle\)\}<\/h3>/);
 });
 
 test("keeps Dog Profile identity canonical in Household Pulse presence status", () => {
@@ -438,7 +445,7 @@ test("keeps Phoenix Home wired to household pulse and health snapshot polish", (
   assert.match(appEntry, /function renderHomeHouseholdPulseCard/);
   assert.match(appEntry, /function renderHomeHealthBileSnapshot/);
   assert.match(appEntry, /function buildPhoenixRoomCopy/);
-  assert.match(appEntry, /Where Phoenix is/);
+  assert.match(appEntry, /homeCopy\.locationTitle/);
   assert.match(appEntry, /Health\/Bile snapshot/);
   assert.match(appEntry, /data-tab="household-pulse"/);
   assert.match(appEntry, /data-tab="health"/);

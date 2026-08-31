@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-30 PWA Home card-heading identity boundary
+
+Source/tests clear the renamed-dog identity leak in Home's prominent status and location headings. Live browser rendering, native Home evidence, VoiceOver/TalkBack traversal, store review, and Apollo approval remain open; internal Phoenix asset and route names are intentionally unchanged.
+
 ## 2026-08-30 PWA talk-to-log identity boundary
 
 Source/tests clear the renamed-dog identity leak in normal-care talk-to-log review prompts. Live browser/native draft review, screen-reader traversal, provider-backed AI/action proof, store evidence, and Apollo approval remain open; drafts remain owner-reviewed and unsaved.

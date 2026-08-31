@@ -796,7 +796,13 @@ export function buildHomeIdentityCopy(state = {}, input = {}) {
     };
   }
 
-  return { petName, presenceLabel, room };
+  return {
+    petName,
+    statusTitle: `${petName} Status`,
+    locationTitle: `Where ${petName} is`,
+    presenceLabel,
+    room,
+  };
 }
 
 export function buildHouseholdPresenceStatus(state = {}, activeAlone = null, now = new Date().toISOString(), options = {}) {
