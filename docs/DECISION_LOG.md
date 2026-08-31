@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+### 2026-08-31: Support Readiness Fields Own Keyboard And Accessibility Order
+
+Decision: Privacy & Safety's support-readiness editor uses the shared keyboard-aware sheet and an explicit email -> privacy policy -> terms focus sequence ending in Done. Visible captions become native accessibility labels. This improves local editing only; it does not approve provider, legal, store, or launch readiness.
+
 ### 2026-08-31: Records Forms Own Explicit Labels And Focus Order
 
 Decision: The Records add-record sheet owns explicit input labels and deterministic keyboard progression ending in Done. Visible captions alone are not treated as native assistive-technology proof, and source coverage does not claim device approval.

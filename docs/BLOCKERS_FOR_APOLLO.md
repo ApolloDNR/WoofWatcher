@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-08-31 Privacy support-editor native accessibility evidence
+
+- Source/readiness coverage protects keyboard-aware reach, explicit labels, and email -> privacy policy -> terms focus order.
+- BLOCKED on runtime and approval evidence: compact-height iOS/Android captures, VoiceOver/TalkBack focus and dismissal, valid policy/legal review, provider proof, store review, and Apollo approval remain required.
+
 ## 2026-08-31 Records form native accessibility evidence
 
 - Source/readiness coverage protects explicit labels and keyboard focus order.

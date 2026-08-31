@@ -6019,6 +6019,22 @@ test("gives the Records add-record form explicit labels and keyboard progression
   );
 });
 
+test("keeps the Privacy support editor reachable and gives its fields keyboard progression", () => {
+  const privacy = readAppFile("privacy.tsx");
+
+  assert.match(privacy, /KeyboardAwareScrollViewCompat/);
+  assert.match(
+    privacy,
+    /label="Support email"[\s\S]*?returnKeyType="next"[\s\S]*?label="Privacy policy URL"[\s\S]*?returnKeyType="next"[\s\S]*?label="Terms URL"[\s\S]*?returnKeyType="done"/,
+    "the support profile fields must announce a predictable next, next, done keyboard flow",
+  );
+  assert.match(
+    privacy,
+    /accessibilityLabel=\{label\}/,
+    "ProfileInput must expose its visible caption as the native accessibility label",
+  );
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

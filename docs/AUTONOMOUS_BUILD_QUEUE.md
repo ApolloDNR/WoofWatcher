@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-31 Privacy support-editor keyboard accessibility boundary
+
+- DONE: Support email, privacy-policy URL, and terms URL expose their visible captions as native accessibility labels.
+- DONE: Keyboard submission advances through the three fields and ends with an explicit Done dismissal; the complete sheet uses the shared keyboard-aware scroller.
+- VERIFIED: Red-first readiness coverage failed on the missing contract, then passed `184/184`; whitespace validation passed.
+- BOUNDARY: The launch profile remains a local/provider-gated proof surface. Source coverage does not prove native screen-reader behavior, valid policy review, provider approval, store review, or public launch.
+- NEXT: Run dependency-complete branch CI, then capture compact-height VoiceOver/TalkBack focus and keyboard-dismiss evidence.
+
 ## 2026-08-31 Records add-record keyboard accessibility boundary
 
 - DONE: The title, record-specific due/reference, and notes fields expose explicit native accessibility labels.

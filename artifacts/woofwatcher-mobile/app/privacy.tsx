@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -19,6 +20,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import {
   getFormKeyboardScrollProps,
   getModalSheetBottomPadding,
@@ -92,6 +94,8 @@ export default function PrivacyScreen() {
   const ownerOps = isOwnerOpsBuild();
   const [launchEditorOpen, setLaunchEditorOpen] = useState(false);
   const [launchDraft, setLaunchDraft] = useState<LaunchSupportProfile>(state.launchSupportProfile);
+  const privacyPolicyRef = useRef<TextInput>(null);
+  const termsRef = useRef<TextInput>(null);
   const me = useGetMe();
   const context = useMemo(
     () => ({
@@ -703,7 +707,7 @@ export default function PrivacyScreen() {
                 <Ionicons name="close" size={23} color={colors.mutedForeground} />
               </Pressable>
             </View>
-            <ScrollView
+            <KeyboardAwareScrollViewCompat
               {...getFormKeyboardScrollProps(Platform.OS)}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={s.modalScroll}
@@ -714,6 +718,8 @@ export default function PrivacyScreen() {
                 placeholder="help@woofwatcher.app"
                 colors={colors}
                 keyboardType="email-address"
+                returnKeyType="next"
+                onSubmitEditing={() => privacyPolicyRef.current?.focus()}
                 onChangeText={(value) => updateLaunchDraft("supportEmail", value)}
               />
               <ProfileInput
@@ -722,6 +728,9 @@ export default function PrivacyScreen() {
                 placeholder="https://woofwatcher.app/privacy"
                 colors={colors}
                 keyboardType="url"
+                inputRef={privacyPolicyRef}
+                returnKeyType="next"
+                onSubmitEditing={() => termsRef.current?.focus()}
                 onChangeText={(value) => updateLaunchDraft("privacyPolicyUrl", value)}
               />
               <ProfileInput
@@ -730,6 +739,9 @@ export default function PrivacyScreen() {
                 placeholder="https://woofwatcher.app/terms"
                 colors={colors}
                 keyboardType="url"
+                inputRef={termsRef}
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
                 onChangeText={(value) => updateLaunchDraft("termsUrl", value)}
               />
               <View style={s.policyStack}>
@@ -763,7 +775,7 @@ export default function PrivacyScreen() {
               <Text style={[s.modalBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 This is a local owner checklist. It does not claim legal, store, or provider approval until those approvals are actually complete.
               </Text>
-            </ScrollView>
+            </KeyboardAwareScrollViewCompat>
             <View style={s.modalActions}>
               <Pressable
                 accessibilityRole="button"
@@ -879,6 +891,9 @@ function ProfileInput({
   value,
   placeholder,
   keyboardType,
+  inputRef,
+  returnKeyType,
+  onSubmitEditing,
   colors,
   onChangeText,
 }: {
@@ -886,6 +901,9 @@ function ProfileInput({
   value: string;
   placeholder: string;
   keyboardType: "default" | "email-address" | "url";
+  inputRef?: React.RefObject<TextInput | null>;
+  returnKeyType: "next" | "done";
+  onSubmitEditing: () => void;
   colors: ReturnType<typeof useColors>;
   onChangeText: (value: string) => void;
 }) {
@@ -895,12 +913,17 @@ function ProfileInput({
         {label}
       </Text>
       <TextInput
+        ref={inputRef}
+        accessibilityLabel={label}
         value={value}
         placeholder={placeholder}
         placeholderTextColor={colors.mutedForeground}
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType={keyboardType}
+        returnKeyType={returnKeyType}
+        blurOnSubmit={returnKeyType === "done"}
+        onSubmitEditing={onSubmitEditing}
         onChangeText={onChangeText}
         style={[
           s.profileInput,

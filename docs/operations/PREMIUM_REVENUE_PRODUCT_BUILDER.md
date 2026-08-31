@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-31 Privacy support-editor accessibility slice
+
+Privacy & Safety's support-readiness sheet now keeps all three provider fields in the shared keyboard-aware scroller, exposes visible captions as native labels, advances email to privacy policy to terms, and ends with Done. Red-first readiness proof passes `184/184`; native assistive-technology, legal/provider, store, and Apollo approval evidence remain open.
+
 ## 2026-08-31 Records add-record accessibility slice
 
 Records now exposes explicit native labels for its add-record inputs and moves keyboard focus through title, due/reference, and notes before Done. Red-first readiness proof covers the contract; native screen-reader and route screenshot evidence remain open.
