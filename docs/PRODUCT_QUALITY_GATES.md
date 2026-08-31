@@ -1,5 +1,17 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-30 iOS keyboard-safe floating navigation gate
+
+- PASS (source): The navigator-owned floating bar hides for the software
+  keyboard, while the separate Today paw uses native-thread keyboard progress
+  for its exit and cannot retain touch or accessibility focus while hidden.
+- PASS (deterministic): Red-first layout coverage now verifies the fully shown
+  and fully hidden visual, pointer, and accessibility states; focused mobile
+  layout/readiness passed `189/189`.
+- PENDING (native): Real iPhone Log, Plan, and More form evidence must prove
+  smooth interactive dismissal, reachable controls, correct VoiceOver focus
+  return, and no paw/tab flash before this release gate is approved.
+
 ## 2026-08-30 iOS floating-tab safe-content gate
 
 The shared native chrome now grows around device bottom insets so an

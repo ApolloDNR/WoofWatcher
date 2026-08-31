@@ -1,5 +1,19 @@
 # QA Test Plan
 
+## 2026-08-30 iOS keyboard-safe floating navigation coverage
+
+- Automated: `mobileLayout.test.ts` proves the custom Today control is fully
+  visible and interactive at keyboard progress `0`, then fully translated,
+  transparent, untappable, and hidden from accessibility descendants at
+  progress `1`.
+- Automated: the tab navigator opts into keyboard hiding and the Today paw
+  consumes `react-native-keyboard-controller` through the existing root
+  `KeyboardProvider`.
+- Native required: On a home-indicator iPhone, open representative inputs in
+  Log, Plan, and More; observe open, interactive dismiss, and close; confirm no
+  tab/paw overlap or flash, every required control remains reachable, and
+  VoiceOver does not focus the hidden paw but can reach it after dismissal.
+
 ## 2026-08-30 iOS floating-tab safe-content proof
 
 - Red: `mobileLayout.test.ts` expected an 84-point iOS bar for a 34-point

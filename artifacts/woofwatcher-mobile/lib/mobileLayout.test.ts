@@ -8,6 +8,7 @@ import {
   getFloatingDebugButtonTopOffset,
   getFloatingFeedbackBottomOffset,
   getFloatingTabChromeMetrics,
+  getFloatingTabKeyboardPresentation,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -82,6 +83,23 @@ test("keeps the floating paw chrome compact enough for first-screen command card
 
   assert.ok(iosBottomChromeClearance <= 110);
   assert.ok(iosMetrics.centerFabSize >= MIN_MOBILE_TOUCH_TARGET);
+});
+
+test("removes the custom Today control from visual and accessibility flow while the keyboard opens", () => {
+  assert.deepEqual(getFloatingTabKeyboardPresentation({ progress: 0, travelDistance: 120 }), {
+    opacity: 1,
+    translateY: 0,
+    pointerEvents: "box-none",
+    accessibilityElementsHidden: false,
+    importantForAccessibility: "auto",
+  });
+  assert.deepEqual(getFloatingTabKeyboardPresentation({ progress: 1, travelDistance: 120 }), {
+    opacity: 0,
+    translateY: 120,
+    pointerEvents: "none",
+    accessibilityElementsHidden: true,
+    importantForAccessibility: "no-hide-descendants",
+  });
 });
 
 test("keeps standalone routes independent from the bottom tab chrome", () => {

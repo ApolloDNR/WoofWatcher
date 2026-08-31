@@ -1,5 +1,20 @@
 # Quality Gates
 
+## 2026-08-30 iOS keyboard-safe floating navigation gate
+
+- Source behavior: PASS. The custom bottom bar hides with the keyboard and the
+  out-of-navigator Today paw follows native keyboard progress, disables touch,
+  and leaves accessibility traversal while hidden.
+- Focused regression: PASS `189/189` after a witnessed red failure for the
+  missing shared keyboard presentation contract.
+- Broader local proof: PARTIAL `792/794`; only the established missing local
+  `@workspace/care-domain` link blocks `careCareer` and `careSync`. PixelLab is
+  PASS at `ok=150 missing=0 invalid=0`.
+- Dependency/local environment: BLOCKED on missing local
+  `@tanstack/react-query` and `zod`, plus pinned-pnpm and Expo doctor checks.
+- Native release proof: PENDING real-iPhone keyboard motion, form reach,
+  VoiceOver focus, route screenshots, store review, and Apollo approval.
+
 ## 2026-08-30 iOS floating-tab safe-content source gate
 
 - Native floating-tab height must retain at least

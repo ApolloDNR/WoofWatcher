@@ -3,12 +3,17 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import Animated from "react-native-reanimated";
+import { useKeyboardState, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBounce } from "@/components/motion/GameFeel";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { buildTodayTabAccessibilityHint, getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
+import {
+  buildTodayTabAccessibilityHint,
+  getFloatingTabChromeMetrics,
+  getFloatingTabKeyboardPresentation,
+} from "@/lib/mobileLayout";
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -56,13 +61,35 @@ function CenterToday() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { style: bounceStyle, bounce } = useBounce();
+  const keyboardIsVisible = useKeyboardState((keyboard) => keyboard.isVisible);
+  const { progress: keyboardProgress } = useReanimatedKeyboardAnimation();
   const chrome = getFloatingTabChromeMetrics({
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+  const keyboardTravelDistance = chrome.centerFabBottom + chrome.centerFabSize + 24;
+  const keyboardInteraction = getFloatingTabKeyboardPresentation({
+    progress: keyboardIsVisible ? 1 : 0,
+    travelDistance: keyboardTravelDistance,
+  });
+  const keyboardAnimatedStyle = useAnimatedStyle(() => {
+    const presentation = getFloatingTabKeyboardPresentation({
+      progress: keyboardProgress.value,
+      travelDistance: keyboardTravelDistance,
+    });
+    return {
+      opacity: presentation.opacity,
+      transform: [{ translateY: presentation.translateY }],
+    };
+  }, [keyboardTravelDistance]);
   const onToday = pathname === "/" || pathname === "/index";
   return (
-    <View pointerEvents="box-none" style={[s.fabWrap, { bottom: chrome.centerFabBottom }]}>
+    <Animated.View
+      pointerEvents={keyboardInteraction.pointerEvents}
+      accessibilityElementsHidden={keyboardInteraction.accessibilityElementsHidden}
+      importantForAccessibility={keyboardInteraction.importantForAccessibility}
+      style={[s.fabWrap, { bottom: chrome.centerFabBottom }, keyboardAnimatedStyle]}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={onToday ? "Quick log" : "Today"}
@@ -106,7 +133,7 @@ function CenterToday() {
       <Text aria-hidden style={[s.fabLabel, { color: colors.forest }]}>
         Today
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -140,6 +167,7 @@ export default function TabLayout() {
         }}
         screenOptions={{
           headerShown: false,
+          tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: colors.forest,
           tabBarInactiveTintColor: colors.mutedForeground,
           tabBarLabelStyle: { fontFamily: "Inter_700Bold", fontSize: 10, lineHeight: 12 },

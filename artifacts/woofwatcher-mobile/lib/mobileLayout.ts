@@ -20,6 +20,14 @@ export interface FloatingTabChromeMetrics {
   contentBottomPadding: number;
 }
 
+export interface FloatingTabKeyboardPresentation {
+  opacity: number;
+  translateY: number;
+  pointerEvents: "box-none" | "none";
+  accessibilityElementsHidden: boolean;
+  importantForAccessibility: "auto" | "no-hide-descendants";
+}
+
 export const MIN_MOBILE_TOUCH_TARGET = 48;
 export const MOBILE_INLINE_HIT_SLOP = 10;
 
@@ -112,6 +120,26 @@ export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingT
       TABBED_ROUTE_MIN_BOTTOM_PADDING,
       chromeBottomClearance + TABBED_ROUTE_BOTTOM_GUTTER,
     ),
+  };
+}
+
+export function getFloatingTabKeyboardPresentation({
+  progress,
+  travelDistance,
+}: {
+  progress: number;
+  travelDistance: number;
+}): FloatingTabKeyboardPresentation {
+  "worklet";
+  const normalizedProgress = Math.min(1, Math.max(0, progress));
+  const keyboardIsOpening = normalizedProgress > 0;
+
+  return {
+    opacity: 1 - normalizedProgress,
+    translateY: Math.max(0, travelDistance) * normalizedProgress,
+    pointerEvents: keyboardIsOpening ? "none" : "box-none",
+    accessibilityElementsHidden: keyboardIsOpening,
+    importantForAccessibility: keyboardIsOpening ? "no-hide-descendants" : "auto",
   };
 }
 

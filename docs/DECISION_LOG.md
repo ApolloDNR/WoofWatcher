@@ -1,5 +1,31 @@
 # WoofWatcher Decision Log
 
+### 2026-08-30: Floating Navigation Leaves Keyboard And Accessibility Flow
+
+Decision: Set the custom bottom tabs to hide on keyboard presentation and move
+the separately rendered Today paw through a shared keyboard presentation
+contract driven by `useReanimatedKeyboardAnimation`. While the keyboard is
+opening or visible, the paw is transparent/off-screen, ignores pointer events,
+and hides its descendants from native accessibility traversal.
+
+Reason: The center paw is rendered outside React Navigation's tab bar. Hiding
+only the navigator-owned bar would leave a tappable, screen-reader-focusable
+control floating over Log, Plan, and More forms. A JS-state style transition
+would also risk visible stutter during the native keyboard animation.
+
+Consequences:
+
+- The normal tab bar uses React Navigation's keyboard lifecycle.
+- The Today paw and caption follow native keyboard progress and share one
+  deterministic visual/interaction/accessibility contract.
+- Source tests protect closed/open states, but real iPhone and VoiceOver QA
+  still owns transition taste, focus return, and editable-field reach.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher adopts native tabs, moves the Today action inside
+the navigator, or native QA exposes interactive-dismiss or focus-return drift.
+
 ### 2026-08-30: Native Floating Tabs Preserve A Full Safe Content Band
 
 Decision: `getFloatingTabChromeMetrics` expands native tab-bar height to the

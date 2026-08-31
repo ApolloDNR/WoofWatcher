@@ -1,5 +1,14 @@
 # Blockers For Apollo
 
+## 2026-08-30 iOS keyboard-safe floating navigation boundary
+
+Source/tests now clear the known custom-navigation overlap: React Navigation
+hides the standard bar while the separate Today paw animates out, stops
+receiving touches, and leaves accessibility traversal when the keyboard opens.
+Real-iPhone keyboard timing, editable-field reach, VoiceOver return focus,
+screenshots, store review, and Apollo visual approval remain open; Windows
+source proof is not native-device proof.
+
 ## 2026-08-30 iOS floating-tab safe-content boundary
 
 Source and focused tests now ensure the floating tab bar expands around a

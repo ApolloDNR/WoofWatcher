@@ -1,5 +1,30 @@
 # Autonomous Build Queue
 
+## 2026-08-30 iOS keyboard-safe floating navigation boundary
+
+- DONE: The standard floating tab bar now hides when a form keyboard opens,
+  and the separately rendered Today paw follows the keyboard on the native
+  animation thread instead of remaining over editable content.
+- ACCESSIBILITY: As soon as the keyboard opens, the Today control stops
+  accepting taps and is removed from iOS and Android accessibility traversal;
+  it returns only after the keyboard is dismissed.
+- VERIFIED: Red-first layout coverage failed because no shared keyboard
+  presentation contract existed, then the focused mobile layout/readiness
+  suite passed `189/189`. Broad partial-checkout execution passed `792/794`
+  with only the established unresolved `@workspace/care-domain` link in
+  `careCareer` and `careSync`; PixelLab passed
+  `ok=150 missing=0 invalid=0`.
+- LOCAL LIMITS: Root TypeScript still lacks local `@tanstack/react-query` and
+  `zod` links. The JSON beta doctor remains blocked on the pinned-pnpm check
+  and unresolved Expo. Dependency-complete branch CI is required for the
+  authoritative compile/build proof.
+- BOUNDARY: This is source and deterministic animation/accessibility-state
+  proof. It does not replace real-iPhone keyboard transition, form reach,
+  VoiceOver, screenshot, App Store, or Apollo approval evidence.
+- NEXT: Obtain dependency-complete branch CI, then capture Log/Plan/More forms
+  on a real iPhone with the keyboard opening and closing before native fit is
+  approved.
+
 ## 2026-08-30 iOS floating-tab safe-content boundary
 
 - DONE: Native floating-tab height now expands when a device bottom inset

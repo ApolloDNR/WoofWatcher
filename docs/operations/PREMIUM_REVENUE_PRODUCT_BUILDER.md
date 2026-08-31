@@ -1,5 +1,29 @@
 # Premium Revenue Product Builder
 
+## 2026-08-30 iOS keyboard-safe floating navigation slice
+
+The custom tab shell now treats the software keyboard as a complete navigation
+occlusion boundary. React Navigation hides the standard floating bar, while
+the separately rendered Today paw uses `useReanimatedKeyboardAnimation` and a
+shared `getFloatingTabKeyboardPresentation` contract to fade and travel below
+the viewport with the keyboard. The same contract disables pointer events and
+hides descendants from native accessibility traversal while the keyboard is
+open.
+
+Red-first `mobileLayout.test.ts` failed because the shared presentation
+contract was absent, then passed after the minimal implementation and cleanup.
+Focused mobile layout/readiness passed `189/189`; broad partial-checkout
+execution passed `792/794`, retaining only the established `careCareer` and
+`careSync` failures from unresolved `@workspace/care-domain`; PixelLab passed
+`ok=150 missing=0 invalid=0`. Local root TypeScript retains missing
+`@tanstack/react-query` and `zod`, while the JSON beta doctor remains blocked
+on its pinned-pnpm and Expo checks. Dependency-complete branch CI is required
+before compile/build proof is current.
+
+This slice does not claim native approval. Real-iPhone keyboard timing,
+interactive dismissal, Log/Plan/More form reach, VoiceOver focus return,
+home-indicator screenshots, store review, and Apollo approval remain required.
+
 ## 2026-08-30 iOS floating-tab safe-content slice
 
 The shared native tab geometry now expands around the device bottom inset

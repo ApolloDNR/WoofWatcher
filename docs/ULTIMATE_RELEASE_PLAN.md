@@ -1,5 +1,19 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-08-30 iOS keyboard-safe floating navigation increment
+
+The launch shell now removes both halves of its floating navigation from form
+keyboard flow: React Navigation hides its standard bar, and the custom Today
+paw animates out on native keyboard progress while becoming untappable and
+absent from accessibility traversal. This closes a source-level keyboard
+overlap risk without claiming device approval.
+
+Release acceptance still requires real-iPhone Log, Plan, and More evidence for
+smooth open/interactive-dismiss/close timing, reachable fields and save
+controls, VoiceOver focus return, home-indicator fit, route screenshots, App
+Store review, and Apollo approval. Dependency-complete branch CI remains the
+compile/build authority for the partial Windows checkout.
+
 ## 2026-08-30 iOS floating-tab safe-content status
 
 The shared floating-tab contract now preserves at least a full mobile touch
