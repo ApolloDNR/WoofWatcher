@@ -4,6 +4,8 @@
 
 Privacy & Safety's support-readiness sheet now keeps all three provider fields in the shared keyboard-aware scroller, exposes visible captions as native labels, advances email to privacy policy to terms, and ends with Done. Red-first readiness proof passes `184/184`; native assistive-technology, legal/provider, store, and Apollo approval evidence remain open.
 
+Dependency-complete `WoofWatcher Verify` run `33432933625`, job `99622424774`, passed implementation/docs commit `3e1b21c3` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
+
 ## 2026-08-31 Records add-record accessibility slice
 
 Records now exposes explicit native labels for its add-record inputs and moves keyboard focus through title, due/reference, and notes before Done. Red-first readiness proof covers the contract; native screen-reader and route screenshot evidence remain open.

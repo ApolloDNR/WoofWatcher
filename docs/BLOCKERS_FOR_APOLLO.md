@@ -3,6 +3,7 @@
 ## 2026-08-31 Privacy support-editor native accessibility evidence
 
 - Source/readiness coverage protects keyboard-aware reach, explicit labels, and email -> privacy policy -> terms focus order.
+- Dependency-complete `WoofWatcher Verify` run `33432933625`, job `99622424774`, passed implementation/docs commit `3e1b21c3`.
 - BLOCKED on runtime and approval evidence: compact-height iOS/Android captures, VoiceOver/TalkBack focus and dismissal, valid policy/legal review, provider proof, store review, and Apollo approval remain required.
 
 ## 2026-08-31 Records form native accessibility evidence

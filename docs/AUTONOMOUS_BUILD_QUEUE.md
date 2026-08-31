@@ -5,6 +5,7 @@
 - DONE: Support email, privacy-policy URL, and terms URL expose their visible captions as native accessibility labels.
 - DONE: Keyboard submission advances through the three fields and ends with an explicit Done dismissal; the complete sheet uses the shared keyboard-aware scroller.
 - VERIFIED: Red-first readiness coverage failed on the missing contract, then passed `184/184`; whitespace validation passed.
+- CI: Dependency-complete `WoofWatcher Verify` run `33432933625`, job `99622424774`, passed implementation/docs commit `3e1b21c3` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: The launch profile remains a local/provider-gated proof surface. Source coverage does not prove native screen-reader behavior, valid policy review, provider approval, store review, or public launch.
 - NEXT: Run dependency-complete branch CI, then capture compact-height VoiceOver/TalkBack focus and keyboard-dismiss evidence.
 
