@@ -9,6 +9,11 @@ Real-iPhone keyboard timing, editable-field reach, VoiceOver return focus,
 screenshots, store review, and Apollo visual approval remain open; Windows
 source proof is not native-device proof.
 
+Dependency-complete `WoofWatcher Verify` run `33362384239`, job `99396117339`,
+passed implementation/docs commit `b4df5312` end to end. This clears the
+branch compile/build gate only; it does not clear the native or approval gates
+above.
+
 ## 2026-08-30 iOS floating-tab safe-content boundary
 
 Source and focused tests now ensure the floating tab bar expands around a

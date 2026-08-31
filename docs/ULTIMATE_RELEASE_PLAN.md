@@ -14,6 +14,10 @@ controls, VoiceOver focus return, home-indicator fit, route screenshots, App
 Store review, and Apollo approval. Dependency-complete branch CI remains the
 compile/build authority for the partial Windows checkout.
 
+`WoofWatcher Verify` run `33362384239`, job `99396117339`, passed
+implementation/docs commit `b4df5312` end to end. Rerun after the proof-record
+commit before treating final-tip dependency proof as current.
+
 ## 2026-08-30 iOS floating-tab safe-content status
 
 The shared floating-tab contract now preserves at least a full mobile touch

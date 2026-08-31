@@ -9,6 +9,8 @@
 - Automated: the tab navigator opts into keyboard hiding and the Today paw
   consumes `react-native-keyboard-controller` through the existing root
   `KeyboardProvider`.
+- Dependency-complete: `WoofWatcher Verify` run `33362384239`, job
+  `99396117339`, passed implementation/docs commit `b4df5312` end to end.
 - Native required: On a home-indicator iPhone, open representative inputs in
   Log, Plan, and More; observe open, interactive dismiss, and close; confirm no
   tab/paw overlap or flash, every required control remains reachable, and

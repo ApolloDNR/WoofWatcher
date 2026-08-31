@@ -18,10 +18,14 @@
   `zod` links. The JSON beta doctor remains blocked on the pinned-pnpm check
   and unresolved Expo. Dependency-complete branch CI is required for the
   authoritative compile/build proof.
+- CI: Dependency-complete `WoofWatcher Verify` run `33362384239`, job
+  `99396117339`, passed implementation/docs commit `b4df5312` through pinned
+  install, JSON doctor, focused tests, typecheck, CI-safe builds, post steps,
+  and Complete job.
 - BOUNDARY: This is source and deterministic animation/accessibility-state
   proof. It does not replace real-iPhone keyboard transition, form reach,
   VoiceOver, screenshot, App Store, or Apollo approval evidence.
-- NEXT: Obtain dependency-complete branch CI, then capture Log/Plan/More forms
+- NEXT: Rerun after this proof-record commit, then capture Log/Plan/More forms
   on a real iPhone with the keyboard opening and closing before native fit is
   approved.
 

@@ -20,6 +20,12 @@ execution passed `792/794`, retaining only the established `careCareer` and
 on its pinned-pnpm and Expo checks. Dependency-complete branch CI is required
 before compile/build proof is current.
 
+Dependency-complete `WoofWatcher Verify` run `33362384239`, job `99396117339`,
+passed implementation/docs commit `b4df5312` through pinned install, JSON
+doctor, focused tests, typecheck, CI-safe builds, post steps, and Complete job.
+Rerun after the proof-record commit before treating final-tip evidence as
+current.
+
 This slice does not claim native approval. Real-iPhone keyboard timing,
 interactive dismissal, Log/Plan/More form reach, VoiceOver focus return,
 home-indicator screenshots, store review, and Apollo approval remain required.

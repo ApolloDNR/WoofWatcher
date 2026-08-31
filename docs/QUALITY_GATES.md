@@ -12,6 +12,8 @@
   PASS at `ok=150 missing=0 invalid=0`.
 - Dependency/local environment: BLOCKED on missing local
   `@tanstack/react-query` and `zod`, plus pinned-pnpm and Expo doctor checks.
+- Dependency-complete CI: PASS. `WoofWatcher Verify` run `33362384239`, job
+  `99396117339`, passed commit `b4df5312` through the complete job.
 - Native release proof: PENDING real-iPhone keyboard motion, form reach,
   VoiceOver focus, route screenshots, store review, and Apollo approval.
 
