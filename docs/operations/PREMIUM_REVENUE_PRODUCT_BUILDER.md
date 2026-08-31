@@ -15,8 +15,12 @@ established missing `@workspace/care-domain` link; PixelLab passed
 `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Root
 TypeScript retained the existing missing `@tanstack/react-query` and `zod`
 blockers, and the JSON beta doctor remained blocked on pnpm `11.19.0`
-versus pinned `10.24.0` plus unresolved Expo. Dependency-complete branch CI
-and real iPhone home-indicator/VoiceOver proof remain required.
+versus pinned `10.24.0` plus unresolved Expo. Dependency-complete
+`WoofWatcher Verify` run `33360753485`, job `99391499791`, passed
+implementation/docs commit `81804dfb` through pinned install, JSON doctor,
+focused tests, typecheck, CI-safe builds, post steps, and Complete job. Rerun
+after this proof-record commit; real iPhone home-indicator/VoiceOver proof
+remains required.
 
 ## 2026-08-30 PWA Today handoff identity slice
 

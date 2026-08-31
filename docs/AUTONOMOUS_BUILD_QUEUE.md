@@ -18,9 +18,13 @@
   `@workspace/care-domain` link. Root TypeScript likewise retains missing
   `@tanstack/react-query` and `zod`; the JSON beta doctor remains blocked
   on pnpm `11.19.0` versus pinned `10.24.0` plus unresolved Expo.
-- NEXT: Require dependency-complete branch CI for this implementation, then
-  capture the floating tab on a home-indicator iPhone through Route Visual
-  Consistency before treating native fit as approved.
+- CI: Dependency-complete `WoofWatcher Verify` run `33360753485`, job
+  `99391499791`, passed implementation/docs commit `81804dfb` through
+  pinned install, JSON doctor, focused tests, typecheck, CI-safe builds, post
+  steps, and Complete job.
+- NEXT: Rerun after this proof-record commit and capture the floating tab on a
+  home-indicator iPhone through Route Visual Consistency before treating
+  native fit as approved.
 
 ## 2026-08-30 PWA Today handoff identity boundary
 

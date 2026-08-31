@@ -12,6 +12,11 @@
   existing `@workspace/care-domain` package link is unavailable; root
   TypeScript and Expo doctor retain the documented missing-dependency/pinned
   pnpm blockers.
+- Dependency-complete proof: `WoofWatcher Verify` run `33360753485`, job
+  `99391499791`, passed implementation/docs commit `81804dfb` through the
+  pinned install, JSON doctor, focused behavior tests, typecheck, CI-safe
+  builds, and Complete job. Rerun after this proof-record commit for final-tip
+  freshness.
 - Manual remainder: capture Log, Plan, Today, Pack, and Story on a real
   home-indicator iPhone; confirm icons and labels stay above the indicator,
   every tab is comfortably tappable, the center paw remains visually
