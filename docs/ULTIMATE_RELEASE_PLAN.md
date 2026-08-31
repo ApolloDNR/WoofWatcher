@@ -316,3 +316,5 @@ accessibility traversal, and Apollo visual approval remain release gates.
 ## 2026-08-31 Setup keyboard-aware reachability increment
 
 Setup now uses the shared native keyboard-aware scroller for the whole onboarding flow, including the decimal weight field and final save controls. The web path retains a standard scroll fallback. Real compact-height iPhone/Android rendering, keyboard animation, focus order, VoiceOver/TalkBack, and route-named evidence remain required.
+
+Dependency-complete `WoofWatcher Verify` run `33384099037`, job `99462707278`, passed implementation/docs commit `3f9a78ec`. Rerun after the proof-record commit before treating final-tip dependency proof as current.

@@ -2913,4 +2913,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - DONE: Setup now keeps the complete onboarding form, numeric weight field, and save/later actions inside the shared native keyboard-aware scroller while preserving web fallback behavior.
 - VERIFIED: Red-first readiness coverage failed on the plain Setup `ScrollView`, then the focused layout/readiness suite passed 194/194 after the shared wrapper was wired.
+- CI: Dependency-complete `WoofWatcher Verify` run `33384099037`, job `99462707278`, passed implementation/docs commit `3f9a78ec` with install, doctor, focused tests, typecheck, and CI-safe builds green.
 - NEXT: Run aggregate verification and dependency-complete branch CI. Real compact-height iPhone Setup reach, toolbar focus order, VoiceOver return, and route-named iOS/Android evidence remain external gates.
