@@ -1,5 +1,19 @@
 # QA Test Plan
 
+## 2026-08-30 PWA Today handoff identity proof
+
+- Red-first behavior reproduced renamed `Mochi` receiving the Phoenix-specific
+  Today handoff prompt; focused behavior passed `37/37` after the shared fix.
+- Full vanilla PWA behavior passed `39/39`.
+- Broad partial-checkout mobile/domain execution passed `791/793`; only the
+  established `careCareer` and `careSync` module-resolution failures remain.
+- PixelLab inventory passed `ok=150 missing=0 invalid=0`.
+- `git diff --check` passed. Local TypeScript remains blocked by missing
+  `@tanstack/react-query` and `zod`; JSON doctor remains locally blocked by
+  pnpm `11.19.0` versus pinned `10.24.0` and unresolved Expo.
+- Live browser/native output, screen-reader traversal, provider delivery, and
+  recipient review remain external evidence gates.
+
 ## 2026-08-14 PWA Household Pulse presence identity
 
 - Automated: `My Dog` renders as Phoenix in supervised presence copy; `  Mochi  ` renders as trimmed Mochi in home-alone status with deterministic timer minutes.

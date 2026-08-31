@@ -1,5 +1,25 @@
 # Autonomous Build Queue
 
+## 2026-08-30 PWA Today handoff identity boundary
+
+- DONE: The shared Today plan now resolves Dog Profile identity before building
+  its household handoff prompt, so renamed households no longer see
+  `Before assuming Phoenix is covered`.
+- VERIFIED: Red-first PWA behavior reproduced the renamed-dog leak, then passed
+  with `My Dog` retaining Phoenix and whitespace-padded `Mochi` trimmed.
+- BOUNDARY: This changes local shared-care guidance only. It does not enable
+  provider sync, send a handoff, prove browser/native screen-reader output, or
+  clear store/Apollo approval gates.
+- VERIFIED: The full vanilla PWA suite passed `39/39`; broad partial-checkout
+  mobile/domain execution passed `791/793`, retaining only the established
+  `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`;
+  PixelLab passed `ok=150 missing=0 invalid=0`; `git diff --check` passed.
+  Local TypeScript retains the established missing `@tanstack/react-query` and
+  `zod` blockers, while JSON doctor source guards pass but local readiness is
+  blocked on pnpm `11.19.0` versus pinned `10.24.0` plus missing Expo.
+- NEXT: Require dependency-complete branch CI, then retain live browser/native
+  handoff and accessibility review as external proof.
+
 ## 2026-08-30 PWA Home card-heading identity boundary
 
 - DONE: The shared Home identity model now supplies the prominent status and location headings, so renamed dogs no longer see `Phoenix Status` or `Where Phoenix is` above otherwise-canonical five-second answers.

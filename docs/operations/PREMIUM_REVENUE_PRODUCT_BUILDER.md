@@ -1,5 +1,21 @@
 # Premium Revenue Product Builder
 
+## 2026-08-30 PWA Today handoff identity slice
+
+The shared Today plan now resolves Dog Profile identity before producing its
+household handoff prompt. Placeholder identity remains Phoenix and
+whitespace-padded renamed identity is trimmed. This remains local guidance;
+provider delivery, browser/native accessibility, store, and Apollo approval
+proof stay gated.
+
+Red-first PWA coverage failed because renamed Mochi still received Phoenix
+handoff copy, then focused behavior passed `37/37` after the minimal shared
+builder fix. The full vanilla PWA suite passed `39/39`; broad partial-checkout
+mobile/domain execution passed `791/793` with only the established
+`careCareer`/`careSync` failures from unresolved `@workspace/care-domain`;
+PixelLab passed `ok=150 missing=0 invalid=0`. Dependency-complete branch proof
+remains next.
+
 ## 2026-08-30 PWA Home card-heading identity slice
 
 The shared Home identity model now owns its visible status and location headings alongside the existing canonical presence and room copy. Placeholder identity remains Phoenix, while whitespace-padded renamed identity is trimmed before Home renders either heading. Internal Phoenix components/assets/routes remain stable; browser/native accessibility, provider, store, and Apollo approval proof remain gated.

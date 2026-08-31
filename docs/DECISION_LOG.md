@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-08-30 PWA Today handoff follows Dog Profile
+
+Decision: Resolve the active dog inside `getTodayPlan` before building its
+household handoff prompt. Blank and `My Dog` retain Phoenix; renamed identity is
+trimmed before the shared guidance is returned to Home, assistant, and product
+view-model consumers.
+
+Boundary: This is local shared-care copy alignment. It does not send a handoff,
+enable provider sync, prove native accessibility, or approve store/launch work.
+
 ## 2026-08-30 PWA Home headings follow Dog Profile
 
 Decision: Keep Home's visible status and location card titles in `buildHomeIdentityCopy` beside the existing canonical pet name and presence copy. Blank and `My Dog` retain Phoenix; renamed identity is trimmed before either heading is rendered.

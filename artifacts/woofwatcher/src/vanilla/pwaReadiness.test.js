@@ -32,6 +32,7 @@ import {
   getDefaultState,
   getHouseholdPulse,
   getNotificationCenter,
+  getTodayPlan,
 } from "./woof-core.js";
 import { buildProductViewModel } from "./woof-product-view-model.js";
 
@@ -40,6 +41,26 @@ const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const app = readFileSync(join(here, "app.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
+
+test("keeps Dog Profile identity canonical in the Today handoff prompt", () => {
+  const placeholder = getTodayPlan(
+    { ...getDefaultState(), profile: { name: "My Dog" } },
+    "2026-08-30T15:00:00.000Z",
+  );
+  const renamed = getTodayPlan(
+    { ...getDefaultState(), profile: { name: "  Mochi  " } },
+    "2026-08-30T15:00:00.000Z",
+  );
+
+  assert.equal(
+    placeholder.handoffPrompt,
+    "Before assuming Phoenix is covered, check who fed, walked, trained, or noticed symptoms today.",
+  );
+  assert.equal(
+    renamed.handoffPrompt,
+    "Before assuming Mochi is covered, check who fed, walked, trained, or noticed symptoms today.",
+  );
+});
 
 test("keeps Dog Profile identity canonical in owner-reviewed talk-to-log drafts", () => {
   const placeholder = buildTalkToLogDraft(

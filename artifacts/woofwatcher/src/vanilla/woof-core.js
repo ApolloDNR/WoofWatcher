@@ -533,6 +533,7 @@ export function getCareCalendar(state, now = new Date().toISOString()) {
 }
 
 export function getTodayPlan(state, now = new Date().toISOString()) {
+  const petName = resolvePetName(state.profile?.name);
   const todayEntries = entriesForLocalDay(state.entries || [], now);
   const completedLabels = (state.routines || [])
     .filter((routine) => todayEntries.some((entry) => routineMatchesEntry(routine, entry)))
@@ -551,7 +552,7 @@ export function getTodayPlan(state, now = new Date().toISOString()) {
     completedCount: completedLabels.length,
     totalCount: (state.routines || []).length,
     handoffPrompt:
-      "Before assuming Phoenix is covered, check who fed, walked, trained, or noticed symptoms today."
+      `Before assuming ${petName} is covered, check who fed, walked, trained, or noticed symptoms today.`
   };
 }
 
