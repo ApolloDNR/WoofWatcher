@@ -6132,3 +6132,4 @@ Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, p
 - Changed: Meal logging now announces expected and eaten portions and provides an outcome-aware Next/Done keyboard path.
 - Local proof: red-first `quickLogFieldFlow.test.ts` failed on the missing meal flow, then passed after the shared contract and composer wiring were added.
 - Release boundary: source proof does not replace compact-height native, decimal-keyboard, VoiceOver/TalkBack, route screenshot, store, or Apollo approval evidence.
+- Dependency-complete proof: `WoofWatcher Verify` run `33534938110`, job `99946839890`, passed implementation/docs commit `20a99c83` end to end. Rerun after this proof-record commit before treating the final branch tip as current.
