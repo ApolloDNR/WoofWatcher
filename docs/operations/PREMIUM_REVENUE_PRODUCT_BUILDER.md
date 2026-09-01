@@ -2,7 +2,7 @@
 
 ## 2026-08-31 Alone Time return keyboard accessibility slice
 
-The Log return check-in now labels recovery minutes and return-support context for native accessibility, advances the number-pad field into the note, and provides a final Done dismissal. Red-first mobile readiness failed before implementation and passed `186/186` after it. Native compact-height, numeric-toolbar, VoiceOver/TalkBack, route screenshot, store, and Apollo proof remain external gates.
+The Log return check-in now labels recovery minutes and return-support context for native accessibility, advances the number-pad field into the note, and provides a final Done dismissal. Red-first mobile readiness failed before implementation and passed `186/186` after it. Dependency-complete `WoofWatcher Verify` run `33471693538`, job `99742592418`, passed implementation/docs commit `de1231d7`. Native compact-height, numeric-toolbar, VoiceOver/TalkBack, route screenshot, store, and Apollo proof remain external gates.
 
 ## 2026-08-31 Walk-finish keyboard accessibility slice
 

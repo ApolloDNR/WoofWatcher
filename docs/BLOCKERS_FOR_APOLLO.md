@@ -3,6 +3,7 @@
 ## 2026-08-31 Alone Time return native accessibility evidence
 
 - Source/tests protect explicit recovery-time and return-support labels plus numeric field -> note -> Done progression.
+- Dependency-complete `WoofWatcher Verify` run `33471693538`, job `99742592418`, passed implementation/docs commit `de1231d7`.
 - BLOCKED on runtime proof: compact-height iOS/Android reach, numeric-toolbar behavior, VoiceOver/TalkBack focus, route-named screenshots, and Apollo approval remain required.
 
 ## 2026-08-31 Walk-finish native accessibility evidence
