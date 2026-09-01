@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-08-31 Alone Time return native accessibility evidence
+
+- Source/tests protect explicit recovery-time and return-support labels plus numeric field -> note -> Done progression.
+- BLOCKED on runtime proof: compact-height iOS/Android reach, numeric-toolbar behavior, VoiceOver/TalkBack focus, route-named screenshots, and Apollo approval remain required.
+
 ## 2026-08-31 Walk-finish native accessibility evidence
 
 - Source/tests protect explicit labels and route -> distance -> dog interactions -> social outcome -> note keyboard progression ending in Done.

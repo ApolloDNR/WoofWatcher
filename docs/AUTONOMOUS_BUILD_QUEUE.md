@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-31 Alone Time return keyboard accessibility boundary
+
+- DONE: Recovery minutes and the return-support note expose explicit native accessibility labels.
+- DONE: Keyboard submission advances from the numeric recovery field to the note and ends with a Done dismissal.
+- VERIFIED LOCALLY: Red-first mobile readiness failed on the missing contract, then passed `186/186` after implementation.
+- BOUNDARY: Source coverage does not prove compact-height reach, iOS numeric-toolbar behavior, VoiceOver/TalkBack focus, route screenshots, or approval.
+- NEXT: Capture route-named real-device Alone Time return evidence when native tooling is available.
+
 ## 2026-08-31 Walk-finish keyboard accessibility boundary
 
 - DONE: The active-walk finish fields expose explicit labels for route, distance, dog interactions, social outcome, and note.

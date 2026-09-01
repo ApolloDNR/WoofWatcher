@@ -6050,6 +6050,21 @@ test("gives Calendar routine and event editors explicit keyboard progression", (
   );
 });
 
+test("gives the Alone Time return check-in explicit keyboard progression", () => {
+  const log = readAppFile("(tabs)/log.tsx");
+
+  assert.match(
+    log,
+    /accessibilityLabel="Recovery time in minutes"[\s\S]*?returnKeyType="next"[\s\S]*?accessibilityLabel="What helped after returning home"[\s\S]*?returnKeyType="done"/,
+    "the return check-in must announce recovery time and support, then provide a numeric-keyboard completion path",
+  );
+  assert.match(
+    log,
+    /onSubmitEditing=\{\(\) => returnNoteRef\.current\?\.focus\(\)\}[\s\S]*?onSubmitEditing=\{Keyboard\.dismiss\}/,
+    "the return check-in must advance from recovery minutes to the note and dismiss from the final field",
+  );
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

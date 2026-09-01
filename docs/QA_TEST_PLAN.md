@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-08-31 Alone Time return keyboard accessibility
+
+- PASS: Readiness coverage requires explicit recovery-time and return-support labels plus a next, done keyboard flow.
+- PENDING DEVICE: Complete an Alone Time return on compact iOS and Android; verify number-pad exit, support-note focus, outcome buttons, VoiceOver/TalkBack labels, and route-named screenshots.
+
 ## 2026-08-31 Walk-finish keyboard accessibility
 
 - PASS: Shared walk-session coverage verifies the ordered field labels and Next/Done keyboard contract.

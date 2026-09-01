@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-31 Alone Time return keyboard accessibility gate
+
+- PASS (source): Return recovery minutes and support notes have explicit labels and deterministic next/done keyboard actions.
+- OPEN (native): Compact-height iOS/Android reach, number-pad toolbar behavior, VoiceOver/TalkBack focus, and route-named screenshots remain required.
+
 ## 2026-08-31 Walk-finish keyboard accessibility gate
 
 - PASS (source): five finish fields expose explicit labels and ordered Next/Done behavior.

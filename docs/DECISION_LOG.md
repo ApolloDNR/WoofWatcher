@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+### 2026-08-31: Alone Time Returns Use An Explicit Keyboard Flow
+
+Decision: Treat recovery minutes and the return-support note as one ordered household handoff form. Recovery time advances to the note, and the final note dismisses the keyboard. Number-pad users need an intentional exit path, and assistive technology should not depend on placeholders. Real-device focus, screen-reader, screenshot, store, and Apollo proof remain separate gates.
+
 ### 2026-08-31: Walk Finish Owns A Complete Keyboard Path
 
 Decision: The active-walk finish form uses one shared ordered field contract for native accessibility labels and keyboard actions. Route advances to distance, dog interactions, social outcome, and note; note ends with Done. Runtime assistive-technology and compact-device proof remain separate launch gates.

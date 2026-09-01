@@ -1098,6 +1098,7 @@ export default function LogScreen() {
   const walkFinishDogInteractionsRef = useRef<TextInput>(null);
   const walkFinishSocialOutcomeRef = useRef<TextInput>(null);
   const walkFinishNoteRef = useRef<TextInput>(null);
+  const returnNoteRef = useRef<TextInput>(null);
   const [moodContext, setMoodContext] = useState("");
   const [trainingSkill, setTrainingSkill] = useState("");
   const [trainingNextPractice, setTrainingNextPractice] = useState("");
@@ -3024,14 +3025,21 @@ export default function LogScreen() {
                   <TextInput
                     value={returnRecoveryMinutes}
                     onChangeText={setReturnRecoveryMinutes}
+                    accessibilityLabel="Recovery time in minutes"
+                    returnKeyType="next"
+                    onSubmitEditing={() => returnNoteRef.current?.focus()}
                     placeholder="Recovery min"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
                     style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
+                    ref={returnNoteRef}
                     value={returnNote}
                     onChangeText={setReturnNote}
+                    accessibilityLabel="What helped after returning home"
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
                     placeholder="What helped?"
                     placeholderTextColor={colors.mutedForeground}
                     style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}

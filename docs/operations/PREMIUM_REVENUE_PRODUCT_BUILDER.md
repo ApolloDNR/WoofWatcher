@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-31 Alone Time return keyboard accessibility slice
+
+The Log return check-in now labels recovery minutes and return-support context for native accessibility, advances the number-pad field into the note, and provides a final Done dismissal. Red-first mobile readiness failed before implementation and passed `186/186` after it. Native compact-height, numeric-toolbar, VoiceOver/TalkBack, route screenshot, store, and Apollo proof remain external gates.
+
 ## 2026-08-31 Walk-finish keyboard accessibility slice
 
 The active-walk finish form now derives its five field labels and keyboard actions from a shared tested contract. Focus advances through route, distance, dog interactions, social outcome, and note, with an explicit Done dismissal after the final field. Red-first walk-session coverage passes `5/5`. Real-device compact-height, keyboard-toolbar, VoiceOver/TalkBack, screenshot, store, and Apollo evidence remain open.

@@ -1,5 +1,9 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-08-31 Alone Time return accessibility increment
+
+The active Alone Time return check-in now labels recovery time and support context explicitly and provides a recovery -> note -> Done keyboard path. Focused red/green source proof passes; native compact-height, number-pad toolbar, VoiceOver/TalkBack, and screenshot proof remain release gates.
+
 ## 2026-08-31 Records form accessibility increment
 
 The Records add-record form now gives each field an explicit screen-reader label and a title -> due/reference -> notes keyboard path ending in Done. Focused red/green source proof passes; native VoiceOver/TalkBack, compact-height, attachment, and screenshot proof remain release gates.
