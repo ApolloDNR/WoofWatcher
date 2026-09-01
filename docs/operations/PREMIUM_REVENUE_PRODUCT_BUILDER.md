@@ -2,7 +2,7 @@
 
 ## 2026-09-01 Medication Quick Log keyboard accessibility slice
 
-The medication detail composer now treats dose and owner-reviewed side-effect/refill context as one labeled keyboard sequence: dose advances to context, and context ends with Done. Red-first shared field-flow coverage reproduced the missing contract before implementation. Medication confirmation, diagnosis, native screen-reader proof, store readiness, and Apollo approval remain outside this source-backed slice.
+The medication detail composer now treats dose and owner-reviewed side-effect/refill context as one labeled keyboard sequence: dose advances to context, and context ends with Done. Red-first shared field-flow coverage reproduced the missing contract before implementation. Dependency-complete `WoofWatcher Verify` run `33552538618`, job `100005236447`, passed implementation/docs commit `5e45376f`. Medication confirmation, diagnosis, native screen-reader proof, store readiness, and Apollo approval remain outside this source-backed slice.
 
 ## 2026-08-31 Alone Time return keyboard accessibility slice
 

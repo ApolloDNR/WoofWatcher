@@ -3,6 +3,7 @@
 ## 2026-09-01 Medication Quick Log native accessibility evidence
 
 - Source/tests protect explicit dose and owner-reviewed context labels plus dose -> context -> Done keyboard progression.
+- Dependency-complete `WoofWatcher Verify` run `33552538618`, job `100005236447`, passed implementation/docs commit `5e45376f`.
 - BLOCKED on runtime proof: compact-height iOS/Android reach, keyboard behavior, VoiceOver/TalkBack focus, route-named screenshots, store review, and Apollo approval remain required.
 
 ## 2026-08-31 Alone Time return native accessibility evidence

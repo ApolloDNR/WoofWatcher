@@ -5,6 +5,7 @@
 - DONE: Dose and owner-reviewed side-effect/refill context expose explicit native accessibility labels.
 - DONE: Keyboard submission advances dose to context and ends with a Done dismissal.
 - VERIFIED LOCALLY: Red-first field-flow coverage failed on the missing export, then focused medication/readiness coverage passed after implementation.
+- CI: Dependency-complete `WoofWatcher Verify` run `33552538618`, job `100005236447`, passed implementation/docs commit `5e45376f` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: This does not confirm a medication, diagnose a reaction, prove compact-height reach, or replace VoiceOver/TalkBack and route-named device evidence.
 - NEXT: Run dependency-complete branch CI, then capture the medication detail flow on compact real iOS and Android devices.
 
