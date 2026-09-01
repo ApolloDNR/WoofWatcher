@@ -3711,3 +3711,7 @@ Plans routine and event sheets treat visible captions as native accessibility la
 # 2026-09-01 — Training Quick Log uses a deterministic two-field keyboard path
 
 Decision: Treat skill/cue as the first field and next practice as the final field. The first advances focus; the final multiline field uses Done and dismisses the keyboard. Keep real-device and assistive-technology proof separate from source verification.
+
+# 2026-09-01 — Incident Watch preserves the full safety handoff in keyboard order
+
+Decision: Treat trigger, involved party, injury check, action taken, and follow-up as one ordered Incident Watch form. Each field advances deterministically and the final follow-up dismisses the keyboard. Keep the workflow factual and non-diagnostic, and keep device and assistive-technology proof separate from source verification.

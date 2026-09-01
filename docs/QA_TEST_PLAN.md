@@ -3094,3 +3094,9 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Source behavior: verify the training field contract announces `Training skill or cue` with Next and `Training next practice` with Done, and returns isolated copies.
 - UI wiring: verify the cue submission focuses next practice and the final multiline field dismisses the keyboard.
 - External proof still required: compact-height iOS/Android reach, keyboard focus behavior, VoiceOver/TalkBack traversal, and route-named screenshots.
+
+# 2026-09-01 Incident Quick Log keyboard accessibility
+
+- Source behavior: verify the five-field Incident Watch contract keeps trigger, involved party, injury check, action taken, and follow-up in order with a final Done action.
+- UI wiring: verify each submit advances to the next safety-context field and the final multiline follow-up dismisses the keyboard.
+- External proof still required: compact-height iOS/Android reach, VoiceOver/TalkBack traversal, focus return, and route-named screenshots.

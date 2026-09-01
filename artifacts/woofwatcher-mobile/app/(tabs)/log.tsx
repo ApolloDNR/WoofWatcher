@@ -97,7 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
+import { getIncidentQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -120,6 +120,7 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const FIXED_LIGHT_AMBER = "#8A5A0C";
 const WALK_FINISH_FIELD_FLOW = getWalkFinishFieldFlow();
 const TRAINING_QUICK_LOG_FIELD_FLOW = getTrainingQuickLogFieldFlow();
+const INCIDENT_QUICK_LOG_FIELD_FLOW = getIncidentQuickLogFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -1102,6 +1103,10 @@ export default function LogScreen() {
   const walkFinishNoteRef = useRef<TextInput>(null);
   const returnNoteRef = useRef<TextInput>(null);
   const trainingNextPracticeRef = useRef<TextInput>(null);
+  const incidentExposureRef = useRef<TextInput>(null);
+  const incidentInjuryRef = useRef<TextInput>(null);
+  const incidentActionRef = useRef<TextInput>(null);
+  const incidentFollowUpRef = useRef<TextInput>(null);
   const [moodContext, setMoodContext] = useState("");
   const [trainingSkill, setTrainingSkill] = useState("");
   const [trainingNextPractice, setTrainingNextPractice] = useState("");
@@ -3739,20 +3744,27 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Trigger or context</Text>
                   <TextInput
+                    accessibilityLabel={INCIDENT_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
                     placeholder="Dog at gate, crowded sidewalk..."
                     placeholderTextColor={colors.mutedForeground}
                     value={incidentTrigger}
                     onChangeText={setIncidentTrigger}
+                    returnKeyType={INCIDENT_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                    onSubmitEditing={() => incidentExposureRef.current?.focus()}
                     style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Who or what was involved?</Text>
                   <TextInput
+                    ref={incidentExposureRef}
+                    accessibilityLabel={INCIDENT_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel}
                     placeholder="Off-leash dog, stranger..."
                     placeholderTextColor={colors.mutedForeground}
                     value={incidentExposure}
                     onChangeText={setIncidentExposure}
+                    returnKeyType={INCIDENT_QUICK_LOG_FIELD_FLOW[1].returnKeyType}
+                    onSubmitEditing={() => incidentInjuryRef.current?.focus()}
                     style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
@@ -3760,20 +3772,28 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Injury check</Text>
                     <TextInput
+                      ref={incidentInjuryRef}
+                      accessibilityLabel={INCIDENT_QUICK_LOG_FIELD_FLOW[2].accessibilityLabel}
                       placeholder="None, scratch..."
                       placeholderTextColor={colors.mutedForeground}
                       value={incidentInjury}
                       onChangeText={setIncidentInjury}
+                      returnKeyType={INCIDENT_QUICK_LOG_FIELD_FLOW[2].returnKeyType}
+                      onSubmitEditing={() => incidentActionRef.current?.focus()}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Action taken</Text>
                     <TextInput
+                      ref={incidentActionRef}
+                      accessibilityLabel={INCIDENT_QUICK_LOG_FIELD_FLOW[3].accessibilityLabel}
                       placeholder="Separated..."
                       placeholderTextColor={colors.mutedForeground}
                       value={incidentAction}
                       onChangeText={setIncidentAction}
+                      returnKeyType={INCIDENT_QUICK_LOG_FIELD_FLOW[3].returnKeyType}
+                      onSubmitEditing={() => incidentFollowUpRef.current?.focus()}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>
@@ -3781,11 +3801,16 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Follow-up</Text>
                   <TextInput
+                    ref={incidentFollowUpRef}
+                    accessibilityLabel={INCIDENT_QUICK_LOG_FIELD_FLOW[4].accessibilityLabel}
                     placeholder="Watch tonight, trainer note, vet call, avoid gate route..."
                     placeholderTextColor={colors.mutedForeground}
                     value={incidentFollowUp}
                     onChangeText={setIncidentFollowUp}
                     multiline
+                    blurOnSubmit
+                    returnKeyType={INCIDENT_QUICK_LOG_FIELD_FLOW[4].returnKeyType}
+                    onSubmitEditing={Keyboard.dismiss}
                     style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
                   />
                 </View>
