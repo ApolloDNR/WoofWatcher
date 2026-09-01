@@ -40,6 +40,24 @@ export interface WalkSessionPatch {
   details: Record<string, unknown> & { auditTrail?: CareAuditEvent[] };
 }
 
+export interface WalkFinishFieldFlowItem {
+  key: "routeName" | "distanceMiles" | "dogInteractions" | "socialOutcome" | "note";
+  accessibilityLabel: string;
+  returnKeyType: "next" | "done";
+}
+
+const WALK_FINISH_FIELD_FLOW: WalkFinishFieldFlowItem[] = [
+  { key: "routeName", accessibilityLabel: "Walk route or place", returnKeyType: "next" },
+  { key: "distanceMiles", accessibilityLabel: "Walk distance in miles", returnKeyType: "next" },
+  { key: "dogInteractions", accessibilityLabel: "Dogs met during walk", returnKeyType: "next" },
+  { key: "socialOutcome", accessibilityLabel: "Walk social outcome", returnKeyType: "next" },
+  { key: "note", accessibilityLabel: "Walk finish note", returnKeyType: "done" },
+];
+
+export function getWalkFinishFieldFlow(): WalkFinishFieldFlowItem[] {
+  return WALK_FINISH_FIELD_FLOW.map((field) => ({ ...field }));
+}
+
 function clean(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }

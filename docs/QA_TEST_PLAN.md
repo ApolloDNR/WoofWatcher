@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-08-31 Walk-finish keyboard accessibility
+
+- PASS: Shared walk-session coverage verifies the ordered field labels and Next/Done keyboard contract.
+- PENDING DEVICE: Complete an active walk on compact iOS and Android, verify route-to-note focus order, numeric keyboard exit, VoiceOver/TalkBack labels, and route-named screenshots.
+
 ## 2026-08-31 Records add-record keyboard accessibility QA
 
 - Automated: readiness coverage requires explicit labels and title -> due/reference -> notes -> Done progression.

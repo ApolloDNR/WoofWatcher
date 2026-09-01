@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-08-31 Walk-finish native accessibility evidence
+
+- Source/tests protect explicit labels and route -> distance -> dog interactions -> social outcome -> note keyboard progression ending in Done.
+- BLOCKED on runtime proof: compact-height iOS/Android reach, numeric-toolbar behavior, VoiceOver/TalkBack focus, route-named screenshots, and Apollo approval remain required.
+
 ## 2026-08-31 Privacy support-editor native accessibility evidence
 
 - Source/readiness coverage protects keyboard-aware reach, explicit labels, and email -> privacy policy -> terms focus order.

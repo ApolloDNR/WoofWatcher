@@ -8,6 +8,7 @@ import {
   Animated,
   ImageBackground,
   InteractionManager,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -97,7 +98,7 @@ import {
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
-import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
+import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
 import { persistPickedMedia } from "@/lib/durablePickedMedia";
 import { TrailMap } from "@/components/TrailMap";
@@ -116,6 +117,7 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // The status chip stays ivory in both schemes. Keep the warm detail signal,
 // but use the light-board amber that is tuned for small text on cream.
 const FIXED_LIGHT_AMBER = "#8A5A0C";
+const WALK_FINISH_FIELD_FLOW = getWalkFinishFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -1092,6 +1094,10 @@ export default function LogScreen() {
   const [walkFinishDogInteractions, setWalkFinishDogInteractions] = useState("");
   const [walkFinishSocialOutcome, setWalkFinishSocialOutcome] = useState("");
   const [walkFinishNote, setWalkFinishNote] = useState("");
+  const walkFinishDistanceRef = useRef<TextInput>(null);
+  const walkFinishDogInteractionsRef = useRef<TextInput>(null);
+  const walkFinishSocialOutcomeRef = useRef<TextInput>(null);
+  const walkFinishNoteRef = useRef<TextInput>(null);
   const [moodContext, setMoodContext] = useState("");
   const [trainingSkill, setTrainingSkill] = useState("");
   const [trainingNextPractice, setTrainingNextPractice] = useState("");
@@ -2896,13 +2902,20 @@ export default function LogScreen() {
                   <TextInput
                     value={walkFinishRouteName}
                     onChangeText={setWalkFinishRouteName}
+                    accessibilityLabel={WALK_FINISH_FIELD_FLOW[0].accessibilityLabel}
+                    returnKeyType={WALK_FINISH_FIELD_FLOW[0].returnKeyType}
+                    onSubmitEditing={() => walkFinishDistanceRef.current?.focus()}
                     placeholder="Route or place"
                     placeholderTextColor={colors.mutedForeground}
                     style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
+                    ref={walkFinishDistanceRef}
                     value={walkFinishDistanceMiles}
                     onChangeText={setWalkFinishDistanceMiles}
+                    accessibilityLabel={WALK_FINISH_FIELD_FLOW[1].accessibilityLabel}
+                    returnKeyType={WALK_FINISH_FIELD_FLOW[1].returnKeyType}
+                    onSubmitEditing={() => walkFinishDogInteractionsRef.current?.focus()}
                     placeholder="Miles"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="decimal-pad"
@@ -2911,24 +2924,36 @@ export default function LogScreen() {
                 </View>
                 <View style={s.returnDetailRow}>
                   <TextInput
+                    ref={walkFinishDogInteractionsRef}
                     value={walkFinishDogInteractions}
                     onChangeText={setWalkFinishDogInteractions}
+                    accessibilityLabel={WALK_FINISH_FIELD_FLOW[2].accessibilityLabel}
+                    returnKeyType={WALK_FINISH_FIELD_FLOW[2].returnKeyType}
+                    onSubmitEditing={() => walkFinishSocialOutcomeRef.current?.focus()}
                     placeholder="Dogs met"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
                     style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
+                    ref={walkFinishSocialOutcomeRef}
                     value={walkFinishSocialOutcome}
                     onChangeText={setWalkFinishSocialOutcome}
+                    accessibilityLabel={WALK_FINISH_FIELD_FLOW[3].accessibilityLabel}
+                    returnKeyType={WALK_FINISH_FIELD_FLOW[3].returnKeyType}
+                    onSubmitEditing={() => walkFinishNoteRef.current?.focus()}
                     placeholder="Social outcome"
                     placeholderTextColor={colors.mutedForeground}
                     style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <TextInput
+                  ref={walkFinishNoteRef}
                   value={walkFinishNote}
                   onChangeText={setWalkFinishNote}
+                  accessibilityLabel={WALK_FINISH_FIELD_FLOW[4].accessibilityLabel}
+                  returnKeyType={WALK_FINISH_FIELD_FLOW[4].returnKeyType}
+                  onSubmitEditing={Keyboard.dismiss}
                   placeholder="Anything notable?"
                   placeholderTextColor={colors.mutedForeground}
                   style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}

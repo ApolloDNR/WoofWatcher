@@ -5,6 +5,7 @@ import {
   buildWalkSessionFinishPatch,
   buildWalkSessionStartEntry,
   findOpenWalkSession,
+  getWalkFinishFieldFlow,
   type WalkSessionEntryLike,
 } from "./walkSession.ts";
 
@@ -108,4 +109,14 @@ test("uses an explicit duration when the timer cannot be trusted", () => {
 
   assert.equal(patch.durationMinutes, 30);
   assert.equal(patch.details.durationMinutes, 30);
+});
+
+test("walk finish fields expose an ordered accessible keyboard flow", () => {
+  assert.deepEqual(getWalkFinishFieldFlow(), [
+    { key: "routeName", accessibilityLabel: "Walk route or place", returnKeyType: "next" },
+    { key: "distanceMiles", accessibilityLabel: "Walk distance in miles", returnKeyType: "next" },
+    { key: "dogInteractions", accessibilityLabel: "Dogs met during walk", returnKeyType: "next" },
+    { key: "socialOutcome", accessibilityLabel: "Walk social outcome", returnKeyType: "next" },
+    { key: "note", accessibilityLabel: "Walk finish note", returnKeyType: "done" },
+  ]);
 });

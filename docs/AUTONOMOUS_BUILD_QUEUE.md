@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-31 Walk-finish keyboard accessibility boundary
+
+- DONE: The active-walk finish fields expose explicit labels for route, distance, dog interactions, social outcome, and note.
+- DONE: Keyboard submission follows the visible field order and ends with a Done dismissal, including decimal- and number-pad fields.
+- VERIFIED LOCALLY: The red walk-session contract failed before implementation and passed `5/5` after the shared flow was wired into Log.
+- BOUNDARY: Source tests do not prove compact-height reach, iOS keyboard-toolbar behavior, VoiceOver/TalkBack focus, route screenshots, or approval.
+- NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named real-device walk-finish evidence.
+
 ## 2026-08-31 Privacy support-editor keyboard accessibility boundary
 
 - DONE: Support email, privacy-policy URL, and terms URL expose their visible captions as native accessibility labels.

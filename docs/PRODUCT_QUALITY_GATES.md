@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-31 Walk-finish keyboard accessibility gate
+
+- PASS (source): five finish fields expose explicit labels and ordered Next/Done behavior.
+- OPEN (device): compact-height reach, numeric keyboard exit, VoiceOver/TalkBack focus, screenshots, and approval.
+
 ## 2026-08-31 Records add-record keyboard accessibility gate
 
 - PASS (source): all three inputs expose explicit labels and Next/Next/Done keyboard progression.

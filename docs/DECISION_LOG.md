@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+### 2026-08-31: Walk Finish Owns A Complete Keyboard Path
+
+Decision: The active-walk finish form uses one shared ordered field contract for native accessibility labels and keyboard actions. Route advances to distance, dog interactions, social outcome, and note; note ends with Done. Runtime assistive-technology and compact-device proof remain separate launch gates.
+
 ### 2026-08-31: Support Readiness Fields Own Keyboard And Accessibility Order
 
 Decision: Privacy & Safety's support-readiness editor uses the shared keyboard-aware sheet and an explicit email -> privacy policy -> terms focus sequence ending in Done. Visible captions become native accessibility labels. This improves local editing only; it does not approve provider, legal, store, or launch readiness.
