@@ -1,8 +1,14 @@
 export type QuickLogFieldFlowItem = {
-  id: "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
+  id: "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "aloneTrigger" | "recoveryMinutes" | "calmingSupport" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
   accessibilityLabel: string;
   returnKeyType: "next" | "done";
 };
+
+const ALONE_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
+  { id: "aloneTrigger", accessibilityLabel: "Alone Time trigger or context", returnKeyType: "next" },
+  { id: "recoveryMinutes", accessibilityLabel: "Alone Time recovery minutes", returnKeyType: "next" },
+  { id: "calmingSupport", accessibilityLabel: "Alone Time calming support", returnKeyType: "done" },
+];
 
 const MEDICATION_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
   {
@@ -91,6 +97,10 @@ const INCIDENT_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
 
 export function getTrainingQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
   return TRAINING_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
+}
+
+export function getAloneQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
+  return ALONE_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
 }
 
 export function getMealQuickLogFieldFlow(): QuickLogFieldFlowItem[] {

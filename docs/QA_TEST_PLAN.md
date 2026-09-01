@@ -3117,3 +3117,7 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Source behavior: verify expected portion -> eaten amount exposes explicit labels with ordered Next/Done actions.
 - Outcome behavior: verify skipped, served, and grazing dismiss from expected portion without targeting the intentionally disabled eaten amount field.
 - External proof still required: compact-height iOS/Android reach, decimal-keyboard behavior, VoiceOver/TalkBack traversal, focus return, and route-named screenshots.
+# 2026-09-01 Alone Time departure keyboard accessibility
+
+- Source test: verify context -> recovery minutes -> calming support focus progression, explicit accessibility labels, and final keyboard dismissal.
+- Native proof still required: compact-height iOS/Android, numeric completion toolbar, VoiceOver/TalkBack order and focus return, and route-named screenshots.

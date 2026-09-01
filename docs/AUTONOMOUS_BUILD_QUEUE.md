@@ -3012,3 +3012,10 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Incident Quick Log proof when native tooling is available.
 - CI: `WoofWatcher Verify` run `33499875909`, job `99830497376`, passed implementation/docs commit `62ea088b` with dependency install, mobile beta doctor, focused behavior tests, typecheck, CI-safe builds, post steps, and completion green.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
+# 2026-09-01 Alone Time departure keyboard accessibility
+
+- DONE: The Alone Time Quick Log composer now labels trigger/context, recovery minutes, and calming support for assistive technology and provides a deterministic Next, Next, Done keyboard path.
+- VERIFIED LOCALLY: Red-first field-flow coverage reproduced the missing contract; focused field-flow and mobile-readiness coverage passed after implementation.
+- BOUNDARY: Real compact-height iOS/Android behavior, numeric-toolbar focus, VoiceOver/TalkBack traversal, route screenshots, store review, and Apollo approval remain external gates.
+- NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Alone Time departure proof when native tooling is available.

@@ -6065,6 +6065,17 @@ test("gives the Alone Time return check-in explicit keyboard progression", () =>
   );
 });
 
+test("gives Alone Time Quick Log an explicit departure keyboard path", () => {
+  const log = readAppFile("(tabs)/log.tsx");
+
+  assert.match(log, /const ALONE_QUICK_LOG_FIELD_FLOW = getAloneQuickLogFieldFlow\(\)/);
+  assert.match(
+    log,
+    /accessibilityLabel=\{ALONE_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => aloneRecoveryMinutesRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{ALONE_QUICK_LOG_FIELD_FLOW\[1\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => aloneCalmingSupportRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{ALONE_QUICK_LOG_FIELD_FLOW\[2\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{Keyboard\.dismiss\}/,
+    "Alone Time departure logging must advance through context, recovery minutes, and calming support before dismissing",
+  );
+});
+
 test("gives Medication Quick Log an explicit dose-to-context keyboard path", () => {
   const log = readAppFile("(tabs)/log.tsx");
 

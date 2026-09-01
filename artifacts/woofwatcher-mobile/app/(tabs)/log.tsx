@@ -97,7 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
+import { getAloneQuickLogFieldFlow, getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -119,6 +119,7 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // but use the light-board amber that is tuned for small text on cream.
 const FIXED_LIGHT_AMBER = "#8A5A0C";
 const WALK_FINISH_FIELD_FLOW = getWalkFinishFieldFlow();
+const ALONE_QUICK_LOG_FIELD_FLOW = getAloneQuickLogFieldFlow();
 const TRAINING_QUICK_LOG_FIELD_FLOW = getTrainingQuickLogFieldFlow();
 const INCIDENT_QUICK_LOG_FIELD_FLOW = getIncidentQuickLogFieldFlow();
 const GROOMING_QUICK_LOG_FIELD_FLOW = getGroomingQuickLogFieldFlow();
@@ -1093,6 +1094,8 @@ export default function LogScreen() {
   const [medicationDose, setMedicationDose] = useState("");
   const eatenAmountRef = useRef<TextInput>(null);
   const medicationNoteRef = useRef<TextInput>(null);
+  const aloneRecoveryMinutesRef = useRef<TextInput>(null);
+  const aloneCalmingSupportRef = useRef<TextInput>(null);
   const [walkRouteName, setWalkRouteName] = useState("");
   const [walkDistanceMiles, setWalkDistanceMiles] = useState("");
   const [walkDogInteractions, setWalkDogInteractions] = useState("");
@@ -3687,10 +3690,13 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Trigger or context</Text>
                   <TextInput
+                    accessibilityLabel={ALONE_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
                     placeholder="Leaving after breakfast, doorbell, both owners out..."
                     placeholderTextColor={colors.mutedForeground}
                     value={aloneTrigger}
                     onChangeText={setAloneTrigger}
+                    returnKeyType={ALONE_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                    onSubmitEditing={() => aloneRecoveryMinutesRef.current?.focus()}
                     style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
@@ -3698,21 +3704,29 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Recovery min</Text>
                     <TextInput
+                      ref={aloneRecoveryMinutesRef}
+                      accessibilityLabel={ALONE_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel}
                       placeholder="15"
                       placeholderTextColor={colors.mutedForeground}
                       value={recoveryMinutes}
                       onChangeText={setRecoveryMinutes}
                       keyboardType="number-pad"
+                      returnKeyType={ALONE_QUICK_LOG_FIELD_FLOW[1].returnKeyType}
+                      onSubmitEditing={() => aloneCalmingSupportRef.current?.focus()}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Support</Text>
                     <TextInput
+                      ref={aloneCalmingSupportRef}
+                      accessibilityLabel={ALONE_QUICK_LOG_FIELD_FLOW[2].accessibilityLabel}
                       placeholder="Puzzle toy"
                       placeholderTextColor={colors.mutedForeground}
                       value={calmingSupport}
                       onChangeText={setCalmingSupport}
+                      returnKeyType={ALONE_QUICK_LOG_FIELD_FLOW[2].returnKeyType}
+                      onSubmitEditing={Keyboard.dismiss}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>

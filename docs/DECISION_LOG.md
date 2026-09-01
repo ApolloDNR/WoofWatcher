@@ -3727,3 +3727,7 @@ Decision: Treat coat/skin condition, products used, and next-due date as one ord
 # 2026-09-01 — Meal portion fields follow outcome-aware keyboard order
 
 Decision: Expected portion advances to eaten amount only when eaten amount is editable. Skipped, served, and grazing outcomes dismiss instead of targeting a disabled field. Both care facts retain explicit accessibility labels, and eaten amount remains the final Done action.
+# 2026-09-01 Alone Time departure input contract
+
+- Decision: treat departure context, recovery minutes, and calming support as one ordered keyboard/accessibility flow, ending with explicit dismissal.
+- Boundary: source and CI proof do not replace real-device or assistive-technology evidence.

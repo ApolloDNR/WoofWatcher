@@ -1169,3 +1169,7 @@ Source coverage now protects labeled routine/event field progression and final d
 
 - Source coverage now protects explicit expected/eaten portion labels, editable-field progression, and safe dismissal when the chosen meal outcome disables eaten amount.
 - Still blocked on route-named compact-height iPhone/Android, decimal-keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.
+# 2026-09-01 Alone Time departure evidence
+
+- Source keyboard/accessibility wiring can be completed autonomously.
+- Apollo/native-helper evidence is still required for compact-height iOS/Android, number-pad toolbar behavior, VoiceOver/TalkBack traversal, and route-named screenshots before native readiness claims.

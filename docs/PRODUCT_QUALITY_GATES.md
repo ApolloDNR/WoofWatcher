@@ -851,3 +851,7 @@ screen-reader traversal and route-named device proof remain open gates.
 
 - Source gate: PASS when the complete five-field incident safety handoff exposes explicit labels, ordered Next actions, and final Done dismissal.
 - Native gate: OPEN until compact-height iOS/Android, keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.
+# 2026-09-01 Alone Time departure form gate
+
+- Source-level keyboard/accessibility contract is covered for context, recovery minutes, and calming support.
+- Native keyboard reach, assistive-technology traversal, screenshots, store review, and Apollo approval remain open.

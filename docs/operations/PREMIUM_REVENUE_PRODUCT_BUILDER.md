@@ -6137,3 +6137,7 @@ Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, p
 - Local proof: red-first `quickLogFieldFlow.test.ts` failed on the missing meal flow, then passed after the shared contract and composer wiring were added.
 - Release boundary: source proof does not replace compact-height native, decimal-keyboard, VoiceOver/TalkBack, route screenshot, store, or Apollo approval evidence.
 - Dependency-complete proof: `WoofWatcher Verify` run `33534938110`, job `99946839890`, passed implementation/docs commit `20a99c83` end to end. Rerun after this proof-record commit before treating the final branch tip as current.
+# 2026-09-01 Alone Time departure keyboard slice
+
+- Added explicit assistive labels and context -> recovery minutes -> calming support keyboard progression to the native Quick Log composer.
+- Keep native/device, store, provider, public-launch, and Apollo approval gates explicit.

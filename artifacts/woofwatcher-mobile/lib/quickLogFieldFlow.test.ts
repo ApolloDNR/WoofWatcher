@@ -2,12 +2,33 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  getAloneQuickLogFieldFlow,
   getGroomingQuickLogFieldFlow,
   getIncidentQuickLogFieldFlow,
   getMealQuickLogFieldFlow,
   getMedicationQuickLogFieldFlow,
   getTrainingQuickLogFieldFlow,
 } from "./quickLogFieldFlow.ts";
+
+test("alone quick log fields expose a deterministic keyboard path", () => {
+  assert.deepEqual(getAloneQuickLogFieldFlow(), [
+    {
+      id: "aloneTrigger",
+      accessibilityLabel: "Alone Time trigger or context",
+      returnKeyType: "next",
+    },
+    {
+      id: "recoveryMinutes",
+      accessibilityLabel: "Alone Time recovery minutes",
+      returnKeyType: "next",
+    },
+    {
+      id: "calmingSupport",
+      accessibilityLabel: "Alone Time calming support",
+      returnKeyType: "done",
+    },
+  ]);
+});
 
 test("medication quick log advances from dose to owner-reviewed context", () => {
   assert.deepEqual(getMedicationQuickLogFieldFlow(), [
