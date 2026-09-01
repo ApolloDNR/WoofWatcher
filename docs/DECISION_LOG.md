@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+### 2026-09-01: Medication Logging Preserves Dose And Context As One Keyboard Flow
+
+Decision: Medication dose advances to an explicitly labeled, owner-reviewed context field for side effects, refill notes, or anything unusual, then ends with Done. This improves factual household handoff without confirming administration, diagnosing a reaction, or replacing native assistive-technology proof.
+
 ### 2026-08-31: Alone Time Returns Use An Explicit Keyboard Flow
 
 Decision: Treat recovery minutes and the return-support note as one ordered household handoff form. Recovery time advances to the note, and the final note dismisses the keyboard. Number-pad users need an intentional exit path, and assistive technology should not depend on placeholders. Real-device focus, screen-reader, screenshot, store, and Apollo proof remain separate gates.

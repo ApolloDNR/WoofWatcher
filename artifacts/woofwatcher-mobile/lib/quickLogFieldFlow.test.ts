@@ -5,8 +5,24 @@ import {
   getGroomingQuickLogFieldFlow,
   getIncidentQuickLogFieldFlow,
   getMealQuickLogFieldFlow,
+  getMedicationQuickLogFieldFlow,
   getTrainingQuickLogFieldFlow,
 } from "./quickLogFieldFlow.ts";
+
+test("medication quick log advances from dose to owner-reviewed context", () => {
+  assert.deepEqual(getMedicationQuickLogFieldFlow(), [
+    {
+      id: "dose",
+      accessibilityLabel: "Medication dose",
+      returnKeyType: "next",
+    },
+    {
+      id: "medicationNote",
+      accessibilityLabel: "Medication side effects, refill note, or unusual context",
+      returnKeyType: "done",
+    },
+  ]);
+});
 
 test("meal quick log advances from the expected portion to the eaten amount", () => {
   assert.deepEqual(getMealQuickLogFieldFlow(), [

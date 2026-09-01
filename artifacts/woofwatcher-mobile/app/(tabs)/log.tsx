@@ -97,7 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
+import { getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -123,6 +123,7 @@ const TRAINING_QUICK_LOG_FIELD_FLOW = getTrainingQuickLogFieldFlow();
 const INCIDENT_QUICK_LOG_FIELD_FLOW = getIncidentQuickLogFieldFlow();
 const GROOMING_QUICK_LOG_FIELD_FLOW = getGroomingQuickLogFieldFlow();
 const MEAL_QUICK_LOG_FIELD_FLOW = getMealQuickLogFieldFlow();
+const MEDICATION_QUICK_LOG_FIELD_FLOW = getMedicationQuickLogFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -1091,6 +1092,7 @@ export default function LogScreen() {
   const [eatenAmount, setEatenAmount] = useState("");
   const [medicationDose, setMedicationDose] = useState("");
   const eatenAmountRef = useRef<TextInput>(null);
+  const medicationNoteRef = useRef<TextInput>(null);
   const [walkRouteName, setWalkRouteName] = useState("");
   const [walkDistanceMiles, setWalkDistanceMiles] = useState("");
   const [walkDogInteractions, setWalkDogInteractions] = useState("");
@@ -4044,10 +4046,14 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dose</Text>
                   <TextInput
+                    accessibilityLabel={MEDICATION_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
                     placeholder={medicationDefault?.dose && medicationDefault.dose !== "Dose not set" ? medicationDefault.dose : "1 tablet"}
                     placeholderTextColor={colors.mutedForeground}
                     value={medicationDose}
                     onChangeText={setMedicationDose}
+                    returnKeyType={MEDICATION_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => medicationNoteRef.current?.focus()}
                     style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
@@ -4107,11 +4113,16 @@ export default function LogScreen() {
             {config?.noteField && (
               <View style={s.fieldBlock}>
                 <TextInput
+                  ref={selectedType === "medication" ? medicationNoteRef : undefined}
+                  accessibilityLabel={selectedType === "medication" ? MEDICATION_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel : undefined}
                   placeholder={config.noteField.placeholder}
                   placeholderTextColor={colors.mutedForeground}
                   value={noteText}
                   onChangeText={setNoteText}
                   multiline
+                  returnKeyType={selectedType === "medication" ? MEDICATION_QUICK_LOG_FIELD_FLOW[1].returnKeyType : undefined}
+                  blurOnSubmit={selectedType === "medication"}
+                  onSubmitEditing={selectedType === "medication" ? Keyboard.dismiss : undefined}
                   style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
                 />
               </View>

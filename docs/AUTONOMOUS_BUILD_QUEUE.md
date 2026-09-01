@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-09-01 Medication Quick Log keyboard accessibility boundary
+
+- DONE: Dose and owner-reviewed side-effect/refill context expose explicit native accessibility labels.
+- DONE: Keyboard submission advances dose to context and ends with a Done dismissal.
+- VERIFIED LOCALLY: Red-first field-flow coverage failed on the missing export, then focused medication/readiness coverage passed after implementation.
+- BOUNDARY: This does not confirm a medication, diagnose a reaction, prove compact-height reach, or replace VoiceOver/TalkBack and route-named device evidence.
+- NEXT: Run dependency-complete branch CI, then capture the medication detail flow on compact real iOS and Android devices.
+
 ## 2026-08-31 Alone Time return keyboard accessibility boundary
 
 - DONE: Recovery minutes and the return-support note expose explicit native accessibility labels.

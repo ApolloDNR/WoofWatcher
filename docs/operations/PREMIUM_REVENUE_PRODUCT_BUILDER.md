@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-09-01 Medication Quick Log keyboard accessibility slice
+
+The medication detail composer now treats dose and owner-reviewed side-effect/refill context as one labeled keyboard sequence: dose advances to context, and context ends with Done. Red-first shared field-flow coverage reproduced the missing contract before implementation. Medication confirmation, diagnosis, native screen-reader proof, store readiness, and Apollo approval remain outside this source-backed slice.
+
 ## 2026-08-31 Alone Time return keyboard accessibility slice
 
 The Log return check-in now labels recovery minutes and return-support context for native accessibility, advances the number-pad field into the note, and provides a final Done dismissal. Red-first mobile readiness failed before implementation and passed `186/186` after it. Dependency-complete `WoofWatcher Verify` run `33471693538`, job `99742592418`, passed implementation/docs commit `de1231d7`. Native compact-height, numeric-toolbar, VoiceOver/TalkBack, route screenshot, store, and Apollo proof remain external gates.

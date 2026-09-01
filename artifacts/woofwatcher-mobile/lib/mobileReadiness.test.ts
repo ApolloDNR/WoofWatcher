@@ -6065,6 +6065,22 @@ test("gives the Alone Time return check-in explicit keyboard progression", () =>
   );
 });
 
+test("gives Medication Quick Log an explicit dose-to-context keyboard path", () => {
+  const log = readAppFile("(tabs)/log.tsx");
+
+  assert.match(log, /const MEDICATION_QUICK_LOG_FIELD_FLOW = getMedicationQuickLogFieldFlow\(\)/);
+  assert.match(
+    log,
+    /accessibilityLabel=\{MEDICATION_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\}[\s\S]*?returnKeyType=\{MEDICATION_QUICK_LOG_FIELD_FLOW\[0\]\.returnKeyType\}[\s\S]*?onSubmitEditing=\{\(\) => medicationNoteRef\.current\?\.focus\(\)\}/,
+    "the medication dose must announce itself and advance to the context field",
+  );
+  assert.match(
+    log,
+    /accessibilityLabel=\{selectedType === "medication" \? MEDICATION_QUICK_LOG_FIELD_FLOW\[1\]\.accessibilityLabel : undefined\}[\s\S]*?onSubmitEditing=\{selectedType === "medication" \? Keyboard\.dismiss : undefined\}/,
+    "the medication context must be named and provide a final Done dismissal",
+  );
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

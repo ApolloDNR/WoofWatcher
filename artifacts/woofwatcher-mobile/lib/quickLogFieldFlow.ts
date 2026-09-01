@@ -1,8 +1,21 @@
 export type QuickLogFieldFlowItem = {
-  id: "expectedPortion" | "eatenAmount" | "skill" | "nextPractice" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
+  id: "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
   accessibilityLabel: string;
   returnKeyType: "next" | "done";
 };
+
+const MEDICATION_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
+  {
+    id: "dose",
+    accessibilityLabel: "Medication dose",
+    returnKeyType: "next",
+  },
+  {
+    id: "medicationNote",
+    accessibilityLabel: "Medication side effects, refill note, or unusual context",
+    returnKeyType: "done",
+  },
+];
 
 const MEAL_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
   {
@@ -82,6 +95,10 @@ export function getTrainingQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
 
 export function getMealQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
   return MEAL_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
+}
+
+export function getMedicationQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
+  return MEDICATION_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
 }
 
 export function getIncidentQuickLogFieldFlow(): QuickLogFieldFlowItem[] {

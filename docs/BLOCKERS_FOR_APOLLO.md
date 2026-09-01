@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-09-01 Medication Quick Log native accessibility evidence
+
+- Source/tests protect explicit dose and owner-reviewed context labels plus dose -> context -> Done keyboard progression.
+- BLOCKED on runtime proof: compact-height iOS/Android reach, keyboard behavior, VoiceOver/TalkBack focus, route-named screenshots, store review, and Apollo approval remain required.
+
 ## 2026-08-31 Alone Time return native accessibility evidence
 
 - Source/tests protect explicit recovery-time and return-support labels plus numeric field -> note -> Done progression.

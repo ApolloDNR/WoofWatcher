@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-01 Medication Quick Log keyboard accessibility gate
+
+- PASS (source): Dose and owner-reviewed medication context have explicit labels and deterministic Next/Done behavior.
+- OPEN (native): Compact-height reach, keyboard behavior, VoiceOver/TalkBack focus, route screenshots, store review, and Apollo approval remain required.
+
 ## 2026-08-31 Alone Time return keyboard accessibility gate
 
 - PASS (source): Return recovery minutes and support notes have explicit labels and deterministic next/done keyboard actions.

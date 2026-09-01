@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-09-01 Medication Quick Log keyboard accessibility
+
+- PASS: Shared field-flow and readiness coverage require dose -> owner-reviewed context -> Done progression with explicit labels.
+- PENDING DEVICE: Verify compact-height reach, keyboard focus/dismissal, medication outcome controls, VoiceOver/TalkBack labels, and route-named screenshots on iOS and Android.
+
 ## 2026-08-31 Alone Time return keyboard accessibility
 
 - PASS: Readiness coverage requires explicit recovery-time and return-support labels plus a next, done keyboard flow.
