@@ -97,6 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
+import { getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -118,6 +119,7 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // but use the light-board amber that is tuned for small text on cream.
 const FIXED_LIGHT_AMBER = "#8A5A0C";
 const WALK_FINISH_FIELD_FLOW = getWalkFinishFieldFlow();
+const TRAINING_QUICK_LOG_FIELD_FLOW = getTrainingQuickLogFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -1099,6 +1101,7 @@ export default function LogScreen() {
   const walkFinishSocialOutcomeRef = useRef<TextInput>(null);
   const walkFinishNoteRef = useRef<TextInput>(null);
   const returnNoteRef = useRef<TextInput>(null);
+  const trainingNextPracticeRef = useRef<TextInput>(null);
   const [moodContext, setMoodContext] = useState("");
   const [trainingSkill, setTrainingSkill] = useState("");
   const [trainingNextPractice, setTrainingNextPractice] = useState("");
@@ -3612,21 +3615,29 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Skill or cue</Text>
                   <TextInput
+                    accessibilityLabel={TRAINING_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
                     placeholder="Leash manners, recall, calm greeting..."
                     placeholderTextColor={colors.mutedForeground}
                     value={trainingSkill}
                     onChangeText={setTrainingSkill}
+                    returnKeyType={TRAINING_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                    onSubmitEditing={() => trainingNextPracticeRef.current?.focus()}
                     style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Next practice</Text>
                   <TextInput
+                    ref={trainingNextPracticeRef}
+                    accessibilityLabel={TRAINING_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel}
                     placeholder="Practice calm passes, repeat place cue, shorten distance..."
                     placeholderTextColor={colors.mutedForeground}
                     value={trainingNextPractice}
                     onChangeText={setTrainingNextPractice}
                     multiline
+                    blurOnSubmit
+                    returnKeyType={TRAINING_QUICK_LOG_FIELD_FLOW[1].returnKeyType}
+                    onSubmitEditing={Keyboard.dismiss}
                     style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
                   />
                 </View>

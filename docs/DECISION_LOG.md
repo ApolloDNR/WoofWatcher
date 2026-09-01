@@ -3708,3 +3708,6 @@ Owner: Codex.
 # 2026-08-31 — Calendar editors use explicit keyboard flows
 
 Plans routine and event sheets treat visible captions as native accessibility labels and define ordered Next/Done actions. Event date remains a number-pad field but explicitly advances to event time; final note/location actions dismiss the keyboard. Device and assistive-technology proof remains a separate release gate.
+# 2026-09-01 — Training Quick Log uses a deterministic two-field keyboard path
+
+Decision: Treat skill/cue as the first field and next practice as the final field. The first advances focus; the final multiline field uses Done and dismisses the keyboard. Keep real-device and assistive-technology proof separate from source verification.

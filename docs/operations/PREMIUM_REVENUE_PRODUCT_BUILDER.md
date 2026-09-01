@@ -6106,3 +6106,8 @@ Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, p
 - Red-first readiness coverage protects both flows, including numeric event date -> event time progression.
 - Native compact-height, VoiceOver/TalkBack, route screenshot, store, and Apollo evidence remain gated.
 - Dependency-complete proof: `WoofWatcher Verify` run `33448190682`, job `99671899772`, passed implementation/docs commit `28630cf1` with install, doctor, focused tests, typecheck, CI-safe builds, and completion green.
+# 2026-09-01 Training Quick Log keyboard accessibility slice
+
+- Changed: Training Quick Log now announces its cue and next-practice fields and provides a deterministic Next/Done keyboard path.
+- Local proof: red-first `quickLogFieldFlow.test.ts` covers the field contract and defensive-copy boundary.
+- Release boundary: source proof does not replace compact-height native, keyboard, VoiceOver/TalkBack, route screenshot, store, or Apollo approval evidence.

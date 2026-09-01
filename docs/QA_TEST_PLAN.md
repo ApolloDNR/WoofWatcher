@@ -3089,3 +3089,8 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 
 - Source contract: routine label -> time -> owner -> note and event title -> date -> time -> location expose explicit accessibility labels and Next/Done keyboard actions.
 - Device gate: verify compact-height iPhone and Android reach, number-pad exit/advance, interactive dismissal, VoiceOver/TalkBack focus order and return, and route-named screenshots before claiming native completion.
+# 2026-09-01 Training Quick Log keyboard accessibility
+
+- Source behavior: verify the training field contract announces `Training skill or cue` with Next and `Training next practice` with Done, and returns isolated copies.
+- UI wiring: verify the cue submission focuses next practice and the final multiline field dismisses the keyboard.
+- External proof still required: compact-height iOS/Android reach, keyboard focus behavior, VoiceOver/TalkBack traversal, and route-named screenshots.

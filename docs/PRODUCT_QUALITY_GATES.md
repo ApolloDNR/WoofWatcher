@@ -827,3 +827,7 @@ screen-reader traversal and route-named device proof remain open gates.
 
 - Source gate: Plans routine and event sheets provide labeled, deterministic keyboard progression and final dismissal without changing routine/log semantics.
 - Remaining native gate: compact-height iOS/Android, numeric keyboard behavior, VoiceOver/TalkBack, and screenshot proof.
+# 2026-09-01 Training Quick Log keyboard accessibility
+
+- Source gate: PASS when the shared two-field contract and Training composer wiring provide explicit labels, Next progression, and final Done dismissal.
+- Native gate: OPEN until compact-height iOS/Android, keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.

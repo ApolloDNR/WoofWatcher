@@ -2967,3 +2967,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Plans routine/event editor proof when native tooling is available.
 - CI PROOF: Dependency-complete `WoofWatcher Verify` run `33448190682`, job `99671899772`, passed implementation/docs commit `28630cf1` through pinned install, JSON doctor, focused behavior tests, typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+# 2026-09-01 Training Quick Log keyboard accessibility
+
+- DONE: The Training Quick Log composer now gives the skill/cue and next-practice fields explicit accessibility labels, advances from cue to next practice, and exposes a final Done dismissal.
+- PROOF: Red-first `quickLogFieldFlow.test.ts` coverage failed on the missing field-flow contract, then passed after the shared contract and UI wiring were added.
+- BOUNDARY: This is source-level keyboard and accessibility hardening. Real compact-height iPhone/Android reach, VoiceOver/TalkBack focus order, route screenshots, store review, and Apollo approval remain open.
+- NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Training Quick Log proof when native tooling is available.

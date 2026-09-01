@@ -1144,3 +1144,7 @@ Source/tests now keep the complete AuthShell provider form inside the shared key
 # Calendar editor native keyboard proof — OPEN 2026-08-31
 
 Source coverage now protects labeled routine/event field progression and final dismissal. Still requires route-named compact-height iPhone/Android validation for number-pad advance, field/action reach, VoiceOver/TalkBack focus order and return, and screenshots. This does not block local-first source work, but blocks a native accessibility-complete claim.
+# 2026-09-01 Training Quick Log native proof
+
+- Source-level labels and keyboard progression are implemented.
+- Still blocked on route-named compact-height iPhone/Android, keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.
