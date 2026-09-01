@@ -3019,3 +3019,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED LOCALLY: Red-first field-flow coverage reproduced the missing contract; focused field-flow and mobile-readiness coverage passed after implementation.
 - BOUNDARY: Real compact-height iOS/Android behavior, numeric-toolbar focus, VoiceOver/TalkBack traversal, route screenshots, store review, and Apollo approval remain external gates.
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Alone Time departure proof when native tooling is available.
+- CI: `WoofWatcher Verify` run `33568887640`, job `100058260027`, passed implementation/docs commit `cc488985` through pinned install, JSON doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
