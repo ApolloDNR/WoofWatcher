@@ -3715,3 +3715,7 @@ Decision: Treat skill/cue as the first field and next practice as the final fiel
 # 2026-09-01 — Incident Watch preserves the full safety handoff in keyboard order
 
 Decision: Treat trigger, involved party, injury check, action taken, and follow-up as one ordered Incident Watch form. Each field advances deterministically and the final follow-up dismisses the keyboard. Keep the workflow factual and non-diagnostic, and keep device and assistive-technology proof separate from source verification.
+
+# 2026-09-01 — Grooming Quick Log follows the care handoff order
+
+Decision: Treat coat/skin condition, products used, and next-due date as one ordered grooming form. Each field advances deterministically and the final date field dismisses the keyboard. Keep native date-keyboard and assistive-technology proof separate from source verification.

@@ -2718,6 +2718,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
+# 2026-09-01 Grooming Quick Log keyboard accessibility
+
+- DONE: Grooming now gives coat/skin condition, products used, and next-due date explicit accessibility labels with deterministic Next progression and final Done dismissal.
+- PROOF: Red-first `quickLogFieldFlow.test.ts` failed on the missing grooming export, then focused grooming/readiness coverage passed `190/190` after the shared flow and composer wiring were added.
+- BOUNDARY: Real compact-height iOS/Android reach, VoiceOver/TalkBack focus order, date-keyboard behavior, route screenshots, store review, and Apollo approval remain open.
+- NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Grooming Quick Log proof when native tooling is available.
+
 ## 2026-08-13 PWA profile-card identity
 
 - DONE: Both PWA entry points now render the prominent profile-card name through the shared canonical Dog Profile identity boundary.

@@ -832,6 +832,11 @@ screen-reader traversal and route-named device proof remain open gates.
 - Source gate: PASS when the shared two-field contract and Training composer wiring provide explicit labels, Next progression, and final Done dismissal.
 - Native gate: OPEN until compact-height iOS/Android, keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.
 
+# 2026-09-01 Grooming Quick Log keyboard accessibility
+
+- Source gate: PASS when the three-field grooming flow exposes explicit labels, ordered Next actions, and final Done dismissal.
+- Native gate: OPEN until compact-height iOS/Android, date-keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.
+
 # 2026-09-01 Incident Quick Log keyboard accessibility
 
 - Source gate: PASS when the complete five-field incident safety handoff exposes explicit labels, ordered Next actions, and final Done dismissal.

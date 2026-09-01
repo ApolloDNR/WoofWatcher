@@ -2,9 +2,30 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  getGroomingQuickLogFieldFlow,
   getIncidentQuickLogFieldFlow,
   getTrainingQuickLogFieldFlow,
 } from "./quickLogFieldFlow.ts";
+
+test("grooming quick log advances through condition and products to the next due date", () => {
+  assert.deepEqual(getGroomingQuickLogFieldFlow(), [
+    {
+      id: "condition",
+      accessibilityLabel: "Grooming coat or skin note",
+      returnKeyType: "next",
+    },
+    {
+      id: "products",
+      accessibilityLabel: "Grooming products used",
+      returnKeyType: "next",
+    },
+    {
+      id: "nextDue",
+      accessibilityLabel: "Grooming next due date",
+      returnKeyType: "done",
+    },
+  ]);
+});
 
 test("incident quick log preserves the complete safety handoff through a final follow-up action", () => {
   assert.deepEqual(getIncidentQuickLogFieldFlow(), [

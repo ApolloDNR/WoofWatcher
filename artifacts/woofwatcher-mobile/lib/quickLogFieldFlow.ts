@@ -1,8 +1,26 @@
 export type QuickLogFieldFlowItem = {
-  id: "skill" | "nextPractice" | "trigger" | "exposure" | "injury" | "action" | "followUp";
+  id: "skill" | "nextPractice" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
   accessibilityLabel: string;
   returnKeyType: "next" | "done";
 };
+
+const GROOMING_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
+  {
+    id: "condition",
+    accessibilityLabel: "Grooming coat or skin note",
+    returnKeyType: "next",
+  },
+  {
+    id: "products",
+    accessibilityLabel: "Grooming products used",
+    returnKeyType: "next",
+  },
+  {
+    id: "nextDue",
+    accessibilityLabel: "Grooming next due date",
+    returnKeyType: "done",
+  },
+];
 
 const TRAINING_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
   {
@@ -51,4 +69,8 @@ export function getTrainingQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
 
 export function getIncidentQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
   return INCIDENT_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
+}
+
+export function getGroomingQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
+  return GROOMING_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
 }

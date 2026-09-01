@@ -97,7 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { getIncidentQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
+import { getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -121,6 +121,7 @@ const FIXED_LIGHT_AMBER = "#8A5A0C";
 const WALK_FINISH_FIELD_FLOW = getWalkFinishFieldFlow();
 const TRAINING_QUICK_LOG_FIELD_FLOW = getTrainingQuickLogFieldFlow();
 const INCIDENT_QUICK_LOG_FIELD_FLOW = getIncidentQuickLogFieldFlow();
+const GROOMING_QUICK_LOG_FIELD_FLOW = getGroomingQuickLogFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -1107,6 +1108,8 @@ export default function LogScreen() {
   const incidentInjuryRef = useRef<TextInput>(null);
   const incidentActionRef = useRef<TextInput>(null);
   const incidentFollowUpRef = useRef<TextInput>(null);
+  const groomingProductsRef = useRef<TextInput>(null);
+  const groomingNextDueRef = useRef<TextInput>(null);
   const [moodContext, setMoodContext] = useState("");
   const [trainingSkill, setTrainingSkill] = useState("");
   const [trainingNextPractice, setTrainingNextPractice] = useState("");
@@ -3852,6 +3855,9 @@ export default function LogScreen() {
                     placeholderTextColor={colors.mutedForeground}
                     value={groomingCondition}
                     onChangeText={setGroomingCondition}
+                    accessibilityLabel={GROOMING_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
+                    returnKeyType={GROOMING_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                    onSubmitEditing={() => groomingProductsRef.current?.focus()}
                     style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
@@ -3859,20 +3865,28 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Products</Text>
                     <TextInput
+                      ref={groomingProductsRef}
                       placeholder="Slicker brush"
                       placeholderTextColor={colors.mutedForeground}
                       value={groomingProducts}
                       onChangeText={setGroomingProducts}
+                      accessibilityLabel={GROOMING_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel}
+                      returnKeyType={GROOMING_QUICK_LOG_FIELD_FLOW[1].returnKeyType}
+                      onSubmitEditing={() => groomingNextDueRef.current?.focus()}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Next due</Text>
                     <TextInput
+                      ref={groomingNextDueRef}
                       placeholder="2026-06-18"
                       placeholderTextColor={colors.mutedForeground}
                       value={groomingNextDue}
                       onChangeText={setGroomingNextDue}
+                      accessibilityLabel={GROOMING_QUICK_LOG_FIELD_FLOW[2].accessibilityLabel}
+                      returnKeyType={GROOMING_QUICK_LOG_FIELD_FLOW[2].returnKeyType}
+                      onSubmitEditing={Keyboard.dismiss}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>

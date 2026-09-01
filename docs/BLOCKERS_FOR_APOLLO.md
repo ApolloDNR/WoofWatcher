@@ -1153,3 +1153,8 @@ Source coverage now protects labeled routine/event field progression and final d
 
 - Source-level safety-field labels and keyboard progression are implemented.
 - Still blocked on route-named compact-height iPhone/Android, focus progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.
+
+# 2026-09-01 Grooming Quick Log native proof
+
+- Source-level labels and keyboard progression are implemented.
+- Still blocked on route-named compact-height iPhone/Android, date-keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.
