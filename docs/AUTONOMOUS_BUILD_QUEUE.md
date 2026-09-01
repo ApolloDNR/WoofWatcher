@@ -2724,6 +2724,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - PROOF: Red-first `quickLogFieldFlow.test.ts` failed on the missing grooming export, then focused grooming/readiness coverage passed `190/190` after the shared flow and composer wiring were added.
 - BOUNDARY: Real compact-height iOS/Android reach, VoiceOver/TalkBack focus order, date-keyboard behavior, route screenshots, store review, and Apollo approval remain open.
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Grooming Quick Log proof when native tooling is available.
+- CI: `WoofWatcher Verify` run `33516382297`, job `99884345505`, passed implementation/docs commit `025577da` with dependency install, mobile beta doctor, focused behavior tests, typecheck, CI-safe builds, post steps, and completion green.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
 ## 2026-08-13 PWA profile-card identity
 

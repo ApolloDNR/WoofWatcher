@@ -6125,3 +6125,4 @@ Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, p
 - Changed: Grooming now announces condition, products, and next-due fields and provides a deterministic Next/Done keyboard path.
 - Local proof: red-first `quickLogFieldFlow.test.ts` failed on the missing grooming flow; focused grooming/readiness coverage then passed `190/190`.
 - Release boundary: source proof does not replace compact-height native, date-keyboard, VoiceOver/TalkBack, route screenshot, store, or Apollo approval evidence.
+- Dependency-complete proof: `WoofWatcher Verify` run `33516382297`, job `99884345505`, passed implementation/docs commit `025577da` end to end. Rerun after this proof-record commit before treating the final branch tip as current.
