@@ -4,6 +4,8 @@
 
 The active-walk finish form now derives its five field labels and keyboard actions from a shared tested contract. Focus advances through route, distance, dog interactions, social outcome, and note, with an explicit Done dismissal after the final field. Red-first walk-session coverage passes `5/5`. Real-device compact-height, keyboard-toolbar, VoiceOver/TalkBack, screenshot, store, and Apollo evidence remain open.
 
+Dependency-complete `WoofWatcher Verify` run `33460440593`, job `99709257941`, passed implementation/docs commit `8d065c66` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
+
 ## 2026-08-31 Privacy support-editor accessibility slice
 
 Privacy & Safety's support-readiness sheet now keeps all three provider fields in the shared keyboard-aware scroller, exposes visible captions as native labels, advances email to privacy policy to terms, and ends with Done. Red-first readiness proof passes `184/184`; native assistive-technology, legal/provider, store, and Apollo approval evidence remain open.
