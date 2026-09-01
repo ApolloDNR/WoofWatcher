@@ -1,8 +1,21 @@
 export type QuickLogFieldFlowItem = {
-  id: "skill" | "nextPractice" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
+  id: "expectedPortion" | "eatenAmount" | "skill" | "nextPractice" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
   accessibilityLabel: string;
   returnKeyType: "next" | "done";
 };
+
+const MEAL_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
+  {
+    id: "expectedPortion",
+    accessibilityLabel: "Meal expected portion",
+    returnKeyType: "next",
+  },
+  {
+    id: "eatenAmount",
+    accessibilityLabel: "Meal eaten amount",
+    returnKeyType: "done",
+  },
+];
 
 const GROOMING_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
   {
@@ -65,6 +78,10 @@ const INCIDENT_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
 
 export function getTrainingQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
   return TRAINING_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
+}
+
+export function getMealQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
+  return MEAL_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
 }
 
 export function getIncidentQuickLogFieldFlow(): QuickLogFieldFlowItem[] {

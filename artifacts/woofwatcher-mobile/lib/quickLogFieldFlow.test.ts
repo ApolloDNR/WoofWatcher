@@ -4,8 +4,24 @@ import test from "node:test";
 import {
   getGroomingQuickLogFieldFlow,
   getIncidentQuickLogFieldFlow,
+  getMealQuickLogFieldFlow,
   getTrainingQuickLogFieldFlow,
 } from "./quickLogFieldFlow.ts";
+
+test("meal quick log advances from the expected portion to the eaten amount", () => {
+  assert.deepEqual(getMealQuickLogFieldFlow(), [
+    {
+      id: "expectedPortion",
+      accessibilityLabel: "Meal expected portion",
+      returnKeyType: "next",
+    },
+    {
+      id: "eatenAmount",
+      accessibilityLabel: "Meal eaten amount",
+      returnKeyType: "done",
+    },
+  ]);
+});
 
 test("grooming quick log advances through condition and products to the next due date", () => {
   assert.deepEqual(getGroomingQuickLogFieldFlow(), [

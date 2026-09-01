@@ -3106,3 +3106,9 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Source behavior: verify condition -> products -> next due exposes explicit labels with ordered Next/Done actions.
 - UI wiring: verify each submit advances focus and next due dismisses the keyboard.
 - External proof still required: compact-height iOS/Android reach, date-keyboard behavior, VoiceOver/TalkBack traversal, focus return, and route-named screenshots.
+
+# 2026-09-01 Meal Quick Log keyboard accessibility
+
+- Source behavior: verify expected portion -> eaten amount exposes explicit labels with ordered Next/Done actions.
+- Outcome behavior: verify skipped, served, and grazing dismiss from expected portion without targeting the intentionally disabled eaten amount field.
+- External proof still required: compact-height iOS/Android reach, decimal-keyboard behavior, VoiceOver/TalkBack traversal, focus return, and route-named screenshots.

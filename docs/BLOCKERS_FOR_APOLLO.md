@@ -1158,3 +1158,8 @@ Source coverage now protects labeled routine/event field progression and final d
 
 - Source-level labels and keyboard progression are implemented.
 - Still blocked on route-named compact-height iPhone/Android, date-keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.
+
+# 2026-09-01 Meal Quick Log native proof
+
+- Source coverage now protects explicit expected/eaten portion labels, editable-field progression, and safe dismissal when the chosen meal outcome disables eaten amount.
+- Still blocked on route-named compact-height iPhone/Android, decimal-keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.

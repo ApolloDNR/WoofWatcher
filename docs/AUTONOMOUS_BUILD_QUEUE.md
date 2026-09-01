@@ -2718,6 +2718,14 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
+# 2026-09-01 Meal Quick Log keyboard accessibility
+
+- DONE: Expected portion and eaten amount now expose explicit accessibility labels and a deterministic expected -> eaten -> Done keyboard path.
+- DONE: Skipped, served, and grazing outcomes dismiss from expected portion because eaten amount is intentionally unavailable for those outcomes.
+- PROOF: Red-first `quickLogFieldFlow.test.ts` coverage failed on the missing meal contract, then passed after the shared flow and composer wiring were added.
+- BOUNDARY: This is source-level meal-form hardening. Real compact-height iOS/Android reach, decimal-keyboard behavior, VoiceOver/TalkBack focus order, route screenshots, store review, and Apollo approval remain open.
+- NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Meal Quick Log proof when native tooling is available.
+
 # 2026-09-01 Grooming Quick Log keyboard accessibility
 
 - DONE: Grooming now gives coat/skin condition, products used, and next-due date explicit accessibility labels with deterministic Next progression and final Done dismissal.

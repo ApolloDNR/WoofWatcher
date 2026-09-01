@@ -97,7 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
+import { getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -122,6 +122,7 @@ const WALK_FINISH_FIELD_FLOW = getWalkFinishFieldFlow();
 const TRAINING_QUICK_LOG_FIELD_FLOW = getTrainingQuickLogFieldFlow();
 const INCIDENT_QUICK_LOG_FIELD_FLOW = getIncidentQuickLogFieldFlow();
 const GROOMING_QUICK_LOG_FIELD_FLOW = getGroomingQuickLogFieldFlow();
+const MEAL_QUICK_LOG_FIELD_FLOW = getMealQuickLogFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -1089,6 +1090,7 @@ export default function LogScreen() {
   const [expectedPortion, setExpectedPortion] = useState("");
   const [eatenAmount, setEatenAmount] = useState("");
   const [medicationDose, setMedicationDose] = useState("");
+  const eatenAmountRef = useRef<TextInput>(null);
   const [walkRouteName, setWalkRouteName] = useState("");
   const [walkDistanceMiles, setWalkDistanceMiles] = useState("");
   const [walkDogInteractions, setWalkDogInteractions] = useState("");
@@ -3928,10 +3930,24 @@ export default function LogScreen() {
                       Expected portion
                     </Text>
                     <TextInput
+                      accessibilityLabel={MEAL_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
                       placeholder={state.dietProfile.normalPortion || "1 cup"}
                       placeholderTextColor={colors.mutedForeground}
                       value={expectedPortion}
                       onChangeText={setExpectedPortion}
+                      returnKeyType={MEAL_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                      blurOnSubmit={false}
+                      onSubmitEditing={() => {
+                        if (
+                          selectedMealCompletion === "skipped" ||
+                          selectedMealCompletion === "served" ||
+                          selectedMealCompletion === "grazing"
+                        ) {
+                          Keyboard.dismiss();
+                          return;
+                        }
+                        eatenAmountRef.current?.focus();
+                      }}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>
@@ -3940,6 +3956,8 @@ export default function LogScreen() {
                       Eaten amount {mealOutcomeNeedsEatenAmount(selectedMealCompletion) ? "(required)" : "(optional)"}
                     </Text>
                     <TextInput
+                      ref={eatenAmountRef}
+                      accessibilityLabel={MEAL_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel}
                       placeholder={
                         selectedMealCompletion === "skipped"
                           ? "0"
@@ -3951,6 +3969,8 @@ export default function LogScreen() {
                       value={eatenAmount}
                       onChangeText={setEatenAmount}
                       keyboardType="decimal-pad"
+                      returnKeyType={MEAL_QUICK_LOG_FIELD_FLOW[1].returnKeyType}
+                      onSubmitEditing={Keyboard.dismiss}
                       editable={
                         selectedMealCompletion !== "skipped" &&
                         selectedMealCompletion !== "served" &&

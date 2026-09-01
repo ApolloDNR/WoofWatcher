@@ -3719,3 +3719,7 @@ Decision: Treat trigger, involved party, injury check, action taken, and follow-
 # 2026-09-01 — Grooming Quick Log follows the care handoff order
 
 Decision: Treat coat/skin condition, products used, and next-due date as one ordered grooming form. Each field advances deterministically and the final date field dismisses the keyboard. Keep native date-keyboard and assistive-technology proof separate from source verification.
+
+# 2026-09-01 — Meal portion fields follow outcome-aware keyboard order
+
+Decision: Expected portion advances to eaten amount only when eaten amount is editable. Skipped, served, and grazing outcomes dismiss instead of targeting a disabled field. Both care facts retain explicit accessibility labels, and eaten amount remains the final Done action.
