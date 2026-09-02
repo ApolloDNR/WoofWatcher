@@ -767,7 +767,6 @@ export default function CalendarScreen() {
       details.mealCompletion = "complete";
       details.householdVisible = true;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const id = addEntry({
       type,
       title: routine.label,
@@ -776,6 +775,8 @@ export default function CalendarScreen() {
       ...(note ? { note } : {}),
       details,
     });
+    if (!id) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showRoutineFeedback({ id, title: routine.label, type });
   };
 

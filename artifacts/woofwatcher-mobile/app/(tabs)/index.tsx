@@ -1466,7 +1466,6 @@ export default function HomeScreen() {
     // A rapid second Walk tap lands before the open session exists in
     // state; it is the same intent, already answered by the first tap.
     if (isDuplicateQuickTap("walk")) return null;
-    markQuickSave("walk");
     const entry = buildWalkSessionStartEntry({
       caregiver,
       now,
@@ -1474,6 +1473,11 @@ export default function HomeScreen() {
       routineLabel: options?.routineLabel,
     });
     const id = addEntry(entry as Omit<Entry, "id">);
+    if (!id) return null;
+    markQuickSave("walk");
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     const reactionPlan = describeCareTwinReactionForLog({
       type: "walk",
       label: "Walk",
@@ -1504,11 +1508,11 @@ export default function HomeScreen() {
       router.push(homeLogDetailRoute(policy.type, Date.now()) as never);
       return;
     }
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
     if (item.type === "walk") {
       if (openWalkSession) {
+        if (Platform.OS !== "web") {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
         openActiveWalkFromHomeQuickLog();
         return;
       }
@@ -1526,7 +1530,6 @@ export default function HomeScreen() {
     ) {
       return;
     }
-    markQuickSave(policy.type);
     const role = state.caregivers.find(
       (person) => person.name === caregiver,
     )?.role;
@@ -1541,6 +1544,11 @@ export default function HomeScreen() {
       { caregiver, caregiverRole: role, now },
     );
     const id = addEntry(entry);
+    if (!id) return;
+    markQuickSave(policy.type);
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     const reactionPlan = describeCareTwinReactionForLog({
       type: entry.type,
       label: item.label,
@@ -2516,11 +2524,6 @@ export default function HomeScreen() {
                             nextPrimary.kind !== "open-loop" &&
                             !openWalkSession
                           ) {
-                            if (Platform.OS !== "web") {
-                              Haptics.impactAsync(
-                                Haptics.ImpactFeedbackStyle.Light,
-                              );
-                            }
                             startWalkSessionFromHome({
                               routineId: nextPrimary.routineId,
                               routineLabel:

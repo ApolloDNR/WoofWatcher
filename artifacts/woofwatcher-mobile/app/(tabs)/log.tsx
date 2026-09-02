@@ -1727,8 +1727,9 @@ export default function LogScreen() {
   const handleLog = useCallback(() => {
     const entry = buildEntry();
     if (!entry) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const id = addEntry(entry);
+    if (!id) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // Weight logs also update the living profile weight.
     if (entry.type === "weight" && entry.amount != null) {
@@ -1825,7 +1826,6 @@ export default function LogScreen() {
           },
         ],
         async () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           const entry = state.entries.find((item) => item.id === id);
           const deleted = await deleteEntry(id);
           if (!deleted) {
@@ -1838,7 +1838,7 @@ export default function LogScreen() {
           // would leave a "Deleted log - ..." row in their own timeline and
           // read as if the delete failed - so a solo delete just deletes.
           if (entry && state.caregivers.length > 1) {
-            addEntry(
+            const auditEntryId = addEntry(
               buildCareLogDeletionAuditEntry({
                 id: auditId(),
                 caregiver,
@@ -1846,7 +1846,9 @@ export default function LogScreen() {
                 entry,
               }),
             );
+            if (!auditEntryId) return;
           }
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onDeleted?.();
         },
       );
@@ -2362,8 +2364,8 @@ export default function LogScreen() {
   }, []);
 
   const handleLeavingHome = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (openAloneSession) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSelectedType("alone");
       setSelectedLauncherKey("alone:Alone Time");
       scrollRef.current?.scrollTo({ y: 360, animated: true });
@@ -2371,9 +2373,11 @@ export default function LogScreen() {
     }
     // A rapid second tap lands before the open session exists in state.
     if (isDuplicateQuickTap("alone")) return;
-    markQuickSave("alone");
     const entry = buildAloneTimeStartEntry({ caregiver, petName: petDisplayName, now });
     const id = addEntry(entry);
+    if (!id) return;
+    markQuickSave("alone");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: `${petDisplayName} is home alone` });
     setSelectedType("alone");
     setSelectedLauncherKey("alone:Alone Time");
@@ -2412,8 +2416,8 @@ export default function LogScreen() {
   );
 
   const handleStartWalk = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (openWalkSession) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSelectedType("walk");
       setSelectedLauncherKey("walk:Walk");
       scrollRef.current?.scrollTo({ y: 360, animated: true });
@@ -2421,9 +2425,11 @@ export default function LogScreen() {
     }
     // A rapid second tap lands before the open session exists in state.
     if (isDuplicateQuickTap("walk")) return;
-    markQuickSave("walk");
     const entry = buildWalkSessionStartEntry({ caregiver, now });
     const id = addEntry(entry as Omit<Entry, "id">);
+    if (!id) return;
+    markQuickSave("walk");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: "Walk started" });
     setSelectedType("walk");
     setSelectedLauncherKey("walk:Walk");
@@ -2490,7 +2496,6 @@ export default function LogScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // Dedupe: the first tap already saved this intent and its feedback card
     // is still up; a bounce inside the shared window must not double-log.
     // Wall-clock time here - the screen's 30s `now` tick would otherwise
@@ -2501,7 +2506,6 @@ export default function LogScreen() {
     ) {
       return;
     }
-    markQuickSave(policy.type);
     const role = state.caregivers.find((person) => person.name === caregiver)?.role;
     const entry = buildQuickLogEntry(
       {
@@ -2514,6 +2518,9 @@ export default function LogScreen() {
       { caregiver, caregiverRole: role, now },
     );
     const id = addEntry(entry);
+    if (!id) return;
+    markQuickSave(policy.type);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: entry.title });
     setSelectedLauncherKey(launcherActionKey(action));
     setSelectedType(action.type);

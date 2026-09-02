@@ -2004,6 +2004,7 @@ function CareProviderSession({
           const serverDoc = mergeDoc(
             envelope.doc as Partial<CareDoc>,
           );
+          const localDocToPush = mergeDoc(plan.doc as Partial<CareDoc>);
           lastServerCareStateRef.current = {
             doc: serverDoc,
             version: envelope.version,
@@ -2012,7 +2013,7 @@ function CareProviderSession({
           setServerVersion(envelope.version);
           const writeGeneration = careDocWriteGenerationRef.current + 1;
           careDocWriteGenerationRef.current = writeGeneration;
-          await pushDoc(plan.doc, serverDoc, writeGeneration);
+          await pushDoc(localDocToPush, serverDoc, writeGeneration);
         } else if (plan.status === "keep-local-unverified") {
           // Retain a newer local draft without ever uploading it under an
           // unverified identity/capability. The server envelope remains the

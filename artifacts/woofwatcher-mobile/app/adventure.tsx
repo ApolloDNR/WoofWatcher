@@ -209,12 +209,13 @@ export default function AdventureScreen() {
   };
 
   const startQuest = (quest: AdventureQuest, proofEntryId: string | null) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (quest.status === "locked") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       notifyDialog("Quest locked", quest.evidence);
       return;
     }
     if (quest.status === "complete") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (proofEntryId) {
         router.push(`/log?entry=${encodeURIComponent(proofEntryId)}` as never);
         return;
@@ -223,11 +224,13 @@ export default function AdventureScreen() {
       return;
     }
     if (quest.action === "save-memory") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       saveMemory(quest);
       return;
     }
     if (quest.action === "start-walk") {
       if (openWalkSession?.id) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setQuestFeedback({ id: openWalkSession.id, title: "Walk already active" });
         // Land on the FINISH form, not the read-only record sheet: the
         // sheet says "In progress" with no way to end the walk.
@@ -237,12 +240,14 @@ export default function AdventureScreen() {
       // A rapid second tap lands before the open session exists in state;
       // it is the same intent, already answered by the first tap.
       if (isDuplicateQuestTap("walk")) return;
-      markQuestSave("walk");
       const entry = buildWalkSessionStartEntry({ caregiver, now, routineLabel: quest.title });
       const id = addEntry({
         ...entry,
         details: adventureDetails(quest, entry.details),
       } as Omit<Entry, "id">);
+      if (!id) return;
+      markQuestSave("walk");
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setQuestFeedback({ id, title: "Adventure walk started" });
       return;
     }
@@ -257,7 +262,6 @@ export default function AdventureScreen() {
     ) {
       return;
     }
-    markQuestSave(careType);
     const entry = buildQuickLogEntry(
       { type: careType, title: quest.title },
       state,
@@ -268,6 +272,9 @@ export default function AdventureScreen() {
       ...(careType === "training" ? { durationMinutes: 8 } : careType === "play" ? { durationMinutes: 10 } : {}),
       details: adventureDetails(quest, entry.details),
     });
+    if (!id) return;
+    markQuestSave(careType);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setQuestFeedback({ id, title: `${quest.title} logged` });
   };
 

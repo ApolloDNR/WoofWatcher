@@ -6959,7 +6959,8 @@ test("keeps care document refresh conflict-safe in CareContext", () => {
 
   assert.match(careContext, /reconcileCareDocFromServer/);
   assert.match(careContext, /shouldPushLocal/);
-  assert.match(careContext, /pushDoc\(plan\.doc, serverDoc, writeGeneration\)/);
+  assert.match(careContext, /localDocToPush = mergeDoc\(plan\.doc as Partial<CareDoc>\)/);
+  assert.match(careContext, /pushDoc\(localDocToPush, serverDoc, writeGeneration\)/);
   assert.match(careContext, /putCareState\(\{\s*version: envelope\.version/);
 });
 
