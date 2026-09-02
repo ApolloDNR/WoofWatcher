@@ -3907,6 +3907,11 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
     privacy,
     /provider-held data is not deleted and can return on the next sync/i,
   );
+  assert.match(privacy, /may also be held by configured providers/i);
+  assert.match(privacy, /provider-held records require\s+separate\s+deletion/i);
+  assert.doesNotMatch(privacy, /Every care log lives only on this device/i);
+  assert.doesNotMatch(privacy, /delete everything at any time/i);
+  assert.doesNotMatch(privacy, /erase everything in one step/i);
   assert.match(privacy, /Local care data cleared/);
   assert.doesNotMatch(privacy, /WoofWatcher keeps no copy anywhere else/);
   assert.doesNotMatch(privacy, /title: "All data deleted"/);

@@ -398,7 +398,7 @@ export default function PrivacyScreen() {
           <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
             {ownerOps
               ? "Export care data, prepare deletion requests, and review the rules that keep AI, documents, and payments gated."
-              : "Your household's care data lives on this device. Export it, read the policy, or delete everything at any time."}
+              : "Your care data is stored on this device and may also be held by configured providers. Export it, review the policy, or clear the local copy."}
           </Text>
         </LinearGradient>
 
@@ -535,8 +535,9 @@ export default function PrivacyScreen() {
               { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
             ]}
           >
-            Every care log lives only on this device. Read the full privacy
-            policy and terms, or erase everything in one step.
+            Review how care data is stored and synced. You can export it or
+            clear visible local data; provider-held records require separate
+            deletion.
           </Text>
           <Pressable
             onPress={openLegalDocuments}
