@@ -4,9 +4,9 @@
 
 The shared care document now has a least-privilege server boundary: only owner/adult roles may replace it, both raw and runtime roles must pass the allowlist, and youth/helper/vet-viewer/expired/missing/unknown memberships stop before data access. Read-only household access remains intact. Writes compare household id and version atomically, refetching a concurrent winner into the established `409` response instead of allowing two version-equal devices to report success.
 
-Red-first contracts failed before the policy and injectable router existed. Security/API behavior now passes `31/31`, adjacent Access Pass behavior passes `4/4`, broad local execution passes `906/909` apart from the known partial-checkout dependency links, PixelLab passes `150/150`, changed-source transpile reports zero syntax diagnostics, and whitespace validation passes. A fresh independent security review found no remaining role or race bypass.
+Red-first contracts failed before the policy and injectable router existed. Security/API behavior now passes `31/31`, adjacent Access Pass behavior passes `4/4`, broad local execution passes `906/909` apart from the known partial-checkout dependency links, PixelLab passes `150/150`, changed-source transpile reports zero syntax diagnostics, and whitespace validation passes. A fresh independent security review found no remaining role or race bypass. Dependency-complete `WoofWatcher Verify` run `33647385578`, job `100305472399`, passed implementation/docs commit `2f8d2841` through focused tests, typecheck, API build, and all CI-safe builds.
 
-This increment does not approve release. Dependency-complete typecheck/API build and final-tip CI remain required, followed by real provider multi-device proof. Restricted-role mobile editors also need an explicit read-only or denied-sync experience before shared-household launch; provider, native, store, and Apollo approval gates remain open.
+This increment does not approve release. Final-tip CI and real provider multi-device proof remain required. Restricted-role mobile editors also need an explicit read-only or denied-sync experience before shared-household launch; provider, native, store, and Apollo approval gates remain open.
 
 ## 2026-09-02 Pack persistence integrity increment
 

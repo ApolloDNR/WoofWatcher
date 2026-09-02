@@ -8,7 +8,9 @@ Decision: A care-state write succeeds only when one `UPDATE` matches both the ac
 
 Reason: The document spans profile, routines, records, credentials, and launch metadata. Role authentication without authorization permits privilege escalation, while a JavaScript precheck followed by a household-only update lets two devices silently overwrite one another and both report success.
 
-Boundary: Source tests and independent security review do not prove the production Express/Zod wrapper or a real provider race. Restricted-role mobile edits still need explicit read-only and denied-sync UX; provider, native, store, and Apollo gates remain.
+Proof: Dependency-complete `WoofWatcher Verify` run `33647385578`, job `100305472399`, passed implementation/docs commit `2f8d2841`, including focused behavior tests, production Express/Zod typecheck, and API/CI-safe builds.
+
+Boundary: Source and CI proof do not prove a real provider race. Restricted-role mobile edits still need explicit read-only and denied-sync UX; provider, native, store, and Apollo gates remain.
 
 ## 2026-09-02 — Pack persistence fails closed and reports recovery
 

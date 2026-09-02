@@ -6,7 +6,8 @@
 - Concurrency boundary: PASS. Household id and version are compared inside one UPDATE; zero-row recovery returns the winner as the existing `409` envelope or returns `404` after deletion.
 - Focused proof: PASS `31/31` security/API and `4/4` Access Pass; PixelLab PASS `150/150`; changed-source syntax PASS with `0` diagnostics; whitespace PASS; independent security review PASS with no remaining bypass.
 - Broad local proof: PARTIAL PASS `906/909`; only unresolved partial-checkout `express` and two `@workspace/care-domain` dependency links fail.
-- Dependency/native/approval proof: PENDING real Express/Zod typecheck and API build, final-tip CI, provider multi-device race evidence, restricted-role read-only/error UX, store review, and Apollo signoff.
+- Dependency proof: PASS. `WoofWatcher Verify` run `33647385578`, job `100305472399`, passed implementation/docs commit `2f8d2841` through real Express/Zod typecheck, API build, and all CI-safe builds.
+- Native/approval proof: PENDING final-tip CI, provider multi-device race evidence, restricted-role read-only/error UX, store review, and Apollo signoff.
 
 ## 2026-09-02 Pack persistence integrity gate
 

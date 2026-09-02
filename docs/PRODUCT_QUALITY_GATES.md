@@ -6,7 +6,8 @@
 - PASS (race behavior): The update predicate includes household id plus current version; a stateful interleaving test proves a concurrent winner is preserved and returned as `409`, with concurrent deletion returning `404`.
 - PASS (deterministic): Security/API `31/31`; Access Pass `4/4`; PixelLab `150/150`; changed-source transpile `0` syntax diagnostics; whitespace validation clean. Independent security review found no remaining bypass.
 - PARTIAL (root): `906/909` tests pass; only the established missing local `express` and two `@workspace/care-domain` entrypoints fail.
-- OPEN (dependency/product): Dependency-complete typecheck/API build and CI are pending. Restricted-role shared-document editing needs explicit read-only/error UX; provider race proof, native QA, store review, and Apollo approval remain required.
+- PASS (dependency-complete): `WoofWatcher Verify` run `33647385578`, job `100305472399`, passed commit `2f8d2841`, including typecheck and API/CI-safe builds.
+- OPEN (product/external): Restricted-role shared-document editing needs explicit read-only/error UX; provider race proof, native QA, store review, and Apollo approval remain required.
 
 ## 2026-09-02 Pack persistence integrity gate
 

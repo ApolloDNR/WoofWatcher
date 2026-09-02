@@ -6,8 +6,9 @@
 - DONE: Care-document replacement now uses one database compare-and-swap predicate over household id plus version. A zero-row update refetches the winner and returns the existing `409` envelope, or `404` if the row disappeared, so racing devices cannot both report success at the same version.
 - VERIFIED LOCALLY: Security/API behavior passed `31/31`; adjacent Access Pass coverage passed `4/4`; root focused execution passed `906/909`, with only the established missing local `express` and two `@workspace/care-domain` entrypoints; PixelLab passed `150/150`; changed-source transpile reported zero syntax diagnostics; whitespace validation passed.
 - REVIEW: A fresh read-only security review found no remaining bypass in the role or compare-and-swap boundary and required dependency-complete production wiring proof before merge/release.
-- BOUNDARY: The partial checkout cannot typecheck/build the real Express/Zod wiring. Restricted-role mobile document editors can still retain a denied local edit without a clear `403` warning; provider deployment, native multi-device proof, store review, and Apollo approval also remain open.
-- NEXT: Prove the wrapper in dependency-complete CI, then give restricted roles an explicit read-only/shared-sync experience instead of silent local/cloud divergence.
+- CI: Dependency-complete `WoofWatcher Verify` run `33647385578`, job `100305472399`, passed implementation/docs commit `2f8d2841` through install, doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
+- BOUNDARY: Restricted-role mobile document editors can still retain a denied local edit without a clear `403` warning; provider deployment, native multi-device proof, store review, and Apollo approval also remain open.
+- NEXT: Give restricted roles an explicit read-only/shared-sync experience instead of silent local/cloud divergence, then capture provider/native role and race evidence.
 
 ## 2026-09-02 Pack persistence fail-safe boundary
 

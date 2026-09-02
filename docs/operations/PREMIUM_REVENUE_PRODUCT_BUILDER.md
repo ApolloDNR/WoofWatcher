@@ -6,7 +6,7 @@
 
 The same boundary replaces the household-only write with a household-and-version compare-and-swap. If another device wins after the precheck, the losing update matches zero rows, refetches the winner, and returns the existing full `409` envelope; concurrent deletion returns `404`. A stateful regression fake evaluates that predicate and would overwrite the winner if the version guard were removed.
 
-Local proof passes security/API `31/31`, Access Pass `4/4`, broad `906/909` with only the established partial-checkout dependency failures, PixelLab `150/150`, zero changed-source syntax diagnostics, and whitespace validation. Independent read-only security review found no remaining bypass. Dependency-complete Express/Zod typecheck/build and CI are still required; restricted-role read-only/error UX, real provider race proof, native QA, store review, and Apollo approval remain gated.
+Local proof passes security/API `31/31`, Access Pass `4/4`, broad `906/909` with only the established partial-checkout dependency failures, PixelLab `150/150`, zero changed-source syntax diagnostics, and whitespace validation. Independent read-only security review found no remaining bypass. Dependency-complete `WoofWatcher Verify` run `33647385578`, job `100305472399`, passed implementation/docs commit `2f8d2841` through focused tests, production Express/Zod typecheck, API build, and all CI-safe builds. Restricted-role read-only/error UX, real provider race proof, native QA, store review, and Apollo approval remain gated.
 
 ## 2026-09-02 Pack persistence integrity slice
 

@@ -4,7 +4,8 @@
 
 - Source/tests now restrict whole-document replacement to owner/adult roles, validate raw and runtime membership roles, and atomically compare household id plus version before update. Active-household reads remain available to read-only members.
 - Local proof passes security/API `31/31`, adjacent Access Pass `4/4`, broad `906/909` apart from the established missing `express` and two `@workspace/care-domain` links, PixelLab `150/150`, zero changed-source syntax diagnostics, and whitespace validation. An independent security review found no remaining boundary bypass.
-- BLOCKED on dependency-complete Express/Zod typecheck and API build proof, then provider-backed multi-device race evidence.
+- Dependency-complete `WoofWatcher Verify` run `33647385578`, job `100305472399`, passed implementation/docs commit `2f8d2841`, including real Express/Zod typecheck, API build, and all CI-safe builds.
+- BLOCKED on provider-backed multi-device role and race evidence.
 - REMAINS: Restricted-role mobile editors need a visible read-only/denied-sync experience; current non-`409` document failures can leave local edits looking current. Production provider/RLS evidence, native QA, store review, and Apollo approval remain required.
 
 ## 2026-09-02 Pack persistence native recovery evidence
