@@ -1,5 +1,13 @@
 # Quality Gates
 
+## 2026-09-02 Pack persistence integrity gate
+
+- Source behavior: PASS. Pack loads both local stores as one fail-closed boundary, serializes per-key saves, surfaces current failures, and retries current state without rehydrating over unsaved edits.
+- Focused proof: PASS `218/218`; PixelLab: PASS `150/150`; changed-source transpile syntax: PASS `0` diagnostics; whitespace: PASS.
+- Broad local proof: PARTIAL PASS `894/897`; only the established missing local `express` and two `@workspace/care-domain` entrypoints fail.
+- Dependency proof: PENDING. This partial checkout cannot resolve the Expo/workspace graph for authoritative typecheck; dependency-complete branch CI remains the authority.
+- Native/approval proof: PENDING cold-start/read/write fault recovery, relaunch durability, VoiceOver/TalkBack warning and retry focus, route screenshots, corrupt-payload recovery, wipe-race prevention, store review, and Apollo signoff.
+
 ## 2026-08-30 iOS keyboard-aware form-sheet gate
 
 - Shared behavior: PASS. Plans routine/event and Records add-record sheets now

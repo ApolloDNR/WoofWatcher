@@ -1,5 +1,13 @@
 # WoofWatcher Decision Log
 
+## 2026-09-02 — Pack persistence fails closed and reports recovery
+
+Decision: Pack must not expose editable starter defaults when either device store cannot be read. Supplies and Travel Bag hydrate as one boundary, writes serialize per key, and any current failed save remains visibly retryable from the latest in-memory value.
+
+Reason: A silent fallback or out-of-order AsyncStorage completion can overwrite owner-authored checklist and trip state while the interface falsely appears saved. Storage side effects therefore stay outside React state updaters and every returned write promise is observed.
+
+Boundary: Malformed-but-readable payload recovery, atomic two-key redo, and global erase/reset races need separate contracts. Source and CI proof do not substitute for real-device recovery, accessibility, store, or Apollo approval.
+
 ## 2026-09-02 — Weight measurement owns an explicit keyboard boundary
 
 Decision: Treat the required Weight Quick Log measurement as a real native numeric field with an explicit Dog weight label and final Done action. The saved value remains owner-entered evidence in the configured weight unit; it is not a medical interpretation or recommendation.

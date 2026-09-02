@@ -1,5 +1,12 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-02 Pack persistence integrity gate
+
+- PASS (source): Hydration fails closed, saves serialize per key, failed stores remain identifiable, save retry uses current memory, and the warning/retry surface is accessible.
+- PASS (deterministic): Pack model/readiness coverage is `218/218`; PixelLab is `150/150`; changed TypeScript/TSX has zero transpile syntax diagnostics; whitespace validation passes.
+- PARTIAL (root): `894/897` tests pass; only the established missing local `express` and two `@workspace/care-domain` entrypoints fail.
+- OPEN (dependency/native): The partial checkout cannot authoritatively typecheck Expo; branch CI is pending. Real-device failure/restart/accessibility proof, corrupt-payload recovery, wipe-race protection, store review, and Apollo approval remain required.
+
 ## 2026-09-02 Weight Quick Log keyboard accessibility gate
 
 - PASS (source): The required weight measurement has an explicit label and deterministic Done behavior.

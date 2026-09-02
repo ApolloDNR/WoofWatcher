@@ -1,5 +1,13 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-09-02 Pack persistence integrity increment
+
+Pack no longer substitutes editable defaults when either local store cannot be read. Supplies and Travel Bag hydrate together, writes complete in order per key, current failures remain visible and retryable, and delayed removal/redo actions derive from the latest in-memory state. The recovery card is an assertive alert with an independently focusable retry action.
+
+Deterministic Pack model/readiness coverage passes `218/218`; broad local execution passes `894/897` apart from the known partial-checkout `express` and two `@workspace/care-domain` links; PixelLab passes `150/150`; changed-source transpile reports zero syntax diagnostics; whitespace validation passes. Local Expo typecheck is unavailable, so dependency-complete branch CI is pending.
+
+This increment does not approve release. It still needs real-iPhone storage-fault, restart durability, VoiceOver focus, and screenshot proof. Malformed stored-payload recovery, atomic multi-key redo, erase-all-data versus queued writes, store review, and Apollo approval remain open.
+
 ## 2026-08-31 Alone Time return accessibility increment
 
 The active Alone Time return check-in now labels recovery time and support context explicitly and provides a recovery -> note -> Done keyboard path. Focused red/green source proof passes; native compact-height, number-pad toolbar, VoiceOver/TalkBack, and screenshot proof remain release gates.

@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   type ImageSourcePropType,
@@ -42,13 +42,17 @@ import {
   BoardStatusPill,
 } from "@/components/board/BoardPrimitives";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { BoardMedallion, type MedallionName } from "@/components/BoardMedallion";
+import {
+  BoardMedallion,
+  type MedallionName,
+} from "@/components/BoardMedallion";
 import { PersonPortrait } from "@/components/PersonPortrait";
 import { PressScale } from "@/components/motion/GameFeel";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
+import { announce } from "@/lib/announce";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
@@ -64,24 +68,25 @@ import {
   addItem,
   cycleStatus,
   isDefaultUntouched,
-  parseSupplies,
   removeItem,
   renameItem,
-  serializeSupplies,
   type SupplyGroup,
   type SupplyItem,
   type SupplyStatus,
 } from "@/lib/packSupplies";
 import {
+  createPackPersistence,
+  getPackStorageWarningPresentation,
+  type PackStorageWarning,
+} from "@/lib/packPersistence";
+import {
   activateTravelBag,
   completeTravelBag,
   defaultTravelBag,
-  parseTravelBag,
   redoTravelBag,
   renameTravelBag,
   reopenTravelBag,
   resetTravelItems,
-  serializeTravelBag,
   type TravelBagSession,
 } from "@/lib/travelBag";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
@@ -100,6 +105,7 @@ type HouseholdMemberSummary = {
 };
 
 type PackSegment = "supplies" | "pets" | "people" | "access" | "carepass";
+type PackStoreKind = "supplies" | "travelBag";
 
 const PACK_SEGMENTS: readonly { key: PackSegment; label: string }[] = [
   { key: "supplies", label: "Supplies" },
@@ -108,12 +114,6 @@ const PACK_SEGMENTS: readonly { key: PackSegment; label: string }[] = [
   { key: "access", label: "Access" },
   { key: "carepass", label: "Care Pass" },
 ];
-
-// Device-local supplies checklist (the mockup Pack page's Essentials and
-// Travel Bag boards). Keeps the "woofwatcher" key prefix so the privacy
-// erase-all-data flow removes it with every other WoofWatcher key.
-const PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
-const TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
 
 /** Mockup icon language for the starter items; custom items stay neutral. */
 const SUPPLY_ICONS: Record<string, PixelIconName> = {
@@ -144,18 +144,37 @@ const SUPPLY_GROUP_TITLES: Record<SupplyGroup, string> = {
  */
 function SupplyStatusPill({ status }: { status: SupplyStatus }) {
   const colors = useColors();
-  const look: Record<SupplyStatus, { label: string; bg: string; fg: string; icon?: IoniconName }> = {
+  const look: Record<
+    SupplyStatus,
+    { label: string; bg: string; fg: string; icon?: IoniconName }
+  > = {
     plenty: { label: "Plenty", bg: colors.sageSoft, fg: colors.forest },
     low: { label: "Low", bg: colors.amberSoft, fg: colors.amber },
     out: { label: "Out", bg: colors.rose + "1C", fg: colors.rose },
-    packed: { label: "Packed", bg: colors.sageSoft, fg: colors.forest, icon: "checkmark" },
-    unpacked: { label: "Unpacked", bg: colors.muted, fg: colors.mutedForeground },
+    packed: {
+      label: "Packed",
+      bg: colors.sageSoft,
+      fg: colors.forest,
+      icon: "checkmark",
+    },
+    unpacked: {
+      label: "Unpacked",
+      bg: colors.muted,
+      fg: colors.mutedForeground,
+    },
   };
   const swatch = look[status];
   return (
     <View style={[s.supplyPill, { backgroundColor: swatch.bg }]}>
-      {swatch.icon ? <Ionicons name={swatch.icon} size={11} color={swatch.fg} /> : null}
-      <Text style={[s.supplyPillText, { color: swatch.fg, fontFamily: "Inter_700Bold" }]}>
+      {swatch.icon ? (
+        <Ionicons name={swatch.icon} size={11} color={swatch.fg} />
+      ) : null}
+      <Text
+        style={[
+          s.supplyPillText,
+          { color: swatch.fg, fontFamily: "Inter_700Bold" },
+        ]}
+      >
         {swatch.label}
       </Text>
     </View>
@@ -183,7 +202,11 @@ function SupplyRow({
 }) {
   const colors = useColors();
   const rel = item.updatedAt ? relativeTime(item.updatedAt, now) : null;
-  const updatedLabel = rel ? (rel === "Just now" ? "Updated just now" : `Updated ${rel}`) : null;
+  const updatedLabel = rel
+    ? rel === "Just now"
+      ? "Updated just now"
+      : `Updated ${rel}`
+    : null;
   return (
     <PressScale
       accessibilityRole="button"
@@ -193,7 +216,10 @@ function SupplyRow({
       onLongPress={() => onEdit(item)}
       delayLongPress={350}
       scaleTo={0.97}
-      style={[s.supplyRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+      style={[
+        s.supplyRow,
+        !last && { borderBottomWidth: 1, borderBottomColor: colors.border },
+      ]}
     >
       <View style={[s.linkChip, { backgroundColor: colors.secondary }]}>
         <PixelIcon name={supplyIcon(item)} size={20} />
@@ -201,14 +227,20 @@ function SupplyRow({
       <View style={s.linkCopy}>
         <Text
           numberOfLines={1}
-          style={[s.supplyName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+          style={[
+            s.supplyName,
+            { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+          ]}
         >
           {item.name}
         </Text>
         {updatedLabel ? (
           <Text
             numberOfLines={1}
-            style={[s.supplyUpdated, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+            style={[
+              s.supplyUpdated,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
           >
             {updatedLabel}
           </Text>
@@ -242,7 +274,12 @@ function SupplyEditCard({
 }) {
   const colors = useColors();
   return (
-    <View style={[s.supplyEditCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+    <View
+      style={[
+        s.supplyEditCard,
+        { backgroundColor: colors.background, borderColor: colors.border },
+      ]}
+    >
       <TextInput
         value={name}
         onChangeText={onChangeName}
@@ -284,10 +321,18 @@ function SupplyEditCard({
           onPress={onRemove}
           scaleTo={0.95}
           containerStyle={s.supplyRemoveLayout}
-          style={[s.supplyRemoveButton, { backgroundColor: colors.rose + "14" }]}
+          style={[
+            s.supplyRemoveButton,
+            { backgroundColor: colors.rose + "14" },
+          ]}
         >
           <Ionicons name="trash-outline" size={14} color={colors.rose} />
-          <Text style={[s.supplyRemoveText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
+          <Text
+            style={[
+              s.supplyRemoveText,
+              { color: colors.rose, fontFamily: "Inter_700Bold" },
+            ]}
+          >
             Remove
           </Text>
         </PressScale>
@@ -332,20 +377,30 @@ function PackLinkRow({
       <View style={s.linkCopy}>
         <Text
           numberOfLines={1}
-          style={[s.linkTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+          style={[
+            s.linkTitle,
+            { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+          ]}
         >
           {title}
         </Text>
         {detail ? (
           <Text
             numberOfLines={1}
-            style={[s.linkDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+            style={[
+              s.linkDetail,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
           >
             {detail}
           </Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+      <Ionicons
+        name="chevron-forward"
+        size={15}
+        color={colors.mutedForeground}
+      />
     </Pressable>
   );
 }
@@ -384,13 +439,19 @@ function PackInfoTile({
       <BoardMedallion name={icon} size={34} />
       <Text
         numberOfLines={1}
-        style={[s.infoTileLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
+        style={[
+          s.infoTileLabel,
+          { color: colors.mutedForeground, fontFamily: "Inter_700Bold" },
+        ]}
       >
         {label}
       </Text>
       <Text
         numberOfLines={1}
-        style={[s.infoTileValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+        style={[
+          s.infoTileValue,
+          { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+        ]}
       >
         {value}
       </Text>
@@ -472,31 +533,55 @@ export default function PackScreen() {
   const [editSupplyName, setEditSupplyName] = useState("");
   const [addSupplyOpen, setAddSupplyOpen] = useState(false);
   const [addSupplyName, setAddSupplyName] = useState("");
-  const [addSupplyGroup, setAddSupplyGroup] = useState<SupplyGroup>("essentials");
-  const [travelBag, setTravelBag] = useState<TravelBagSession>(defaultTravelBag);
+  const [addSupplyGroup, setAddSupplyGroup] =
+    useState<SupplyGroup>("essentials");
+  const [travelBag, setTravelBag] =
+    useState<TravelBagSession>(defaultTravelBag);
   const [editingBagLabel, setEditingBagLabel] = useState(false);
   const [bagLabelDraft, setBagLabelDraft] = useState("");
+  const [packStorageWarning, setPackStorageWarning] =
+    useState<PackStorageWarning | null>(null);
+  const [packStorageRetrying, setPackStorageRetrying] = useState(false);
+  const [packPersistence] = useState(() => createPackPersistence(AsyncStorage));
+  const suppliesRef = useRef<SupplyItem[] | null>(null);
+  const travelBagRef = useRef(travelBag);
+  const failedPackWritesRef = useRef(new Set<PackStoreKind>());
+  const packWriteRevisionRef = useRef<Record<PackStoreKind, number>>({
+    supplies: 0,
+    travelBag: 0,
+  });
+  suppliesRef.current = supplies;
+  travelBagRef.current = travelBag;
 
   useEffect(() => {
     let cancelled = false;
-    AsyncStorage.getItem(PACK_SUPPLIES_KEY)
-      .then((raw) => {
-        if (!cancelled) setSupplies(parseSupplies(raw));
-      })
-      .catch(() => {
-        if (!cancelled) setSupplies(parseSupplies(null));
-      });
-    AsyncStorage.getItem(TRAVEL_BAG_KEY)
-      .then((raw) => {
-        if (!cancelled) setTravelBag(parseTravelBag(raw));
-      })
-      .catch(() => {
-        if (!cancelled) setTravelBag(defaultTravelBag());
-      });
+    void packPersistence.hydrate().then((result) => {
+      if (cancelled) return;
+      packWriteRevisionRef.current.supplies += 1;
+      packWriteRevisionRef.current.travelBag += 1;
+      failedPackWritesRef.current.clear();
+      if (result.status === "read-failed") {
+        suppliesRef.current = null;
+        setSupplies(null);
+        setPackStorageWarning("read-failed");
+        return;
+      }
+      suppliesRef.current = result.supplies;
+      travelBagRef.current = result.travelBag;
+      setSupplies(result.supplies);
+      setTravelBag(result.travelBag);
+      setPackStorageWarning(null);
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [packPersistence]);
+
+  useEffect(() => {
+    if (!packStorageWarning) return;
+    const warning = getPackStorageWarningPresentation(packStorageWarning);
+    announce(`${warning.title}. ${warning.message}`);
+  }, [packStorageWarning]);
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
@@ -510,8 +595,14 @@ export default function PackScreen() {
   const petName = resolvePetName(state.profile.name);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
-  const careCareer = useMemo(() => deriveCareCareer(state.entries, now), [state.entries, now]);
-  const careStreak = useMemo(() => deriveCareStreak(state.entries, now), [state.entries, now]);
+  const careCareer = useMemo(
+    () => deriveCareCareer(state.entries, now),
+    [state.entries, now],
+  );
+  const careStreak = useMemo(
+    () => deriveCareStreak(state.entries, now),
+    [state.entries, now],
+  );
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
@@ -520,7 +611,9 @@ export default function PackScreen() {
   const householdAccess = useMemo(
     () =>
       deriveHouseholdAccessPlan({
-        household: household ? { name: household.name, inviteCode: household.inviteCode } : null,
+        household: household
+          ? { name: household.name, inviteCode: household.inviteCode }
+          : null,
         members,
         caregivers: state.caregivers,
         routines: state.routines,
@@ -564,7 +657,8 @@ export default function PackScreen() {
   const savedReports = useMemo(
     () =>
       [...state.reportArtifacts].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       ),
     [state.reportArtifacts],
   );
@@ -576,7 +670,8 @@ export default function PackScreen() {
   // routine-only owners) is a not-set-up-yet state, not a problem to review -
   // amber "Needs review" on an empty board reads as a false alarm.
   const accessNotSetUp =
-    householdAccess.status === "needs-household" && householdAccess.people.length === 0;
+    householdAccess.status === "needs-household" &&
+    householdAccess.people.length === 0;
   const accessTone =
     householdAccess.status === "ready"
       ? colors.sage
@@ -592,7 +687,9 @@ export default function PackScreen() {
   // Only real profile fields: weight is the only sourced vitals field today.
   const weightCurrent = state.profile.weight?.current ?? 0;
   const weightLabel =
-    weightCurrent > 0 ? `${weightCurrent} ${state.profile.weight?.unit || "lb"}` : "";
+    weightCurrent > 0
+      ? `${weightCurrent} ${state.profile.weight?.unit || "lb"}`
+      : "";
   const levelPercent = Math.round(careCareer.levelProgress * 100);
 
   const open = (route: string) => {
@@ -606,7 +703,9 @@ export default function PackScreen() {
    * scroll when More is already mounted with the same section from a
    * previous visit.
    */
-  const openMoreSection = (section: "household" | "access" | "care-pass" | "diet") => {
+  const openMoreSection = (
+    section: "household" | "access" | "care-pass" | "diet",
+  ) => {
     Haptics.selectionAsync();
     router.push(`/more?section=${section}&focus=${Date.now()}` as never);
   };
@@ -627,13 +726,16 @@ export default function PackScreen() {
   const restockCount = essentialSupplies.filter(
     (item) => item.status === "low" || item.status === "out",
   ).length;
-  const packedCount = travelSupplies.filter((item) => item.status === "packed").length;
+  const packedCount = travelSupplies.filter(
+    (item) => item.status === "packed",
+  ).length;
   const suppliesUntouched = supplies ? isDefaultUntouched(supplies) : false;
 
   // Phase-driven travel-bag chrome (packing -> active -> complete). Every
   // signal is real: the packed count is the checklist truth, "Active since"
   // and "Trip wrapped" read from the owner's own Activate/Complete taps.
-  const travelAllPacked = travelSupplies.length > 0 && packedCount === travelSupplies.length;
+  const travelAllPacked =
+    travelSupplies.length > 0 && packedCount === travelSupplies.length;
   const travelPill: { label: string; tone: string; icon?: "checkmark" } =
     travelBag.phase === "active"
       ? { label: "Active", tone: colors.sage, icon: "checkmark" }
@@ -659,19 +761,116 @@ export default function PackScreen() {
           ? "Check your gear off, then activate the bag."
           : "Gear checked. Activate the bag when you're ready to go.";
 
-  /** Save on every change, fire-and-forget like the Home welcome flag. */
+  /**
+   * Save every owner change in order and keep failures visible. Revisions
+   * prevent an older write's eventual result from overriding the state of a
+   * newer queued write.
+   */
+  const persistPackWrite = (
+    kind: PackStoreKind,
+    save: () => Promise<void>,
+  ): Promise<boolean> => {
+    const revision = ++packWriteRevisionRef.current[kind];
+    return save().then(
+      () => {
+        if (packWriteRevisionRef.current[kind] === revision) {
+          failedPackWritesRef.current.delete(kind);
+          if (failedPackWritesRef.current.size === 0) {
+            setPackStorageWarning((current) =>
+              current === "save-failed" ? null : current,
+            );
+          }
+        }
+        return true;
+      },
+      () => {
+        if (packWriteRevisionRef.current[kind] === revision) {
+          failedPackWritesRef.current.add(kind);
+          setPackStorageWarning((current) =>
+            current === "read-failed" ? current : "save-failed",
+          );
+        }
+        return false;
+      },
+    );
+  };
+
   const commitSupplies = (next: SupplyItem[]) => {
+    suppliesRef.current = next;
     setSupplies(next);
-    AsyncStorage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(next)).catch(() => {});
+    void persistPackWrite("supplies", () => packPersistence.saveSupplies(next));
   };
 
   const commitTravelBag = (next: TravelBagSession) => {
+    travelBagRef.current = next;
     setTravelBag(next);
-    AsyncStorage.setItem(TRAVEL_BAG_KEY, serializeTravelBag(next)).catch(() => {});
+    void persistPackWrite("travelBag", () =>
+      packPersistence.saveTravelBag(next),
+    );
+  };
+
+  const retryPackStorage = async () => {
+    if (packStorageRetrying || !packStorageWarning) return;
+    setPackStorageRetrying(true);
+    try {
+      if (packStorageWarning === "read-failed") {
+        const result = await packPersistence.hydrate();
+        packWriteRevisionRef.current.supplies += 1;
+        packWriteRevisionRef.current.travelBag += 1;
+        failedPackWritesRef.current.clear();
+        if (result.status === "read-failed") {
+          suppliesRef.current = null;
+          setSupplies(null);
+          setPackStorageWarning("read-failed");
+          announce("Pack still couldn't load safely. Changes remain paused.");
+          return;
+        }
+        suppliesRef.current = result.supplies;
+        travelBagRef.current = result.travelBag;
+        setSupplies(result.supplies);
+        setTravelBag(result.travelBag);
+        setPackStorageWarning(null);
+        announce("Pack loaded. Your saved checklist is available again.");
+        return;
+      }
+
+      const failedKinds = [...failedPackWritesRef.current];
+      await Promise.all(
+        failedKinds.map((kind) => {
+          if (kind === "supplies") {
+            const current = suppliesRef.current;
+            return current
+              ? persistPackWrite(kind, () =>
+                  packPersistence.saveSupplies(current),
+                )
+              : Promise.resolve(false);
+          }
+          const current = travelBagRef.current;
+          return persistPackWrite(kind, () =>
+            packPersistence.saveTravelBag(current),
+          );
+        }),
+      );
+      announce(
+        failedPackWritesRef.current.size === 0
+          ? "Pack changes saved."
+          : "Pack changes still aren't saved. Please try again.",
+      );
+    } finally {
+      setPackStorageRetrying(false);
+    }
   };
 
   const activateBag = () => {
-    const next = activateTravelBag(travelBag, packedCount, new Date().toISOString());
+    const currentSupplies = suppliesRef.current ?? [];
+    const currentPackedCount = currentSupplies.filter(
+      (item) => item.group === "travel" && item.status === "packed",
+    ).length;
+    const next = activateTravelBag(
+      travelBagRef.current,
+      currentPackedCount,
+      new Date().toISOString(),
+    );
     if (!next) {
       notifyDialog(
         "Pack something first",
@@ -679,18 +878,24 @@ export default function PackScreen() {
       );
       return;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
     commitTravelBag(next);
   };
 
   const completeBag = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    commitTravelBag(completeTravelBag(travelBag, new Date().toISOString()));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
+    commitTravelBag(
+      completeTravelBag(travelBagRef.current, new Date().toISOString()),
+    );
   };
 
   const reopenBag = () => {
     Haptics.selectionAsync().catch(() => {});
-    commitTravelBag(reopenTravelBag(travelBag));
+    commitTravelBag(reopenTravelBag(travelBagRef.current));
   };
 
   const redoBag = () => {
@@ -698,35 +903,38 @@ export default function PackScreen() {
       [
         {
           title: "Redo the bag?",
-          message: "This unpacks every travel item so you can pack fresh for the next trip.",
+          message:
+            "This unpacks every travel item so you can pack fresh for the next trip.",
           confirmLabel: "Redo bag",
         },
       ],
       () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-        if (supplies) commitSupplies(resetTravelItems(supplies));
-        commitTravelBag(redoTravelBag(travelBag));
+        const currentSupplies = suppliesRef.current;
+        if (currentSupplies) commitSupplies(resetTravelItems(currentSupplies));
+        commitTravelBag(redoTravelBag(travelBagRef.current));
       },
     );
   };
 
   const openBagLabelEditor = () => {
     Haptics.selectionAsync().catch(() => {});
-    setBagLabelDraft(travelBag.label);
+    setBagLabelDraft(travelBagRef.current.label);
     setEditingBagLabel(true);
   };
 
   const saveBagLabel = () => {
-    commitTravelBag(renameTravelBag(travelBag, bagLabelDraft));
+    commitTravelBag(renameTravelBag(travelBagRef.current, bagLabelDraft));
     setEditingBagLabel(false);
     setBagLabelDraft("");
   };
 
   const cycleSupply = (item: SupplyItem) => {
-    if (!supplies) return;
+    const currentSupplies = suppliesRef.current;
+    if (!currentSupplies) return;
     const stampedAt = new Date().toISOString();
     commitSupplies(
-      supplies.map((entry) =>
+      currentSupplies.map((entry) =>
         entry.id === item.id
           ? { ...entry, status: cycleStatus(entry), updatedAt: stampedAt }
           : entry,
@@ -747,13 +955,17 @@ export default function PackScreen() {
   };
 
   const saveSupplyRename = () => {
-    if (!supplies || !editingSupplyId) return;
+    const currentSupplies = suppliesRef.current;
+    if (!currentSupplies || !editingSupplyId) return;
     const trimmed = editSupplyName.trim();
     if (!trimmed) {
-      notifyDialog("Name needed", "Give this item a short name, or cancel the edit.");
+      notifyDialog(
+        "Name needed",
+        "Give this item a short name, or cancel the edit.",
+      );
       return;
     }
-    const next = renameItem(supplies, editingSupplyId, editSupplyName);
+    const next = renameItem(currentSupplies, editingSupplyId, editSupplyName);
     if (!next) {
       notifyDialog(
         "Already on the list",
@@ -776,14 +988,12 @@ export default function PackScreen() {
         },
       ],
       () => {
-        // Functional update: the themed dialog resolves later, so never
-        // trust the list captured at press time.
-        setSupplies((current) => {
-          if (!current) return current;
-          const next = removeItem(current, item.id);
-          AsyncStorage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(next)).catch(() => {});
-          return next;
-        });
+        // The themed dialog resolves later, so read the synchronously updated
+        // ref rather than the list captured when the dialog opened.
+        const currentSupplies = suppliesRef.current;
+        if (currentSupplies) {
+          commitSupplies(removeItem(currentSupplies, item.id));
+        }
         closeSupplyEditor();
       },
     );
@@ -800,13 +1010,17 @@ export default function PackScreen() {
   };
 
   const saveSupplyAdd = () => {
-    if (!supplies) return;
+    const currentSupplies = suppliesRef.current;
+    if (!currentSupplies) return;
     const trimmed = addSupplyName.trim();
     if (!trimmed) {
-      notifyDialog("Name needed", "Give the new item a short name, like Water bottle or Towel.");
+      notifyDialog(
+        "Name needed",
+        "Give the new item a short name, like Water bottle or Towel.",
+      );
       return;
     }
-    const next = addItem(supplies, addSupplyName, addSupplyGroup);
+    const next = addItem(currentSupplies, addSupplyName, addSupplyGroup);
     if (!next) {
       notifyDialog(
         "Already on the list",
@@ -818,6 +1032,10 @@ export default function PackScreen() {
     setAddSupplyName("");
     setAddSupplyOpen(false);
   };
+
+  const packStorageWarningPresentation = packStorageWarning
+    ? getPackStorageWarningPresentation(packStorageWarning)
+    : null;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -848,6 +1066,60 @@ export default function PackScreen() {
           style={s.routeHeaderCompact}
         />
 
+        {packStorageWarningPresentation ? (
+          <BoardCard
+            style={[
+              s.packStorageWarningCard,
+              {
+                backgroundColor: colors.amberSoft,
+                borderColor: colors.amber + "66",
+              },
+            ]}
+          >
+            <View style={s.packStorageWarningRow}>
+              <Ionicons
+                accessible={false}
+                name="warning-outline"
+                size={19}
+                color={colors.amber}
+              />
+              <Text
+                accessibilityRole="alert"
+                aria-live="assertive"
+                selectable
+                style={[
+                  s.packStorageWarningText,
+                  { color: colors.foreground, fontFamily: "Inter_500Medium" },
+                ]}
+              >
+                <Text style={{ fontFamily: "Inter_700Bold" }}>
+                  {packStorageWarningPresentation.title}
+                </Text>
+                {"\n"}
+                {packStorageWarningPresentation.message}
+              </Text>
+            </View>
+            <BoardActionButton
+              label={
+                packStorageRetrying
+                  ? "Retrying..."
+                  : packStorageWarningPresentation.retryLabel
+              }
+              icon="refresh-outline"
+              variant="outline"
+              compact
+              disabled={packStorageRetrying}
+              onPress={() => void retryPackStorage()}
+              accessibilityLabel={
+                packStorageRetrying
+                  ? "Retrying Pack storage"
+                  : packStorageWarningPresentation.retryLabel
+              }
+              style={s.packStorageRetryButton}
+            />
+          </BoardCard>
+        ) : null}
+
         {/* Five segments outgrow one 390pt row, so the chips scroll sideways
             at natural width instead of squeezing their labels into ellipses. */}
         <ScrollView
@@ -867,6 +1139,24 @@ export default function PackScreen() {
         {/* Supplies - the mockup Pack page's Essentials / Travel Bag boards.
             Every status is the owner's own answer; untouched defaults say so
             instead of pretending someone already checked the shelf. */}
+        {segment === "supplies" &&
+        !supplies &&
+        !packStorageWarningPresentation ? (
+          <BoardCard style={s.sectionCard} tone="soft">
+            <Text
+              aria-live="polite"
+              style={[
+                s.packStorageLoadingText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                },
+              ]}
+            >
+              Loading your saved Pack...
+            </Text>
+          </BoardCard>
+        ) : null}
         {segment === "supplies" && supplies ? (
           <>
             <BoardCard style={s.sectionCard} enter={0}>
@@ -894,13 +1184,29 @@ export default function PackScreen() {
                 }
               />
               {suppliesUntouched ? (
-                <Text style={[s.suppliesHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Starter checklist - the statuses are yours to set. Tap a row to
-                  update it, long-press to rename or remove.
+                <Text
+                  style={[
+                    s.suppliesHint,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  Starter checklist - the statuses are yours to set. Tap a row
+                  to update it, long-press to rename or remove.
                 </Text>
               ) : null}
               {essentialSupplies.length === 0 ? (
-                <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.emptyCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   Nothing tracked here yet. Add an item below.
                 </Text>
               ) : (
@@ -933,7 +1239,11 @@ export default function PackScreen() {
               <BoardSectionHeader
                 title={travelBag.label}
                 accessory={
-                  <BoardPill label={travelPill.label} icon={travelPill.icon} tone={travelPill.tone} />
+                  <BoardPill
+                    label={travelPill.label}
+                    icon={travelPill.icon}
+                    tone={travelPill.tone}
+                  />
                 }
               />
 
@@ -977,15 +1287,36 @@ export default function PackScreen() {
                   onPress={openBagLabelEditor}
                   style={s.travelCaptionRow}
                 >
-                  <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium", flex: 1 }]}>
+                  <Text
+                    style={[
+                      s.emptyCopy,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                        flex: 1,
+                      },
+                    ]}
+                  >
                     {travelCaption}
                   </Text>
-                  <Ionicons name="pencil" size={13} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="pencil"
+                    size={13}
+                    color={colors.mutedForeground}
+                  />
                 </Pressable>
               )}
 
               {travelSupplies.length === 0 ? (
-                <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.emptyCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   Nothing tracked here yet. Add an item below.
                 </Text>
               ) : (
@@ -1086,7 +1417,9 @@ export default function PackScreen() {
                               : pressed
                                 ? colors.secondary
                                 : colors.card,
-                            borderColor: active ? colors.primary : colors.border,
+                            borderColor: active
+                              ? colors.primary
+                              : colors.border,
                           },
                         ]}
                       >
@@ -1094,7 +1427,9 @@ export default function PackScreen() {
                           style={[
                             s.addGroupChipText,
                             {
-                              color: active ? colors.primaryForeground : colors.foreground,
+                              color: active
+                                ? colors.primaryForeground
+                                : colors.foreground,
                               fontFamily: "Inter_700Bold",
                             },
                           ]}
@@ -1161,27 +1496,62 @@ export default function PackScreen() {
           <BoardCard style={s.sectionCard}>
             {/* Mock-board pet card: big storybook portrait, name, breed,
                 weight, and a live presence dot - every line real. */}
-            <View style={[s.petHero, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                <BreathingPetSprite
-                  source={getAvatarSource(status.mood)}
-                />
+            <View
+              style={[
+                s.petHero,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  s.petAvatarFrame,
+                  {
+                    backgroundColor: colors.secondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <BreathingPetSprite source={getAvatarSource(status.mood)} />
               </View>
               <View style={s.petHeroCopy}>
-                <Text style={[s.petName, { color: colors.foreground, fontFamily: DISPLAY }]}>{petName}</Text>
+                <Text
+                  style={[
+                    s.petName,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
+                  {petName}
+                </Text>
                 {state.profile.breed ? (
                   <Text
                     numberOfLines={1}
-                    style={[s.petIdentity, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                    style={[
+                      s.petIdentity,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
                   >
                     {state.profile.breed}
                   </Text>
                 ) : null}
                 <Text
                   numberOfLines={1}
-                  style={[s.petMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                  style={[
+                    s.petMeta,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
                 >
-                  {[weightLabel, careCareer.levelLabel].filter(Boolean).join(" · ")}
+                  {[weightLabel, careCareer.levelLabel]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </Text>
               </View>
               <View
@@ -1203,7 +1573,13 @@ export default function PackScreen() {
                 />
                 <Text
                   numberOfLines={1}
-                  style={[s.petStatusText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                  style={[
+                    s.petStatusText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
                 >
                   {status.meta.label}
                 </Text>
@@ -1216,9 +1592,24 @@ export default function PackScreen() {
               .map((pet) => (
                 <View
                   key={pet.id}
-                  style={[s.petHero, s.petHeroSecondary, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[
+                    s.petHero,
+                    s.petHeroSecondary,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
-                  <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                  <View
+                    style={[
+                      s.petAvatarFrame,
+                      {
+                        backgroundColor: colors.secondary,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
                     <Image
                       accessible={false}
                       source={getAvatarSource("calm")}
@@ -1227,11 +1618,24 @@ export default function PackScreen() {
                     />
                   </View>
                   <View style={s.petHeroCopy}>
-                    <Text style={[s.petName, { color: colors.foreground, fontFamily: DISPLAY }]}>{pet.name}</Text>
+                    <Text
+                      style={[
+                        s.petName,
+                        { color: colors.foreground, fontFamily: DISPLAY },
+                      ]}
+                    >
+                      {pet.name}
+                    </Text>
                     {pet.breed ? (
                       <Text
                         numberOfLines={1}
-                        style={[s.petIdentity, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        style={[
+                          s.petIdentity,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
                       >
                         {pet.breed}
                       </Text>
@@ -1256,7 +1660,15 @@ export default function PackScreen() {
               ]}
             >
               <Ionicons name="add" size={16} color={colors.mutedForeground} />
-              <Text style={[s.addPetText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+              <Text
+                style={[
+                  s.addPetText,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
                 Add Pet
               </Text>
             </Pressable>
@@ -1311,11 +1723,24 @@ export default function PackScreen() {
             </View>
 
             {/* People in the Pack preview, mirroring the mock's Pets page. */}
-            <Text style={[s.peoplePreviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+            <Text
+              style={[
+                s.peoplePreviewTitle,
+                { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+              ]}
+            >
               People in the Pack
             </Text>
             {householdAccess.people.length === 0 ? (
-              <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.emptyCopy,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 Add the first caregiver to build household access.
               </Text>
             ) : (
@@ -1330,7 +1755,8 @@ export default function PackScreen() {
                     style={({ pressed }) => [
                       s.personRow,
                       { opacity: pressed ? 0.72 : 1 },
-                      index < Math.min(householdAccess.people.length, 4) - 1 && {
+                      index <
+                        Math.min(householdAccess.people.length, 4) - 1 && {
                         borderBottomWidth: 1,
                         borderBottomColor: colors.border,
                       },
@@ -1340,13 +1766,25 @@ export default function PackScreen() {
                     <View style={s.personCopy}>
                       <Text
                         numberOfLines={1}
-                        style={[s.personName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                        style={[
+                          s.personName,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
                       >
                         {person.name}
                       </Text>
                       <Text
                         numberOfLines={1}
-                        style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        style={[
+                          s.personMeta,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
                       >
                         {person.role}
                       </Text>
@@ -1370,7 +1808,16 @@ export default function PackScreen() {
 
             {/* Own heading: without it these care-hub links visually caption
                 under "People in the Pack", which reads as a labeling error. */}
-            <Text style={[s.peoplePreviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI, marginTop: 16 }]}>
+            <Text
+              style={[
+                s.peoplePreviewTitle,
+                {
+                  color: colors.foreground,
+                  fontFamily: DISPLAY_SEMI,
+                  marginTop: 16,
+                },
+              ]}
+            >
               {petName}'s care spaces
             </Text>
             <View style={[s.linkList, { borderTopColor: colors.border }]}>
@@ -1430,7 +1877,15 @@ export default function PackScreen() {
             />
 
             {householdAccess.people.length === 0 ? (
-              <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.emptyCopy,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 Complete setup to add the first caregiver to this device.
               </Text>
             ) : (
@@ -1438,14 +1893,20 @@ export default function PackScreen() {
                  count, and the routines actually assigned to them. */
               householdAccess.people.map((person, index) => {
                 const logCount = state.entries.filter(
-                  (entry) => entry.caregiver.trim().toLowerCase() === person.name.toLowerCase(),
+                  (entry) =>
+                    entry.caregiver.trim().toLowerCase() ===
+                    person.name.toLowerCase(),
                 ).length;
-                const isYou = Boolean(myName) && person.name.toLowerCase() === myName.toLowerCase();
+                const isYou =
+                  Boolean(myName) &&
+                  person.name.toLowerCase() === myName.toLowerCase();
                 const routineLine =
                   person.routineCount > 0
                     ? `${person.routineCount === 1 ? "Routine" : "Routines"}: ${person.routineLabels
                         .slice(0, 2)
-                        .join(", ")}${person.routineLabels.length > 2 ? ` +${person.routineLabels.length - 2}` : ""}`
+                        .join(
+                          ", ",
+                        )}${person.routineLabels.length > 2 ? ` +${person.routineLabels.length - 2}` : ""}`
                     : "";
                 return (
                   <View
@@ -1463,13 +1924,32 @@ export default function PackScreen() {
                       <View style={s.personNameLine}>
                         <Text
                           numberOfLines={1}
-                          style={[s.personName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                          style={[
+                            s.personName,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
                         >
                           {person.name}
                         </Text>
                         {isYou ? (
-                          <View style={[s.youBadge, { backgroundColor: colors.primary + "1A" }]}>
-                            <Text style={[s.youBadgeText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                          <View
+                            style={[
+                              s.youBadge,
+                              { backgroundColor: colors.primary + "1A" },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.youBadgeText,
+                                {
+                                  color: colors.primary,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
                               You
                             </Text>
                           </View>
@@ -1477,9 +1957,16 @@ export default function PackScreen() {
                       </View>
                       <Text
                         numberOfLines={1}
-                        style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        style={[
+                          s.personMeta,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
                       >
-                        {person.role} - {consumerSurfacePolicy.householdProviderActions
+                        {person.role} -{" "}
+                        {consumerSurfacePolicy.householdProviderActions
                           ? person.needsInvite
                             ? "Invite needed"
                             : "Ready"
@@ -1488,7 +1975,13 @@ export default function PackScreen() {
                       {routineLine ? (
                         <Text
                           numberOfLines={1}
-                          style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                          style={[
+                            s.personMeta,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
                         >
                           {routineLine}
                         </Text>
@@ -1563,7 +2056,9 @@ export default function PackScreen() {
         {/* Access */}
         {segment === "access" &&
         consumerSurfacePolicy.householdProviderActions ? (
-          <BoardCard style={[s.sectionCard, { borderColor: accessTone + "44" }]}>
+          <BoardCard
+            style={[s.sectionCard, { borderColor: accessTone + "44" }]}
+          >
             <BoardSectionHeader
               title="Access"
               accessory={
@@ -1576,50 +2071,123 @@ export default function PackScreen() {
                         : "Needs review"
                   }
                   tone={
-                    householdAccess.status === "ready" ? "done" : accessNotSetUp ? "neutral" : "due"
+                    householdAccess.status === "ready"
+                      ? "done"
+                      : accessNotSetUp
+                        ? "neutral"
+                        : "due"
                   }
                 />
               }
             />
 
-            <Text style={[s.accessTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+            <Text
+              style={[
+                s.accessTitle,
+                { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+              ]}
+            >
               {householdAccess.householdName}
             </Text>
-            <Text style={[s.accessSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              style={[
+                s.accessSummary,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
               {householdAccess.summary}
             </Text>
 
             <View style={s.accessMetrics}>
               {[
                 { label: "Ready", value: householdAccess.syncedMembers },
-                { label: "Invites", value: householdAccess.localOnlyCaregivers },
-                { label: "Routine-only", value: householdAccess.routineOnlyOwners },
+                {
+                  label: "Invites",
+                  value: householdAccess.localOnlyCaregivers,
+                },
+                {
+                  label: "Routine-only",
+                  value: householdAccess.routineOnlyOwners,
+                },
               ].map((metric) => (
-                <View key={metric.label} style={[s.accessMetric, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[s.accessMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                <View
+                  key={metric.label}
+                  style={[
+                    s.accessMetric,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.accessMetricValue,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {metric.value}
                   </Text>
-                  <Text style={[s.accessMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.accessMetricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     {metric.label}
                   </Text>
                 </View>
               ))}
             </View>
 
-            <Text style={[s.accessNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            <Text
+              style={[
+                s.accessNext,
+                { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+              ]}
+            >
               {householdAccess.nextStep}
             </Text>
 
             {householdAccess.inviteCode ? (
               <View
                 accessibilityLabel={`Household invite code ${householdAccess.inviteCode}. Share it from the household console in More.`}
-                style={[s.inviteCodeRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                style={[
+                  s.inviteCodeRow,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
               >
-                <Ionicons name="key-outline" size={15} color={colors.mutedForeground} />
-                <Text style={[s.inviteCodeLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                <Ionicons
+                  name="key-outline"
+                  size={15}
+                  color={colors.mutedForeground}
+                />
+                <Text
+                  style={[
+                    s.inviteCodeLabel,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
+                >
                   INVITE CODE
                 </Text>
-                <Text style={[s.inviteCodeValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                <Text
+                  style={[
+                    s.inviteCodeValue,
+                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                  ]}
+                >
                   {householdAccess.inviteCode}
                 </Text>
               </View>
@@ -1627,7 +2195,12 @@ export default function PackScreen() {
 
             {/* Temporary helper passes: the same real counts the More console
                 derives, surfaced here so Access reads as a full picture. */}
-            <Text style={[s.accessSubheading, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+            <Text
+              style={[
+                s.accessSubheading,
+                { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+              ]}
+            >
               Access Passes
             </Text>
             <View style={s.accessMetrics}>
@@ -1638,12 +2211,31 @@ export default function PackScreen() {
               ].map((metric) => (
                 <View
                   key={`pass-${metric.label}`}
-                  style={[s.accessMetric, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[
+                    s.accessMetric,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
-                  <Text style={[s.accessMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  <Text
+                    style={[
+                      s.accessMetricValue,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
                     {metric.value}
                   </Text>
-                  <Text style={[s.accessMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.accessMetricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     {metric.label}
                   </Text>
                 </View>
@@ -1655,13 +2247,25 @@ export default function PackScreen() {
                   <View style={s.personCopy}>
                     <Text
                       numberOfLines={1}
-                      style={[s.personName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                      style={[
+                        s.personName,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
                     >
                       {pass.holderName}
                     </Text>
                     <Text
                       numberOfLines={1}
-                      style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                      style={[
+                        s.personMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
                     >
                       {pass.role} - {pass.timeLabel}
                     </Text>
@@ -1669,13 +2273,25 @@ export default function PackScreen() {
                   <BoardStatusPill
                     label={pass.status}
                     tone={
-                      pass.status === "active" ? "done" : pass.status === "upcoming" ? "upcoming" : "neutral"
+                      pass.status === "active"
+                        ? "done"
+                        : pass.status === "upcoming"
+                          ? "upcoming"
+                          : "neutral"
                     }
                   />
                 </View>
               ))
             ) : (
-              <Text style={[s.accessPassEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.accessPassEmpty,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 {accessPassPlan.summary}
               </Text>
             )}
@@ -1698,14 +2314,26 @@ export default function PackScreen() {
               title="Care Pass"
               accessory={
                 <BoardPill
-                  label={savedReports.length ? `${savedReports.length} saved` : "No saved"}
+                  label={
+                    savedReports.length
+                      ? `${savedReports.length} saved`
+                      : "No saved"
+                  }
                   icon="card-outline"
                   tone={colors.primary}
                 />
               }
             />
 
-            <Text style={[s.carePassSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              style={[
+                s.carePassSummary,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
               {carePass.summary}
             </Text>
 
@@ -1720,20 +2348,46 @@ export default function PackScreen() {
               {carePass.sections.slice(0, 5).map((section) => (
                 <View
                   key={section.title}
-                  style={[s.passSectionChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                  style={[
+                    s.passSectionChip,
+                    {
+                      backgroundColor: colors.secondary,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
                   <Text
                     numberOfLines={1}
-                    style={[s.passSectionChipText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                    style={[
+                      s.passSectionChipText,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
                   >
                     {section.title}
                   </Text>
                 </View>
               ))}
               {carePass.sections.length > 5 ? (
-                <View style={[s.passSectionChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View
+                  style={[
+                    s.passSectionChip,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
                   <Text
-                    style={[s.passSectionChipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    style={[
+                      s.passSectionChipText,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
                   >
                     +{carePass.sections.length - 5} more
                   </Text>
@@ -1753,7 +2407,11 @@ export default function PackScreen() {
                 icon="clock"
                 label="Reports saved"
                 value={String(savedReports.length)}
-                detail={latestReport ? `Latest: ${latestReport.title}` : "Share a Care Pass to start history"}
+                detail={
+                  latestReport
+                    ? `Latest: ${latestReport.title}`
+                    : "Share a Care Pass to start history"
+                }
                 tone={colors.sage}
               />
             </View>
@@ -1761,25 +2419,58 @@ export default function PackScreen() {
             {latestReport ? (
               /* Freshness of the last built pass - title, age, and its saved
                  summary, straight from the report artifact. */
-              <View style={[s.lastPassCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View
+                style={[
+                  s.lastPassCard,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
                 <View style={s.lastPassHead}>
-                  <Text style={[s.lastPassKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.lastPassKicker,
+                      { color: colors.sage, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     Last built
                   </Text>
-                  <Text style={[s.lastPassFreshness, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.lastPassFreshness,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     {relativeTime(latestReport.createdAt, now)}
                   </Text>
                 </View>
                 <Text
                   numberOfLines={1}
-                  style={[s.lastPassTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                  style={[
+                    s.lastPassTitle,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
                 >
                   {latestReport.title}
                 </Text>
                 {latestReport.summary ? (
                   <Text
                     numberOfLines={2}
-                    style={[s.lastPassSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                    style={[
+                      s.lastPassSummary,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
                   >
                     {latestReport.summary}
                   </Text>
@@ -1814,9 +2505,26 @@ export default function PackScreen() {
           </BoardCard>
         ) : null}
 
-        <View style={[s.boundaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[s.boundaryLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Care boundary</Text>
-          <Text style={[s.boundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+        <View
+          style={[
+            s.boundaryCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text
+            style={[
+              s.boundaryLabel,
+              { color: colors.sage, fontFamily: "Inter_700Bold" },
+            ]}
+          >
+            Care boundary
+          </Text>
+          <Text
+            style={[
+              s.boundary,
+              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+            ]}
+          >
             {state.profile.vetBoundary}
           </Text>
         </View>
@@ -1843,6 +2551,27 @@ const s = StyleSheet.create({
     marginBottom: 0,
   },
   sectionCard: { marginTop: 10 },
+  packStorageWarningCard: {
+    marginBottom: 10,
+  },
+  packStorageWarningRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+  },
+  packStorageWarningText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  packStorageRetryButton: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+  },
+  packStorageLoadingText: {
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
   segmentAction: {
     marginTop: 12,
   },
@@ -2294,6 +3023,10 @@ const s = StyleSheet.create({
     padding: 12,
     marginTop: 14,
   },
-  boundaryLabel: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
+  boundaryLabel: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
   boundary: { fontSize: 12, lineHeight: 18, marginTop: 5 },
 });

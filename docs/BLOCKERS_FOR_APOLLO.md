@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-09-02 Pack persistence native recovery evidence
+
+- Source tests now protect fail-closed hydration, ordered per-key writes, surfaced save failures, and retry without replacing unsaved memory with older disk state.
+- Local deterministic proof passes; dependency-complete typecheck/build CI is pending because this partial checkout lacks the Expo/workspace links.
+- BLOCKED on runtime proof: cold-start AsyncStorage read failure, save failure and retry, terminate/relaunch latest-write durability, VoiceOver/TalkBack alert and retry focus, and route-named screenshots.
+- REMAINS: malformed stored-payload recovery, erase-all-data versus queued-write protection, store review, and Apollo approval require separate evidence or implementation.
+
 ## 2026-09-02 Weight Quick Log native accessibility evidence
 
 - Source/tests protect the explicit Dog weight label and final Done keyboard action.

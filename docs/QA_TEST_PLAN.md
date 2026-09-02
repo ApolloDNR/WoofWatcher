@@ -1,5 +1,12 @@
 # QA Test Plan
 
+## 2026-09-02 Pack persistence recovery
+
+- PASS automated: a failed read enables no writes; successful hydration loads both stores; rapid saves persist the newest snapshot last; a rejected save does not stall the next queued save or explicit retry; recovery copy is deterministic.
+- PASS source integration: all Supplies and Travel Bag mutations route through the guarded coordinator, removal uses current state outside the updater, and the persistent warning exposes an assertive alert plus separate retry action.
+- MANUAL NATIVE: Force a cold-start read failure and confirm no editable defaults appear; retry loading; force a save failure and confirm the warning is announced and persists; retry, terminate, relaunch, and confirm the latest Supplies and Travel Bag values survive.
+- OPEN: Exercise malformed stored JSON recovery and erase-all-data while writes are queued; capture route-named VoiceOver and TalkBack focus evidence on compact devices.
+
 ## 2026-09-02 Weight Quick Log keyboard accessibility
 
 - PASS: Shared field-flow coverage requires an explicit Dog weight label and final Done keyboard action.

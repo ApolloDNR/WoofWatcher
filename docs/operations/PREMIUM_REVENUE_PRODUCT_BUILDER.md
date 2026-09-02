@@ -1,5 +1,13 @@
 # Premium Revenue Product Builder
 
+## 2026-09-02 Pack persistence integrity slice
+
+Pack now owns one guarded local persistence coordinator. Supplies and Travel Bag hydrate together; read failure pauses edits and writes; per-key queues preserve save order; failed keys stay visible and retry from current memory; delayed confirmations read current refs; and the recovery warning is announced while its retry control remains independently accessible.
+
+Red-first persistence tests reproduced the missing coordinator before implementation. Pack model/readiness coverage passes `218/218`; root focused execution passes `894/897` with only the established missing local `express` and two `@workspace/care-domain` entrypoints; PixelLab passes `150/150`; changed TypeScript/TSX reports zero transpile syntax diagnostics; and whitespace validation passes. Local Expo typecheck is unavailable in this partial checkout, so dependency-complete branch CI is pending.
+
+Native cold-start/read/write fault recovery, relaunch durability, VoiceOver/TalkBack focus, route screenshots, corrupt-payload recovery, atomic multi-key redo, queued-write wipe protection, store review, and Apollo approval remain gated.
+
 ## 2026-09-02 Weight Quick Log keyboard accessibility slice
 
 Weight Quick Log now treats its required measurement as an explicitly labeled native field with a deterministic Done keyboard dismissal. Red-first field-flow coverage reproduced the missing contract before implementation, and focused field-flow/readiness coverage passes `199/199`. The value remains owner-entered care evidence; native compact-height, configured-unit clarity, decimal keyboard, screen-reader, screenshot, store, and Apollo evidence remains gated.
