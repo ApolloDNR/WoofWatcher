@@ -10,7 +10,18 @@ import {
   getMoodQuickLogFieldFlow,
   getTrainingQuickLogFieldFlow,
   getWalkQuickLogFieldFlow,
+  getWeightQuickLogFieldFlow,
 } from "./quickLogFieldFlow.ts";
+
+test("weight quick log exposes the required measurement as a final keyboard field", () => {
+  assert.deepEqual(getWeightQuickLogFieldFlow(), [
+    {
+      id: "weightAmount",
+      accessibilityLabel: "Dog weight",
+      returnKeyType: "done",
+    },
+  ]);
+});
 
 test("mood quick log exposes owner context as a final keyboard field", () => {
   assert.deepEqual(getMoodQuickLogFieldFlow(), [

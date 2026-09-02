@@ -1,11 +1,15 @@
 export type QuickLogFieldFlowItem = {
-  id: "moodContext" | "servedAmount" | "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "aloneTrigger" | "recoveryMinutes" | "calmingSupport" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue" | "walkRoute" | "walkDistance" | "walkDogInteractions" | "walkSocialOutcome";
+  id: "weightAmount" | "moodContext" | "servedAmount" | "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "aloneTrigger" | "recoveryMinutes" | "calmingSupport" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue" | "walkRoute" | "walkDistance" | "walkDogInteractions" | "walkSocialOutcome";
   accessibilityLabel: string;
   returnKeyType: "next" | "done";
 };
 
 const MOOD_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
   { id: "moodContext", accessibilityLabel: "Mood care context", returnKeyType: "done" },
+];
+
+const WEIGHT_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
+  { id: "weightAmount", accessibilityLabel: "Dog weight", returnKeyType: "done" },
 ];
 
 const WALK_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
@@ -113,6 +117,10 @@ const INCIDENT_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
 
 export function getTrainingQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
   return TRAINING_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
+}
+
+export function getWeightQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
+  return WEIGHT_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
 }
 
 export function getMoodQuickLogFieldFlow(): QuickLogFieldFlowItem[] {

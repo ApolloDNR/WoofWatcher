@@ -97,7 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { getAloneQuickLogFieldFlow, getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getMoodQuickLogFieldFlow, getTrainingQuickLogFieldFlow, getWalkQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
+import { getAloneQuickLogFieldFlow, getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getMoodQuickLogFieldFlow, getTrainingQuickLogFieldFlow, getWalkQuickLogFieldFlow, getWeightQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -126,6 +126,7 @@ const GROOMING_QUICK_LOG_FIELD_FLOW = getGroomingQuickLogFieldFlow();
 const MEAL_QUICK_LOG_FIELD_FLOW = getMealQuickLogFieldFlow();
 const MEDICATION_QUICK_LOG_FIELD_FLOW = getMedicationQuickLogFieldFlow();
 const MOOD_QUICK_LOG_FIELD_FLOW = getMoodQuickLogFieldFlow();
+const WEIGHT_QUICK_LOG_FIELD_FLOW = getWeightQuickLogFieldFlow();
 const WALK_QUICK_LOG_FIELD_FLOW = getWalkQuickLogFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
@@ -3548,15 +3549,33 @@ export default function LogScreen() {
                   {config.numeric.label} ({numericUnit}{config.numeric.optional ? ", optional" : ""})
                 </Text>
                 <TextInput
-                  accessibilityLabel={selectedType === "meal" ? MEAL_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel : undefined}
+                  accessibilityLabel={
+                    selectedType === "meal"
+                      ? MEAL_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel
+                      : selectedType === "weight"
+                        ? WEIGHT_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel
+                        : undefined
+                  }
                   placeholder={config.numeric.placeholder}
                   placeholderTextColor={colors.mutedForeground}
                   value={numeric}
                   onChangeText={setNumeric}
                   keyboardType="decimal-pad"
-                  returnKeyType={selectedType === "meal" ? MEAL_QUICK_LOG_FIELD_FLOW[0].returnKeyType : undefined}
-                  blurOnSubmit={selectedType === "meal" ? false : undefined}
-                  onSubmitEditing={selectedType === "meal" ? () => expectedPortionRef.current?.focus() : undefined}
+                  returnKeyType={
+                    selectedType === "meal"
+                      ? MEAL_QUICK_LOG_FIELD_FLOW[0].returnKeyType
+                      : selectedType === "weight"
+                        ? WEIGHT_QUICK_LOG_FIELD_FLOW[0].returnKeyType
+                        : undefined
+                  }
+                  blurOnSubmit={selectedType === "meal" ? false : selectedType === "weight" ? true : undefined}
+                  onSubmitEditing={
+                    selectedType === "meal"
+                      ? () => expectedPortionRef.current?.focus()
+                      : selectedType === "weight"
+                        ? Keyboard.dismiss
+                        : undefined
+                  }
                   style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                 />
               </View>

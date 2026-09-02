@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-09-02 Weight Quick Log native accessibility evidence
+
+- Source/tests protect the explicit Dog weight label and final Done keyboard action.
+- BLOCKED on runtime proof: compact-height iOS/Android reach, configured-unit clarity, decimal keyboard behavior, VoiceOver/TalkBack focus, route-named screenshots, store review, and Apollo approval remain required.
+
 ## 2026-09-02 Mood Quick Log native accessibility evidence
 
 - Source/tests protect the explicit Mood care context label and final Done keyboard action.

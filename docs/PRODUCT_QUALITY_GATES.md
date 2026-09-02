@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-02 Weight Quick Log keyboard accessibility gate
+
+- PASS (source): The required weight measurement has an explicit label and deterministic Done behavior.
+- OPEN (native): Compact-height reach, decimal keyboard behavior, weight-unit clarity, VoiceOver/TalkBack focus, route screenshots, store review, and Apollo approval remain required.
+
 ## 2026-09-02 Mood Quick Log keyboard accessibility gate
 
 - PASS (source): Owner-entered mood context has an explicit label and deterministic Done behavior.

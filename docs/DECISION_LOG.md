@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+## 2026-09-02 — Weight measurement owns an explicit keyboard boundary
+
+Decision: Treat the required Weight Quick Log measurement as a real native numeric field with an explicit Dog weight label and final Done action. The saved value remains owner-entered evidence in the configured weight unit; it is not a medical interpretation or recommendation.
+
 ## 2026-09-02 — Mood context owns an explicit keyboard boundary
 
 Decision: Treat the optional care context in Mood Quick Log as a real owner-entered field with its own native label and final Done action. The context remains factual household input; it is not an inferred cause, diagnosis, or medical conclusion.
