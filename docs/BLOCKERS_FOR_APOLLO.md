@@ -4,6 +4,7 @@
 
 - Source/tests now give signed-in care-document editors an authoritative server capability, fail-closed preflight, principal/household cache isolation, stale-session fencing, serialized wipe-safe persistence, `403` rollback, and visible retry/read-only status.
 - Local focused behavior/API/static integration passes `225/225`; changed-source transpilation, PixelLab `150/150`, and whitespace checks pass. The broad run retains only the established missing `express` and two `@workspace/care-domain` entrypoints, and typecheck lacks `@tanstack/react-query` and `zod`; current-tip branch CI is required.
+- Dependency-complete `WoofWatcher Verify` run `33660728203`, job `100350336231`, passed repair commit `82001a58` through pinned install, doctor, focused tests, workspace typecheck, CI-safe builds, mobile smoke/live-preview proof, post steps, and completion.
 - BLOCKED on configured-provider evidence for owner/adult/read-only roles, live revocation, two-device version races, reconnect recovery, and native VoiceOver/TalkBack announcements.
 - REMAINS: Provider RLS/storage evidence, device screenshots, store review, public launch, and Apollo approval are not established by this source slice.
 
