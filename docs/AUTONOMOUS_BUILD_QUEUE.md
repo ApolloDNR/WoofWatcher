@@ -5,8 +5,9 @@
 - DONE: Served amount now participates in the explicit Meal Quick Log field contract instead of relying on a nearby visual caption.
 - DONE: Keyboard submission advances served amount to expected portion, then to eaten amount when the selected outcome needs it; skipped, served, and grazing outcomes dismiss after expected portion.
 - VERIFIED LOCALLY: Red-first field-flow coverage failed on the missing served-amount item, then passed after implementation.
+- CI: Dependency-complete `WoofWatcher Verify` run `33581634538`, job `100096963547`, passed implementation/docs commit `a63c00ee` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: Source coverage does not prove compact-height reach, decimal-keyboard behavior, VoiceOver/TalkBack focus, route screenshots, store review, or Apollo approval.
-- NEXT: Run dependency-complete branch CI, then capture the complete three-field meal flow on compact real iOS and Android devices.
+- NEXT: Capture the complete three-field meal flow on compact real iOS and Android devices.
 
 ## 2026-09-01 Medication Quick Log keyboard accessibility boundary
 
