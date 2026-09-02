@@ -3,6 +3,7 @@
 ## 2026-09-02 Mood Quick Log keyboard accessibility gate
 
 - PASS (source): Owner-entered mood context has an explicit label and deterministic Done behavior.
+- PASS (dependency-complete): `WoofWatcher Verify` run `33622554271`, job `100222705087`, passed commit `fe0ec812`.
 - OPEN (native): Compact-height reach, keyboard behavior, VoiceOver/TalkBack focus, route screenshots, store review, and Apollo approval remain required.
 
 ## 2026-09-01 Meal served-amount keyboard accessibility gate
