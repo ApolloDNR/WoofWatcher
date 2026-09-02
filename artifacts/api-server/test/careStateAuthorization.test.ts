@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { assertCareStateWriteAllowed } from "../src/lib/care-state-authorization.ts";
+import {
+  assertCareStateWriteAllowed,
+  isCareStateWriteAllowed,
+} from "../src/lib/care-state-authorization.ts";
 
 test("allows only owner and adult household roles to replace shared care state", () => {
   for (const [storedRole, authorizationRole] of [
@@ -62,4 +65,16 @@ test("rejects an unknown stored role even if a legacy normalizer maps its runtim
     reason:
       "Only an owner or adult household member can replace the shared care document.",
   });
+});
+
+test("emits the exact same boolean capability used by care-state authorization", () => {
+  assert.equal(isCareStateWriteAllowed("owner", "owner"), true);
+  assert.equal(isCareStateWriteAllowed("primary caregiver", "adult"), true);
+  assert.equal(isCareStateWriteAllowed("teen", "teen"), false);
+  assert.equal(isCareStateWriteAllowed("helper", "expired access pass"), false);
+  assert.equal(
+    isCareStateWriteAllowed("owner impersonator", "adult"),
+    false,
+    "an unknown raw role must stay denied even when a legacy runtime normalizer says adult",
+  );
 });

@@ -129,6 +129,8 @@ export interface Member {
   /** @nullable */
   accessPassExpiresAt?: string | null;
   accessPassExpired?: boolean;
+  /** Server-derived capability for replacing the shared care document. Routes still re-authorize every write. */
+  careStateWriteAllowed: boolean;
 }
 
 export interface Me {

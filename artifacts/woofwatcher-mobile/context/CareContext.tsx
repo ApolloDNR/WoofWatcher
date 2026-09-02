@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -15,6 +16,7 @@ import {
   createCareEntry,
   deleteCareEntry,
   getCareState,
+  getMe,
   getListCareEntriesQueryKey,
   listCareEntries,
   putCareState,
@@ -68,7 +70,27 @@ import {
   type AdventureMemory,
   type CarePassArtifact,
 } from "@workspace/care-domain";
-import { useWoofAuth } from "@/lib/auth";
+import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
+import { notifyDialog } from "@/lib/confirmDialog";
+import {
+  CARE_DOC_CHECKING_MESSAGE,
+  CARE_DOC_NOT_SHARED_MESSAGE,
+  CARE_DOC_READ_ONLY_MESSAGE,
+  CARE_DOC_RESTORED_MESSAGE,
+  canApplyCareDocUpdate,
+  degradeCareStateWriteAccess,
+  deriveCareStateWriteAccess,
+  isCareStateWriteForbidden,
+  selectCareStatePermissionFallback,
+  type CareDocSyncNotice,
+  type CareStateWriteAccess,
+} from "@/lib/careStateWriteAccess";
+import {
+  buildPrincipalStorageKey,
+  cacheBelongsToPrincipal,
+  householdCacheIsCompatible,
+  normalizeStorageUserId,
+} from "@/lib/careStateStorage";
 import {
   normalizeReminderNotificationPreferences,
   type ReminderNotificationPreferences,
@@ -99,6 +121,11 @@ import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 const STORAGE_KEY = "woofwatcher.v2.state";
 const DISCARDED_SERVER_ENTRY_IDS_KEY =
   "woofwatcher.v2.discarded-server-entry-ids";
+
+type DurableCareStorageMutation =
+  | { kind: "set"; key: string; value: string }
+  | { kind: "remove"; key: string }
+  | { kind: "wipe"; preserveLedgerPrefix: string };
 
 export interface WeightInfo {
   current: number;
@@ -621,10 +648,14 @@ function isNotFound(err: unknown): boolean {
 
 interface CareContextValue {
   state: CareState;
-  addEntry: (entry: Omit<Entry, "id">) => string;
+  addEntry: (entry: Omit<Entry, "id">) => string | null;
   deleteEntry: (id: string) => Promise<boolean>;
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
-  updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
+  /** Returns false when a signed-in membership cannot edit the shared doc. */
+  updateCareDoc: (
+    updater: (doc: CareDoc) => CareDoc,
+    options?: { blockedMessage?: string },
+  ) => boolean;
   refresh: () => void;
   /**
    * Store-compliance data deletion: resets the live care document and
@@ -636,6 +667,8 @@ interface CareContextValue {
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
+  careStateWriteAccess: CareStateWriteAccess;
+  careDocSyncNotice: CareDocSyncNotice | null;
   /**
    * Local-storage health. Local-first means a failing device store IS a data
    * risk, so it must be visible ("sync failures visible" applies doubly to
@@ -657,15 +690,97 @@ interface CareContextValue {
 
 const CareContext = createContext<CareContextValue | null>(null);
 
+/**
+ * Keying the stateful provider by the exact auth principal makes an account
+ * switch an immediate unmount/remount boundary. Account A's refs, optimistic
+ * mutations, and rendered care never survive into account B's first frame.
+ */
 export function CareProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded: clerkLoaded } = useWoofAuth();
+  const { isSignedIn, userId } = useWoofAuth();
+  const authenticatedStorageUserId = isClerkEnabledForBuild && isSignedIn
+    ? normalizeStorageUserId(userId) ?? undefined
+    : null;
+  const sessionKey = authenticatedStorageUserId === undefined
+    ? "authenticated-unverified"
+    : authenticatedStorageUserId
+      ? `account:${authenticatedStorageUserId}`
+      : "local";
+  const storageWriterRef = useRef<
+    SerializedCareSyncWriter<DurableCareStorageMutation> | null
+  >(null);
+  if (!storageWriterRef.current) {
+    storageWriterRef.current =
+      createSerializedCareSyncWriter<DurableCareStorageMutation>(
+        async (mutation) => {
+          if (mutation.kind === "set") {
+            await AsyncStorage.setItem(mutation.key, mutation.value);
+            return;
+          }
+          if (mutation.kind === "remove") {
+            await AsyncStorage.removeItem(mutation.key);
+            return;
+          }
+          // Resolve the key list inside the serialized wipe itself. Any
+          // already-started write finishes first; every key it creates is
+          // therefore visible to this final removal pass.
+          const keys = await AsyncStorage.getAllKeys();
+          const owned = selectWoofWatcherKeysForOwnerWipe(
+            keys,
+            mutation.preserveLedgerPrefix,
+          );
+          if (owned.length > 0) await AsyncStorage.multiRemove(owned);
+        },
+      );
+  }
+
+  return (
+    <CareProviderSession
+      key={sessionKey}
+      storageUserId={authenticatedStorageUserId}
+      storageWriter={storageWriterRef.current}
+    >
+      {children}
+    </CareProviderSession>
+  );
+}
+
+function CareProviderSession({
+  children,
+  storageUserId,
+  storageWriter,
+}: {
+  children: React.ReactNode;
+  storageUserId: string | null | undefined;
+  storageWriter: SerializedCareSyncWriter<DurableCareStorageMutation>;
+}) {
+  const {
+    isSignedIn,
+    isLoaded: clerkLoaded,
+    userId: authenticatedUserId,
+  } = useWoofAuth();
   const queryClient = useQueryClient();
+  const stateStorageKey = buildPrincipalStorageKey(
+    STORAGE_KEY,
+    storageUserId ?? null,
+  );
+  const discardedEntryStorageKey = buildPrincipalStorageKey(
+    DISCARDED_SERVER_ENTRY_IDS_KEY,
+    storageUserId ?? null,
+  );
 
   const [doc, setDoc] = useState<CareDoc>(getDefaultDoc);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [serverVersion, setServerVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+  const [householdScopeChanging, setHouseholdScopeChanging] =
+    useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [careStateWriteAccess, setCareStateWriteAccess] =
+    useState<CareStateWriteAccess>(
+      isClerkEnabledForBuild ? "signed-out" : "local-only",
+    );
+  const [careDocSyncNotice, setCareDocSyncNotice] =
+    useState<CareDocSyncNotice | null>(null);
   const [storageWarning, setStorageWarning] = useState<
     "save-failed" | "read-failed" | "reset" | null
   >(null);
@@ -678,8 +793,20 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const entriesRef = useRef(entries);
   const versionRef = useRef(serverVersion);
   const signedInRef = useRef(false);
+  const authenticatedUserIdRef = useRef<string | null>(null);
+  const careStateWriteAccessRef = useRef<CareStateWriteAccess>(
+    isClerkEnabledForBuild ? "signed-out" : "local-only",
+  );
   const syncingRef = useRef(false);
   const hydratedRef = useRef(false);
+  const sessionActiveRef = useRef(true);
+  const persistencePausedRef = useRef(false);
+  const storageHouseholdIdRef = useRef<string | null>(null);
+  const discardedLedgerHouseholdIdRef = useRef<string | null>(null);
+  const householdScopeVerifiedRef = useRef(storageUserId === null);
+  const householdScopeChangingRef = useRef(false);
+  const syncRequestedRef = useRef(false);
+  const syncFromServerRef = useRef<() => Promise<void>>(async () => {});
   // Maps optimistic temp ids to their server ids, and queues patches that
   // arrive before a create resolves (post-log quick-note race).
   const realIdByTemp = useRef<Map<string, string>>(new Map());
@@ -691,32 +818,27 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   // reviving a care moment on the next refresh in the same session.
   const discardedServerEntryIdsRef = useRef<Set<string>>(new Set());
   const recentlyDiscardedServerEntryIdsRef = useRef<Set<string>>(new Set());
-  const discardedServerEntryWriterRef =
-    useRef<SerializedCareSyncWriter<string[] | null> | null>(null);
   const entryUpdateQueueRef =
     useRef<SerializedCareEntryMutationQueue<Entry> | null>(null);
   // Bumped by eraseAllLocalData so in-flight sync results can't resurrect
   // data the owner just deleted from this device.
   const eraseGenerationRef = useRef(0);
-
-  if (!discardedServerEntryWriterRef.current) {
-    discardedServerEntryWriterRef.current =
-      createSerializedCareSyncWriter<string[] | null>(async (entryIds) => {
-        if (entryIds && entryIds.length > 0) {
-          await AsyncStorage.setItem(
-            DISCARDED_SERVER_ENTRY_IDS_KEY,
-            JSON.stringify(entryIds),
-          );
-          return;
-        }
-        await AsyncStorage.removeItem(DISCARDED_SERVER_ENTRY_IDS_KEY);
-      });
-  }
-  const discardedServerEntryWriter =
-    discardedServerEntryWriterRef.current;
+  const householdSessionGenerationRef = useRef(0);
+  const careDocWriteGenerationRef = useRef(0);
+  const careDocWritesInFlightRef = useRef(0);
+  const careDocOptimisticBaselineRef = useRef<CareDoc | null>(null);
+  const careDocRecoveryInFlightRef = useRef(false);
+  const careDocPermissionNoticeAtRef = useRef(0);
+  const lastServerCareStateRef = useRef<{
+    doc: CareDoc;
+    version: number;
+  } | null>(null);
+  const stateWriter = storageWriter;
+  const discardedServerEntryWriter = storageWriter;
 
   const markServerEntryDiscarded = useCallback(
     async (entryId: string) => {
+      if (!sessionActiveRef.current) return;
       const next = addDiscardedServerEntryId(
         [...discardedServerEntryIdsRef.current],
         entryId,
@@ -724,31 +846,64 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       discardedServerEntryIdsRef.current = new Set(next);
       recentlyDiscardedServerEntryIdsRef.current.add(entryId);
       try {
-        await discardedServerEntryWriter.enqueue(next);
+        const writerEpoch = discardedServerEntryWriter.currentEpoch();
+        await discardedServerEntryWriter.enqueue(
+          {
+            kind: "set",
+            key: discardedEntryStorageKey,
+            value: JSON.stringify({
+              ownerUserId: storageUserId ?? null,
+              householdId: discardedLedgerHouseholdIdRef.current,
+              entryIds: next,
+            }),
+          },
+          writerEpoch,
+        );
       } catch {
         setStorageWarning("save-failed");
         throw new Error("Could not persist cancelled care-entry cleanup.");
       }
     },
-    [discardedServerEntryWriter],
+    [
+      discardedEntryStorageKey,
+      discardedServerEntryWriter,
+      storageUserId,
+    ],
   );
 
   const clearDiscardedServerEntry = useCallback(
     async (entryId: string) => {
+      if (!sessionActiveRef.current) return;
       const next = removeDiscardedServerEntryId(
         [...discardedServerEntryIdsRef.current],
         entryId,
       );
       discardedServerEntryIdsRef.current = new Set(next);
       try {
+        const writerEpoch = discardedServerEntryWriter.currentEpoch();
         await discardedServerEntryWriter.enqueue(
-          next.length > 0 ? next : null,
+          next.length > 0
+            ? {
+                kind: "set",
+                key: discardedEntryStorageKey,
+                value: JSON.stringify({
+                  ownerUserId: storageUserId ?? null,
+                  householdId: discardedLedgerHouseholdIdRef.current,
+                  entryIds: next,
+                }),
+              }
+            : { kind: "remove", key: discardedEntryStorageKey },
+          writerEpoch,
         );
       } catch {
         setStorageWarning("save-failed");
       }
     },
-    [discardedServerEntryWriter],
+    [
+      discardedEntryStorageKey,
+      discardedServerEntryWriter,
+      storageUserId,
+    ],
   );
 
   if (!entryUpdateQueueRef.current) {
@@ -793,6 +948,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           }
         },
         onSuccess: (entryId, localEntry, updated) => {
+          if (!sessionActiveRef.current) return;
           const synced = {
             ...adoptServerEntry(localEntry, toEntry(updated)),
             pendingSyncPatch: undefined,
@@ -810,6 +966,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           });
         },
         onFailure: (entryId, localEntry, error) => {
+          if (!sessionActiveRef.current) return;
           const retryBase =
             error instanceof CareEntryConflictRetryError
               ? error.rebasedInput
@@ -831,6 +988,21 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       });
   }
   const entryUpdateQueue = entryUpdateQueueRef.current;
+  useLayoutEffect(() => {
+    // StrictMode replays effect setup after its simulated cleanup; explicitly
+    // reacquire the lease so the live session does not remain fenced off.
+    sessionActiveRef.current = true;
+    return () => {
+      // The keyed parent remounts this entire session on principal changes.
+      // Fence every late callback and abort/coalesce mutation work before a
+      // newly mounted account can use the shared API token bridge.
+      sessionActiveRef.current = false;
+      eraseGenerationRef.current += 1;
+      careDocWriteGenerationRef.current += 1;
+      syncRequestedRef.current = false;
+      entryUpdateQueue.cancelAll();
+    };
+  }, [entryUpdateQueue]);
   useEffect(() => {
     docRef.current = doc;
   }, [doc]);
@@ -843,7 +1015,176 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   // Event handlers can run in the first frame after an auth flip, before
   // effects flush. Mirror this render input synchronously so an offline edit
   // never queues a provider write or accepts an older in-flight result.
-  signedInRef.current = !!isSignedIn;
+  const normalizedAuthenticatedUserId =
+    typeof authenticatedUserId === "string" ? authenticatedUserId : null;
+  const previousAuthenticatedUserId = authenticatedUserIdRef.current;
+  signedInRef.current =
+    !!isSignedIn && normalizedAuthenticatedUserId !== null;
+  authenticatedUserIdRef.current = normalizedAuthenticatedUserId;
+  if (!isSignedIn) {
+    careStateWriteAccessRef.current = isClerkEnabledForBuild
+      ? "signed-out"
+      : "local-only";
+  } else if (
+    normalizedAuthenticatedUserId === null ||
+    previousAuthenticatedUserId !== normalizedAuthenticatedUserId
+  ) {
+    // Never carry account A's cached allow into account B's first frame.
+    careStateWriteAccessRef.current = "checking";
+  }
+
+  const applyCareStateWriteAccess = useCallback(
+    (next: CareStateWriteAccess) => {
+      careStateWriteAccessRef.current = next;
+      setCareStateWriteAccess(next);
+    },
+    [],
+  );
+
+  const applyAuthoritativeCareState = useCallback(
+    (envelope: CareStateEnvelope) => {
+      const authoritativeDoc = mergeDoc(
+        envelope.doc as Partial<CareDoc>,
+      );
+      lastServerCareStateRef.current = {
+        doc: authoritativeDoc,
+        version: envelope.version,
+      };
+      docRef.current = authoritativeDoc;
+      versionRef.current = envelope.version;
+      setDoc(authoritativeDoc);
+      setServerVersion(envelope.version);
+    },
+    [],
+  );
+
+  const presentCareDocBlockedNotice = useCallback(
+    (message: string, kind: CareDocSyncNotice["kind"] = "read-only") => {
+      setCareDocSyncNotice({ kind, message, assertive: true });
+      const now = Date.now();
+      if (now - careDocPermissionNoticeAtRef.current < 1500) return;
+      careDocPermissionNoticeAtRef.current = now;
+      notifyDialog("Shared change not saved", message);
+    },
+    [],
+  );
+
+  const markCareDocNotShared = useCallback(() => {
+    const nextAccess = degradeCareStateWriteAccess(
+      careStateWriteAccessRef.current,
+    );
+    applyCareStateWriteAccess(nextAccess);
+    setCareDocSyncNotice(
+      nextAccess === "restricted"
+        ? {
+            kind: "read-only",
+            message: CARE_DOC_READ_ONLY_MESSAGE,
+            assertive: false,
+          }
+        : {
+            kind: "not-shared",
+            message: CARE_DOC_NOT_SHARED_MESSAGE,
+            assertive: false,
+          },
+    );
+  }, [applyCareStateWriteAccess]);
+
+  const handleCareStateWriteForbidden = useCallback(
+    async (
+      error: unknown,
+      optimisticBaseline: CareDoc,
+      knownEnvelope?: CareStateEnvelope,
+    ): Promise<boolean> => {
+      if (!isCareStateWriteForbidden(error)) return false;
+      if (!sessionActiveRef.current) return true;
+
+      applyCareStateWriteAccess("restricted");
+      careDocWriteGenerationRef.current += 1;
+      if (careDocRecoveryInFlightRef.current) return true;
+      careDocRecoveryInFlightRef.current = true;
+
+      const eraseGenerationAtStart = eraseGenerationRef.current;
+      const authenticatedUserAtStart = authenticatedUserIdRef.current;
+      const confirmed = lastServerCareStateRef.current;
+      if (knownEnvelope) {
+        applyAuthoritativeCareState(knownEnvelope);
+      } else if (confirmed) {
+        applyAuthoritativeCareState({
+          doc: confirmed.doc as unknown as CareStateEnvelope["doc"],
+          version: confirmed.version,
+          updatedAt: confirmed.doc.updatedAt,
+        });
+      } else {
+        const fallback = selectCareStatePermissionFallback(
+          null,
+          optimisticBaseline,
+        );
+        docRef.current = fallback;
+        setDoc(fallback);
+      }
+      presentCareDocBlockedNotice(CARE_DOC_RESTORED_MESSAGE, "restored");
+
+      try {
+        // The pre-PUT envelope is only an immediate visual fallback. A 403
+        // can race another writer, so always fetch the latest household
+        // winner before declaring recovery complete.
+        const envelope = await getCareState();
+        if (
+          !sessionActiveRef.current ||
+          eraseGenerationRef.current !== eraseGenerationAtStart ||
+          !signedInRef.current ||
+          authenticatedUserIdRef.current !== authenticatedUserAtStart
+        ) {
+          return true;
+        }
+        applyAuthoritativeCareState(envelope);
+        setCareDocSyncNotice({
+          kind: "restored",
+          message: CARE_DOC_RESTORED_MESSAGE,
+          assertive: true,
+        });
+      } catch {
+        if (
+          sessionActiveRef.current &&
+          eraseGenerationRef.current === eraseGenerationAtStart &&
+          signedInRef.current &&
+          authenticatedUserIdRef.current === authenticatedUserAtStart
+        ) {
+          setCareDocSyncNotice({
+            kind: "read-only",
+            message: `${CARE_DOC_READ_ONLY_MESSAGE} Reconnect and refresh to restore the latest household version.`,
+            assertive: true,
+          });
+        }
+      } finally {
+        careDocRecoveryInFlightRef.current = false;
+      }
+      return true;
+    },
+    [
+      applyAuthoritativeCareState,
+      applyCareStateWriteAccess,
+      presentCareDocBlockedNotice,
+    ],
+  );
+
+  useEffect(() => {
+    if (!clerkLoaded) return;
+    const nextAccess: CareStateWriteAccess = !isClerkEnabledForBuild
+      ? "local-only"
+      : !isSignedIn
+        ? "signed-out"
+        : "checking";
+    applyCareStateWriteAccess(nextAccess);
+    if (nextAccess === "local-only" || nextAccess === "signed-out") {
+      setCareDocSyncNotice(null);
+    }
+  }, [
+    applyCareStateWriteAccess,
+    clerkLoaded,
+    isSignedIn,
+    normalizedAuthenticatedUserId,
+  ]);
 
   // Hydrate instantly from the offline cache so the UI never flashes empty.
   // Failure handling is data-safety-critical: `hydrated` gates the persist
@@ -851,6 +1192,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   // completed - otherwise the persist effect overwrites intact stored data
   // with in-memory defaults.
   useEffect(() => {
+    if (storageUserId === undefined) return;
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const isCurrentSession = () =>
+      !cancelled && sessionActiveRef.current;
+    const hydrationWriterEpoch = storageWriter.currentEpoch();
+    const preserveRecoveryCopy = (key: string, value: string) => {
+      void storageWriter
+        .enqueue({ kind: "set", key, value }, hydrationWriterEpoch)
+        .catch(() => {});
+    };
+
     // Returns whether the store is pristine (no cache, or a cache holding
     // zero entries and a never-edited doc) - the only state the legacy web
     // import below is allowed to write into.
@@ -858,6 +1211,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       if (!raw) return true;
       try {
         const parsed = JSON.parse(raw);
+        if (!cacheBelongsToPrincipal(parsed?.ownerUserId, storageUserId)) {
+          // Never display a cache whose embedded owner disagrees with the
+          // principal-specific key. Keep it as support evidence only.
+          preserveRecoveryCopy(
+            `${stateStorageKey}.principal-mismatch.recovery`,
+            raw,
+          );
+          return false;
+        }
+        storageHouseholdIdRef.current = normalizeStorageUserId(
+          parsed?.householdId,
+        );
         if (parsed?.doc) {
           const cachedDoc = mergeDoc(parsed.doc);
           docRef.current = cachedDoc;
@@ -868,11 +1233,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           // Drop malformed rows (an id-less entry crashes outbox derivation
           // on every launch - an unrecoverable boot loop, since the persist
           // effect never gets a chance to repair the cache).
-          cachedEntries = recoverInterruptedCareEntryMutations(
-            parsed.entries.filter(
-              (entry: unknown): entry is Entry =>
-                !!entry && typeof (entry as Entry).id === "string",
+          cachedEntries = filterDiscardedServerEntries(
+            recoverInterruptedCareEntryMutations(
+              parsed.entries.filter(
+                (entry: unknown): entry is Entry =>
+                  !!entry && typeof (entry as Entry).id === "string",
+              ),
             ),
+            [...discardedServerEntryIdsRef.current],
           );
           entriesRef.current = cachedEntries;
           setEntries(cachedEntries);
@@ -880,6 +1248,15 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         if (typeof parsed?.serverVersion === "number") {
           versionRef.current = parsed.serverVersion;
           setServerVersion(parsed.serverVersion);
+        }
+        if (
+          parsed?.lastServerCareState?.doc &&
+          typeof parsed.lastServerCareState.version === "number"
+        ) {
+          lastServerCareStateRef.current = {
+            doc: mergeDoc(parsed.lastServerCareState.doc),
+            version: parsed.lastServerCareState.version,
+          };
         }
         const docUpdatedAt = typeof parsed?.doc?.updatedAt === "string" ? parsed.doc.updatedAt : "";
         return (
@@ -890,16 +1267,35 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // Corrupt cache: preserve the evidence under a recovery key BEFORE
         // the persist effect overwrites the primary key with defaults, and
         // tell the owner instead of silently resetting.
-        AsyncStorage.setItem(`${STORAGE_KEY}.recovery`, raw).catch(() => {});
+        preserveRecoveryCopy(`${stateStorageKey}.recovery`, raw);
         setStorageWarning("reset");
         return false;
       }
     };
     const applyDiscardedRaw = (raw: string | null) => {
       try {
+        const parsed = raw ? JSON.parse(raw) : null;
+        const legacyEntryIds = Array.isArray(parsed) ? parsed : null;
+        const embeddedOwner = legacyEntryIds
+          ? null
+          : parsed?.ownerUserId;
+        if (
+          raw &&
+          !cacheBelongsToPrincipal(embeddedOwner, storageUserId)
+        ) {
+          preserveRecoveryCopy(
+            `${discardedEntryStorageKey}.principal-mismatch.recovery`,
+            raw,
+          );
+          return;
+        }
+        discardedLedgerHouseholdIdRef.current = legacyEntryIds
+          ? null
+          : normalizeStorageUserId(parsed?.householdId);
+        const storedEntryIds = legacyEntryIds ?? parsed?.entryIds ?? [];
         const cachedDiscardedServerEntryIds =
           normalizeDiscardedServerEntryIds([
-            ...(raw ? JSON.parse(raw) : []),
+            ...storedEntryIds,
             // A cancellation may occur while the two storage reads are in
             // flight. Union it instead of letting the older disk snapshot
             // erase the newer in-memory deletion intent.
@@ -912,10 +1308,10 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // Keep corrupt deletion metadata for support/recovery while refusing
         // to let it delay hydration indefinitely.
         if (raw) {
-          AsyncStorage.setItem(
-            `${DISCARDED_SERVER_ENTRY_IDS_KEY}.recovery`,
+          preserveRecoveryCopy(
+            `${discardedEntryStorageKey}.recovery`,
             raw,
-          ).catch(() => {});
+          );
         }
         // Preserve any cancellation recorded in this live session even when
         // the older on-disk ledger is corrupt.
@@ -926,18 +1322,29 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     // Runs only into a pristine store; the legacy key is left in place as
     // its own backup (the owner wipe removes every woofwatcher* key).
     const maybeImportLegacyState = async () => {
+      if (storageUserId !== null) return;
       try {
         const [flag, legacyRaw] = await Promise.all([
           AsyncStorage.getItem(LEGACY_IMPORT_FLAG_KEY),
           AsyncStorage.getItem(LEGACY_STATE_KEY),
         ]);
-        if (flag || !legacyRaw) return;
+        if (!isCurrentSession() || flag || !legacyRaw) return;
         const stamp = (payload: object) =>
-          AsyncStorage.setItem(
-            LEGACY_IMPORT_FLAG_KEY,
-            JSON.stringify({ at: new Date().toISOString(), ...payload }),
-          ).catch(() => {});
+          storageWriter
+            .enqueue(
+              {
+                kind: "set",
+                key: LEGACY_IMPORT_FLAG_KEY,
+                value: JSON.stringify({
+                  at: new Date().toISOString(),
+                  ...payload,
+                }),
+              },
+              hydrationWriterEpoch,
+            )
+            .catch(() => {});
         const result = convertLegacyState(parseLegacyState(legacyRaw));
+        if (!isCurrentSession()) return;
         if (!result) {
           await stamp({ status: "nothing-to-import" });
           return;
@@ -987,50 +1394,76 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     };
     const readCacheAndDeletionLedger = () =>
       Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY),
-        AsyncStorage.getItem(DISCARDED_SERVER_ENTRY_IDS_KEY),
+        AsyncStorage.getItem(stateStorageKey),
+        AsyncStorage.getItem(discardedEntryStorageKey),
       ]);
-    readCacheAndDeletionLedger()
-      .then(async ([raw, discardedRaw]) => {
+    const hydrate = async (attempt: number) => {
+      try {
+        const [raw, discardedRaw] = await readCacheAndDeletionLedger();
+        if (!isCurrentSession()) return;
         // Both reads finish before provider sync is enabled. Otherwise a
         // refresh can briefly revive a row whose deletion ledger is still
         // waiting on storage.
         applyDiscardedRaw(discardedRaw);
         if (applyRaw(raw)) await maybeImportLegacyState();
+        if (!isCurrentSession()) return;
         hydratedRef.current = true;
         setHydrated(true);
-      })
-      .catch(() => {
+      } catch {
+        if (!isCurrentSession()) return;
         // The read itself failed (transient storage error). Retry once;
         // if it still fails, stay un-hydrated so persistence is paused for
         // the session - in-memory care still works, but we never clobber
         // the stored data we couldn't read.
-        setTimeout(() => {
-          readCacheAndDeletionLedger()
-            .then(async ([raw, discardedRaw]) => {
-              applyDiscardedRaw(discardedRaw);
-              if (applyRaw(raw)) await maybeImportLegacyState();
-              hydratedRef.current = true;
-              setHydrated(true);
-            })
-            .catch(() => setStorageWarning("read-failed"));
-        }, 1500);
-      });
-  }, []);
+        if (attempt === 0) {
+          retryTimer = setTimeout(() => void hydrate(1), 1500);
+        } else {
+          setStorageWarning("read-failed");
+        }
+      }
+    };
+    void hydrate(0);
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [
+    discardedEntryStorageKey,
+    stateStorageKey,
+    storageUserId,
+    storageWriter,
+  ]);
 
   // Persist the offline cache whenever synced state changes. A failing
   // device store is a data risk in a local-first app, so surface it instead
   // of swallowing it - and clear the warning when writes recover.
   useEffect(() => {
-    if (!hydrated) return;
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        doc,
-        entries,
-        serverVersion,
-      }),
-    )
+    if (
+      !hydrated ||
+      !hydratedRef.current ||
+      persistencePausedRef.current ||
+      !sessionActiveRef.current ||
+      storageUserId === undefined
+    ) {
+      return;
+    }
+    const writerEpoch = stateWriter.currentEpoch();
+    stateWriter
+      .enqueue(
+        {
+          kind: "set",
+          key: stateStorageKey,
+          value: JSON.stringify({
+            ownerUserId: storageUserId,
+            householdId: storageHouseholdIdRef.current,
+            doc,
+            entries,
+            serverVersion,
+            lastServerCareState: lastServerCareStateRef.current,
+          }),
+        },
+        writerEpoch,
+      )
       .then(() => {
         setStorageWarning((current) =>
           current === "save-failed" ? null : current,
@@ -1042,55 +1475,119 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     entries,
     serverVersion,
     hydrated,
+    stateWriter,
+    stateStorageKey,
+    storageUserId,
   ]);
 
-  const pushDoc = useCallback(async (next: CareDoc) => {
-    // Guard every post-await state write against an owner wipe: a push (or
-    // its conflict-retry) that resolves after "All data deleted" must not
-    // write the pre-wipe doc back into memory, disk, or the server.
-    const eraseGenerationAtStart = eraseGenerationRef.current;
-    try {
-      const res = await putCareState({
-        version: versionRef.current,
-        doc: next as unknown as CareStateEnvelope["doc"],
-      });
-      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
-      setServerVersion(res.version);
-    } catch (err) {
-      if (!isConflict(err)) return;
-      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
-      // Another device wrote first. Adopt their doc + version, replay our
-      // side on top (last-writer-wins per field), and retry once. Replay the
-      // LATEST local doc, not the snapshot this push captured - by conflict
-      // time the owner may have made further edits, and overlaying the stale
-      // snapshot erased them locally and then pushed the erasure.
-      const envelope = err.data as CareStateEnvelope | null;
-      if (!envelope) return;
-      const merged: CareDoc = {
-        ...mergeDoc(envelope.doc as Partial<CareDoc>),
-        ...docRef.current,
-        updatedAt: new Date().toISOString(),
-      };
-      setServerVersion(envelope.version);
-      docRef.current = merged;
-      setDoc(merged);
+  const pushDoc = useCallback(
+    async (
+      next: CareDoc,
+      optimisticBaseline: CareDoc,
+      writeGeneration: number,
+    ) => {
+      // Guard every post-await state write against owner wipe, sign-out,
+      // account switches, and a newer document edit or permission recovery.
+      const eraseGenerationAtStart = eraseGenerationRef.current;
+      const authenticatedUserAtStart = authenticatedUserIdRef.current;
+      const resultIsCurrent = () =>
+        sessionActiveRef.current &&
+        eraseGenerationRef.current === eraseGenerationAtStart &&
+        signedInRef.current &&
+        authenticatedUserIdRef.current === authenticatedUserAtStart &&
+        careDocWriteGenerationRef.current === writeGeneration;
+
       try {
         const res = await putCareState({
-          version: envelope.version,
-          doc: merged as unknown as CareStateEnvelope["doc"],
+          version: versionRef.current,
+          doc: next as unknown as CareStateEnvelope["doc"],
         });
-        if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
-        setServerVersion(res.version);
-      } catch {
-        // Give up; the next full refresh reconciles.
+        if (!resultIsCurrent()) return;
+        applyAuthoritativeCareState(res);
+        applyCareStateWriteAccess("allowed");
+        setCareDocSyncNotice(null);
+      } catch (err) {
+        if (!resultIsCurrent()) return;
+        if (
+          await handleCareStateWriteForbidden(err, optimisticBaseline)
+        ) {
+          return;
+        }
+        if (!isConflict(err)) {
+          markCareDocNotShared();
+          return;
+        }
+
+        // Another device wrote first. Adopt their version, replay the latest
+        // local document once, and let the server's CAS decide again. A 403
+        // from that retry enters the same authoritative rollback path.
+        const envelope = err.data as CareStateEnvelope | null;
+        if (!envelope) {
+          markCareDocNotShared();
+          return;
+        }
+        lastServerCareStateRef.current = {
+          doc: mergeDoc(envelope.doc as Partial<CareDoc>),
+          version: envelope.version,
+        };
+        const merged: CareDoc = {
+          ...lastServerCareStateRef.current.doc,
+          ...docRef.current,
+          updatedAt: new Date().toISOString(),
+        };
+        versionRef.current = envelope.version;
+        setServerVersion(envelope.version);
+        docRef.current = merged;
+        setDoc(merged);
+        try {
+          const res = await putCareState({
+            version: envelope.version,
+            doc: merged as unknown as CareStateEnvelope["doc"],
+          });
+          if (!resultIsCurrent()) return;
+          applyAuthoritativeCareState(res);
+          applyCareStateWriteAccess("allowed");
+          setCareDocSyncNotice(null);
+        } catch (retryError) {
+          if (!resultIsCurrent()) return;
+          if (
+            await handleCareStateWriteForbidden(
+              retryError,
+              optimisticBaseline,
+            )
+          ) {
+            return;
+          }
+          markCareDocNotShared();
+        }
       }
-    }
-  }, []);
+    },
+    [
+      applyAuthoritativeCareState,
+      applyCareStateWriteAccess,
+      handleCareStateWriteForbidden,
+      markCareDocNotShared,
+    ],
+  );
 
   const persistEntryCreate = useCallback(
     (tempId: string, entry: Omit<Entry, "id">) => {
-      if (!signedInRef.current) return;
+      if (
+        !sessionActiveRef.current ||
+        !signedInRef.current ||
+        !householdScopeVerifiedRef.current
+      ) {
+        return;
+      }
       const eraseGenerationAtStart = eraseGenerationRef.current;
+      const authenticatedUserAtStart = authenticatedUserIdRef.current;
+      const householdGenerationAtStart =
+        householdSessionGenerationRef.current;
+      const sessionIsCurrent = () =>
+        sessionActiveRef.current &&
+        signedInRef.current &&
+        authenticatedUserIdRef.current === authenticatedUserAtStart &&
+        householdSessionGenerationRef.current === householdGenerationAtStart;
       const createWasRetried =
         entry.syncStatus === "failed" || entry.syncStatus === "local";
       creatingTempEntries.current.add(tempId);
@@ -1108,10 +1605,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       );
       createCareEntry(toCreateInput(entry, tempId))
         .then(async (created) => {
+          if (!sessionIsCurrent()) return;
           const serverEntry = toEntry(created);
           const deleteAcknowledgedServerEntry = async (
             entryId: string,
           ) => {
+            if (!sessionIsCurrent()) {
+              throw new Error("Care session changed before cleanup.");
+            }
             try {
               await deleteCareEntry(entryId);
             } catch (error) {
@@ -1132,6 +1633,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             // refresh can suppress by server id or by details.clientKey.
             await markServerEntryDiscarded(tempId);
             await markServerEntryDiscarded(serverEntry.id);
+            if (!sessionIsCurrent()) return;
           }
           let acknowledgement =
             await reconcileCreatedCareEntryAcknowledgement<Entry>({
@@ -1143,6 +1645,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               currentEraseGeneration: eraseGenerationRef.current,
               deleteServerEntry: deleteAcknowledgedServerEntry,
             });
+          if (!sessionIsCurrent()) return;
 
           if (acknowledgement.status === "adopted") {
             // The first helper call crosses an await boundary even on an
@@ -1160,6 +1663,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             if (mustDiscard) {
               await markServerEntryDiscarded(tempId);
               await markServerEntryDiscarded(serverEntry.id);
+              if (!sessionIsCurrent()) return;
             }
             acknowledgement =
               await reconcileCreatedCareEntryAcknowledgement<Entry>({
@@ -1172,9 +1676,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
                 currentEraseGeneration: eraseGenerationRef.current,
                 deleteServerEntry: deleteAcknowledgedServerEntry,
               });
+            if (!sessionIsCurrent()) return;
           }
 
           if (acknowledgement.status === "discarded") {
+            if (!sessionIsCurrent()) return;
             if (acknowledgement.deleteSucceeded) {
               await clearDiscardedServerEntry(
                 acknowledgement.serverEntryId,
@@ -1207,6 +1713,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           }
 
           const real = acknowledgement.entry;
+          if (!sessionIsCurrent()) return;
           realIdByTemp.current.set(tempId, real.id);
           // Apply any patch that landed while the create was in flight.
           const queued = pendingPatch.current.get(tempId);
@@ -1259,6 +1766,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         })
         .catch(() => {
           if (
+            !sessionIsCurrent() ||
             cancelledTempEntries.current.has(tempId) ||
             eraseGenerationRef.current !== eraseGenerationAtStart
           ) {
@@ -1299,7 +1807,10 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const persistEntryUpdate = useCallback(
     (id: string, entry: Entry) => {
-      if (!signedInRef.current) {
+      if (
+        !signedInRef.current ||
+        !householdScopeVerifiedRef.current
+      ) {
         entryUpdateQueue.cancel(id);
         return;
       }
@@ -1323,49 +1834,262 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     if (
       !hydratedRef.current ||
       !signedInRef.current ||
-      syncingRef.current
+      !sessionActiveRef.current
     ) {
       return;
     }
+    if (syncingRef.current || careDocWritesInFlightRef.current > 0) {
+      syncRequestedRef.current = true;
+      return;
+    }
+    syncRequestedRef.current = false;
     // Capture the erase generation so results from a sync that was in
     // flight when the owner wiped this device are discarded instead of
     // resurrecting the deleted data.
     const eraseGenerationAtStart = eraseGenerationRef.current;
+    const authenticatedUserAtStart = authenticatedUserIdRef.current;
+    const syncIsCurrent = () =>
+      sessionActiveRef.current &&
+      eraseGenerationRef.current === eraseGenerationAtStart &&
+      signedInRef.current &&
+      authenticatedUserIdRef.current === authenticatedUserAtStart;
+    let useFreshHouseholdStateOnly = false;
+    let householdScopeReady = true;
+    let householdDocumentReady = true;
     syncingRef.current = true;
     setIsSyncing(true);
     try {
-      const envelope = await getCareState();
-      if (
-        eraseGenerationRef.current !== eraseGenerationAtStart ||
-        !signedInRef.current
-      ) {
-        return;
-      }
-      const plan = reconcileCareDocFromServer<CareDoc>({
-        localDoc: docRef.current,
-        localVersion: versionRef.current,
-        serverDoc: envelope.doc as Partial<CareDoc>,
-        serverVersion: envelope.version,
-        serverUpdatedAt: envelope.updatedAt,
-      });
-      if (plan.shouldPushLocal) {
-        const res = await putCareState({
-          version: plan.version,
-          doc: plan.doc as unknown as CareStateEnvelope["doc"],
-        });
-        // Re-check after the await: a wipe during the PUT must not have its
-        // pre-wipe doc restored into memory (and re-persisted) here.
-        if (
-          eraseGenerationRef.current !== eraseGenerationAtStart ||
-          !signedInRef.current
-        ) {
-          return;
+      // Document authorization has its own failure boundary. A denied or
+      // unavailable document sync must not prevent narrower care-entry
+      // refresh/retry work from continuing below.
+      try {
+        if (careStateWriteAccessRef.current !== "restricted") {
+          applyCareStateWriteAccess("checking");
         }
-        setDoc(mergeDoc(res.doc as Partial<CareDoc>));
-        setServerVersion(res.version);
-      } else {
-        setDoc(mergeDoc(plan.doc as Partial<CareDoc>));
-        setServerVersion(plan.version);
+        householdScopeVerifiedRef.current = false;
+        const me = await getMe();
+        if (!syncIsCurrent()) return;
+        const householdId = normalizeStorageUserId(me.household?.id);
+        if (!householdId) {
+          throw new Error("Authenticated household identity is unavailable.");
+        }
+        const previousStateHouseholdId = storageHouseholdIdRef.current;
+        const previousLedgerHouseholdId =
+          discardedLedgerHouseholdIdRef.current;
+        const scopeMismatch =
+          !householdCacheIsCompatible(
+            previousStateHouseholdId,
+            householdId,
+          ) ||
+          !householdCacheIsCompatible(
+            previousLedgerHouseholdId,
+            householdId,
+          );
+
+        if (scopeMismatch) {
+          // Hide the former household immediately without destroying it; the
+          // captured data remains recoverable until archival completes.
+          householdScopeChangingRef.current = true;
+          setHouseholdScopeChanging(true);
+          // Fence old async mutations immediately, but retain all active data
+          // until both recoverable household archives are durable.
+          householdSessionGenerationRef.current += 1;
+          careDocWriteGenerationRef.current += 1;
+          entryUpdateQueue.cancelAll();
+          const writerEpoch = storageWriter.currentEpoch();
+          try {
+            await Promise.all([
+              storageWriter.enqueue(
+                {
+                  kind: "set",
+                  key: `${stateStorageKey}.household-archive.${encodeURIComponent(previousStateHouseholdId ?? "unknown")}`,
+                  value: JSON.stringify({
+                    ownerUserId: storageUserId ?? null,
+                    householdId: previousStateHouseholdId,
+                    doc: docRef.current,
+                    entries: entriesRef.current,
+                    serverVersion: versionRef.current,
+                    lastServerCareState:
+                      lastServerCareStateRef.current,
+                  }),
+                },
+                writerEpoch,
+              ),
+              storageWriter.enqueue(
+                {
+                  kind: "set",
+                  key: `${discardedEntryStorageKey}.household-archive.${encodeURIComponent(previousLedgerHouseholdId ?? "unknown")}`,
+                  value: JSON.stringify({
+                    ownerUserId: storageUserId ?? null,
+                    householdId: previousLedgerHouseholdId,
+                    entryIds: [
+                      ...discardedServerEntryIdsRef.current,
+                    ],
+                  }),
+                },
+                writerEpoch,
+              ),
+            ]);
+          } catch {
+            householdScopeReady = false;
+            setStorageWarning("save-failed");
+            throw new Error(
+              "Could not preserve the previous household cache.",
+            );
+          }
+          if (!syncIsCurrent()) return;
+          useFreshHouseholdStateOnly = true;
+          householdDocumentReady = false;
+          careDocWritesInFlightRef.current = 0;
+          careDocOptimisticBaselineRef.current = null;
+          careDocRecoveryInFlightRef.current = false;
+          lastServerCareStateRef.current = null;
+          realIdByTemp.current.clear();
+          pendingPatch.current.clear();
+          cancelledTempEntries.current.clear();
+          creatingTempEntries.current.clear();
+          discardedServerEntryIdsRef.current.clear();
+          recentlyDiscardedServerEntryIdsRef.current.clear();
+          const defaultDoc = getDefaultDoc();
+          docRef.current = defaultDoc;
+          entriesRef.current = [];
+          versionRef.current = 0;
+          storageHouseholdIdRef.current = householdId;
+          discardedLedgerHouseholdIdRef.current = householdId;
+          setDoc(defaultDoc);
+          setEntries([]);
+          setServerVersion(0);
+        }
+        if (!scopeMismatch) {
+          storageHouseholdIdRef.current = householdId;
+          discardedLedgerHouseholdIdRef.current = householdId;
+        }
+        householdScopeVerifiedRef.current = true;
+        const access = deriveCareStateWriteAccess(
+          me,
+          authenticatedUserAtStart,
+        );
+        // Keep a fresh allow in `checking` until its care-state refresh/PUT
+        // completes, preventing a user edit from racing this reconciliation.
+        if (access !== "allowed") applyCareStateWriteAccess(access);
+
+        const envelope = await getCareState();
+        if (!syncIsCurrent()) return;
+        if (useFreshHouseholdStateOnly) {
+          storageHouseholdIdRef.current = householdId;
+          discardedLedgerHouseholdIdRef.current = householdId;
+        }
+        const writeAccess =
+          access === "allowed"
+            ? "allowed"
+            : access === "restricted"
+              ? "restricted"
+              : "unverified";
+        const plan = reconcileCareDocFromServer<CareDoc>({
+          localDoc: docRef.current,
+          localVersion: versionRef.current,
+          serverDoc: envelope.doc as Partial<CareDoc>,
+          serverVersion: envelope.version,
+          serverUpdatedAt: envelope.updatedAt,
+          // A known household switch is always server-wins. The archived
+          // former cache is recoverable but can never seed this household.
+          writeAccess: useFreshHouseholdStateOnly
+            ? "restricted"
+            : writeAccess,
+        });
+
+        if (plan.shouldPushLocal) {
+          // Seed the rollback point from the GET, then use the same 409
+          // one-retry and 403 fresh-recovery path as interactive edits.
+          const serverDoc = mergeDoc(
+            envelope.doc as Partial<CareDoc>,
+          );
+          lastServerCareStateRef.current = {
+            doc: serverDoc,
+            version: envelope.version,
+          };
+          versionRef.current = envelope.version;
+          setServerVersion(envelope.version);
+          const writeGeneration = careDocWriteGenerationRef.current + 1;
+          careDocWriteGenerationRef.current = writeGeneration;
+          await pushDoc(plan.doc, serverDoc, writeGeneration);
+        } else if (plan.status === "keep-local-unverified") {
+          // Retain a newer local draft without ever uploading it under an
+          // unverified identity/capability. The server envelope remains the
+          // safe rollback point if a later authoritative 403 arrives.
+          lastServerCareStateRef.current = {
+            doc: mergeDoc(envelope.doc as Partial<CareDoc>),
+            version: envelope.version,
+          };
+          versionRef.current = envelope.version;
+          setServerVersion(envelope.version);
+          setCareDocSyncNotice({
+            kind: "checking",
+            message: CARE_DOC_CHECKING_MESSAGE,
+            assertive: false,
+          });
+        } else {
+          applyAuthoritativeCareState(envelope);
+          if (access === "allowed") {
+            applyCareStateWriteAccess("allowed");
+          }
+          setCareDocSyncNotice(
+            access === "restricted"
+              ? {
+                  kind: "read-only",
+                  message: CARE_DOC_READ_ONLY_MESSAGE,
+                  assertive: false,
+                }
+              : null,
+          );
+        }
+        householdDocumentReady = true;
+      } catch {
+        if (syncIsCurrent()) {
+          const nextAccess = degradeCareStateWriteAccess(
+            careStateWriteAccessRef.current,
+          );
+          applyCareStateWriteAccess(nextAccess);
+          setCareDocSyncNotice(
+            nextAccess === "restricted"
+              ? {
+                  kind: "read-only",
+                  message: CARE_DOC_READ_ONLY_MESSAGE,
+                  assertive: false,
+                }
+              : {
+                  kind: "checking",
+                  message: CARE_DOC_CHECKING_MESSAGE,
+                  assertive: false,
+                },
+          );
+        }
+      }
+
+      if (!householdScopeReady || !householdDocumentReady) return;
+      if (!syncIsCurrent()) return;
+
+      if (useFreshHouseholdStateOnly) {
+        // The former entries and tombstones are durable in the archive now;
+        // expose only the new household while its authoritative list loads.
+        entriesRef.current = [];
+        setEntries([]);
+        const writerEpoch = storageWriter.currentEpoch();
+        await storageWriter
+          .enqueue(
+            {
+              kind: "set",
+              key: discardedEntryStorageKey,
+              value: JSON.stringify({
+                ownerUserId: storageUserId ?? null,
+                householdId: storageHouseholdIdRef.current,
+                entryIds: [],
+              }),
+            },
+            writerEpoch,
+          )
+          .catch(() => setStorageWarning("save-failed"));
+        if (!syncIsCurrent()) return;
       }
 
       const entryRefreshPlan = buildCareEntryRefreshPlan({
@@ -1375,13 +2099,10 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         hasDeleteTombstones: false,
       });
       const rows = await listCareEntries(entryRefreshPlan.params);
-      if (
-        eraseGenerationRef.current !== eraseGenerationAtStart ||
-        !signedInRef.current
-      ) {
-        return;
-      }
-      const suppressedIds = new Set(discardedServerEntryIdsRef.current);
+      if (!syncIsCurrent()) return;
+      const suppressedIds = useFreshHouseholdStateOnly
+        ? new Set<string>()
+        : new Set(discardedServerEntryIdsRef.current);
       const rowsById = new Map(rows.map((row) => [row.id, row]));
       const rowsByClientKey = new Map<string, ApiCareEntry[]>();
       for (const row of rows) {
@@ -1397,7 +2118,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // orphan. Both stay opaque and non-renderable until full-list absence or
       // a compensating DELETE confirms the remote row is gone.
       for (const discardedId of suppressedIds) {
-        if (!signedInRef.current) return;
+        if (!syncIsCurrent()) return;
         if (discardedId.startsWith("temp_")) {
           const matchingRows = rowsByClientKey.get(discardedId) ?? [];
           if (matchingRows.length === 0) {
@@ -1412,6 +2133,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             rows: matchingRows,
             markDiscarded: markServerEntryDiscarded,
             deleteEntry: async (entryId) => {
+              if (!syncIsCurrent()) {
+                throw new Error("Care session changed before cleanup.");
+              }
               try {
                 await deleteCareEntry(entryId);
               } catch (error) {
@@ -1419,31 +2143,29 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               }
             },
             clearDiscarded: clearDiscardedServerEntry,
-            shouldContinue: () => signedInRef.current,
+            shouldContinue: syncIsCurrent,
           });
           continue;
         }
         if (!rowsById.has(discardedId)) {
           await clearDiscardedServerEntry(discardedId);
+          if (!syncIsCurrent()) return;
           continue;
         }
         try {
+          if (!syncIsCurrent()) return;
           try {
             await deleteCareEntry(discardedId);
           } catch (error) {
             if (!isNotFound(error)) throw error;
           }
+          if (!syncIsCurrent()) return;
           await clearDiscardedServerEntry(discardedId);
         } catch {
           // Keep suppressing the cancelled create and retry next refresh.
         }
       }
-      if (
-        eraseGenerationRef.current !== eraseGenerationAtStart ||
-        !signedInRef.current
-      ) {
-        return;
-      }
+      if (!syncIsCurrent()) return;
       const recentlySuppressed = [
         ...recentlyDiscardedServerEntryIdsRef.current,
       ];
@@ -1454,7 +2176,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         recentlySuppressed,
       ).map(toEntry);
       const mergedEntries = mergeServerAndLocalEntries(
-        entriesRef.current,
+        useFreshHouseholdStateOnly ? [] : entriesRef.current,
         serverEntries,
       );
       entriesRef.current = mergedEntries;
@@ -1477,44 +2199,94 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         persistEntryUpdate(entry.id, entry);
       });
     } catch {
-      // Offline or transient failure: keep showing the cached state.
+      // Entry sync already carries per-entry retry state. Keep the cached
+      // list; document access/status was handled independently above.
     } finally {
       syncingRef.current = false;
-      setIsSyncing(false);
+      const runTrailingSync =
+        syncRequestedRef.current &&
+        sessionActiveRef.current &&
+        hydratedRef.current &&
+        signedInRef.current;
+      syncRequestedRef.current = false;
+      if (runTrailingSync) {
+        void Promise.resolve().then(() => syncFromServerRef.current());
+      } else if (sessionActiveRef.current) {
+        setIsSyncing(false);
+      }
     }
   }, [
     clearDiscardedServerEntry,
+    applyAuthoritativeCareState,
+    applyCareStateWriteAccess,
     markServerEntryDiscarded,
+    markCareDocNotShared,
     persistEntryCreate,
     persistEntryUpdate,
+    pushDoc,
+    stateStorageKey,
+    discardedEntryStorageKey,
+    storageUserId,
+    storageWriter,
   ]);
+
+  syncFromServerRef.current = syncFromServer;
 
   useEffect(() => {
     if (!hydrated || !clerkLoaded || !isSignedIn) return;
     void syncFromServer();
-  }, [clerkLoaded, hydrated, isSignedIn, syncFromServer]);
+  }, [
+    authenticatedUserId,
+    clerkLoaded,
+    hydrated,
+    isSignedIn,
+    syncFromServer,
+  ]);
 
   const addEntry = useCallback(
     (entry: Omit<Entry, "id">) => {
+      if (
+        !hydratedRef.current ||
+        householdScopeChangingRef.current ||
+        storageUserId === undefined
+      ) {
+        presentCareDocBlockedNotice(
+          "Household care is still loading. Wait for the current care timeline before logging a new event.",
+          "checking",
+        );
+        return null;
+      }
       const tempId = `temp_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2, 7)}`;
+      const canSyncEntry =
+        signedInRef.current &&
+        householdScopeVerifiedRef.current &&
+        !householdScopeChangingRef.current;
       const localEntry: Entry = {
         id: tempId,
         ...entry,
-        syncStatus: signedInRef.current ? "pending" : "local",
+        syncStatus: canSyncEntry ? "pending" : "local",
       };
       entriesRef.current = [localEntry, ...entriesRef.current];
       setEntries((prev) => [localEntry, ...prev]);
-      if (!signedInRef.current) return tempId;
+      if (!canSyncEntry) return tempId;
       persistEntryCreate(tempId, entry);
       return tempId;
     },
-    [persistEntryCreate],
+    [persistEntryCreate, presentCareDocBlockedNotice, storageUserId],
   );
 
   const deleteEntry = useCallback(
     async (id: string) => {
+      if (!sessionActiveRef.current) return false;
+      const authenticatedUserAtStart = authenticatedUserIdRef.current;
+      const householdGenerationAtStart =
+        householdSessionGenerationRef.current;
+      const sessionIsCurrent = () =>
+        sessionActiveRef.current &&
+        authenticatedUserIdRef.current === authenticatedUserAtStart &&
+        householdSessionGenerationRef.current === householdGenerationAtStart;
       // A quick undo can arrive after the optimistic create already swapped
       // its temp id for the server id; resolve through the mapping so the
       // right row is removed locally AND on the server.
@@ -1555,6 +2327,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // row by id or by details.clientKey.
         for (const discardedId of deletionLedgerIds) {
           await markServerEntryDiscarded(discardedId);
+          if (!sessionIsCurrent()) return false;
         }
       } catch {
         for (const discardedId of deletionLedgerIds) {
@@ -1566,6 +2339,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         }
         return false;
       }
+      if (!sessionIsCurrent()) return false;
       entryUpdateQueue.cancel(realId);
       const eraseGenerationAtStart = eraseGenerationRef.current;
       // Computed outside the updater (see updateEntry): a deferred updater
@@ -1574,14 +2348,23 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         (e) => e.id !== realId && e.id !== id,
       );
       setEntries((prev) => prev.filter((e) => e.id !== realId && e.id !== id));
-      if (!signedInRef.current || realId.startsWith("temp_")) return true;
+      if (
+        !signedInRef.current ||
+        !householdScopeVerifiedRef.current ||
+        householdScopeChangingRef.current ||
+        realId.startsWith("temp_")
+      ) {
+        return true;
+      }
       try {
+        if (!sessionIsCurrent()) return false;
         try {
           await deleteCareEntry(realId);
         } catch (error) {
           if (!isNotFound(error)) throw error;
         }
         for (const discardedId of deletionLedgerIds) {
+          if (!sessionIsCurrent()) return false;
           if (!discardedId.startsWith("temp_")) {
             await clearDiscardedServerEntry(discardedId);
           }
@@ -1594,7 +2377,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // Never restore across an owner wipe: a slow delete that fails after
         // "All data deleted" must not resurrect the entry into the freshly
         // wiped store.
-        if (removed && eraseGenerationRef.current === eraseGenerationAtStart) {
+        if (
+          removed &&
+          sessionIsCurrent() &&
+          eraseGenerationRef.current === eraseGenerationAtStart
+        ) {
           for (const discardedId of deletionLedgerIds) {
             await clearDiscardedServerEntry(discardedId);
             recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
@@ -1636,7 +2423,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       const mutablePatch = toCareEntryMutablePatch(patch);
       const syncDisposition = decideCareEntryEditSyncDisposition(
         current,
-        signedInRef.current,
+        signedInRef.current &&
+          householdScopeVerifiedRef.current &&
+          !householdScopeChangingRef.current,
       );
       if (syncDisposition === "review-required") {
         const preserved: Entry = {
@@ -1712,21 +2501,75 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateCareDoc = useCallback(
-    (updater: (doc: CareDoc) => CareDoc) => {
+    (
+      updater: (doc: CareDoc) => CareDoc,
+      options?: { blockedMessage?: string },
+    ) => {
+      const access = careStateWriteAccessRef.current;
+      if (
+        householdScopeChangingRef.current ||
+        !hydratedRef.current ||
+        (signedInRef.current && !canApplyCareDocUpdate(access))
+      ) {
+        presentCareDocBlockedNotice(
+          options?.blockedMessage ??
+            (householdScopeChangingRef.current || !hydratedRef.current
+              ? "Household care is still loading. Wait for the access check before making shared changes."
+              : access === "restricted"
+              ? CARE_DOC_READ_ONLY_MESSAGE
+              : CARE_DOC_CHECKING_MESSAGE),
+          access === "restricted" ? "read-only" : "checking",
+        );
+        return false;
+      }
       // Compute OUTSIDE the setState updater: calling pushDoc from inside it
       // was a render-phase side effect (duplicate PUTs under StrictMode /
       // replayed concurrent renders). docRef is updated eagerly so two
       // synchronous back-to-back updates compose instead of the second one
       // reading a stale base.
+      const previous = docRef.current;
       const next: CareDoc = {
-        ...updater(docRef.current),
+        ...updater(previous),
         updatedAt: new Date().toISOString(),
       };
       docRef.current = next;
       setDoc(next);
-      if (signedInRef.current) void pushDoc(next);
+      if (signedInRef.current && access === "allowed") {
+        if (careDocWritesInFlightRef.current === 0) {
+          careDocOptimisticBaselineRef.current = previous;
+        }
+        careDocWritesInFlightRef.current += 1;
+        const writeGeneration = careDocWriteGenerationRef.current + 1;
+        careDocWriteGenerationRef.current = writeGeneration;
+        void pushDoc(
+          next,
+          careDocOptimisticBaselineRef.current ?? previous,
+          writeGeneration,
+        ).finally(() => {
+          careDocWritesInFlightRef.current = Math.max(
+            0,
+            careDocWritesInFlightRef.current - 1,
+          );
+          if (careDocWritesInFlightRef.current === 0) {
+            careDocOptimisticBaselineRef.current = null;
+            if (
+              syncRequestedRef.current &&
+              !syncingRef.current &&
+              sessionActiveRef.current &&
+              hydratedRef.current &&
+              signedInRef.current
+            ) {
+              syncRequestedRef.current = false;
+              void Promise.resolve().then(
+                () => syncFromServerRef.current(),
+              );
+            }
+          }
+        });
+      }
+      return true;
     },
-    [pushDoc],
+    [presentCareDocBlockedNotice, pushDoc],
   );
 
   const state = useMemo<CareState>(
@@ -1762,6 +2605,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     // reset the live document and remove every data-bearing WoofWatcher key.
     // The persist effect re-saves only a pristine default household.
     eraseGenerationRef.current += 1;
+    careDocWriteGenerationRef.current += 1;
+    careDocWritesInFlightRef.current = 0;
+    careDocOptimisticBaselineRef.current = null;
+    careDocRecoveryInFlightRef.current = false;
+    lastServerCareStateRef.current = null;
+    setCareDocSyncNotice(null);
     const tempIdsNeedingRemoteCleanup = entriesRef.current
       .filter(
         (entry) =>
@@ -1837,6 +2686,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncOutbox,
       isLoaded: hydrated,
       isSyncing,
+      careStateWriteAccess,
+      careDocSyncNotice,
       storageWarning,
       legacyImport,
     }),
@@ -1851,6 +2702,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncOutbox,
       hydrated,
       isSyncing,
+      careStateWriteAccess,
+      careDocSyncNotice,
       storageWarning,
       legacyImport,
     ],

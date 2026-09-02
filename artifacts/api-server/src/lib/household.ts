@@ -10,6 +10,7 @@ import {
   type User,
 } from "@workspace/db";
 import { deriveAccessPassRuntimeStatus } from "./household-access-pass";
+import { isCareStateWriteAllowed } from "./care-state-authorization";
 
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -197,6 +198,7 @@ export interface MePayload {
     isSelf: boolean;
     accessPassExpiresAt: string | null;
     accessPassExpired: boolean;
+    careStateWriteAllowed: boolean;
   }>;
 }
 
@@ -249,6 +251,10 @@ export async function buildMe(
         isSelf: m.userId === userId,
         accessPassExpiresAt: runtime.accessPassExpiresAt,
         accessPassExpired: runtime.accessPassExpired,
+        careStateWriteAllowed: isCareStateWriteAllowed(
+          m.role,
+          runtime.authorizationRole,
+        ),
       };
     }),
   };

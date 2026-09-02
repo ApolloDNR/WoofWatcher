@@ -176,14 +176,15 @@ export default function AdventureScreen() {
       note: adventure.summary,
       humans: state.caregivers.map((caregiver) => caregiver.name).slice(0, 3),
     });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       adventureMemories: [
         memory,
         ...(doc.adventureMemories ?? []),
       ],
     }));
+    if (!saved) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     notifyDialog("Memory saved", "Saved as a private household memory on this device. Cloud photo backup isn't available yet.");
   };
 

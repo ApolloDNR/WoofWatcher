@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-09-02 — Shared care documents fail closed at the client and server
+
+Decision: Treat whole-document care-plan editing as a server-derived capability, not a display-role inference. Authenticated clients may optimistically edit only after one exact self membership grants `careStateWriteAllowed`; stale or malformed capability state is unverified, a known denial remains read-only, and the route re-authorizes every write.
+
+Decision: Scope durable care caches to the authenticated principal and verify household compatibility before reconciliation. Account changes remount/fence the session, and owner wipe supersedes queued storage snapshots before removing data-bearing keys.
+
+Reason: A caregiver role change, account switch, delayed request, or queued device write must not leak one household's data, silently preserve a denied shared edit, or resurrect erased care state.
+
+Boundary: Source behavior does not prove configured-provider membership/RLS, multi-device revocation timing, native accessibility, store review, or launch approval.
+
 ## 2026-09-02 — Whole care-document replacement is adult-only and compare-and-swap atomic
 
 Decision: Only an owner or adult household member may replace the opaque shared care document. Authorization validates both the stored role and the runtime Access Pass role with a fail-closed allowlist; youth, helper, vet-viewer, expired, missing, and unknown roles are denied before care-state access. Those roles retain authenticated reads and use the narrower care-entry trust policy for supported logging.

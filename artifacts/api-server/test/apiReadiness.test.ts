@@ -227,6 +227,11 @@ test("care state replacement is adult-authorized and atomically version guarded"
     "member authorization must preserve the raw stored role",
   );
   assert.match(
+    household,
+    /careStateWriteAllowed:\s*isCareStateWriteAllowed\(\s*m\.role,\s*runtime\.authorizationRole/,
+    "GET /me must derive its client capability from the exact raw-plus-runtime write policy",
+  );
+  assert.match(
     route,
     /res\.status\(403\)/,
     "forbidden household roles must fail before update",
@@ -419,8 +424,8 @@ test("care entry revision protocol stays documented, validated, and emitted by t
   );
   assert.match(
     careContext,
-    /decideCareEntryEditSyncDisposition\(\s*current,\s*signedInRef\.current,\s*\)/,
-    "owner edits must use the auth-aware sync disposition contract",
+    /decideCareEntryEditSyncDisposition\(\s*current,\s*signedInRef\.current\s*&&\s*householdScopeVerifiedRef\.current\s*&&\s*!householdScopeChangingRef\.current,\s*\)/,
+    "owner edits must use the auth- and household-aware sync disposition contract",
   );
   assert.doesNotMatch(
     careContext,
@@ -1311,6 +1316,7 @@ test("Access Pass expiry is enforced at member-auth request time", () => {
 
   assert.match(openapi, /accessPassExpiresAt:/, "OpenAPI Member schema must expose Access Pass expiry status");
   assert.match(openapi, /accessPassExpired:/, "OpenAPI Member schema must expose expired-helper status");
+  assert.match(openapi, /careStateWriteAllowed:/, "OpenAPI Member schema must expose authoritative care-document write capability");
   assert.match(
     zodApi,
     /"accessPassExpiresAt": zod\.string\(\)\.nullish\(\)/,
@@ -1322,6 +1328,11 @@ test("Access Pass expiry is enforced at member-auth request time", () => {
     "Zod member payloads must parse expired-helper status",
   );
   assert.match(
+    zodApi,
+    /"careStateWriteAllowed": zod\.boolean\(\)/,
+    "Zod member payloads must require the server-derived care-document capability",
+  );
+  assert.match(
     zodMemberType,
     /accessPassExpiresAt\?: string \| null/,
     "generated Zod member type must expose Access Pass expiry",
@@ -1330,6 +1341,11 @@ test("Access Pass expiry is enforced at member-auth request time", () => {
     reactSchemas,
     /accessPassExpired\?: boolean/,
     "React schemas must expose expired-helper status for UI warnings",
+  );
+  assert.match(
+    reactSchemas,
+    /careStateWriteAllowed: boolean/,
+    "React schemas must expose the required care-document capability",
   );
 });
 

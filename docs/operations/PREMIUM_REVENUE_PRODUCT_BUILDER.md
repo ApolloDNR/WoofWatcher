@@ -1,5 +1,12 @@
 # Premium Revenue Product Builder
 
+## 2026-09-02 restricted-role shared-plan recovery slice
+
+- Closed the top queue follow-up after server care-state authorization: `GET /me` exposes the exact route capability; mobile accepts only an identity-matched self record, blocks signed-in document edits while checking/restricted, rolls a `403` back to the latest server winner, and surfaces accessible Home plus Household Sync status/retry guidance.
+- Authenticated caches are principal-scoped and household-checked. Account changes remount and fence the care session; durable mutations serialize; owner wipe supersedes queued snapshots while preserving only the opaque remote-cleanup ledger.
+- Focused capability/storage/writer/API/static integration tests pass `225/225`; changed-source transpilation, PixelLab `150/150`, and whitespace checks pass locally. The broad run retains only the established missing `express` and two `@workspace/care-domain` entrypoints, while typecheck lacks `@tanstack/react-query` and `zod`; current-tip branch CI remains the authoritative typecheck/build proof.
+- Do not claim provider roles/RLS, multi-device revocation or race proof, native accessibility, store readiness, public launch, or Apollo approval from this slice.
+
 ## 2026-09-02 Care-state authorization and atomicity slice
 
 `PUT /care-state` now passes through an injectable, tested server boundary. It resolves the active member, validates the untouched database role together with the runtime Access Pass role, admits only explicit owner/adult aliases, and returns `403` before care-state access for youth, helpers, vet viewers, expired passes, missing members, and unknown values. GET remains readable for active household members.

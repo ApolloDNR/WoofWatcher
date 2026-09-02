@@ -368,7 +368,16 @@ export default function MoreScreen() {
   const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
   const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
   const householdFocus = sectionParam === "household";
-  const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
+  const {
+    state,
+    refresh,
+    updateCareDoc,
+    syncOutbox,
+    isLoaded,
+    isSyncing,
+    careStateWriteAccess,
+    careDocSyncNotice,
+  } = useCare();
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
@@ -489,7 +498,7 @@ export default function MoreScreen() {
         ],
       };
     }
-    return deriveCareSyncDashboard({
+    const entryDashboard = deriveCareSyncDashboard({
       outbox: syncOutbox,
       isLoaded,
       isSyncing,
@@ -497,6 +506,24 @@ export default function MoreScreen() {
       householdMemberCount: members.length || (household ? 1 : 0),
       totalEntries: entries.length,
     });
+    if (!careDocSyncNotice) return entryDashboard;
+    return {
+      ...entryDashboard,
+      status:
+        careStateWriteAccess === "checking" ? "syncing" : "attention",
+      title:
+        careStateWriteAccess === "restricted"
+          ? "Shared plan is read-only"
+          : careStateWriteAccess === "unverified"
+            ? "Shared plan needs a check"
+            : "Shared plan not yet current",
+      message: careDocSyncNotice.message,
+      nextStep:
+        careStateWriteAccess === "restricted"
+          ? "You can still view household care. Care-log permissions are separate; an owner or adult can change shared plans and profile details."
+          : "Check access while online before changing shared plans or profile details.",
+      actionLabel: isSyncing ? "Checking..." : "Check access",
+    };
   }, [
     syncOutbox,
     isLoaded,
@@ -509,6 +536,8 @@ export default function MoreScreen() {
     caregivers.length,
     consumerSurfacePolicy.providerSyncControls,
     providerSyncEnabled,
+    careDocSyncNotice,
+    careStateWriteAccess,
   ]);
   const launchProviderSetupPlan = useMemo(
     () => deriveLaunchProviderSetup(state.launchProviderProfile),
@@ -826,8 +855,7 @@ export default function MoreScreen() {
       name: petRosterName,
       breed: petRosterBreed,
     });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       activePetId: "primary",
       pets: [
@@ -835,6 +863,8 @@ export default function MoreScreen() {
         draft,
       ],
     }));
+    if (!saved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPetRosterOpen(false);
   };
 
@@ -850,14 +880,15 @@ export default function MoreScreen() {
       kind: accessPassKind,
       petName,
     });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       accessPasses: [
         ...(doc.accessPasses ?? []),
         draft,
       ],
     }));
+    if (!saved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAccessPassOpen(false);
   };
 
@@ -955,8 +986,7 @@ export default function MoreScreen() {
   const saveProfile = () => {
     const name = resolvePetName(pName);
     const w = parseFloat(pWeight);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       profile: {
         ...doc.profile,
@@ -976,6 +1006,8 @@ export default function MoreScreen() {
         },
       },
     }));
+    if (!saved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setProfileOpen(false);
   };
 
@@ -995,8 +1027,7 @@ export default function MoreScreen() {
   };
 
   const saveDiet = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       dietProfile: {
         ...doc.dietProfile,
@@ -1013,6 +1044,8 @@ export default function MoreScreen() {
         vetNotes: dVetNotes.trim(),
       },
     }));
+    if (!saved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDietEditOpen(false);
   };
 
@@ -1319,8 +1352,7 @@ export default function MoreScreen() {
       normalized.providerStatus === "provider-approved" && !allProviderGatesReady
         ? "owner-reviewed"
         : normalized.providerStatus;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       launchProviderProfile: {
         ...normalized,
@@ -1328,6 +1360,8 @@ export default function MoreScreen() {
         providerStatus,
       },
     }));
+    if (!saved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setProviderSetupOpen(false);
   };
 

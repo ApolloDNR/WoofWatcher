@@ -536,12 +536,20 @@ export default function CalendarScreen() {
 
   const addEvent = (ev: Omit<CalendarEvent, "id">) => {
     const id = `event_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    updateCareDoc((doc) => ({ ...doc, calendarEvents: [...doc.calendarEvents, { id, ...ev }] }));
+    return updateCareDoc((doc) => ({
+      ...doc,
+      calendarEvents: [...doc.calendarEvents, { id, ...ev }],
+    }));
   };
 
   const removeEvent = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({ ...doc, calendarEvents: doc.calendarEvents.filter((e) => e.id !== id) }));
+    const removed = updateCareDoc((doc) => ({
+      ...doc,
+      calendarEvents: doc.calendarEvents.filter((e) => e.id !== id),
+    }));
+    if (removed) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   };
 
   const [dateError, setDateError] = useState<string | null>(null);
@@ -562,8 +570,7 @@ export default function CalendarScreen() {
       return;
     }
     setDateError(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addEvent({
+    const saved = addEvent({
       title: evTitle.trim(),
       type: evType,
       date: evDate,
@@ -571,6 +578,8 @@ export default function CalendarScreen() {
       location: evLocation.trim() || undefined,
       source: "manual",
     });
+    if (!saved) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setEvTitle("");
     setEvTime("");
     setEvLocation("");
@@ -662,8 +671,12 @@ export default function CalendarScreen() {
         },
       ],
       () => {
+        const deleted = updateCareDoc((doc) => ({
+          ...doc,
+          routines: doc.routines.filter((r) => r.id !== id),
+        }));
+        if (!deleted) return;
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        updateCareDoc((doc) => ({ ...doc, routines: doc.routines.filter((r) => r.id !== id) }));
         setRoutineOpen(false);
       },
     );
@@ -676,9 +689,9 @@ export default function CalendarScreen() {
       return;
     }
     setRTimeError(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    let saved: boolean;
     if (routineEditId) {
-      updateCareDoc((doc) => ({
+      saved = updateCareDoc((doc) => ({
         ...doc,
         routines: doc.routines.map((r) =>
           r.id === routineEditId
@@ -688,11 +701,13 @@ export default function CalendarScreen() {
       }));
     } else {
       const id = `routine_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      updateCareDoc((doc) => ({
+      saved = updateCareDoc((doc) => ({
         ...doc,
         routines: [...doc.routines, { id, label: rLabel.trim(), type: rType, time: rTime.trim(), owner: rOwner.trim(), note: rNote.trim() }],
       }));
     }
+    if (!saved) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setRoutineOpen(false);
   };
 
@@ -801,8 +816,7 @@ export default function CalendarScreen() {
   };
 
   const addSuggestion = (sug: SuggestedEvent) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addEvent({
+    const saved = addEvent({
       title: sug.title,
       type: sug.type || "event",
       date: sug.date,
@@ -811,6 +825,8 @@ export default function CalendarScreen() {
       note: sug.note,
       source: "woofguide",
     });
+    if (!saved) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSuggestions((prev) => prev.filter((s) => s !== sug));
   };
 

@@ -186,8 +186,7 @@ export default function PrivacyScreen() {
       providerStatus === "provider-approved" && !requestedSupportPlan.launchReady
         ? "owner-reviewed"
         : providerStatus;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       launchSupportProfile: {
         ...launchDraft,
@@ -201,6 +200,8 @@ export default function PrivacyScreen() {
             : doc.launchSupportProfile.ownerReviewedAt,
       },
     }));
+    if (!saved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLaunchEditorOpen(false);
   };
 

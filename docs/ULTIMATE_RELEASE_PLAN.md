@@ -1,5 +1,11 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-09-02 Restricted-role shared-plan recovery slice
+
+- Source implementation now closes the silent-divergence follow-up from the care-state authorization slice: server-derived client capability, fail-closed editor preflight, authoritative `403` rollback, visible Home/Household Sync recovery, principal/household cache isolation, stale-session fencing, and wipe-safe serialized persistence are wired.
+- This moves household trust forward without broadening care-log permissions or claiming provider-backed sync. The route remains the final write authority.
+- Release evidence still requires dependency-complete current-tip CI, configured-provider owner/adult/restricted roles, live revocation and concurrent-device runs, offline recovery, native accessibility/screenshots, provider/RLS approval, store review, and Apollo sign-off.
+
 ## 2026-09-02 Care-state integrity increment
 
 The shared care document now has a least-privilege server boundary: only owner/adult roles may replace it, both raw and runtime roles must pass the allowlist, and youth/helper/vet-viewer/expired/missing/unknown memberships stop before data access. Read-only household access remains intact. Writes compare household id and version atomically, refetching a concurrent winner into the established `409` response instead of allowing two version-equal devices to report success.

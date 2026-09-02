@@ -22,7 +22,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { LinkPreviewContextProvider } from "expo-router/build/link/preview/LinkPreviewContext";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import React, { useEffect, useLayoutEffect, useMemo } from "react";
 import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider, KeyboardToolbar } from "react-native-keyboard-controller";
@@ -50,15 +50,63 @@ SplashScreen.preventAutoHideAsync();
 
 if (providerApiBaseUrl) setBaseUrl(providerApiBaseUrl);
 
-const queryClient = new QueryClient();
+function PrincipalScopedQueryProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { getToken, isLoaded, isSignedIn, userId } = useWoofAuth();
+  const normalizedUserId =
+    typeof userId === "string" && userId.trim().length > 0
+      ? userId.trim()
+      : null;
+  const principalKey = !isClerkEnabledForBuild
+    ? "local"
+    : !isLoaded
+      ? null
+      : isSignedIn === false
+        ? "signed-out"
+        : isSignedIn === true && normalizedUserId
+          ? `account:${normalizedUserId}`
+          : null;
+  const [transportPrincipalKey, setTransportPrincipalKey] =
+    React.useState<string | null>(null);
+  // A separate client is the cache boundary. Account B can never render a
+  // stale `/me` or household response retained by account A while offline.
+  const principalQueryClient = useMemo(
+    () => (principalKey ? new QueryClient() : null),
+    [principalKey],
+  );
 
-function AuthBridge() {
-  const { getToken } = useWoofAuth();
-  useEffect(() => {
-    setAuthTokenGetter(() => getToken());
+  useLayoutEffect(() => {
+    // Render-gating below removes the old principal's subtree first. This
+    // layout effect then clears its transport and installs the next exact
+    // principal before that principal's providers can mount or query.
+    setAuthTokenGetter(null);
+    if (!principalKey) {
+      setTransportPrincipalKey(null);
+      return () => setAuthTokenGetter(null);
+    }
+    if (principalKey.startsWith("account:")) {
+      setAuthTokenGetter(() => getToken());
+    }
+    setTransportPrincipalKey(principalKey);
     return () => setAuthTokenGetter(null);
-  }, [getToken]);
-  return null;
+  }, [getToken, principalKey]);
+
+  if (
+    !principalKey ||
+    transportPrincipalKey !== principalKey ||
+    !principalQueryClient
+  ) {
+    return null;
+  }
+
+  return (
+    <QueryClientProvider key={principalKey} client={principalQueryClient}>
+      {children}
+    </QueryClientProvider>
+  );
 }
 
 function RootLayoutNav() {
@@ -377,8 +425,7 @@ export default function RootLayout() {
     <LinkPreviewContextProvider>
       <SafeAreaProvider>
         <ErrorBoundary>
-          <QueryClientProvider client={queryClient}>
-            <AuthBridge />
+          <PrincipalScopedQueryProvider>
             <CareProvider>
               {/* Follows the shared walk lifecycle: starts route capture when
                   any surface opens a walk session, persists it on finish. */}
@@ -393,7 +440,7 @@ export default function RootLayout() {
                 </GestureHandlerRootView>
               </AvatarProvider>
             </CareProvider>
-          </QueryClientProvider>
+          </PrincipalScopedQueryProvider>
         </ErrorBoundary>
       </SafeAreaProvider>
     </LinkPreviewContextProvider>

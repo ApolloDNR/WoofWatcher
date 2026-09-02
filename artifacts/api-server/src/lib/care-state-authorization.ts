@@ -31,8 +31,22 @@ export function assertCareStateWriteAllowed(
   storedRole: string | null | undefined,
   authorizationRole: string | null | undefined = storedRole,
 ): CareStateWritePolicy {
-  return ADULT_CARE_STATE_WRITE_ROLES.has(normalizeRole(storedRole)) &&
-    ADULT_CARE_STATE_WRITE_ROLES.has(normalizeRole(authorizationRole))
+  return isCareStateWriteAllowed(storedRole, authorizationRole)
     ? { allowed: true }
     : { allowed: false, reason: FORBIDDEN_REASON };
+}
+
+/**
+ * Boolean form of the exact route policy, also exposed by GET /me so clients
+ * can disable protected document editors without attempting a forbidden PUT.
+ * The route still re-checks this on every write because roles can change.
+ */
+export function isCareStateWriteAllowed(
+  storedRole: string | null | undefined,
+  authorizationRole: string | null | undefined = storedRole,
+): boolean {
+  return (
+    ADULT_CARE_STATE_WRITE_ROLES.has(normalizeRole(storedRole)) &&
+    ADULT_CARE_STATE_WRITE_ROLES.has(normalizeRole(authorizationRole))
+  );
 }

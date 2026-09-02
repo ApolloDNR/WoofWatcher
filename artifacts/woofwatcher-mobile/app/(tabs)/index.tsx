@@ -366,6 +366,8 @@ export default function HomeScreen() {
     updateEntry,
     refresh,
     storageWarning,
+    careDocSyncNotice,
+    isSyncing,
     legacyImport,
     isLoaded,
   } = useCare();
@@ -379,6 +381,11 @@ export default function HomeScreen() {
       announce("Saved care data could not be read and was reset. A recovery copy was kept.");
     }
   }, [storageWarning]);
+  useEffect(() => {
+    if (careDocSyncNotice?.assertive) {
+      announce(careDocSyncNotice.message);
+    }
+  }, [careDocSyncNotice]);
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topPadding = getRouteTopPadding({
@@ -2014,6 +2021,67 @@ export default function HomeScreen() {
                     ? "Couldn't read saved care data. Saving is paused this session to protect what's stored."
                     : "Saved care data couldn't be read and was reset. A recovery copy was kept on this device."}
               </Text>
+            </View>
+          ) : null}
+
+          {careDocSyncNotice ? (
+            <View
+              accessibilityRole={careDocSyncNotice.assertive ? "alert" : "text"}
+              aria-live={careDocSyncNotice.assertive ? "assertive" : "polite"}
+              style={[
+                s.careDocNoticeCard,
+                {
+                  backgroundColor: colors.amberSoft,
+                  borderColor: colors.amber + "66",
+                },
+              ]}
+            >
+              <View style={s.careDocNoticeCopyRow}>
+                <Ionicons
+                  name={
+                    careDocSyncNotice.kind === "not-shared"
+                      ? "cloud-offline-outline"
+                      : "lock-closed-outline"
+                  }
+                  size={17}
+                  color={colors.amber}
+                />
+                <Text
+                  style={[
+                    s.storageWarningText,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  {careDocSyncNotice.message}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Check shared editing access"
+                accessibilityState={{ disabled: isSyncing, busy: isSyncing }}
+                disabled={isSyncing}
+                onPress={refresh}
+                style={({ pressed }) => [
+                  s.careDocNoticeAction,
+                  {
+                    borderColor: colors.amber + "66",
+                    opacity: isSyncing ? 0.55 : pressed ? 0.72 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontFamily: "Inter_700Bold",
+                    fontSize: 12,
+                  }}
+                >
+                  {isSyncing ? "Checking..." : "Check access"}
+                </Text>
+              </Pressable>
             </View>
           ) : null}
 
@@ -3669,6 +3737,27 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12.5,
     lineHeight: 17,
+  },
+  careDocNoticeCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
+  careDocNoticeCopyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  careDocNoticeAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignSelf: "stretch",
+    alignItems: "center",
+    justifyContent: "center",
+    borderTopWidth: 1,
+    paddingTop: 8,
   },
   careSenseCard: {
     marginTop: 12,

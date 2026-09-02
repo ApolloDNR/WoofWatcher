@@ -1318,11 +1318,15 @@ components:
         accessPassExpired:
           type: boolean
           description: True when a temporary helper's Access Pass has lapsed and writes should be blocked until renewed.
+        careStateWriteAllowed:
+          type: boolean
+          description: Server-derived capability for replacing the shared care document. Routes still re-authorize every write.
       required:
         - id
         - userId
         - role
         - isSelf
+        - careStateWriteAllowed
     Me:
       type: object
       properties:

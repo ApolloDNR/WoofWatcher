@@ -402,6 +402,53 @@ test("seeds an empty server care document from the local cache", () => {
   });
 });
 
+test("never uploads or keeps a restricted member's newer care document", () => {
+  const plan = reconcileCareDocFromServer({
+    localDoc: {
+      updatedAt: "2026-06-11T10:00:00.000Z",
+      profile: { name: "Unauthorized local edit" },
+    },
+    localVersion: 8,
+    serverDoc: {
+      updatedAt: "2026-06-11T09:00:00.000Z",
+      profile: { name: "Phoenix" },
+    },
+    serverVersion: 7,
+    writeAccess: "restricted",
+  });
+
+  assert.equal(plan.status, "accept-server-read-only");
+  assert.equal(plan.shouldPushLocal, false);
+  assert.equal(plan.version, 7);
+  assert.deepEqual(plan.doc, {
+    updatedAt: "2026-06-11T09:00:00.000Z",
+    profile: { name: "Phoenix" },
+  });
+});
+
+test("keeps an unverified offline edit locally without attempting a remote write", () => {
+  const plan = reconcileCareDocFromServer({
+    localDoc: {
+      updatedAt: "2026-06-11T10:00:00.000Z",
+      profile: { name: "Offline rename" },
+    },
+    localVersion: 7,
+    serverDoc: {
+      updatedAt: "2026-06-11T09:00:00.000Z",
+      profile: { name: "Phoenix" },
+    },
+    serverVersion: 7,
+    writeAccess: "unverified",
+  });
+
+  assert.equal(plan.status, "keep-local-unverified");
+  assert.equal(plan.shouldPushLocal, false);
+  assert.deepEqual(plan.doc, {
+    updatedAt: "2026-06-11T10:00:00.000Z",
+    profile: { name: "Offline rename" },
+  });
+});
+
 test("merge supersedes a temp entry once its server row arrives via clientKey", () => {
   const local = [
     {

@@ -1,5 +1,12 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-02 Restricted shared-plan trust gate
+
+- A read-only, youth, helper, expired, missing, or unverified member cannot make a whole-document shared-plan change appear saved.
+- A denied optimistic request restores the latest household winner and tells the caregiver what happened through visible and accessible status, while care-log permissions remain independently governed.
+- Account switches and household changes cannot hydrate, merge, or render another principal's cached care; erase-all-data cannot be undone by an older queued local write.
+- Provider-backed role changes, multi-device races, reconnect behavior, native screen readers, store review, and Apollo approval remain required runtime gates.
+
 ## 2026-09-02 Care-state authorization and atomicity gate
 
 - PASS (source): Whole-document writes require raw plus runtime owner/adult authority; restricted, expired, missing, and unknown roles fail with `403` before care-state SELECT/UPDATE, while GET remains available.

@@ -537,8 +537,7 @@ export default function RecordsScreen() {
       return;
     }
     const id = `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       records: [
         ...doc.records,
@@ -557,6 +556,8 @@ export default function RecordsScreen() {
         },
       ],
     }));
+    if (!saved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRecordOpen(false);
   };
 
@@ -572,8 +573,13 @@ export default function RecordsScreen() {
         },
       ],
       () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
+        const deleted = updateCareDoc((doc) => ({
+          ...doc,
+          records: doc.records.filter((record) => record.id !== id),
+        }));
+        if (deleted) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
       },
     );
   };
@@ -770,15 +776,16 @@ export default function RecordsScreen() {
   );
 
   const shareCarePass = (pass: CarePass) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const artifact = createCarePassArtifact(pass);
-    updateCareDoc((doc) => ({
+    const saved = updateCareDoc((doc) => ({
       ...doc,
       reportArtifacts: [
         artifact,
         ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
       ].slice(0, 12),
     }));
+    if (!saved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     void shareTextPayload({ message: pass.message, title: pass.title });
   };
 

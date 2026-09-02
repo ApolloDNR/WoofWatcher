@@ -325,13 +325,14 @@ export default function WoofGuideScreen() {
         id: `woofguide_${Date.now()}`,
         ...draft.calendarEvent,
       };
-      updateCareDoc((doc) => ({
+      const saved = updateCareDoc((doc) => ({
         ...doc,
         calendarEvents: [
           event,
           ...doc.calendarEvents.filter((item) => item.id !== event.id),
         ],
       }));
+      if (!saved) return;
       setMessages((prev) => [
         { id: `draft_${Date.now()}`, role: "assistant", content: `${draft.title}\n\nReminder added to Calendar for review.` },
         ...prev,

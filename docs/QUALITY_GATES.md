@@ -1,5 +1,12 @@
 # Quality Gates
 
+## 2026-09-02 Shared care-document client authorization gate
+
+- PASS requires the API to derive `careStateWriteAllowed` from the same raw-plus-runtime allowlist enforced on every care-state write.
+- PASS requires signed-in clients to fail closed until that capability is identity-matched, prevent restricted optimistic edits, recover an authoritative `403` to server state, and expose an accessible read-only/retry status.
+- PASS requires account/household cache isolation, stale-session fencing, serialized durable mutations, and an owner-wipe barrier that cannot be overtaken by older queued snapshots.
+- Source/tests and dependency-complete CI can clear implementation gates; provider role/race evidence, native accessibility, store review, and Apollo approval remain separate release gates.
+
 ## 2026-09-02 Care-state authorization and atomic-write gate
 
 - Server boundary: PASS. Whole-document PUT requires explicit raw/runtime owner or adult authority and denies youth, helpers, vet viewers, expired passes, missing members, and unknown roles before care-state access. GET compatibility is preserved.

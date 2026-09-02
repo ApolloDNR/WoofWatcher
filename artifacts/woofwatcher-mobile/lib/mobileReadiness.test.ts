@@ -6959,7 +6959,49 @@ test("keeps care document refresh conflict-safe in CareContext", () => {
 
   assert.match(careContext, /reconcileCareDocFromServer/);
   assert.match(careContext, /shouldPushLocal/);
-  assert.match(careContext, /putCareState\(\{\s*version: plan\.version/);
+  assert.match(careContext, /pushDoc\(plan\.doc, serverDoc, writeGeneration\)/);
+  assert.match(careContext, /putCareState\(\{\s*version: envelope\.version/);
+});
+
+test("keeps shared care-document writes capability-gated and visibly recoverable", () => {
+  const careContext = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "context",
+      "CareContext.tsx",
+    ),
+    "utf8",
+  );
+  const accessPolicy = readMobileLibFile("careStateWriteAccess.ts");
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(careContext, /getMe\(/);
+  assert.match(careContext, /deriveCareStateWriteAccess/);
+  assert.match(careContext, /!canApplyCareDocUpdate\(access\)/);
+  assert.match(careContext, /signedInRef\.current && access === "allowed"/);
+  assert.match(careContext, /isCareStateWriteForbidden/);
+  assert.match(careContext, /handleCareStateWriteForbidden/);
+  assert.match(careContext, /getCareState\(\)/);
+  assert.match(careContext, /careDocSyncNotice/);
+  assert.match(careContext, /createSerializedCareSyncWriter/);
+  assert.match(careContext, /lastServerCareState/);
+  assert.match(careContext, /careDocWriteGenerationRef/);
+  assert.match(careContext, /authenticatedUserIdRef\.current !== authenticatedUserAtStart/);
+  assert.match(careContext, /writeAccess,/);
+  assert.match(accessPolicy, /me\.user\.id !== expectedUserId/);
+  assert.match(accessPolicy, /selfMembers\.length !== 1/);
+  assert.match(accessPolicy, /careStateWriteAllowed/);
+  assert.match(home, /careDocSyncNotice/);
+  assert.match(home, /careDocSyncNotice\.assertive \? "alert" : "text"/);
+  assert.match(home, /careDocSyncNotice\.assertive \? "assertive" : "polite"/);
+  assert.match(home, /accessibilityLabel="Check shared editing access"/);
+  assert.match(home, /accessibilityState=\{\{ disabled: isSyncing, busy: isSyncing \}\}/);
+  assert.match(more, /if \(!careDocSyncNotice\) return entryDashboard/);
+  assert.match(more, /Shared plan is read-only/);
+  assert.match(more, /message: careDocSyncNotice\.message/);
 });
 
 test("keeps the root install guard cross-platform for deadline beta exports", () => {

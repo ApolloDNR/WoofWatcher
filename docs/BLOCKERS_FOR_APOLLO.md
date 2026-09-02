@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-09-02 Restricted-role shared-plan runtime proof
+
+- Source/tests now give signed-in care-document editors an authoritative server capability, fail-closed preflight, principal/household cache isolation, stale-session fencing, serialized wipe-safe persistence, `403` rollback, and visible retry/read-only status.
+- Local focused behavior/API/static integration passes `225/225`; changed-source transpilation, PixelLab `150/150`, and whitespace checks pass. The broad run retains only the established missing `express` and two `@workspace/care-domain` entrypoints, and typecheck lacks `@tanstack/react-query` and `zod`; current-tip branch CI is required.
+- BLOCKED on configured-provider evidence for owner/adult/read-only roles, live revocation, two-device version races, reconnect recovery, and native VoiceOver/TalkBack announcements.
+- REMAINS: Provider RLS/storage evidence, device screenshots, store review, public launch, and Apollo approval are not established by this source slice.
+
 ## 2026-09-02 Care-state authorization and concurrent-write proof
 
 - Source/tests now restrict whole-document replacement to owner/adult roles, validate raw and runtime membership roles, and atomically compare household id plus version before update. Active-household reads remain available to read-only members.

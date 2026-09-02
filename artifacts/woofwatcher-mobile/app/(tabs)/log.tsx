@@ -653,7 +653,7 @@ const LOG_GUIDANCE: Record<string, string> = {
   mood: "Mood checks make {petName}'s care twin respond to real daily patterns.",
   alone: "Track away time, return state, and what helped {petName} settle.",
   medication: "Medication logs are household-visible by default and audit-friendly.",
-  weight: "Weight logs update {petName}'s living profile.",
+  weight: "Weight logs can update {petName}'s living profile when your household role allows shared editing.",
   symptom: "Health notes stay non-diagnostic and easy to share with your vet.",
   incident: "Log factual behavior or safety incidents with trigger, exposure, injury check, and follow-up.",
   grooming: "Grooming logs remember coat, paws, ears, products, and next due.",
@@ -1734,10 +1734,19 @@ export default function LogScreen() {
     if (entry.type === "weight" && entry.amount != null) {
       const w = parseFloat(entry.amount);
       if (!Number.isNaN(w)) {
-        updateCareDoc((doc) => ({
-          ...doc,
-          profile: { ...doc.profile, weight: { ...doc.profile.weight, current: w } },
-        }));
+        updateCareDoc(
+          (doc) => ({
+            ...doc,
+            profile: {
+              ...doc.profile,
+              weight: { ...doc.profile.weight, current: w },
+            },
+          }),
+          {
+            blockedMessage:
+              "Weight logged. The shared profile weight stayed unchanged because your household role cannot edit shared details.",
+          },
+        );
       }
     }
 

@@ -204,8 +204,9 @@ export default function SetupScreen() {
       notifyDialog("Almost there", saveBlockedMessage);
       return;
     }
+    const saved = updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
+    if (!saved) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
     if (twinPlan.willSwapTemplate) {
       // Persist through AvatarContext.saveAvatarConfig - the same state path
       // Avatar Studio's Save uses - with the template-picker patch, so the

@@ -1,5 +1,14 @@
 # Autonomous Build Queue
 
+## 2026-09-02 Restricted-role shared-plan recovery boundary
+
+- DONE: `GET /me` now exposes the exact server-derived `careStateWriteAllowed` capability used by `PUT /care-state`; the client accepts it only for one identity-matched self membership and fails closed while authorization is missing, stale, or malformed.
+- DONE: Signed-in care-document editors block before optimistic mutation until write access is verified. An authoritative `403` switches the app to read-only, rolls back to the latest server-confirmed document, refreshes the household winner, and shows an accessible Home notice plus Household Sync status and retry guidance.
+- DONE: Authenticated caches are principal-scoped and household-checked. Account switches remount the care session, fence late async results, serialize durable writes, and preserve the remote cleanup ledger behind an owner-wipe barrier so an older queued snapshot cannot recreate erased care data.
+- VERIFIED LOCALLY: Focused capability, storage, writer, API, and static integration coverage passes `225/225`; changed-source transpilation, PixelLab `150/150`, and whitespace validation pass. The broad partial checkout retains only the established missing `express` and two `@workspace/care-domain` entrypoints, while typecheck lacks `@tanstack/react-query` and `zod`, so dependency-complete branch CI remains the aggregate build authority.
+- BOUNDARY: This is source/local recovery proof. Real provider roles, multi-device revocation and race behavior, offline-to-online recovery, native screen-reader behavior, provider storage/RLS, store review, and Apollo approval remain open.
+- NEXT: Run dependency-complete branch CI for this exact revision, then capture owner/adult/read-only role changes and concurrent edits against a configured provider on iOS and Android.
+
 ## 2026-09-02 Care-state authorization and atomic-write boundary
 
 - DONE: `PUT /care-state` now resolves the authenticated household member and requires an explicit owner/adult allowlist across both the raw stored role and the runtime Access Pass role. Youth, helper, vet-viewer, expired, missing, and unknown roles receive `403` before the care-state row is read or updated; authenticated `GET` access remains unchanged.

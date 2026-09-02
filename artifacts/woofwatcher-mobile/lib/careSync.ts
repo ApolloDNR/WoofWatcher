@@ -1,5 +1,8 @@
 import { CARE_ENTRY_SYNC_REVISION_KEY } from "@workspace/care-domain";
 
+export { createSerializedCareSyncWriter } from "./serializedCareSyncWriter.ts";
+export type { SerializedCareSyncWriter } from "./serializedCareSyncWriter.ts";
+
 export type EntrySyncStatus = "local" | "pending" | "synced" | "failed";
 
 export interface SyncableEntry {
@@ -99,7 +102,14 @@ export interface SyncableCareDoc {
 export type CareDocRefreshStatus =
   | "seed-server"
   | "accept-server"
-  | "keep-local-newer";
+  | "keep-local-newer"
+  | "accept-server-read-only"
+  | "keep-local-unverified";
+
+export type CareDocRefreshWriteAccess =
+  | "allowed"
+  | "restricted"
+  | "unverified";
 
 export interface CareDocRefreshInput<T extends SyncableCareDoc> {
   localDoc: T;
@@ -107,6 +117,7 @@ export interface CareDocRefreshInput<T extends SyncableCareDoc> {
   serverDoc?: Partial<T> | null;
   serverVersion: number;
   serverUpdatedAt?: string | Date | null;
+  writeAccess?: CareDocRefreshWriteAccess;
 }
 
 export interface CareDocRefreshPlan<T extends SyncableCareDoc> {
@@ -754,11 +765,13 @@ export function removeDiscardedServerEntryId(
 
 export function selectWoofWatcherKeysForOwnerWipe(
   keys: readonly string[],
-  deletionLedgerKey: string,
+  deletionLedgerKeyPrefix: string,
 ): string[] {
   return keys.filter(
     (key) =>
-      key.startsWith("woofwatcher") && key !== deletionLedgerKey,
+      key.startsWith("woofwatcher") &&
+      key !== deletionLedgerKeyPrefix &&
+      !key.startsWith(`${deletionLedgerKeyPrefix}.account.`),
   );
 }
 
@@ -835,55 +848,6 @@ export function restoreEntryAfterDeleteFailure<T extends SyncableEntry>(
     retryableEntry,
     ...entries.filter((entry) => entry.id !== retryableEntry.id),
   ];
-}
-
-export interface SerializedCareSyncWriter<T> {
-  enqueue: (value: T) => Promise<void>;
-}
-
-export function createSerializedCareSyncWriter<T>(
-  write: (value: T) => Promise<void>,
-): SerializedCareSyncWriter<T> {
-  type PendingWrite = {
-    value: T;
-    resolve: () => void;
-    reject: (error: unknown) => void;
-  };
-  const pending: PendingWrite[] = [];
-  let active = false;
-
-  const pump = () => {
-    if (active) return;
-    const next = pending.shift();
-    if (!next) return;
-    active = true;
-
-    let operation: Promise<void>;
-    try {
-      operation = Promise.resolve(write(next.value));
-    } catch (error) {
-      operation = Promise.reject(error);
-    }
-    void operation.then(next.resolve, next.reject).then(
-      () => {
-        active = false;
-        pump();
-      },
-      () => {
-        active = false;
-        pump();
-      },
-    );
-  };
-
-  return {
-    enqueue(value) {
-      return new Promise<void>((resolve, reject) => {
-        pending.push({ value, resolve, reject });
-        pump();
-      });
-    },
-  };
 }
 
 export function isUnsyncedEntry(
@@ -1036,8 +1000,30 @@ export function reconcileCareDocFromServer<T extends SyncableCareDoc>({
   serverDoc,
   serverVersion,
   serverUpdatedAt,
+  writeAccess = "allowed",
 }: CareDocRefreshInput<T>): CareDocRefreshPlan<T> {
+  if (writeAccess === "restricted") {
+    return {
+      status: "accept-server-read-only",
+      doc: serverDoc ?? {},
+      version: serverVersion,
+      shouldPushLocal: false,
+      message:
+        "Using the household version because this membership is read-only for shared plans.",
+    };
+  }
+
   if (!serverDoc || Object.keys(serverDoc).length === 0) {
+    if (writeAccess === "unverified") {
+      return {
+        status: "keep-local-unverified",
+        doc: localDoc,
+        version: serverVersion,
+        shouldPushLocal: false,
+        message:
+          "Keeping this device's care plan until shared-edit access can be verified.",
+      };
+    }
     return {
       status: "seed-server",
       doc: localDoc,
@@ -1055,6 +1041,16 @@ export function reconcileCareDocFromServer<T extends SyncableCareDoc>({
   const localVersionIsAhead = localVersion > serverVersion;
 
   if (localIsNewer || localVersionIsAhead) {
+    if (writeAccess === "unverified") {
+      return {
+        status: "keep-local-unverified",
+        doc: localDoc,
+        version: serverVersion,
+        shouldPushLocal: false,
+        message:
+          "Keeping this device's newer care plan without sharing it until access is verified.",
+      };
+    }
     return {
       status: "keep-local-newer",
       doc: localDoc,

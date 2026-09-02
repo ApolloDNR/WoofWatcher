@@ -35,6 +35,7 @@ export const providerApiBaseUrl = providerRuntimePolicy.apiBaseUrl;
 const localAuth = {
   isLoaded: true,
   isSignedIn: false,
+  userId: null,
   getToken: async () => null,
   signOut: async () => undefined,
 };

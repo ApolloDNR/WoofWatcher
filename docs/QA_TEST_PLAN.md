@@ -1,5 +1,12 @@
 # QA Test Plan
 
+## 2026-09-02 Restricted-role shared-plan recovery QA
+
+- Automated source coverage must keep `GET /me` capability derivation identical to the server write allowlist, reject mismatched/duplicate/malformed self records, and preserve known denials while degrading stale allows to unverified.
+- Automated mobile coverage must keep authenticated caches principal-scoped, reject incompatible known households, serialize storage mutations, discard queued snapshots at wipe, fence account/household session changes, block unverified/restricted document updates, and restore the latest server winner after `403`.
+- Home must expose the shared-plan notice as polite/assertive accessibility status as appropriate, with a disabled/busy retry action during refresh; More must surface the same state in Household Sync.
+- Provider/device proof still requires owner, adult, helper/youth/read-only, expired Access Pass, live revocation, concurrent version conflict, offline reconnect, sign-out/account-switch, erase-versus-write, VoiceOver/TalkBack, and route-named iOS/Android evidence.
+
 ## 2026-09-02 Care-state role and race recovery
 
 - PASS automated: malformed bodies stop before household lookup; missing or restricted membership roles stop with `403` before care-state SELECT/UPDATE; owner and adult roles advance the document exactly one version.
