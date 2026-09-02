@@ -6,9 +6,9 @@
 - DONE: Writes serialize per key, save failures remain visible and retryable, delayed actions use the latest in-memory state, and removal no longer writes from inside a React state updater.
 - DONE: The persistent amber recovery card is an assertive accessibility alert with a separate retry control and explicit screen-reader announcements.
 - VERIFIED LOCALLY: Pack model/readiness coverage passed `218/218`; root focused execution passed `894/897`, with only the established missing `express` and two `@workspace/care-domain` entrypoints; PixelLab passed `150/150`; TypeScript transpile reported zero syntax diagnostics; whitespace validation passed.
-- LOCAL LIMIT: This partial Windows checkout cannot resolve the Expo/workspace dependency graph for authoritative typecheck; dependency-complete branch CI is pending.
+- CI: Dependency-complete `WoofWatcher Verify` run `33642569929`, job `100289083638`, passed implementation/docs commit `d8693635` through install, doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
 - BOUNDARY: Real-iPhone cold-start read failure, save failure, relaunch durability, warning/retry focus, and screenshots remain unproved. Malformed-but-readable payload recovery, atomic two-key redo, and erase-all-data racing queued writes remain separate hardening work.
-- NEXT: Prove the implementation commit in dependency-complete CI, then capture native fault/restart/accessibility evidence and close the corrupt-payload and wipe-race contracts.
+- NEXT: Capture native fault/restart/accessibility evidence and close the corrupt-payload and wipe-race contracts.
 
 ## 2026-09-02 Weight Quick Log keyboard accessibility boundary
 

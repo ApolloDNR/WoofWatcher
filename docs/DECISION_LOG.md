@@ -6,6 +6,8 @@ Decision: Pack must not expose editable starter defaults when either device stor
 
 Reason: A silent fallback or out-of-order AsyncStorage completion can overwrite owner-authored checklist and trip state while the interface falsely appears saved. Storage side effects therefore stay outside React state updaters and every returned write promise is observed.
 
+Proof: Dependency-complete `WoofWatcher Verify` run `33642569929`, job `100289083638`, passed implementation/docs commit `d8693635` through the complete job.
+
 Boundary: Malformed-but-readable payload recovery, atomic two-key redo, and global erase/reset races need separate contracts. Source and CI proof do not substitute for real-device recovery, accessibility, store, or Apollo approval.
 
 ## 2026-09-02 — Weight measurement owns an explicit keyboard boundary

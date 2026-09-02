@@ -4,6 +4,7 @@
 
 - PASS automated: a failed read enables no writes; successful hydration loads both stores; rapid saves persist the newest snapshot last; a rejected save does not stall the next queued save or explicit retry; recovery copy is deterministic.
 - PASS source integration: all Supplies and Travel Bag mutations route through the guarded coordinator, removal uses current state outside the updater, and the persistent warning exposes an assertive alert plus separate retry action.
+- PASS CI: `WoofWatcher Verify` run `33642569929`, job `100289083638`, completed focused tests, typecheck, and CI-safe builds for commit `d8693635`.
 - MANUAL NATIVE: Force a cold-start read failure and confirm no editable defaults appear; retry loading; force a save failure and confirm the warning is announced and persists; retry, terminate, relaunch, and confirm the latest Supplies and Travel Bag values survive.
 - OPEN: Exercise malformed stored JSON recovery and erase-all-data while writes are queued; capture route-named VoiceOver and TalkBack focus evidence on compact devices.
 

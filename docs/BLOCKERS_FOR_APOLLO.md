@@ -3,7 +3,7 @@
 ## 2026-09-02 Pack persistence native recovery evidence
 
 - Source tests now protect fail-closed hydration, ordered per-key writes, surfaced save failures, and retry without replacing unsaved memory with older disk state.
-- Local deterministic proof passes; dependency-complete typecheck/build CI is pending because this partial checkout lacks the Expo/workspace links.
+- Dependency-complete `WoofWatcher Verify` run `33642569929`, job `100289083638`, passed implementation/docs commit `d8693635`, including focused tests, typecheck, and CI-safe builds.
 - BLOCKED on runtime proof: cold-start AsyncStorage read failure, save failure and retry, terminate/relaunch latest-write durability, VoiceOver/TalkBack alert and retry focus, and route-named screenshots.
 - REMAINS: malformed stored-payload recovery, erase-all-data versus queued-write protection, store review, and Apollo approval require separate evidence or implementation.
 
