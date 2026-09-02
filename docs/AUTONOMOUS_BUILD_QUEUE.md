@@ -2741,7 +2741,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Walk Quick Log now labels route, distance, dog interactions, and social outcome for assistive technology and provides a deterministic Next, Next, Next, Done keyboard path.
 - PROOF: Red-first `quickLogFieldFlow.test.ts` failed on the missing walk-flow export, then focused field-flow and mobile-readiness coverage passed after implementation.
 - BOUNDARY: Real compact-height iOS/Android behavior, numeric-keyboard completion, VoiceOver/TalkBack traversal, route screenshots, store review, and Apollo approval remain external gates.
-- NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Walk Quick Log proof when native tooling is available.
+- CI: Dependency-complete `WoofWatcher Verify` run `33593338283`, job `100131668442`, passed implementation/docs commit `beaaee4b` with install, doctor, focused tests, typecheck, CI-safe builds, post steps, and completion green.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current, then capture route-named Walk Quick Log proof when native tooling is available.
 
 # 2026-09-01 Meal Quick Log keyboard accessibility
 

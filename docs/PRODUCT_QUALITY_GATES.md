@@ -864,4 +864,5 @@ screen-reader traversal and route-named device proof remain open gates.
 # 2026-09-01 Walk Quick Log form gate
 
 - Source gate: PASS when route, distance, dog interactions, and social outcome expose explicit labels, ordered Next actions, and final Done dismissal.
+- Dependency gate: PASS for implementation commit `beaaee4b` in `WoofWatcher Verify` run `33593338283`, job `100131668442`.
 - Native gate: OPEN until compact-height iOS/Android, numeric-keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.

@@ -3132,4 +3132,5 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 # 2026-09-01 Walk Quick Log keyboard accessibility
 
 - Source test: verify route -> distance -> dog interactions -> social outcome focus progression, explicit accessibility labels, and final keyboard dismissal.
+- CI proof: `WoofWatcher Verify` run `33593338283`, job `100131668442`, passed commit `beaaee4b` through dependency install, doctor, focused tests, typecheck, and CI-safe builds.
 - Native proof still required: compact-height iOS/Android, decimal/number keyboard completion, VoiceOver/TalkBack order and focus return, and route-named screenshots.
