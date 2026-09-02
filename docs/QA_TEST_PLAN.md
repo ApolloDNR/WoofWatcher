@@ -1,11 +1,16 @@
 # QA Test Plan
 
-## 2026-09-02 Restricted-role shared-plan recovery QA
+## 2026-09-02 Care-state integrity continuation QA
 
-- Automated source coverage must keep `GET /me` capability derivation identical to the server write allowlist, reject mismatched/duplicate/malformed self records, and preserve known denials while degrading stale allows to unverified.
-- Automated mobile coverage must keep authenticated caches principal-scoped, reject incompatible known households, serialize storage mutations, discard queued snapshots at wipe, fence account/household session changes, block unverified/restricted document updates, and restore the latest server winner after `403`.
-- Home must expose the shared-plan notice as polite/assertive accessibility status as appropriate, with a disabled/busy retry action during refresh; More must surface the same state in Household Sync.
-- Provider/device proof still requires owner, adult, helper/youth/read-only, expired Access Pass, live revocation, concurrent version conflict, offline reconnect, sign-out/account-switch, erase-versus-write, VoiceOver/TalkBack, and route-named iOS/Android evidence.
+- Automated auth/storage coverage must prove unresolved Clerk auth mounts no data subtree, a new exact principal receives a fresh token getter and query client, account keys never cross-hydrate, and a returning principal cannot read behind its own queued write.
+- Automated household coverage must prove failed or malformed `/me` stops all reconciliation/list/retry work; every post-`/me` care request carries `x-woofwatcher-household-id`; the server rejects disagreement with `409` before any care-table access; and invalidation holds retry to one outstanding two-second timer.
+- Automated archive coverage must prove a mismatch masks old care before any archive await, only the exact returning household restores its archive, and a failed archive followed by the same household durably restores the sealed document, entries/outbox, synchronized baseline, and deletion ledger before unmasking.
+- Automated sync coverage must prove a refresh requested during active sync or a document write runs afterward; `409` recovery must preserve independent server/local edits and surface same-field conflict recovery without silently replacing either side.
+- Automated persistence coverage must prove critical cleanup writes cannot be discarded as successful, stale snapshots cannot overtake the serialized wipe, recovery/archive writes cannot recreate erased keys, hydration refuses a result from an earlier erase generation, and every nullable `addEntry` caller suppresses success-only side effects when save is blocked.
+- Automated deletion coverage must prove in-flight deletes defer refresh, delete generations reject older list results, every acknowledged real id is durably tombstoned before hiding, stale list rows stay filtered and are removed again after DELETE, and late failure callbacks cannot restore across session or erase generations.
+- Automated provider/privacy coverage must prove every CareContext-owned request aborts on timeout, edit and delete cannot race across temp/server aliases, a failed tombstone clear repairs durable deletion intent, avatar writes finish before terminal care wipe, partial clears remain visibly failed, and generated clients retain all seven expected-household header validators.
+- STATUS: Full `mobileReadiness.test.ts` passes `192/192` locally, and all beta-doctor source-backed checks are clear. The current integrity-focused file passes `12/12`; the loader-assisted care integrity/merge/writer suite passes `90/90`, with no combined total claimed because coverage overlaps. API readiness passes `20/20`, and the household-scope/OpenAPI contract passes `4/4`. The beta doctor remains locally non-green only for pinned pnpm CLI and mobile Expo resolution, plus Corepack and unsupported bundled-pnpm warnings. Dependency-complete CI remains pending.
+- MANUAL PROVIDER/DEVICE: Exercise owner, adult, helper/youth/read-only, expired Access Pass, revocation, two-account and two-household switches, two-device conflicts, reconnect, and erase races. Capture route-named real-iPhone and Android evidence including VoiceOver/TalkBack before store review or Apollo approval.
 
 ## 2026-09-02 Care-state role and race recovery
 

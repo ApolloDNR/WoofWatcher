@@ -31,6 +31,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify generated API clients
+        run: |
+          pnpm --filter @workspace/api-spec exec orval --config ./orval.config.ts
+          pnpm exec prettier --write lib/api-client-react/src/generated lib/api-zod/src/generated
+          git diff --exit-code -- lib/api-client-react/src/generated lib/api-zod/src/generated
+          generated_status="$(git status --porcelain --untracked-files=all -- lib/api-client-react/src/generated lib/api-zod/src/generated)"
+          if [ -n "$generated_status" ]; then
+            printf '%s\n' "$generated_status"
+            exit 1
+          fi
+
       - name: Run mobile beta doctor
         run: pnpm run doctor:mobile-beta:json
 

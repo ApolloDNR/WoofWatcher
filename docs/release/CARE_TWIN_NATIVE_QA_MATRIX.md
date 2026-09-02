@@ -196,9 +196,12 @@ the one part of the app the web sweeps cannot reach.
   shares. On Android the file is converted to a `content://` URI via
   `getContentUriAsync` before sharing.
 - **Generated binary** (Care Pass PDF / Dog ID PNG): same pattern, Base64 write.
-- **Owner wipe** (Privacy → delete all data): removes every `woofwatcher*`
-  AsyncStorage key AND deletes the `WoofWatcherReports/` and
-  `woofwatcher-attachments/` directories.
+- **Local care clear** (Privacy → Clear local care data): removes visible local
+  care/avatar state and deletes the `WoofWatcherReports/` and
+  `woofwatcher-attachments/` directories. Minimal account-, household-, and
+  entry-scoped cleanup identifiers can remain in the non-renderable deletion
+  ledger so a canceled provider upload cannot reappear; provider-held account
+  data is a separate deletion workflow and can return on a later sync.
 
 ### Known platform limitation (verify + remedy)
 
@@ -227,7 +230,7 @@ it shares the message text and drops `url`. Therefore:
 | Care Pass → share printable HTML | share sheet opens with the HTML file attached | file saved; share carries summary; saved file opens from Files |
 | Dog ID → share PNG | PNG attached to the share sheet | PNG saved to device; opens from Files |
 | Care Pass → share PDF | PDF attached | PDF saved; opens from Files |
-| Privacy → delete all data | reports + attachments directories gone; app resets to a fresh household | same |
+| Privacy → Clear local care data | reports + attachments directories gone; app resets to a fresh household | same |
 
 ### Evidence to capture
 

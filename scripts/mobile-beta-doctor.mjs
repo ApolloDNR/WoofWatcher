@@ -17,7 +17,8 @@ const warnings = [];
 function check(label, ok, detail, severity = "issue") {
   const status = ok ? "PASS" : severity === "warning" ? "WARN" : "BLOCKED";
   checks.push({ label, status, detail: detail ?? "", severity });
-  if (!jsonMode) console.log(`[${status}] ${label}${detail ? ` - ${detail}` : ""}`);
+  if (!jsonMode)
+    console.log(`[${status}] ${label}${detail ? ` - ${detail}` : ""}`);
   if (!ok && severity === "warning") warnings.push(label);
   if (!ok && severity !== "warning") issues.push(label);
 }
@@ -47,9 +48,13 @@ function resolvePathCommand(command) {
 }
 
 function runCli(command, args) {
-  const resolvedCommand = process.platform === "win32" ? resolvePathCommand(command) : command;
+  const resolvedCommand =
+    process.platform === "win32" ? resolvePathCommand(command) : command;
   if (process.platform === "win32") {
-    const commandLine = [quoteWindowsArg(resolvedCommand), ...args.map(quoteWindowsArg)].join(" ");
+    const commandLine = [
+      quoteWindowsArg(resolvedCommand),
+      ...args.map(quoteWindowsArg),
+    ].join(" ");
     return spawnSync(commandLine, {
       encoding: "utf8",
       shell: true,
@@ -133,15 +138,26 @@ if (!jsonMode) {
   console.log(`Purpose: ${doctorPurpose}\n`);
 }
 
-const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10);
+const nodeMajor = Number.parseInt(
+  process.versions.node.split(".")[0] ?? "0",
+  10,
+);
 check(
   "Node 24 runtime",
   nodeMajor >= 24,
-  nodeMajor >= 24 ? `node ${process.versions.node}` : `node ${process.versions.node}; install Node 24 before mobile beta export`,
+  nodeMajor >= 24
+    ? `node ${process.versions.node}`
+    : `node ${process.versions.node}; install Node 24 before mobile beta export`,
 );
 
-const pnpm = runFirstAvailable(process.platform === "win32" ? ["pnpm.cmd", "pnpm"] : ["pnpm"], ["--version"]);
-const corepack = runFirstAvailable(process.platform === "win32" ? ["corepack.cmd", "corepack"] : ["corepack"], ["--version"]);
+const pnpm = runFirstAvailable(
+  process.platform === "win32" ? ["pnpm.cmd", "pnpm"] : ["pnpm"],
+  ["--version"],
+);
+const corepack = runFirstAvailable(
+  process.platform === "win32" ? ["corepack.cmd", "corepack"] : ["corepack"],
+  ["--version"],
+);
 const bundledPnpmPath = join(
   resolve(dirname(process.execPath), "..", ".."),
   "bin",
@@ -156,7 +172,9 @@ const bundledPnpmPackagePath = join(
 const bundledPnpmVersion = existsSync(bundledPnpmPackagePath)
   ? readJson(bundledPnpmPackagePath).version
   : "";
-const bundledPnpmIsUnsupported = Boolean(bundledPnpmVersion && bundledPnpmVersion !== expectedPnpmVersion);
+const bundledPnpmIsUnsupported = Boolean(
+  bundledPnpmVersion && bundledPnpmVersion !== expectedPnpmVersion,
+);
 check(
   "Corepack available for pnpm bootstrap",
   corepack.status === 0,
@@ -189,11 +207,17 @@ check(
 );
 
 const rootPackage = readJson(join(root, "package.json"));
-const verifyWorkflow = readFileSync(join(root, ".github", "workflows", "verify.yml"), "utf8");
+const verifyWorkflow = readFileSync(
+  join(root, ".github", "workflows", "verify.yml"),
+  "utf8",
+);
 check(
   "packageManager matches CI pnpm",
-  rootPackage.packageManager === expectedPackageManager && /version:\s*10\.24\.0/.test(verifyWorkflow),
-  rootPackage.packageManager ? `${rootPackage.packageManager} pinned` : "missing packageManager",
+  rootPackage.packageManager === expectedPackageManager &&
+    /version:\s*10\.24\.0/.test(verifyWorkflow),
+  rootPackage.packageManager
+    ? `${rootPackage.packageManager} pinned`
+    : "missing packageManager",
 );
 check(
   "root install guard is Windows-friendly",
@@ -202,74 +226,183 @@ check(
 );
 check(
   "doctor command is wired",
-  rootPackage.scripts?.["doctor:mobile-beta"] === "node scripts/mobile-beta-doctor.mjs",
+  rootPackage.scripts?.["doctor:mobile-beta"] ===
+    "node scripts/mobile-beta-doctor.mjs",
   rootPackage.scripts?.["doctor:mobile-beta"] ?? "missing doctor:mobile-beta",
 );
 check(
   "native QA tooling doctor command is wired",
-  rootPackage.scripts?.["doctor:native-qa"] === "node scripts/native-qa-tooling-doctor.mjs"
-    && rootPackage.scripts?.["doctor:native-qa:json"] === "node scripts/native-qa-tooling-doctor.mjs --json",
+  rootPackage.scripts?.["doctor:native-qa"] ===
+    "node scripts/native-qa-tooling-doctor.mjs" &&
+    rootPackage.scripts?.["doctor:native-qa:json"] ===
+      "node scripts/native-qa-tooling-doctor.mjs --json",
   rootPackage.scripts?.["doctor:native-qa"] ?? "missing doctor:native-qa",
 );
 
 const mobilePackagePath = join(mobileRoot, "package.json");
 const mobilePackage = readJson(mobilePackagePath);
-check("mobile package exists", existsSync(mobilePackagePath), mobilePackage.name);
-check("smoke:web export command exists", mobilePackage.scripts?.["smoke:web"] === "node scripts/smoke-web-export.js", mobilePackage.scripts?.["smoke:web"] ?? "missing smoke:web");
-check("smoke:runtime route command exists", mobilePackage.scripts?.["smoke:runtime"] === "node scripts/smoke-runtime-preview.js", mobilePackage.scripts?.["smoke:runtime"] ?? "missing smoke:runtime");
-check("proof:live-preview command exists", mobilePackage.scripts?.["proof:live-preview"] === "node scripts/live-preview-handoff-proof.js --json", mobilePackage.scripts?.["proof:live-preview"] ?? "missing proof:live-preview");
-check("static preview command exists", mobilePackage.scripts?.["preview:smoke"] === "node scripts/serve-smoke-preview.js 4194", mobilePackage.scripts?.["preview:smoke"] ?? "missing preview:smoke");
+check(
+  "mobile package exists",
+  existsSync(mobilePackagePath),
+  mobilePackage.name,
+);
+check(
+  "smoke:web export command exists",
+  mobilePackage.scripts?.["smoke:web"] === "node scripts/smoke-web-export.js",
+  mobilePackage.scripts?.["smoke:web"] ?? "missing smoke:web",
+);
+check(
+  "smoke:runtime route command exists",
+  mobilePackage.scripts?.["smoke:runtime"] ===
+    "node scripts/smoke-runtime-preview.js",
+  mobilePackage.scripts?.["smoke:runtime"] ?? "missing smoke:runtime",
+);
+check(
+  "proof:live-preview command exists",
+  mobilePackage.scripts?.["proof:live-preview"] ===
+    "node scripts/live-preview-handoff-proof.js --json",
+  mobilePackage.scripts?.["proof:live-preview"] ?? "missing proof:live-preview",
+);
+check(
+  "static preview command exists",
+  mobilePackage.scripts?.["preview:smoke"] ===
+    "node scripts/serve-smoke-preview.js 4194",
+  mobilePackage.scripts?.["preview:smoke"] ?? "missing preview:smoke",
+);
 
 const appJson = readJson(join(mobileRoot, "app.json")).expo;
-check("Expo platforms include iOS, Android, and web", JSON.stringify(appJson.platforms) === JSON.stringify(["ios", "android", "web"]), JSON.stringify(appJson.platforms));
-check("Expo web export uses Metro", appJson.web?.bundler === "metro", appJson.web?.bundler ?? "missing expo.web.bundler");
+check(
+  "Expo platforms include iOS, Android, and web",
+  JSON.stringify(appJson.platforms) ===
+    JSON.stringify(["ios", "android", "web"]),
+  JSON.stringify(appJson.platforms),
+);
+check(
+  "Expo web export uses Metro",
+  appJson.web?.bundler === "metro",
+  appJson.web?.bundler ?? "missing expo.web.bundler",
+);
 
 const easJsonPath = join(mobileRoot, "eas.json");
 const easJson = existsSync(easJsonPath) ? readJson(easJsonPath) : {};
 const easBuildProfiles = easJson.build ?? {};
-const hasIosAndAndroidBuildProfiles = Boolean(easBuildProfiles.preview?.ios)
-  && Boolean(easBuildProfiles.preview?.android)
-  && Boolean(easBuildProfiles.production?.ios)
-  && Boolean(easBuildProfiles.production?.android);
+const hasIosAndAndroidBuildProfiles =
+  Boolean(easBuildProfiles.preview?.ios) &&
+  Boolean(easBuildProfiles.preview?.android) &&
+  Boolean(easBuildProfiles.production?.ios) &&
+  Boolean(easBuildProfiles.production?.android);
 check(
   "EAS build profiles include iOS and Android",
   existsSync(easJsonPath) && hasIosAndAndroidBuildProfiles,
-  existsSync(easJsonPath) ? "preview and production profiles cover iOS/Android" : "missing artifacts/woofwatcher-mobile/eas.json",
+  existsSync(easJsonPath)
+    ? "preview and production profiles cover iOS/Android"
+    : "missing artifacts/woofwatcher-mobile/eas.json",
 );
 
-const mobileExpoPackage = join(mobileRoot, "node_modules", "expo", "package.json");
+const mobileExpoPackage = join(
+  mobileRoot,
+  "node_modules",
+  "expo",
+  "package.json",
+);
 check(
   "mobile package can resolve expo",
   existsSync(mobileExpoPackage),
-  existsSync(mobileExpoPackage) ? "expo dependency present" : "run pnpm install so smoke:web can resolve the Expo SDK",
+  existsSync(mobileExpoPackage)
+    ? "expo dependency present"
+    : "run pnpm install so smoke:web can resolve the Expo SDK",
 );
 
-const pixellabVerifier = join(mobileRoot, "scripts", "verify-pixellab-assets.js");
-check("PixelLab verifier exists", existsSync(pixellabVerifier), "run pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets");
+const pixellabVerifier = join(
+  mobileRoot,
+  "scripts",
+  "verify-pixellab-assets.js",
+);
+check(
+  "PixelLab verifier exists",
+  existsSync(pixellabVerifier),
+  "run pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets",
+);
 
 const betaHandoffPacketPath = join(mobileRoot, "lib", "betaHandoffPacket.ts");
-const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEvidence.ts");
+const mobileLaunchQaEvidencePath = join(
+  mobileRoot,
+  "lib",
+  "mobileLaunchQaEvidence.ts",
+);
 const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
-const mobileReleaseSmokeChecklistPath = join(mobileRoot, "lib", "mobileReleaseSmokeChecklist.ts");
-const runtimeSmokePreviewPath = join(mobileRoot, "scripts", "smoke-runtime-preview.js");
-const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-handoff-proof.js");
-const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
-const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
+const mobileReleaseSmokeChecklistPath = join(
+  mobileRoot,
+  "lib",
+  "mobileReleaseSmokeChecklist.ts",
+);
+const runtimeSmokePreviewPath = join(
+  mobileRoot,
+  "scripts",
+  "smoke-runtime-preview.js",
+);
+const livePreviewHandoffProofPath = join(
+  mobileRoot,
+  "scripts",
+  "live-preview-handoff-proof.js",
+);
+const avatarSpriteProductionQaPath = join(
+  mobileRoot,
+  "lib",
+  "avatarSpriteProductionQa.ts",
+);
+const launchProviderSetupPath = join(
+  mobileRoot,
+  "lib",
+  "launchProviderSetup.ts",
+);
 const attachmentManifestPath = join(mobileRoot, "lib", "attachmentManifest.ts");
 const launchReadinessPath = join(mobileRoot, "lib", "launchReadiness.ts");
 const authProviderProofPath = join(mobileRoot, "lib", "authProviderProof.ts");
 const authUiPath = join(mobileRoot, "components", "auth-ui.tsx");
 const aiProviderProofPath = join(mobileRoot, "lib", "aiProviderProof.ts");
-const accountDeletionProofPath = join(mobileRoot, "lib", "accountDeletionProof.ts");
+const accountDeletionProofPath = join(
+  mobileRoot,
+  "lib",
+  "accountDeletionProof.ts",
+);
 const storeAccountsProofPath = join(mobileRoot, "lib", "storeAccountsProof.ts");
 const supportRunbookPath = join(mobileRoot, "lib", "supportRunbook.ts");
-const pushNotificationsProofPath = join(mobileRoot, "lib", "pushNotificationsProof.ts");
-const reminderNotificationPreferencesPath = join(mobileRoot, "lib", "reminderNotificationPreferences.ts");
-const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
-const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
-const reportArtifactExportFilePath = join(mobileRoot, "lib", "reportArtifactExportFile.ts");
-const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
-const reportGeneratedBinaryArtifactPath = join(mobileRoot, "lib", "reportGeneratedBinaryArtifact.ts");
+const pushNotificationsProofPath = join(
+  mobileRoot,
+  "lib",
+  "pushNotificationsProof.ts",
+);
+const reminderNotificationPreferencesPath = join(
+  mobileRoot,
+  "lib",
+  "reminderNotificationPreferences.ts",
+);
+const paymentsProviderProofPath = join(
+  mobileRoot,
+  "lib",
+  "paymentsProviderProof.ts",
+);
+const careEntryProviderSyncProofPath = join(
+  mobileRoot,
+  "lib",
+  "careEntryProviderSyncProof.ts",
+);
+const reportArtifactExportFilePath = join(
+  mobileRoot,
+  "lib",
+  "reportArtifactExportFile.ts",
+);
+const reportBinaryExportProofPath = join(
+  mobileRoot,
+  "lib",
+  "reportBinaryExportProof.ts",
+);
+const reportGeneratedBinaryArtifactPath = join(
+  mobileRoot,
+  "lib",
+  "reportGeneratedBinaryArtifact.ts",
+);
 const privacySafetyPath = join(mobileRoot, "lib", "privacySafety.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const setupRoutePath = join(mobileRoot, "app", "setup.tsx");
@@ -278,83 +411,201 @@ const careContextPath = join(mobileRoot, "context", "CareContext.tsx");
 const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
-const pwaVanillaAppEntryPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "app-entry.js");
-const pwaPrivacyCloudPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "woof-privacy-cloud.js");
-const pwaOperationsPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "woof-operations.js");
-const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts");
-const careRemindersDomainPath = join(root, "lib", "care-domain", "src", "care-reminders.ts");
-const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
-const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
-const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
-const mobileReleaseSmokeChecklistSource = existsSync(mobileReleaseSmokeChecklistPath) ? readFileSync(mobileReleaseSmokeChecklistPath, "utf8") : "";
-const runtimeSmokePreviewSource = existsSync(runtimeSmokePreviewPath) ? readFileSync(runtimeSmokePreviewPath, "utf8") : "";
-const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? readFileSync(livePreviewHandoffProofPath, "utf8") : "";
-const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
-const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
-const attachmentManifestSource = existsSync(attachmentManifestPath) ? readFileSync(attachmentManifestPath, "utf8") : "";
-const launchReadinessSource = existsSync(launchReadinessPath) ? readFileSync(launchReadinessPath, "utf8") : "";
-const authProviderProofSource = existsSync(authProviderProofPath) ? readFileSync(authProviderProofPath, "utf8") : "";
-const authUiSource = existsSync(authUiPath) ? readFileSync(authUiPath, "utf8") : "";
-const aiProviderProofSource = existsSync(aiProviderProofPath) ? readFileSync(aiProviderProofPath, "utf8") : "";
-const accountDeletionProofSource = existsSync(accountDeletionProofPath) ? readFileSync(accountDeletionProofPath, "utf8") : "";
-const storeAccountsProofSource = existsSync(storeAccountsProofPath) ? readFileSync(storeAccountsProofPath, "utf8") : "";
-const supportRunbookSource = existsSync(supportRunbookPath) ? readFileSync(supportRunbookPath, "utf8") : "";
-const pushNotificationsProofSource = existsSync(pushNotificationsProofPath) ? readFileSync(pushNotificationsProofPath, "utf8") : "";
-const reminderNotificationPreferencesSource = existsSync(reminderNotificationPreferencesPath) ? readFileSync(reminderNotificationPreferencesPath, "utf8") : "";
-const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
-const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
-const reportArtifactExportFileSource = existsSync(reportArtifactExportFilePath) ? readFileSync(reportArtifactExportFilePath, "utf8") : "";
-const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
-const reportGeneratedBinaryArtifactSource = existsSync(reportGeneratedBinaryArtifactPath) ? readFileSync(reportGeneratedBinaryArtifactPath, "utf8") : "";
-const privacySafetySource = existsSync(privacySafetyPath) ? readFileSync(privacySafetyPath, "utf8") : "";
-const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
-const setupRouteSource = existsSync(setupRoutePath) ? readFileSync(setupRoutePath, "utf8") : "";
-const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
-const careContextSource = existsSync(careContextPath) ? readFileSync(careContextPath, "utf8") : "";
-const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRoutePath, "utf8") : "";
-const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
-const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
-const pwaVanillaAppEntrySource = existsSync(pwaVanillaAppEntryPath) ? readFileSync(pwaVanillaAppEntryPath, "utf8") : "";
-const pwaPrivacyCloudSource = existsSync(pwaPrivacyCloudPath) ? readFileSync(pwaPrivacyCloudPath, "utf8") : "";
-const pwaOperationsSource = existsSync(pwaOperationsPath) ? readFileSync(pwaOperationsPath, "utf8") : "";
-const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
-const careRemindersDomainSource = existsSync(careRemindersDomainPath) ? readFileSync(careRemindersDomainPath, "utf8") : "";
-const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
-  "Release smoke checklist:",
-  "buildMobileReleaseSmokeChecklistShareText",
-  "Dependency proof commands:",
-  "Dependency-complete CI proof:",
-  "Recorded live preview proof:",
-  "Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
-  "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
-  "Required beta proof after export:",
-  "Native QA Needs tune fix brief:",
-  "Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native/provider proof remains blocked.",
-  "Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
-  "Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
-  "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked until structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files are attached.",
-  "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
-  "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
-  "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
-  "Attach structured care-entry provider proof files before enabling incremental sync",
-  "Open focused WoofGuide AI provider target: /care-twin-qa?qaSurface=woofguide-ai-provider-proof.",
-  "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
-  "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
-  "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
-  "Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
-  "Open focused support legal readiness target: /care-twin-qa?qaSurface=support-legal-readiness-proof.",
-  "Attach structured support/legal proof files before public launch",
-  "Apollo launch approval/no-launch-boundary proof with MIME",
-  "Provider proof needed:",
-  "Truth boundaries:",
-])
-  && mobileReleaseSmokeChecklistSource.includes("pnpm --filter @workspace/woofwatcher-mobile run preview:smoke")
-  && /RECORDED_MOBILE_BETA_CI_PROOF/.test(moreRouteSource)
-  && /ciProof:\s*RECORDED_MOBILE_BETA_CI_PROOF/.test(moreRouteSource)
-  && /RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource)
-  && /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource)
-  && /providerSetupPlan:\s*launchProviderSetupPlan/.test(moreRouteSource)
-  && /Share Beta Handoff/.test(moreRouteSource);
+const pwaVanillaAppEntryPath = join(
+  root,
+  "artifacts",
+  "woofwatcher",
+  "src",
+  "vanilla",
+  "app-entry.js",
+);
+const pwaPrivacyCloudPath = join(
+  root,
+  "artifacts",
+  "woofwatcher",
+  "src",
+  "vanilla",
+  "woof-privacy-cloud.js",
+);
+const pwaOperationsPath = join(
+  root,
+  "artifacts",
+  "woofwatcher",
+  "src",
+  "vanilla",
+  "woof-operations.js",
+);
+const carePassDomainPath = join(
+  root,
+  "lib",
+  "care-domain",
+  "src",
+  "care-pass.ts",
+);
+const careRemindersDomainPath = join(
+  root,
+  "lib",
+  "care-domain",
+  "src",
+  "care-reminders.ts",
+);
+const betaHandoffPacketSource = existsSync(betaHandoffPacketPath)
+  ? readFileSync(betaHandoffPacketPath, "utf8")
+  : "";
+const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath)
+  ? readFileSync(mobileLaunchQaEvidencePath, "utf8")
+  : "";
+const mobileReleaseQaSource = existsSync(mobileReleaseQaPath)
+  ? readFileSync(mobileReleaseQaPath, "utf8")
+  : "";
+const mobileReleaseSmokeChecklistSource = existsSync(
+  mobileReleaseSmokeChecklistPath,
+)
+  ? readFileSync(mobileReleaseSmokeChecklistPath, "utf8")
+  : "";
+const runtimeSmokePreviewSource = existsSync(runtimeSmokePreviewPath)
+  ? readFileSync(runtimeSmokePreviewPath, "utf8")
+  : "";
+const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath)
+  ? readFileSync(livePreviewHandoffProofPath, "utf8")
+  : "";
+const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath)
+  ? readFileSync(avatarSpriteProductionQaPath, "utf8")
+  : "";
+const launchProviderSetupSource = existsSync(launchProviderSetupPath)
+  ? readFileSync(launchProviderSetupPath, "utf8")
+  : "";
+const attachmentManifestSource = existsSync(attachmentManifestPath)
+  ? readFileSync(attachmentManifestPath, "utf8")
+  : "";
+const launchReadinessSource = existsSync(launchReadinessPath)
+  ? readFileSync(launchReadinessPath, "utf8")
+  : "";
+const authProviderProofSource = existsSync(authProviderProofPath)
+  ? readFileSync(authProviderProofPath, "utf8")
+  : "";
+const authUiSource = existsSync(authUiPath)
+  ? readFileSync(authUiPath, "utf8")
+  : "";
+const aiProviderProofSource = existsSync(aiProviderProofPath)
+  ? readFileSync(aiProviderProofPath, "utf8")
+  : "";
+const accountDeletionProofSource = existsSync(accountDeletionProofPath)
+  ? readFileSync(accountDeletionProofPath, "utf8")
+  : "";
+const storeAccountsProofSource = existsSync(storeAccountsProofPath)
+  ? readFileSync(storeAccountsProofPath, "utf8")
+  : "";
+const supportRunbookSource = existsSync(supportRunbookPath)
+  ? readFileSync(supportRunbookPath, "utf8")
+  : "";
+const pushNotificationsProofSource = existsSync(pushNotificationsProofPath)
+  ? readFileSync(pushNotificationsProofPath, "utf8")
+  : "";
+const reminderNotificationPreferencesSource = existsSync(
+  reminderNotificationPreferencesPath,
+)
+  ? readFileSync(reminderNotificationPreferencesPath, "utf8")
+  : "";
+const paymentsProviderProofSource = existsSync(paymentsProviderProofPath)
+  ? readFileSync(paymentsProviderProofPath, "utf8")
+  : "";
+const careEntryProviderSyncProofSource = existsSync(
+  careEntryProviderSyncProofPath,
+)
+  ? readFileSync(careEntryProviderSyncProofPath, "utf8")
+  : "";
+const reportArtifactExportFileSource = existsSync(reportArtifactExportFilePath)
+  ? readFileSync(reportArtifactExportFilePath, "utf8")
+  : "";
+const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath)
+  ? readFileSync(reportBinaryExportProofPath, "utf8")
+  : "";
+const reportGeneratedBinaryArtifactSource = existsSync(
+  reportGeneratedBinaryArtifactPath,
+)
+  ? readFileSync(reportGeneratedBinaryArtifactPath, "utf8")
+  : "";
+const privacySafetySource = existsSync(privacySafetyPath)
+  ? readFileSync(privacySafetyPath, "utf8")
+  : "";
+const careTwinQaRouteSource = existsSync(careTwinQaRoutePath)
+  ? readFileSync(careTwinQaRoutePath, "utf8")
+  : "";
+const setupRouteSource = existsSync(setupRoutePath)
+  ? readFileSync(setupRoutePath, "utf8")
+  : "";
+const moreRouteSource = existsSync(moreRoutePath)
+  ? readFileSync(moreRoutePath, "utf8")
+  : "";
+const careContextSource = existsSync(careContextPath)
+  ? readFileSync(careContextPath, "utf8")
+  : "";
+const premiumRouteSource = existsSync(premiumRoutePath)
+  ? readFileSync(premiumRoutePath, "utf8")
+  : "";
+const privacyRouteSource = existsSync(privacyRoutePath)
+  ? readFileSync(privacyRoutePath, "utf8")
+  : "";
+const recordsRouteSource = existsSync(recordsRoutePath)
+  ? readFileSync(recordsRoutePath, "utf8")
+  : "";
+const pwaVanillaAppEntrySource = existsSync(pwaVanillaAppEntryPath)
+  ? readFileSync(pwaVanillaAppEntryPath, "utf8")
+  : "";
+const pwaPrivacyCloudSource = existsSync(pwaPrivacyCloudPath)
+  ? readFileSync(pwaPrivacyCloudPath, "utf8")
+  : "";
+const pwaOperationsSource = existsSync(pwaOperationsPath)
+  ? readFileSync(pwaOperationsPath, "utf8")
+  : "";
+const carePassDomainSource = existsSync(carePassDomainPath)
+  ? readFileSync(carePassDomainPath, "utf8")
+  : "";
+const careRemindersDomainSource = existsSync(careRemindersDomainPath)
+  ? readFileSync(careRemindersDomainPath, "utf8")
+  : "";
+const betaHandoffProofSectionsPresent =
+  includesAll(betaHandoffPacketSource, [
+    "Release smoke checklist:",
+    "buildMobileReleaseSmokeChecklistShareText",
+    "Dependency proof commands:",
+    "Dependency-complete CI proof:",
+    "Recorded live preview proof:",
+    "Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
+    "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
+    "Required beta proof after export:",
+    "Native QA Needs tune fix brief:",
+    "Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native/provider proof remains blocked.",
+    "Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
+    "Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
+    "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked until structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files are attached.",
+    "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
+    "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
+    "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
+    "Attach structured care-entry provider proof files before enabling incremental sync",
+    "Open focused WoofGuide AI provider target: /care-twin-qa?qaSurface=woofguide-ai-provider-proof.",
+    "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
+    "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
+    "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
+    "Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
+    "Open focused support legal readiness target: /care-twin-qa?qaSurface=support-legal-readiness-proof.",
+    "Attach structured support/legal proof files before public launch",
+    "Apollo launch approval/no-launch-boundary proof with MIME",
+    "Provider proof needed:",
+    "Truth boundaries:",
+  ]) &&
+  mobileReleaseSmokeChecklistSource.includes(
+    "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
+  ) &&
+  /RECORDED_MOBILE_BETA_CI_PROOF/.test(moreRouteSource) &&
+  /ciProof:\s*RECORDED_MOBILE_BETA_CI_PROOF/.test(moreRouteSource) &&
+  /RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource) &&
+  /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(
+    moreRouteSource,
+  ) &&
+  /providerSetupPlan:\s*launchProviderSetupPlan/.test(moreRouteSource) &&
+  /Share Beta Handoff/.test(moreRouteSource);
 check(
   "beta handoff source includes proof sections",
   betaHandoffProofSectionsPresent,
@@ -363,44 +614,45 @@ check(
     : "keep Share Beta Handoff wired to CI, dependency, device, provider, and truth-boundary proof sections",
 );
 
-const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeChecklistSource, [
-  "WoofWatcher Release Smoke Checklist",
-  "MOBILE_RELEASE_SMOKE_DEPENDENCY_COMMANDS",
-  "Dependency and export proof",
-  "Route rehearsal",
-  "Records and export truth",
-  "Provider proof gates",
-  "Native and store proof",
-  "WoofWatcherReports",
-  "WoofWatcherCredentials",
-  "Focused Records handoff target",
-  "/care-twin-qa?qaSurface=records-local-file-handoff",
-  "Focused care-entry provider sync proof target",
-  "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
-  "Focused WoofGuide AI provider proof target",
-  "/care-twin-qa?qaSurface=woofguide-ai-provider-proof",
-  "Focused push notifications proof target",
-  "/care-twin-qa?qaSurface=push-notifications-proof",
-  "Focused payments provider proof target",
-  "/care-twin-qa?qaSurface=payments-provider-proof",
-  "Focused store accounts proof target",
-  "/care-twin-qa?qaSurface=store-accounts-proof",
-  "Focused account deletion proof target",
-  "/care-twin-qa?qaSurface=account-deletion-proof",
-  "Focused support legal readiness proof target",
-  "/care-twin-qa?qaSurface=support-legal-readiness-proof",
-  "Android content URI",
-  "fallback copy",
-  "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
-  "Generated Care Pass PDF and Dog ID PNG bytes stay local-only until native share/reopen and provider storage proof are approved.",
-  "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
-])
-  && includesAll(betaHandoffPacketSource, [
+const releaseSmokeChecklistIsSourceBacked =
+  includesAll(mobileReleaseSmokeChecklistSource, [
+    "WoofWatcher Release Smoke Checklist",
+    "MOBILE_RELEASE_SMOKE_DEPENDENCY_COMMANDS",
+    "Dependency and export proof",
+    "Route rehearsal",
+    "Records and export truth",
+    "Provider proof gates",
+    "Native and store proof",
+    "WoofWatcherReports",
+    "WoofWatcherCredentials",
+    "Focused Records handoff target",
+    "/care-twin-qa?qaSurface=records-local-file-handoff",
+    "Focused care-entry provider sync proof target",
+    "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
+    "Focused WoofGuide AI provider proof target",
+    "/care-twin-qa?qaSurface=woofguide-ai-provider-proof",
+    "Focused push notifications proof target",
+    "/care-twin-qa?qaSurface=push-notifications-proof",
+    "Focused payments provider proof target",
+    "/care-twin-qa?qaSurface=payments-provider-proof",
+    "Focused store accounts proof target",
+    "/care-twin-qa?qaSurface=store-accounts-proof",
+    "Focused account deletion proof target",
+    "/care-twin-qa?qaSurface=account-deletion-proof",
+    "Focused support legal readiness proof target",
+    "/care-twin-qa?qaSurface=support-legal-readiness-proof",
+    "Android content URI",
+    "fallback copy",
+    "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
+    "Generated Care Pass PDF and Dog ID PNG bytes stay local-only until native share/reopen and provider storage proof are approved.",
+    "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "buildMobileReleaseSmokeChecklist",
     "buildMobileReleaseSmokeChecklistShareText",
     "Release smoke checklist:",
-  ])
-  && handoffProofSections.includes("Release smoke checklist");
+  ]) &&
+  handoffProofSections.includes("Release smoke checklist");
 check(
   "release smoke checklist is source-backed",
   releaseSmokeChecklistIsSourceBacked,
@@ -409,22 +661,23 @@ check(
     : "keep Release smoke checklist wired through mobileReleaseSmokeChecklist.ts and Share Beta Handoff",
 );
 
-const livePreviewHandoffProofIsSourceBacked = includesAll(mobileReleaseSmokeChecklistSource, [
-  "Live preview handoff proof",
-  "Dependency-complete branch CI",
-  "Preview server handoff",
-  "Live preview handoff verifier",
-  "proof:live-preview",
-  "preview:smoke terminal output",
-  "http://127.0.0.1:4194/",
-  "live preview proof does not replace native iOS/Android proof",
-])
-  && includesAll(betaHandoffPacketSource, [
+const livePreviewHandoffProofIsSourceBacked =
+  includesAll(mobileReleaseSmokeChecklistSource, [
+    "Live preview handoff proof",
+    "Dependency-complete branch CI",
+    "Preview server handoff",
+    "Live preview handoff verifier",
+    "proof:live-preview",
+    "preview:smoke terminal output",
+    "http://127.0.0.1:4194/",
+    "live preview proof does not replace native iOS/Android proof",
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "buildMobileReleaseSmokeChecklist",
     "buildMobileReleaseSmokeChecklistShareText",
     "Release smoke checklist:",
-  ])
-  && handoffProofSections.includes("Live preview handoff proof");
+  ]) &&
+  handoffProofSections.includes("Live preview handoff proof");
 check(
   "live preview handoff proof is source-backed",
   livePreviewHandoffProofIsSourceBacked,
@@ -433,8 +686,10 @@ check(
     : "keep live preview proof wired through the release smoke checklist, Share Beta Handoff, and doctor next actions",
 );
 
-const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:live-preview"] === "node scripts/live-preview-handoff-proof.js --json"
-  && includesAll(livePreviewHandoffProofSource, [
+const livePreviewHandoffVerifierIsSourceBacked =
+  mobilePackage.scripts?.["proof:live-preview"] ===
+    "node scripts/live-preview-handoff-proof.js --json" &&
+  includesAll(livePreviewHandoffProofSource, [
     "LIVE_PREVIEW_HANDOFF_ROUTES",
     '"/sign-in"',
     '"/setup"',
@@ -452,12 +707,14 @@ const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:
     "web preview only",
     "does not replace native iOS/Android proof",
     "Attach this JSON",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Live preview handoff verifier",
     "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
-  ])
-  && proofCommands.includes("pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview");
+  ]) &&
+  proofCommands.includes(
+    "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
+  );
 check(
   "live preview handoff verifier is source-backed",
   livePreviewHandoffVerifierIsSourceBacked,
@@ -466,18 +723,19 @@ check(
     : "keep proof:live-preview wired through the mobile script, release smoke checklist, and doctor proof commands",
 );
 
-const authSetupRuntimeSmokeProofIsSourceBacked = includesAll(runtimeSmokePreviewSource, [
-  "MOBILE_RUNTIME_SMOKE_ROUTES",
-  '"/sign-in"',
-  '"/setup"',
-  "WoofWatcher mobile runtime smoke passed",
-])
-  && includesAll(livePreviewHandoffProofSource, [
+const authSetupRuntimeSmokeProofIsSourceBacked =
+  includesAll(runtimeSmokePreviewSource, [
+    "MOBILE_RUNTIME_SMOKE_ROUTES",
+    '"/sign-in"',
+    '"/setup"',
+    "WoofWatcher mobile runtime smoke passed",
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, [
     "LIVE_PREVIEW_HANDOFF_ROUTES",
     '"/sign-in"',
     '"/setup"',
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Auth and setup route smoke",
     "/sign-in",
     "/setup",
@@ -491,26 +749,25 @@ check(
     : "keep /sign-in and /setup covered by smoke:runtime, proof:live-preview, and the release smoke checklist",
 );
 
-const authSetupNativeQaTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "auth-setup-onboarding-proof",
-  "Auth And Setup Onboarding Proof",
+const authSetupNativeQaTargetIsSourceBacked =
+  includesAll(mobileReleaseQaSource, [
+    "auth-setup-onboarding-proof",
+    "Auth And Setup Onboarding Proof",
     "provider-backed auth stays blocked",
     "structured Clerk, redirect/deep-link, household membership, and auth launch proof files",
-  "Local preview household setup",
-  "provider-backed auth and household creation stay blocked",
-])
-  && includesAll(betaHandoffPacketSource, [
+    "Local preview household setup",
+    "provider-backed auth and household creation stay blocked",
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
     "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked until structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files are attached.",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused auth/setup onboarding proof target",
     "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
     "structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files",
-  ])
-  && includesAll(livePreviewHandoffProofSource, [
-    "auth-setup-onboarding-proof",
-  ]);
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, ["auth-setup-onboarding-proof"]);
 check(
   "auth/setup native QA target is source-backed",
   authSetupNativeQaTargetIsSourceBacked,
@@ -519,27 +776,28 @@ check(
     : "keep auth/setup onboarding proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
 );
 
-const authProviderProofPacketIsSourceBacked = includesAll(authProviderProofSource, [
-  "AUTH_PROVIDER_PROOF_SUMMARY",
-  "AUTH_PROVIDER_PROOF_ITEMS",
-  "AuthProviderStructuredProofEvidence",
-  "Production auth provider proof packet",
-  "Clerk production app id",
-  "redirect/deep-link URL list",
-  "OAuth sign-in test",
-  "session policy",
-  "household membership policy",
-  "structured Clerk production proof file",
-  "structured redirect/deep-link proof file",
-  "structured household membership proof file",
-])
-  && includesAll(launchProviderSetupSource, [
+const authProviderProofPacketIsSourceBacked =
+  includesAll(authProviderProofSource, [
+    "AUTH_PROVIDER_PROOF_SUMMARY",
+    "AUTH_PROVIDER_PROOF_ITEMS",
+    "AuthProviderStructuredProofEvidence",
+    "Production auth provider proof packet",
+    "Clerk production app id",
+    "redirect/deep-link URL list",
+    "OAuth sign-in test",
+    "session policy",
+    "household membership policy",
+    "structured Clerk production proof file",
+    "structured redirect/deep-link proof file",
+    "structured household membership proof file",
+  ]) &&
+  includesAll(launchProviderSetupSource, [
     "AUTH_PROVIDER_PROOF_SUMMARY",
     "AUTH_PROVIDER_PROOF_ITEMS",
     "Production auth",
     "authConfigured",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Provider proof needed:",
     "formatProviderProof",
   ]);
@@ -551,7 +809,8 @@ check(
     : "keep auth provider proof modeled in authProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
-const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource, [
+const authSetupProofManifestIsSourceBacked =
+  includesAll(authProviderProofSource, [
     "buildAuthSetupProofManifest",
     "AuthProviderStructuredProofEvidence",
     "providerEvidence",
@@ -568,30 +827,30 @@ const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource
     "apolloApproved",
     "Auth gateway screenshots ready",
     "Setup local-preview screenshots ready",
-  "iOS Auth gateway screenshot",
-  "Android Setup local-preview screenshot",
-  "capturesProviderBoundaryCopy",
-  "capturesReachableControls",
-  "Native proof blocked",
-  "Apollo launch approval",
-])
-  && includesAll(authUiSource, [
+    "iOS Auth gateway screenshot",
+    "Android Setup local-preview screenshot",
+    "capturesProviderBoundaryCopy",
+    "capturesReachableControls",
+    "Native proof blocked",
+    "Apollo launch approval",
+  ]) &&
+  includesAll(authUiSource, [
     "buildAuthSetupProofManifest",
     "const authSetupProofManifest = buildAuthSetupProofManifest",
     "Auth/Setup proof manifest",
     "authSetupProofManifest.rows.map",
     "authSetupProofManifest.blockers.map",
     "Native proof blocked",
-  ])
-  && includesAll(setupRouteSource, [
+  ]) &&
+  includesAll(setupRouteSource, [
     "buildAuthSetupProofManifest",
     "const authSetupProofManifest = buildAuthSetupProofManifest",
     "Auth/Setup proof manifest",
     "authSetupProofManifest.rows.map",
     "authSetupProofManifest.blockers.map",
     "Native proof blocked",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "buildAuthSetupProofManifest",
     "authSetupProofManifest",
     "Auth/Setup proof manifest",
@@ -607,23 +866,24 @@ check(
     : "keep Auth gateway, Setup, and /care-twin-qa?qaSurface=auth-setup-onboarding-proof wired to buildAuthSetupProofManifest before claiming native auth/setup proof",
 );
 
-const paymentsProviderProofPacketIsSourceBacked = includesAll(paymentsProviderProofSource, [
-  "PAYMENTS_PROVIDER_PROOF_SUMMARY",
-  "PAYMENTS_PROVIDER_PROOF_ITEMS",
-  "WoofWatcher Plus payments proof packet",
-  "Plus and Family product ids",
-  "billing path decision",
-  "sandbox receipt test",
-  "entitlement mapping",
-  "refund and support policy",
-])
-  && includesAll(launchProviderSetupSource, [
+const paymentsProviderProofPacketIsSourceBacked =
+  includesAll(paymentsProviderProofSource, [
+    "PAYMENTS_PROVIDER_PROOF_SUMMARY",
+    "PAYMENTS_PROVIDER_PROOF_ITEMS",
+    "WoofWatcher Plus payments proof packet",
+    "Plus and Family product ids",
+    "billing path decision",
+    "sandbox receipt test",
+    "entitlement mapping",
+    "refund and support policy",
+  ]) &&
+  includesAll(launchProviderSetupSource, [
     "PAYMENTS_PROVIDER_PROOF_SUMMARY",
     "PAYMENTS_PROVIDER_PROOF_ITEMS",
     "WoofWatcher Plus payments",
     "paymentsEnabled",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Provider proof needed:",
     "formatProviderProof",
   ]);
@@ -635,16 +895,17 @@ check(
     : "keep payments proof modeled in paymentsProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
-const premiumPaymentsProofManifestIsSourceBacked = includesAll(paymentsProviderProofSource, [
-  "buildPaymentsProviderProofManifest",
-  "Product catalog",
-  "Sandbox receipts",
-  "Entitlements and restore",
-  "Checkout disabled",
-  "restore purchases",
-  "Apollo approval",
-])
-  && includesAll(premiumRouteSource, [
+const premiumPaymentsProofManifestIsSourceBacked =
+  includesAll(paymentsProviderProofSource, [
+    "buildPaymentsProviderProofManifest",
+    "Product catalog",
+    "Sandbox receipts",
+    "Entitlements and restore",
+    "Checkout disabled",
+    "restore purchases",
+    "Apollo approval",
+  ]) &&
+  includesAll(premiumRouteSource, [
     "buildPaymentsProviderProofManifest",
     "const paymentsProofManifest = buildPaymentsProviderProofManifest",
     "state.launchProviderProfile.paymentsProviderEvidence ?? undefined",
@@ -661,23 +922,24 @@ check(
     : "keep Premium wired to buildPaymentsProviderProofManifest so checkout stays blocked until real billing proof is attached",
 );
 
-const aiProviderProofPacketIsSourceBacked = includesAll(aiProviderProofSource, [
-  "AI_PROVIDER_PROOF_SUMMARY",
-  "AI_PROVIDER_PROOF_ITEMS",
-  "WoofGuide AI provider proof packet",
-  "OpenAI key location",
-  "approved model policy",
-  "source/citation rules",
-  "owner-review write gate",
-  "veterinary safety boundary",
-])
-  && includesAll(launchProviderSetupSource, [
+const aiProviderProofPacketIsSourceBacked =
+  includesAll(aiProviderProofSource, [
+    "AI_PROVIDER_PROOF_SUMMARY",
+    "AI_PROVIDER_PROOF_ITEMS",
+    "WoofGuide AI provider proof packet",
+    "OpenAI key location",
+    "approved model policy",
+    "source/citation rules",
+    "owner-review write gate",
+    "veterinary safety boundary",
+  ]) &&
+  includesAll(launchProviderSetupSource, [
     "AI_PROVIDER_PROOF_SUMMARY",
     "AI_PROVIDER_PROOF_ITEMS",
     "WoofGuide AI",
     "aiProviderConfigured",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Provider proof needed:",
     "formatProviderProof",
   ]);
@@ -689,24 +951,25 @@ check(
     : "keep AI proof modeled in aiProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
-const accountDeletionProofPacketIsSourceBacked = includesAll(accountDeletionProofSource, [
-  "ACCOUNT_DELETION_PROOF_SUMMARY",
-  "ACCOUNT_DELETION_PROOF_ITEMS",
-  "Self-serve account deletion proof packet",
-  "self-serve deletion route",
-  "export-before-delete warning",
-  "data/object deletion receipt",
-  "audit trail",
-  "recovery-window policy",
-  "legal/store approval",
-])
-  && includesAll(launchProviderSetupSource, [
+const accountDeletionProofPacketIsSourceBacked =
+  includesAll(accountDeletionProofSource, [
+    "ACCOUNT_DELETION_PROOF_SUMMARY",
+    "ACCOUNT_DELETION_PROOF_ITEMS",
+    "Self-serve account deletion proof packet",
+    "self-serve deletion route",
+    "export-before-delete warning",
+    "data/object deletion receipt",
+    "audit trail",
+    "recovery-window policy",
+    "legal/store approval",
+  ]) &&
+  includesAll(launchProviderSetupSource, [
     "ACCOUNT_DELETION_PROOF_SUMMARY",
     "ACCOUNT_DELETION_PROOF_ITEMS",
     "Self-serve account deletion",
     "accountDeletionEnabled",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Provider proof needed:",
     "formatProviderProof",
   ]);
@@ -718,28 +981,29 @@ check(
     : "keep account deletion proof modeled in accountDeletionProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
-const storeAccountsProofPacketIsSourceBacked = includesAll(storeAccountsProofSource, [
-  "STORE_ACCOUNTS_PROOF_SUMMARY",
-  "STORE_ACCOUNTS_PROOF_ITEMS",
-  "Apple and Google store accounts proof packet",
-  "platform/store-named",
-  "StoreAccountEvidence",
-  "Apple Developer team id",
-  "App Store Connect app record",
-  "Google Play package record",
-  "bundle ids",
-  "reviewer access notes",
-  "release role approval",
-  "iOS App Store Connect developer account proof ready",
-  "Android Google Play package proof ready",
-])
-  && includesAll(launchProviderSetupSource, [
+const storeAccountsProofPacketIsSourceBacked =
+  includesAll(storeAccountsProofSource, [
+    "STORE_ACCOUNTS_PROOF_SUMMARY",
+    "STORE_ACCOUNTS_PROOF_ITEMS",
+    "Apple and Google store accounts proof packet",
+    "platform/store-named",
+    "StoreAccountEvidence",
+    "Apple Developer team id",
+    "App Store Connect app record",
+    "Google Play package record",
+    "bundle ids",
+    "reviewer access notes",
+    "release role approval",
+    "iOS App Store Connect developer account proof ready",
+    "Android Google Play package proof ready",
+  ]) &&
+  includesAll(launchProviderSetupSource, [
     "STORE_ACCOUNTS_PROOF_SUMMARY",
     "STORE_ACCOUNTS_PROOF_ITEMS",
     "Apple and Google store accounts",
     "appStoreAccountsReady",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Provider proof needed:",
     "formatProviderProof",
   ]);
@@ -751,25 +1015,26 @@ check(
     : "keep store account proof modeled in storeAccountsProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
-const pushNotificationsProofPacketIsSourceBacked = includesAll(pushNotificationsProofSource, [
-  "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
-  "PUSH_NOTIFICATIONS_PROOF_ITEMS",
-  "Push notifications proof packet",
-  "Expo push project config",
-  "APNs credentials",
-  "Firebase/FCM credentials",
-  "permission prompt copy",
-  "quiet hours",
-  "opt-out behavior",
-  "delivery QA",
-])
-  && includesAll(launchProviderSetupSource, [
+const pushNotificationsProofPacketIsSourceBacked =
+  includesAll(pushNotificationsProofSource, [
+    "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
+    "PUSH_NOTIFICATIONS_PROOF_ITEMS",
+    "Push notifications proof packet",
+    "Expo push project config",
+    "APNs credentials",
+    "Firebase/FCM credentials",
+    "permission prompt copy",
+    "quiet hours",
+    "opt-out behavior",
+    "delivery QA",
+  ]) &&
+  includesAll(launchProviderSetupSource, [
     "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
     "PUSH_NOTIFICATIONS_PROOF_ITEMS",
     "Push notifications",
     "pushNotificationsConfigured",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Provider proof needed:",
     "formatProviderProof",
   ]);
@@ -781,32 +1046,35 @@ check(
     : "keep push notification proof modeled in pushNotificationsProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
-const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [
-  "RECORDED_MOBILE_BETA_CI_PROOF",
-  'runId: "28836909561"',
-  'jobId: "85522525710"',
-  'commit: "d21f44e"',
-  "auth/setup smoke proof",
-  "auth/setup native QA target",
-  "auth provider proof packet",
-  "provider staged-row truth boundary",
-  "support legal readiness proof target",
-  "provider-approved support/legal launch-readiness wiring",
-  "Plus checkout approval truth boundary",
-  "Records storage provider-approval clamp",
-  "Records binary proof manifest",
-  "Premium payments proof manifest",
-  "Auth/Setup proof manifest",
-  "Route Visual proof manifest",
-  "route-named Route Visual capture instructions",
-  "durable launch proof persistence",
-  "storage-provider evidence propagation",
-  "More launch queue storage proof propagation",
-  "Store Screenshot QA proof input propagation",
-  "Recorded branch CI proof:",
-  "Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
-  "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
-]);
+const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(
+  betaHandoffPacketSource,
+  [
+    "RECORDED_MOBILE_BETA_CI_PROOF",
+    'runId: "28836909561"',
+    'jobId: "85522525710"',
+    'commit: "d21f44e"',
+    "auth/setup smoke proof",
+    "auth/setup native QA target",
+    "auth provider proof packet",
+    "provider staged-row truth boundary",
+    "support legal readiness proof target",
+    "provider-approved support/legal launch-readiness wiring",
+    "Plus checkout approval truth boundary",
+    "Records storage provider-approval clamp",
+    "Records binary proof manifest",
+    "Premium payments proof manifest",
+    "Auth/Setup proof manifest",
+    "Route Visual proof manifest",
+    "route-named Route Visual capture instructions",
+    "durable launch proof persistence",
+    "storage-provider evidence propagation",
+    "More launch queue storage proof propagation",
+    "Store Screenshot QA proof input propagation",
+    "Recorded branch CI proof:",
+    "Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
+    "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
+  ],
+);
 check(
   "recorded CI proof freshness boundary is source-backed",
   recordedCiProofFreshnessBoundaryIsSourceBacked,
@@ -815,26 +1083,29 @@ check(
     : "keep recorded CI proof labeled as historical branch evidence with a rerun-after-new-commit boundary",
 );
 
-const recordedLivePreviewProofAttachmentIsSourceBacked = includesAll(betaHandoffPacketSource, [
-  "RECORDED_LIVE_PREVIEW_HANDOFF_PROOF",
-  'title: "WoofWatcher Live Preview Handoff Proof"',
-  'commit: "0f60c22"',
-  "auth-setup-onboarding-proof",
-  "care-entry-provider-sync-proof",
-  "woofguide-ai-provider-proof",
-  "payments-provider-proof",
-  "store-accounts-proof",
-  "account-deletion-proof",
-  "support-legal-readiness-proof",
-  "Recorded live preview proof:",
-  "Routes: ${passCount}/${totalCount} web-preview shell checks passed.",
-  "Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",
-  "Rerun proof:live-preview after any new commit or export before treating preview proof as current.",
-  "Live preview proof does not replace native iOS/Android proof.",
-])
-  && /RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource)
-  && /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource)
-  && handoffProofSections.includes("Recorded live preview proof");
+const recordedLivePreviewProofAttachmentIsSourceBacked =
+  includesAll(betaHandoffPacketSource, [
+    "RECORDED_LIVE_PREVIEW_HANDOFF_PROOF",
+    'title: "WoofWatcher Live Preview Handoff Proof"',
+    'commit: "0f60c22"',
+    "auth-setup-onboarding-proof",
+    "care-entry-provider-sync-proof",
+    "woofguide-ai-provider-proof",
+    "payments-provider-proof",
+    "store-accounts-proof",
+    "account-deletion-proof",
+    "support-legal-readiness-proof",
+    "Recorded live preview proof:",
+    "Routes: ${passCount}/${totalCount} web-preview shell checks passed.",
+    "Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",
+    "Rerun proof:live-preview after any new commit or export before treating preview proof as current.",
+    "Live preview proof does not replace native iOS/Android proof.",
+  ]) &&
+  /RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource) &&
+  /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(
+    moreRouteSource,
+  ) &&
+  handoffProofSections.includes("Recorded live preview proof");
 check(
   "recorded live preview proof attachment is source-backed",
   recordedLivePreviewProofAttachmentIsSourceBacked,
@@ -843,17 +1114,18 @@ check(
     : "keep recorded live preview proof wired through betaHandoffPacket.ts, More, and the doctor handoff sections",
 );
 
-const ownerPreviewProofWiringIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [
-  "ownerPreviewProofStatus",
-  "OWNER_PREVIEW_CORE_LOOP_ID",
-  "Owner preview proof:",
-])
-  && includesAll(betaHandoffPacketSource, [
+const ownerPreviewProofWiringIsSourceBacked =
+  includesAll(mobileLaunchQaEvidenceSource, [
+    "ownerPreviewProofStatus",
+    "OWNER_PREVIEW_CORE_LOOP_ID",
+    "Owner preview proof:",
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "ownerPreviewProofStatus",
     "Owner preview proof:",
     "Owner preview missing:",
-  ])
-  && includesAll(moreRouteSource, [
+  ]) &&
+  includesAll(moreRouteSource, [
     "ownerPreviewProofStatus",
     "Owner preview proof",
     "Finish Proof",
@@ -866,20 +1138,21 @@ check(
     : "keep Owner Preview Core Loop proof visible in QA plan, More, and Share Beta Handoff",
 );
 
-const careTwinQaRouteProofFlowIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "Mission note",
-  "Pass pending proof",
-  "Attach proof",
-  "care-twin-qa-stage-",
-  "buildMobileLaunchQaReturnRoute",
-])
-  && includesAll(mobileLaunchQaEvidenceSource, [
+const careTwinQaRouteProofFlowIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "Mission note",
+    "Pass pending proof",
+    "Attach proof",
+    "care-twin-qa-stage-",
+    "buildMobileLaunchQaReturnRoute",
+  ]) &&
+  includesAll(mobileLaunchQaEvidenceSource, [
     "buildMobileLaunchQaReturnRoute",
     "qaReturn=care-twin-qa",
     "qaSurface=${encodeURIComponent(surfaceId)}",
     "qaTitle=${encodeURIComponent(title)}",
-  ])
-  && includesAll(mobileReleaseQaSource, [
+  ]) &&
+  includesAll(mobileReleaseQaSource, [
     "Owner Preview Core Loop",
     "iOS Quick Log or Log screenshot.",
     "Android Launch Readiness screenshot.",
@@ -893,15 +1166,16 @@ check(
     : "keep /care-twin-qa and the release QA matrix wired to owner-loop device proof",
 );
 
-const releaseQaProofGateIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "mobileReleaseQaMissingEvidenceForSurface",
-  "mobileReleaseQaReviewStatusLabel",
-  "passedWithRequiredProof",
-  "passPendingProof",
-  "Pass pending proof",
-  "Missing proof:",
-])
-  && includesAll(careTwinQaRouteSource, [
+const releaseQaProofGateIsSourceBacked =
+  includesAll(mobileReleaseQaSource, [
+    "mobileReleaseQaMissingEvidenceForSurface",
+    "mobileReleaseQaReviewStatusLabel",
+    "passedWithRequiredProof",
+    "passPendingProof",
+    "Pass pending proof",
+    "Missing proof:",
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "mobileReleaseQaMissingEvidenceForSurface(surface, review)",
     "mobileReleaseQaReviewStatusLabel(surface, review)",
     "surfacePassPendingProof",
@@ -915,21 +1189,22 @@ check(
     : "keep release/store QA pass labels gated on required screenshots and QA notes",
 );
 
-const avatarSpriteProductionReviewIsSourceBacked = includesAll(avatarSpriteProductionQaSource, [
-  "buildAvatarSpriteProductionQaSummary",
-  "AVATAR_SPRITE_PRODUCTION_REQUIRED_CHECKS",
-  "Local sprite metadata only",
-  "iOS and Android screenshots",
-  "bottom-center anchor",
-  "walk gait feels like a video-game loop",
-])
-  && includesAll(mobileReleaseQaSource, [
+const avatarSpriteProductionReviewIsSourceBacked =
+  includesAll(avatarSpriteProductionQaSource, [
+    "buildAvatarSpriteProductionQaSummary",
+    "AVATAR_SPRITE_PRODUCTION_REQUIRED_CHECKS",
+    "Local sprite metadata only",
+    "iOS and Android screenshots",
+    "bottom-center anchor",
+    "walk gait feels like a video-game loop",
+  ]) &&
+  includesAll(mobileReleaseQaSource, [
     "avatar-sprite-production-review",
     "Avatar Sprite Production Review",
     "Pass pending proof",
     "gait/crop note",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "focusedQaTarget",
     "Attach focused QA proof",
     "Pass pending release proof",
@@ -942,15 +1217,16 @@ check(
     : "keep Avatar Sprite Production Review wired to sprite registry, proof gating, and focused /care-twin-qa capture",
 );
 
-const nativeQaNeedsTuneFixBriefIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [
-  "buildMobileLaunchQaFixBriefShareText",
-  "firstNeedsTuneTarget",
-  "WoofWatcher Needs Tune Fix Brief",
-  "No Needs tune route is currently marked.",
-  "Continue with the next QA capture in /care-twin-qa",
-  "After fix: return to /care-twin-qa",
-])
-  && includesAll(moreRouteSource, [
+const nativeQaNeedsTuneFixBriefIsSourceBacked =
+  includesAll(mobileLaunchQaEvidenceSource, [
+    "buildMobileLaunchQaFixBriefShareText",
+    "firstNeedsTuneTarget",
+    "WoofWatcher Needs Tune Fix Brief",
+    "No Needs tune route is currently marked.",
+    "Continue with the next QA capture in /care-twin-qa",
+    "After fix: return to /care-twin-qa",
+  ]) &&
+  includesAll(moreRouteSource, [
     "buildMobileLaunchQaFixBriefShareText",
     "nativeQaCaptureNeedsTuneTarget",
     "Share Fix Brief",
@@ -964,21 +1240,24 @@ check(
     : "keep the first Needs tune target, fix brief builder, and More Share Fix Brief action wired",
 );
 
-const carePassStorageProofGuardIsSourceBacked = includesAll(carePassDomainSource, [
-  "CarePassArtifactStorageOptions",
-  "CarePassStorageProviderEvidence",
-  "isCarePassStorageProviderProofReady",
-  "describeCarePassArtifactExport",
-  "storageProviderConfigured?: boolean",
-  "storageProviderEvidence?: CarePassStorageProviderEvidence | null",
-  "storageProviderProofReady",
-  "Ready to upload",
-  "providerBacked: false",
-  "Provider storage is staged",
-  "structured storage proof",
-])
-  && !/baseStatus === "local-only" && options\.storageProviderConfigured/.test(carePassDomainSource)
-  && includesAll(recordsRouteSource, [
+const carePassStorageProofGuardIsSourceBacked =
+  includesAll(carePassDomainSource, [
+    "CarePassArtifactStorageOptions",
+    "CarePassStorageProviderEvidence",
+    "isCarePassStorageProviderProofReady",
+    "describeCarePassArtifactExport",
+    "storageProviderConfigured?: boolean",
+    "storageProviderEvidence?: CarePassStorageProviderEvidence | null",
+    "storageProviderProofReady",
+    "Ready to upload",
+    "providerBacked: false",
+    "Provider storage is staged",
+    "structured storage proof",
+  ]) &&
+  !/baseStatus === "local-only" && options\.storageProviderConfigured/.test(
+    carePassDomainSource,
+  ) &&
+  includesAll(recordsRouteSource, [
     "deriveLaunchProviderSetup",
     "describeCarePassArtifactExport(artifact",
     "const storage = exportView.storage",
@@ -994,30 +1273,31 @@ check(
     : "keep Care Pass storage status wired so storageProviderConfigured alone cannot mark report artifacts upload-ready",
 );
 
-const attachmentStorageProofGuardIsSourceBacked = includesAll(attachmentManifestSource, [
-  "AttachmentStorageProviderEvidence",
-  "isAttachmentStorageProviderProofReady",
-  "storageProviderEvidence",
-  "signedUploadPolicy",
-  "signedDownloadPolicy",
-  "householdScopePolicy",
-  "retentionPolicy",
-  "exportPolicy",
-  "deletionPolicy",
-  "qaEvidenceStoragePolicy",
-  "apolloApproved",
-])
-  && includesAll(launchReadinessSource, [
+const attachmentStorageProofGuardIsSourceBacked =
+  includesAll(attachmentManifestSource, [
+    "AttachmentStorageProviderEvidence",
+    "isAttachmentStorageProviderProofReady",
+    "storageProviderEvidence",
+    "signedUploadPolicy",
+    "signedDownloadPolicy",
+    "householdScopePolicy",
+    "retentionPolicy",
+    "exportPolicy",
+    "deletionPolicy",
+    "qaEvidenceStoragePolicy",
+    "apolloApproved",
+  ]) &&
+  includesAll(launchReadinessSource, [
     "storageProviderProofReady",
     "Document storage provider requires structured storage proof evidence.",
     "Attach records storage proof",
-  ])
-  && includesAll(moreRouteSource, [
+  ]) &&
+  includesAll(moreRouteSource, [
     "storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured)",
     "storageProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.storageProviderProofReady)",
     "storageQueue: attachmentManifest.launchQueue",
-  ])
-  && !/storageProviderProofReady:\s*false/.test(moreRouteSource);
+  ]) &&
+  !/storageProviderProofReady:\s*false/.test(moreRouteSource);
 check(
   "attachment storage proof guard is source-backed",
   attachmentStorageProofGuardIsSourceBacked,
@@ -1026,26 +1306,27 @@ check(
     : "keep attachment manifest, launch readiness, and More wired so storageProviderConfigured alone cannot mark local attachments upload-ready",
 );
 
-const aggregateLaunchReadinessProofGuardIsSourceBacked = includesAll(launchReadinessSource, [
-  "authProviderProofReady",
-  "databaseProviderProofReady",
-  "aiProviderProofReady",
-  "paymentsProviderProofReady",
-  "accountDeletionProofReady",
-  "pushNotificationsProofReady",
-  "storeAccountsProofReady",
-  "privacyLegalProofReady",
-  "supportRunbookProofReady",
-  "Production auth requires structured auth provider proof evidence.",
-  "Production household database sync requires structured care-entry provider sync proof evidence.",
-  "AI provider setup requires structured AI provider proof evidence.",
-  "Payments require structured payments proof evidence.",
-  "Apple and Google store accounts require structured store-account proof evidence.",
-  "Attach production care sync proof",
-  "Checkout proof gated",
-  "AI proof gated",
-])
-  && includesAll(moreRouteSource, [
+const aggregateLaunchReadinessProofGuardIsSourceBacked =
+  includesAll(launchReadinessSource, [
+    "authProviderProofReady",
+    "databaseProviderProofReady",
+    "aiProviderProofReady",
+    "paymentsProviderProofReady",
+    "accountDeletionProofReady",
+    "pushNotificationsProofReady",
+    "storeAccountsProofReady",
+    "privacyLegalProofReady",
+    "supportRunbookProofReady",
+    "Production auth requires structured auth provider proof evidence.",
+    "Production household database sync requires structured care-entry provider sync proof evidence.",
+    "AI provider setup requires structured AI provider proof evidence.",
+    "Payments require structured payments proof evidence.",
+    "Apple and Google store accounts require structured store-account proof evidence.",
+    "Attach production care sync proof",
+    "Checkout proof gated",
+    "AI proof gated",
+  ]) &&
+  includesAll(moreRouteSource, [
     "deriveLaunchProviderSetup(state.launchProviderProfile)",
     "authProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.authProviderProofReady)",
     "databaseProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.databaseProviderProofReady)",
@@ -1056,10 +1337,10 @@ const aggregateLaunchReadinessProofGuardIsSourceBacked = includesAll(launchReadi
     "storeAccountsProofReady: Boolean(launchProviderSetupPlan.providerInput.storeAccountsProofReady)",
     "privacyLegalProofReady",
     "supportRunbookProofReady",
-  ])
-  && !/authProviderProofReady:\s*false/.test(moreRouteSource)
-  && !/databaseProviderProofReady:\s*false/.test(moreRouteSource)
-  && !/storageProviderProofReady:\s*false/.test(moreRouteSource);
+  ]) &&
+  !/authProviderProofReady:\s*false/.test(moreRouteSource) &&
+  !/databaseProviderProofReady:\s*false/.test(moreRouteSource) &&
+  !/storageProviderProofReady:\s*false/.test(moreRouteSource);
 check(
   "aggregate launch readiness proof guard is source-backed",
   aggregateLaunchReadinessProofGuardIsSourceBacked,
@@ -1068,21 +1349,29 @@ check(
     : "keep Launch Readiness and More wired so provider setup booleans alone cannot mark the app store-ready",
 );
 
-const careDocLaunchProofPersistenceGuardIsSourceBacked = includesAll(careContextSource, [
-  "supportLegalReadinessEvidence?: SupportLegalReadinessProofEvidence | null",
-  "authProviderProofReady: boolean",
-  "databaseProviderProofReady: boolean",
-  "storageProviderProofReady: boolean",
-  "aiProviderProofReady: boolean",
-  "paymentsProviderProofReady: boolean",
-  "pushNotificationsProofReady: boolean",
-  "storeAccountsProofReady: boolean",
-  "accountDeletionProofReady: boolean",
-  "normalizeSupportLegalReadinessEvidence",
-  "supportLegalReadinessEvidence: normalizeSupportLegalReadinessEvidence(launchSupportProfile.supportLegalReadinessEvidence)",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(moreRouteSource, [
+const normalizedLaunchProviderProfileIsSourceBacked =
+  /launchProviderProfile:\s*normalizeLaunchProviderProfile\(\s*merged\.launchProviderProfile,?\s*\)/.test(
+    careContextSource,
+  );
+
+const careDocLaunchProofPersistenceGuardIsSourceBacked =
+  includesAll(careContextSource, [
+    "supportLegalReadinessEvidence?: SupportLegalReadinessProofEvidence | null",
+    "authProviderProofReady: boolean",
+    "databaseProviderProofReady: boolean",
+    "storageProviderProofReady: boolean",
+    "aiProviderProofReady: boolean",
+    "paymentsProviderProofReady: boolean",
+    "pushNotificationsProofReady: boolean",
+    "storeAccountsProofReady: boolean",
+    "accountDeletionProofReady: boolean",
+    "normalizeSupportLegalReadinessEvidence",
+  ]) &&
+  /supportLegalReadinessEvidence:\s*normalizeSupportLegalReadinessEvidence\(\s*launchSupportProfile\.supportLegalReadinessEvidence,?\s*\)/.test(
+    careContextSource,
+  ) &&
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(moreRouteSource, [
     "deriveLaunchProviderSetup(state.launchProviderProfile)",
     "supportRunbookProofReady",
     "privacyLegalProofReady",
@@ -1095,14 +1384,17 @@ check(
     : "preserve structured launch proof fields in CareContext so valid saved/imported proof can reach Launch Readiness without raw boolean bypasses",
 );
 
-const privacyProviderProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null",
-  "aiProviderEvidence?: AiProviderProofEvidence | null",
-  "paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null",
-  "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const privacyProviderProofEvidencePropagationIsSourceBacked =
+  includesAll(careContextSource, [
+    "careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null",
+    "aiProviderEvidence?: AiProviderProofEvidence | null",
+    "paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null",
+    "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
+  ]) &&
+  /launchProviderProfile:\s*normalizeLaunchProviderProfile\(\s*merged\.launchProviderProfile,?\s*\)/.test(
+    careContextSource,
+  ) &&
+  includesAll(launchProviderSetupSource, [
     "careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null",
     "careEntryProviderSyncEvidence: normalizeCareEntryProviderSyncEvidence(source.careEntryProviderSyncEvidence)",
     "aiProviderEvidence?: AiProviderProofEvidence | null",
@@ -1111,13 +1403,17 @@ const privacyProviderProofEvidencePropagationIsSourceBacked = includesAll(careCo
     "aiProviderEvidence: normalizeAiProviderEvidence(source.aiProviderEvidence)",
     "paymentsProviderEvidence: normalizePaymentsProviderEvidence(source.paymentsProviderEvidence)",
     "accountDeletionEvidence: normalizeAccountDeletionEvidence(source.accountDeletionEvidence)",
-  ])
-  && includesAll(privacyRouteSource, [
+  ]) &&
+  includesAll(privacyRouteSource, [
     "aiProviderEvidence: state.launchProviderProfile.aiProviderEvidence",
-    "paymentsProviderEvidence: state.launchProviderProfile.paymentsProviderEvidence",
-    "accountDeletionEvidence: state.launchProviderProfile.accountDeletionEvidence",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  /paymentsProviderEvidence:\s*state\.launchProviderProfile\.paymentsProviderEvidence/.test(
+    privacyRouteSource,
+  ) &&
+  /accountDeletionEvidence:\s*state\.launchProviderProfile\.accountDeletionEvidence/.test(
+    privacyRouteSource,
+  ) &&
+  includesAll(careTwinQaRouteSource, [
     "deriveCareEntryProviderSyncProof(state.launchProviderProfile.careEntryProviderSyncEvidence)",
     "buildAiProviderProofManifest(state.launchProviderProfile.aiProviderEvidence)",
   ]);
@@ -1129,25 +1425,24 @@ check(
     : "preserve and forward care-entry sync, AI, payments, and account-deletion proof evidence from Provider Launch Setup into Privacy & Safety and focused QA missions",
 );
 
-const authSetupProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const authSetupProofEvidencePropagationIsSourceBacked =
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(launchProviderSetupSource, [
     "authSetupProofEvidence?: AuthSetupProofManifestInput | null",
     "authSetupProofEvidence: normalizeAuthSetupProofEvidence(source.authSetupProofEvidence)",
-  ])
-  && includesAll(authUiSource, [
+  ]) &&
+  includesAll(authUiSource, [
     "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
-  ])
-  && includesAll(setupRouteSource, [
+  ]) &&
+  includesAll(setupRouteSource, [
     "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
-  ])
-  && !authUiSource.includes("buildAuthSetupProofManifest({})")
-  && !setupRouteSource.includes("buildAuthSetupProofManifest({})")
-  && !careTwinQaRouteSource.includes("buildAuthSetupProofManifest({})");
+  ]) &&
+  !authUiSource.includes("buildAuthSetupProofManifest({})") &&
+  !setupRouteSource.includes("buildAuthSetupProofManifest({})") &&
+  !careTwinQaRouteSource.includes("buildAuthSetupProofManifest({})");
 check(
   "auth setup proof evidence propagation is source-backed",
   authSetupProofEvidencePropagationIsSourceBacked,
@@ -1156,25 +1451,24 @@ check(
     : "preserve and forward Auth/Setup proof evidence from Provider Launch Setup into AuthShell, Setup, and the focused QA mission",
 );
 
-const paymentsProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const paymentsProofEvidencePropagationIsSourceBacked =
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(launchProviderSetupSource, [
     "paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null",
     "paymentsProviderEvidence: normalizePaymentsProviderEvidence(source.paymentsProviderEvidence)",
-  ])
-  && includesAll(premiumRouteSource, [
+  ]) &&
+  includesAll(premiumRouteSource, [
     "buildPaymentsProviderProofManifest(",
     "state.launchProviderProfile.paymentsProviderEvidence ?? undefined",
-  ])
-  && includesAll(privacyRouteSource, [
-    "paymentsProviderEvidence: state.launchProviderProfile.paymentsProviderEvidence",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  /paymentsProviderEvidence:\s*state\.launchProviderProfile\.paymentsProviderEvidence/.test(
+    privacyRouteSource,
+  ) &&
+  includesAll(careTwinQaRouteSource, [
     "buildPaymentsProviderProofManifest(state.launchProviderProfile.paymentsProviderEvidence ?? undefined)",
-  ])
-  && !premiumRouteSource.includes("buildPaymentsProviderProofManifest({})")
-  && !careTwinQaRouteSource.includes("buildPaymentsProviderProofManifest({})");
+  ]) &&
+  !premiumRouteSource.includes("buildPaymentsProviderProofManifest({})") &&
+  !careTwinQaRouteSource.includes("buildPaymentsProviderProofManifest({})");
 check(
   "payments proof evidence propagation is source-backed",
   paymentsProofEvidencePropagationIsSourceBacked,
@@ -1183,22 +1477,23 @@ check(
     : "preserve and forward payments proof evidence from Provider Launch Setup into Premium, Privacy & Safety, and the focused QA mission",
 );
 
-const pushNotificationsProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const pushNotificationsProofEvidencePropagationIsSourceBacked =
+  includesAll(careContextSource, [
+    "pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null",
+  ]) &&
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(launchProviderSetupSource, [
     "pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null",
     "pushNotificationsProofEvidence: normalizePushNotificationsProofEvidence(source.pushNotificationsProofEvidence)",
-  ])
-  && includesAll(reminderNotificationPreferencesSource, [
+  ]) &&
+  includesAll(reminderNotificationPreferencesSource, [
     "pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null",
     "buildPushNotificationsProofManifest(providerProfile?.pushNotificationsProofEvidence)",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "buildPushNotificationsProofManifest(state.launchProviderProfile.pushNotificationsProofEvidence)",
-  ])
-  && !careTwinQaRouteSource.includes("buildPushNotificationsProofManifest({})");
+  ]) &&
+  !careTwinQaRouteSource.includes("buildPushNotificationsProofManifest({})");
 check(
   "push notification proof evidence propagation is source-backed",
   pushNotificationsProofEvidencePropagationIsSourceBacked,
@@ -1207,18 +1502,19 @@ check(
     : "preserve and forward push notification proof evidence from Provider Launch Setup into Reminder Center and the focused QA mission",
 );
 
-const storeAccountsProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "storeAccountsProofEvidence?: StoreAccountsProofEvidence | null",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const storeAccountsProofEvidencePropagationIsSourceBacked =
+  includesAll(careContextSource, [
+    "storeAccountsProofEvidence?: StoreAccountsProofEvidence | null",
+  ]) &&
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(launchProviderSetupSource, [
     "storeAccountsProofEvidence?: StoreAccountsProofEvidence | null",
     "storeAccountsProofEvidence: normalizeStoreAccountsProofEvidence(source.storeAccountsProofEvidence)",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "buildStoreAccountsProofManifest(state.launchProviderProfile.storeAccountsProofEvidence)",
-  ])
-  && !careTwinQaRouteSource.includes("buildStoreAccountsProofManifest({})");
+  ]) &&
+  !careTwinQaRouteSource.includes("buildStoreAccountsProofManifest({})");
 check(
   "store accounts proof evidence propagation is source-backed",
   storeAccountsProofEvidencePropagationIsSourceBacked,
@@ -1227,20 +1523,23 @@ check(
     : "preserve and forward Store Accounts proof evidence from Provider Launch Setup into the focused QA mission",
 );
 
-const recordsLocalFileProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const recordsLocalFileProofEvidencePropagationIsSourceBacked =
+  includesAll(careContextSource, [
+    "recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null",
+  ]) &&
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(launchProviderSetupSource, [
     "RecordsLocalFileHandoffProofEvidence",
     "recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null",
     "recordsLocalFileHandoffEvidence: normalizeRecordsLocalFileHandoffEvidence",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "buildRecordsLocalFileHandoffProofManifest(",
     "state.launchProviderProfile.recordsLocalFileHandoffEvidence ?? undefined",
-  ])
-  && !careTwinQaRouteSource.includes("buildRecordsLocalFileHandoffProofManifest({})");
+  ]) &&
+  !careTwinQaRouteSource.includes(
+    "buildRecordsLocalFileHandoffProofManifest({})",
+  );
 check(
   "records local file proof evidence propagation is source-backed",
   recordsLocalFileProofEvidencePropagationIsSourceBacked,
@@ -1249,16 +1548,17 @@ check(
     : "preserve and forward Records native local-file proof evidence from Provider Launch Setup into the focused QA mission",
 );
 
-const reportBinaryExportProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "reportBinaryExportProofEvidence?: ReportBinaryExportProofEvidence | null",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const reportBinaryExportProofEvidencePropagationIsSourceBacked =
+  includesAll(careContextSource, [
+    "reportBinaryExportProofEvidence?: ReportBinaryExportProofEvidence | null",
+  ]) &&
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(launchProviderSetupSource, [
     "ReportBinaryExportProofEvidence",
     "reportBinaryExportProofEvidence?: ReportBinaryExportProofEvidence | null",
     "reportBinaryExportProofEvidence: normalizeReportBinaryExportProofEvidence",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "const savedProof = state.launchProviderProfile.reportBinaryExportProofEvidence ?? {}",
     "generatedCarePassPdf: savedProof.generatedCarePassPdf",
     "generatedDogIdPng: savedProof.generatedDogIdPng",
@@ -1274,16 +1574,17 @@ check(
     : "preserve and forward Report Binary Export generated artifact, native proof, and provider storage evidence from Provider Launch Setup into the focused QA mission",
 );
 
-const routeVisualProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "routeVisualProofEvidence?: RouteVisualProofManifestInput | null",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const routeVisualProofEvidencePropagationIsSourceBacked =
+  includesAll(careContextSource, [
+    "routeVisualProofEvidence?: RouteVisualProofManifestInput | null",
+  ]) &&
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(launchProviderSetupSource, [
     "RouteVisualProofManifestInput",
     "routeVisualProofEvidence?: RouteVisualProofManifestInput | null",
     "routeVisualProofEvidence: normalizeRouteVisualProofEvidence",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "const savedRouteVisualProof = state.launchProviderProfile.routeVisualProofEvidence ?? {}",
     "focusedQaEvidence.length ? focusedQaEvidence : savedRouteVisualProof.evidence",
     "surfaceNotes[focusedQaTarget.target.surfaceId] || savedRouteVisualProof.note",
@@ -1296,18 +1597,19 @@ check(
     : "preserve and forward Route Visual Consistency screenshot evidence and QA notes from Provider Launch Setup into the focused QA mission",
 );
 
-const accountDeletionProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
-  "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
-])
-  && includesAll(launchProviderSetupSource, [
+const accountDeletionProofEvidencePropagationIsSourceBacked =
+  includesAll(careContextSource, [
+    "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
+  ]) &&
+  normalizedLaunchProviderProfileIsSourceBacked &&
+  includesAll(launchProviderSetupSource, [
     "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
     "accountDeletionEvidence: normalizeAccountDeletionEvidence(source.accountDeletionEvidence)",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "buildAccountDeletionProofManifest(state.launchProviderProfile.accountDeletionEvidence)",
-  ])
-  && !careTwinQaRouteSource.includes("buildAccountDeletionProofManifest({})");
+  ]) &&
+  !careTwinQaRouteSource.includes("buildAccountDeletionProofManifest({})");
 check(
   "account deletion proof evidence propagation is source-backed",
   accountDeletionProofEvidencePropagationIsSourceBacked,
@@ -1316,22 +1618,25 @@ check(
     : "preserve and forward Account Deletion proof evidence from Provider Launch Setup into the focused QA mission",
 );
 
-const providerLaunchSetupProofGuardIsSourceBacked = includesAll(launchProviderSetupSource, [
-  "authProviderProofReady",
-  "databaseProviderProofReady",
-  "storageProviderProofReady",
-  "aiProviderProofReady",
-  "paymentsProviderProofReady",
-  "pushNotificationsProofReady",
-  "storeAccountsProofReady",
-  "accountDeletionProofReady",
-  "proofField",
-  "const proofReady = Boolean(profile[definition.proofField])",
-  "const rowReady = configured && providerApproved && proofReady",
-  "Provider setup is staged, but structured proof evidence is still required",
-  "authProviderProofReady: rows.some((row) => row.key === \"auth\" && row.status === \"ready\")",
-])
-  && !/const status: LaunchProviderSetupRowStatus = configured \? \(providerApproved \? "ready" : "staged"\) : "blocked"/.test(launchProviderSetupSource);
+const providerLaunchSetupProofGuardIsSourceBacked =
+  includesAll(launchProviderSetupSource, [
+    "authProviderProofReady",
+    "databaseProviderProofReady",
+    "storageProviderProofReady",
+    "aiProviderProofReady",
+    "paymentsProviderProofReady",
+    "pushNotificationsProofReady",
+    "storeAccountsProofReady",
+    "accountDeletionProofReady",
+    "proofField",
+    "const proofReady = Boolean(profile[definition.proofField])",
+    "const rowReady = configured && providerApproved && proofReady",
+    "Provider setup is staged, but structured proof evidence is still required",
+    'authProviderProofReady: rows.some((row) => row.key === "auth" && row.status === "ready")',
+  ]) &&
+  !/const status: LaunchProviderSetupRowStatus = configured \? \(providerApproved \? "ready" : "staged"\) : "blocked"/.test(
+    launchProviderSetupSource,
+  );
 check(
   "provider launch setup proof guard is source-backed",
   providerLaunchSetupProofGuardIsSourceBacked,
@@ -1340,15 +1645,16 @@ check(
     : "keep Provider Launch Setup gated so provider-approved booleans alone cannot mark provider rows ready",
 );
 
-const privacySafetyAiProofGuardIsSourceBacked = includesAll(privacySafetySource, [
-  "buildAiProviderProofManifest",
-  "AiProviderProofEvidence",
-  "aiProviderEvidence",
-  "aiProviderProofReady",
-  "WoofGuide AI provider proof requires structured OpenAI, model, source, write-gate, safety, and fallback evidence.",
-  "structured WoofGuide AI provider proof covers OpenAI key storage, model policy, source rules, owner-reviewed writes, veterinary safety, and fallback handling",
-])
-  && includesAll(aiProviderProofSource, [
+const privacySafetyAiProofGuardIsSourceBacked =
+  includesAll(privacySafetySource, [
+    "buildAiProviderProofManifest",
+    "AiProviderProofEvidence",
+    "aiProviderEvidence",
+    "aiProviderProofReady",
+    "WoofGuide AI provider proof requires structured OpenAI, model, source, write-gate, safety, and fallback evidence.",
+    "structured WoofGuide AI provider proof covers OpenAI key storage, model policy, source rules, owner-reviewed writes, veterinary safety, and fallback handling",
+  ]) &&
+  includesAll(aiProviderProofSource, [
     "buildAiProviderProofManifest",
     "liveAiAllowed",
     "OpenAI key storage",
@@ -1366,18 +1672,21 @@ check(
     : "keep Privacy & Safety wired to the WoofGuide AI provider proof manifest so aiProviderConfigured alone cannot mark AI disclosure ready",
 );
 
-const pwaWoofGuideAiProofGuardIsSourceBacked = includesAll(pwaVanillaAppEntrySource, [
-  "proofReady: false",
-  "function isAssistantLiveReady",
-  "return Boolean(assistantStatus.configured && assistantStatus.proofReady)",
-  "Provider proof pending",
-  "Structured AI proof needed",
-  "structured WoofGuide AI proof",
-  "const providerProofReady = Boolean(status.aiProviderProofReady || status.providerProofReady)",
-  "const liveAnswer = isAssistantLiveReady() ? await requestLiveAssistant(question, context) : null",
-  "mode: providerProofReady && status.mode === \"openai\" ? \"openai\" : \"local\"",
-])
-  && !/Live OpenAI|Credential found|If live OpenAI is not configured|Questions use the live helper first/.test(pwaVanillaAppEntrySource);
+const pwaWoofGuideAiProofGuardIsSourceBacked =
+  includesAll(pwaVanillaAppEntrySource, [
+    "proofReady: false",
+    "function isAssistantLiveReady",
+    "return Boolean(assistantStatus.configured && assistantStatus.proofReady)",
+    "Provider proof pending",
+    "Structured AI proof needed",
+    "structured WoofGuide AI proof",
+    "const providerProofReady = Boolean(status.aiProviderProofReady || status.providerProofReady)",
+    "const liveAnswer = isAssistantLiveReady() ? await requestLiveAssistant(question, context) : null",
+    'mode: providerProofReady && status.mode === "openai" ? "openai" : "local"',
+  ]) &&
+  !/Live OpenAI|Credential found|If live OpenAI is not configured|Questions use the live helper first/.test(
+    pwaVanillaAppEntrySource,
+  );
 check(
   "PWA WoofGuide AI proof guard is source-backed",
   pwaWoofGuideAiProofGuardIsSourceBacked,
@@ -1386,25 +1695,28 @@ check(
     : "keep the PWA WoofGuide surface gated so OpenAI key detection alone cannot claim or call live AI without structured proofReady evidence",
 );
 
-const pwaCloudSyncProofGuardIsSourceBacked = includesAll(pwaPrivacyCloudSource, [
-  "CLOUD_SYNC_PROVIDER_PROOF_REQUIREMENTS",
-  "isCloudSyncProviderProofReady",
-  "providerEvidence",
-  "providerProofReady",
-  "provider_proof_pending",
-  "structured cloud sync provider proof",
-  "Supabase project id",
-  "migration/backfill",
-  "active-household RLS",
-  "retention/export/deletion",
-  "dependency-complete build proof",
-  "mobile full-refresh sign-off",
-  "Apollo approval",
-  "backendConfigured && !providerProofReady",
-  "proofReady: providerProofReady",
-  "status: !backendConfigured || !householdId ? \"local_only\" : providerProofReady ? \"ready_to_connect\" : \"provider_proof_pending\"",
-])
-  && !/status: blockers\.length \? "local_only" : "ready_to_connect"/.test(pwaPrivacyCloudSource);
+const pwaCloudSyncProofGuardIsSourceBacked =
+  includesAll(pwaPrivacyCloudSource, [
+    "CLOUD_SYNC_PROVIDER_PROOF_REQUIREMENTS",
+    "isCloudSyncProviderProofReady",
+    "providerEvidence",
+    "providerProofReady",
+    "provider_proof_pending",
+    "structured cloud sync provider proof",
+    "Supabase project id",
+    "migration/backfill",
+    "active-household RLS",
+    "retention/export/deletion",
+    "dependency-complete build proof",
+    "mobile full-refresh sign-off",
+    "Apollo approval",
+    "backendConfigured && !providerProofReady",
+    "proofReady: providerProofReady",
+    'status: !backendConfigured || !householdId ? "local_only" : providerProofReady ? "ready_to_connect" : "provider_proof_pending"',
+  ]) &&
+  !/status: blockers\.length \? "local_only" : "ready_to_connect"/.test(
+    pwaPrivacyCloudSource,
+  );
 check(
   "PWA cloud sync proof guard is source-backed",
   pwaCloudSyncProofGuardIsSourceBacked,
@@ -1413,26 +1725,29 @@ check(
     : "keep PWA cloud sync gated so backendConfigured plus householdId cannot mark cross-device sync ready without structured provider proof",
 );
 
-const pwaHostedNudgeProofGuardIsSourceBacked = includesAll(pwaOperationsSource, [
-  "HOSTED_NUDGE_PROVIDER_PROOF_REQUIREMENTS",
-  "isHostedNudgeProviderProofReady",
-  "hostedNudgeProviderEvidence",
-  "providerProofReady",
-  "provider_proof_pending",
-  "structured hosted nudge delivery proof",
-  "backend job policy",
-  "caregiver consent policy",
-  "provider delivery policy",
-  "caregiver privacy policy",
-  "quiet-hours and daily-budget policy",
-  "missed-delivery fallback policy",
-  "native delivery proof",
-  "Apollo approval",
-  "backendConfigured && pushProviderConfigured && !providerProofReady",
-  "proofReady: providerProofReady",
-  "\"ready_to_schedule\"",
-])
-  && !/status: blockers\.length \? "local_only" : remainingToday === 0 \? "budget_exhausted" : quietNow \? "quiet_hold" : "ready_to_schedule"/.test(pwaOperationsSource);
+const pwaHostedNudgeProofGuardIsSourceBacked =
+  includesAll(pwaOperationsSource, [
+    "HOSTED_NUDGE_PROVIDER_PROOF_REQUIREMENTS",
+    "isHostedNudgeProviderProofReady",
+    "hostedNudgeProviderEvidence",
+    "providerProofReady",
+    "provider_proof_pending",
+    "structured hosted nudge delivery proof",
+    "backend job policy",
+    "caregiver consent policy",
+    "provider delivery policy",
+    "caregiver privacy policy",
+    "quiet-hours and daily-budget policy",
+    "missed-delivery fallback policy",
+    "native delivery proof",
+    "Apollo approval",
+    "backendConfigured && pushProviderConfigured && !providerProofReady",
+    "proofReady: providerProofReady",
+    '"ready_to_schedule"',
+  ]) &&
+  !/status: blockers\.length \? "local_only" : remainingToday === 0 \? "budget_exhausted" : quietNow \? "quiet_hold" : "ready_to_schedule"/.test(
+    pwaOperationsSource,
+  );
 check(
   "PWA hosted nudge proof guard is source-backed",
   pwaHostedNudgeProofGuardIsSourceBacked,
@@ -1441,15 +1756,16 @@ check(
     : "keep PWA hosted nudges gated so backendConfigured plus pushProviderConfigured cannot schedule closed-app nudges without structured delivery proof",
 );
 
-const privacySafetyAccountDeletionProofGuardIsSourceBacked = includesAll(privacySafetySource, [
-  "buildAccountDeletionProofManifest",
-  "AccountDeletionProofEvidence",
-  "accountDeletionEvidence",
-  "accountDeletionReady",
-  "Self-serve account deletion requires structured account deletion proof before destructive deletion can be enabled.",
-  "structured account deletion proof covers route/auth, export-before-delete, data/object receipts, audit/support, recovery/cancellation, and legal/store approval",
-])
-  && includesAll(accountDeletionProofSource, [
+const privacySafetyAccountDeletionProofGuardIsSourceBacked =
+  includesAll(privacySafetySource, [
+    "buildAccountDeletionProofManifest",
+    "AccountDeletionProofEvidence",
+    "accountDeletionEvidence",
+    "accountDeletionReady",
+    "Self-serve account deletion requires structured account deletion proof before destructive deletion can be enabled.",
+    "structured account deletion proof covers route/auth, export-before-delete, data/object receipts, audit/support, recovery/cancellation, and legal/store approval",
+  ]) &&
+  includesAll(accountDeletionProofSource, [
     "buildAccountDeletionProofManifest",
     "destructiveDeletionAllowed",
     "deletion-route-auth",
@@ -1467,15 +1783,16 @@ check(
     : "keep Privacy & Safety wired to the account deletion proof manifest so accountDeletionEnabled alone cannot mark deletion ready",
 );
 
-const privacySafetyPaymentsProofGuardIsSourceBacked = includesAll(privacySafetySource, [
-  "buildPaymentsProviderProofManifest",
-  "PaymentsProviderProofManifestInput",
-  "paymentsProviderEvidence",
-  "paymentsProviderProofReady",
-  "Payments proof requires structured product, billing, receipt, restore, refund/support, and checkout evidence.",
-  "structured payments proof covers product catalog, billing path, iOS App Store and Android Google Play sandbox receipts, restore purchases, refund/support policy, and Apollo checkout approval",
-])
-  && includesAll(paymentsProviderProofSource, [
+const privacySafetyPaymentsProofGuardIsSourceBacked =
+  includesAll(privacySafetySource, [
+    "buildPaymentsProviderProofManifest",
+    "PaymentsProviderProofManifestInput",
+    "paymentsProviderEvidence",
+    "paymentsProviderProofReady",
+    "Payments proof requires structured product, billing, receipt, restore, refund/support, and checkout evidence.",
+    "structured payments proof covers product catalog, billing path, iOS App Store and Android Google Play sandbox receipts, restore purchases, refund/support policy, and Apollo checkout approval",
+  ]) &&
+  includesAll(paymentsProviderProofSource, [
     "buildPaymentsProviderProofManifest",
     "Product catalog",
     "Billing path decision",
@@ -1492,23 +1809,24 @@ check(
     : "keep Privacy & Safety wired to the payments provider proof manifest so paymentsEnabled alone cannot mark checkout ready",
 );
 
-const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "Care Pass Report History storage status",
-  "Saved on this device, or Ready to upload only after structured provider storage proof is attached",
-  "QA note confirming Care Pass Report History storage status stayed truthful.",
-  'proof: "Care Pass Report History storage status note or screenshot."',
-])
-  && includesAll(betaHandoffPacketSource, [
+const ownerPreviewCarePassStorageProofIsSourceBacked =
+  includesAll(mobileReleaseQaSource, [
+    "Care Pass Report History storage status",
+    "Saved on this device, or Ready to upload only after structured provider storage proof is attached",
+    "QA note confirming Care Pass Report History storage status stayed truthful.",
+    'proof: "Care Pass Report History storage status note or screenshot."',
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after structured provider storage proof is attached.",
     "Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native/provider proof remains blocked.",
     "Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
-])
-  && includesAll(mobileLaunchQaEvidenceSource, [
+  ]) &&
+  includesAll(mobileLaunchQaEvidenceSource, [
     "Route loop:",
     "mobileReleaseQaRouteProofLabel",
     "Proof:",
-  ])
-  && includesAll(careTwinQaRouteSource, [
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "Owner route loop",
     "mobileReleaseQaRouteProofLabel(routeCheck)",
   ]);
@@ -1520,22 +1838,23 @@ check(
     : "keep Owner Preview Care Pass storage proof in release QA, share text, and /care-twin-qa route loop",
 );
 
-const recordsLocalFileHandoffProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "records-local-file-handoff",
-  "Records Local File Handoff",
-  "Care Pass Report History local HTML",
-  "Dog ID local HTML and SVG",
-  "WoofWatcherReports",
-  "WoofWatcherCredentials",
-  "Android content URI",
-  "fallback copy",
-  "generated PDF/PNG proof remains separate",
-])
-  && includesAll(betaHandoffPacketSource, [
+const recordsLocalFileHandoffProofIsSourceBacked =
+  includesAll(mobileReleaseQaSource, [
+    "records-local-file-handoff",
+    "Records Local File Handoff",
+    "Care Pass Report History local HTML",
+    "Dog ID local HTML and SVG",
+    "WoofWatcherReports",
+    "WoofWatcherCredentials",
+    "Android content URI",
+    "fallback copy",
+    "generated PDF/PNG proof remains separate",
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
     "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused Records handoff target",
     "/care-twin-qa?qaSurface=records-local-file-handoff",
     "Android content URI",
@@ -1549,16 +1868,17 @@ check(
     : "keep Records local file handoff proof wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
 );
 
-const recordsLocalFileHandoffProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "buildRecordsLocalFileHandoffProofManifest",
-  "recordsLocalFileHandoffProofManifest",
-  "Records local file handoff proof manifest",
-  "Native file proof allowed",
-  "Records local files must stay device-verified",
-  "recordsLocalFileHandoffProofManifest.items.map",
-  "recordsLocalFileHandoffProofManifest.blockers.map",
-])
-  && includesAll(reportArtifactExportFileSource, [
+const recordsLocalFileHandoffProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "buildRecordsLocalFileHandoffProofManifest",
+    "recordsLocalFileHandoffProofManifest",
+    "Records local file handoff proof manifest",
+    "Native file proof allowed",
+    "Records local files must stay device-verified",
+    "recordsLocalFileHandoffProofManifest.items.map",
+    "recordsLocalFileHandoffProofManifest.blockers.map",
+  ]) &&
+  includesAll(reportArtifactExportFileSource, [
     "buildRecordsLocalFileHandoffProofManifest",
     "RECORDS_LOCAL_FILE_HANDOFF_PROOF_ITEMS",
     "nativeFileEvidence",
@@ -1585,26 +1905,27 @@ check(
     : "render the Records local file handoff proof manifest on /care-twin-qa?qaSurface=records-local-file-handoff with local HTML/SVG, native share sheet, Android content URI, fallback copy, and PDF/PNG/provider boundaries",
 );
 
-const reportBinaryExportProofPacketIsSourceBacked = includesAll(reportBinaryExportProofSource, [
-  "REPORT_BINARY_EXPORT_PROOF_SUMMARY",
-  "REPORT_BINARY_EXPORT_PROOF_ITEMS",
-  "ReportProviderStorageEvidence",
-  "Report binary export proof packet",
-  "Care Pass PDF",
-  "Dog ID PNG",
-  "structured provider storage proof file",
-  "expo-print",
-  "react-native-view-shot",
-  "server renderer",
-  "iOS and Android",
-])
-  && includesAll(launchProviderSetupSource, [
+const reportBinaryExportProofPacketIsSourceBacked =
+  includesAll(reportBinaryExportProofSource, [
+    "REPORT_BINARY_EXPORT_PROOF_SUMMARY",
+    "REPORT_BINARY_EXPORT_PROOF_ITEMS",
+    "ReportProviderStorageEvidence",
+    "Report binary export proof packet",
+    "Care Pass PDF",
+    "Dog ID PNG",
+    "structured provider storage proof file",
+    "expo-print",
+    "react-native-view-shot",
+    "server renderer",
+    "iOS and Android",
+  ]) &&
+  includesAll(launchProviderSetupSource, [
     "REPORT_BINARY_EXPORT_PROOF_SUMMARY",
     "REPORT_BINARY_EXPORT_PROOF_ITEMS",
     "Records and media storage",
     "storageProviderConfigured",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Provider proof gates",
     "proofChecklist",
   ]);
@@ -1616,16 +1937,17 @@ check(
     : "keep binary PDF/PNG export proof modeled in reportBinaryExportProof.ts and wired through Provider Launch Setup",
 );
 
-const reportBinaryExportProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "buildReportBinaryExportProofManifest",
-  "reportBinaryExportProofManifest",
-  "Report binary export proof manifest",
-  "Generated artifacts allowed",
-  "Generated PDF/PNG readiness must stay blocked",
-  "reportBinaryExportProofManifest.rows.map",
-  "reportBinaryExportProofManifest.blockers.map",
-])
-  && includesAll(reportBinaryExportProofSource, [
+const reportBinaryExportProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "buildReportBinaryExportProofManifest",
+    "reportBinaryExportProofManifest",
+    "Report binary export proof manifest",
+    "Generated artifacts allowed",
+    "Generated PDF/PNG readiness must stay blocked",
+    "reportBinaryExportProofManifest.rows.map",
+    "reportBinaryExportProofManifest.blockers.map",
+  ]) &&
+  includesAll(reportBinaryExportProofSource, [
     "buildReportBinaryExportProofManifest",
     "generatedCarePassPdf",
     "generatedDogIdPng",
@@ -1657,20 +1979,21 @@ check(
     : "render the Report Binary Export Proof manifest on /care-twin-qa?qaSurface=report-binary-export-proof with local PDF/PNG, native share/reopen, provider storage, and Apollo sign-off boundaries",
 );
 
-const recordsBinaryExportProofManifestIsSourceBacked = includesAll(reportBinaryExportProofSource, [
-  "buildReportBinaryExportProofManifest",
-  "providerStorageEvidence",
-  "carePassHtmlFileName",
-  "dogIdSvgFileName",
-  "application/pdf",
-  "image/png",
-  "Provider storage pending",
-  "Provider storage pending structured proof",
-  "native proofs attached",
-  "iOS Care Pass PDF",
-  "Android Dog ID PNG",
-])
-  && includesAll(recordsRouteSource, [
+const recordsBinaryExportProofManifestIsSourceBacked =
+  includesAll(reportBinaryExportProofSource, [
+    "buildReportBinaryExportProofManifest",
+    "providerStorageEvidence",
+    "carePassHtmlFileName",
+    "dogIdSvgFileName",
+    "application/pdf",
+    "image/png",
+    "Provider storage pending",
+    "Provider storage pending structured proof",
+    "native proofs attached",
+    "iOS Care Pass PDF",
+    "Android Dog ID PNG",
+  ]) &&
+  includesAll(recordsRouteSource, [
     "buildReportBinaryExportProofManifest",
     "Binary proof manifest",
     "const binaryProofManifest = buildReportBinaryExportProofManifest",
@@ -1690,25 +2013,26 @@ check(
     : "keep Records Report History wired to the binary export proof manifest before claiming generated PDF/PNG readiness",
 );
 
-const generatedBinaryArtifactExportsAreSourceBacked = includesAll(reportGeneratedBinaryArtifactSource, [
-  "buildCarePassPdfArtifactSource",
-  "buildDogIdPngArtifactSource",
-  "buildGeneratedBinaryArtifactFilePlan",
-  "buildGeneratedBinaryArtifactShareContent",
-  "application/pdf",
-  "image/png",
-  "base64",
-  "Native share/reopen proof still required",
-  "provider storage is not enabled",
-])
-  && includesAll(reportBinaryExportProofSource, [
+const generatedBinaryArtifactExportsAreSourceBacked =
+  includesAll(reportGeneratedBinaryArtifactSource, [
+    "buildCarePassPdfArtifactSource",
+    "buildDogIdPngArtifactSource",
+    "buildGeneratedBinaryArtifactFilePlan",
+    "buildGeneratedBinaryArtifactShareContent",
+    "application/pdf",
+    "image/png",
+    "base64",
+    "Native share/reopen proof still required",
+    "provider storage is not enabled",
+  ]) &&
+  includesAll(reportBinaryExportProofSource, [
     "generatedCarePassPdf",
     "generatedDogIdPng",
     "Local PDF generated",
     "Local PNG generated",
     "native share and reopen proof still required",
-  ])
-  && includesAll(recordsRouteSource, [
+  ]) &&
+  includesAll(recordsRouteSource, [
     "buildCarePassPdfArtifactSource",
     "buildDogIdPngArtifactSource",
     "buildGeneratedBinaryArtifactFilePlan",
@@ -1729,21 +2053,22 @@ check(
     : "keep reportGeneratedBinaryArtifact.ts wired through Records PDF/PNG actions and the binary proof manifest",
 );
 
-const reportBinaryExportProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "report-binary-export-proof",
-  "Report Binary Export Proof",
-  "local Care Pass PDF and Dog ID PNG bytes",
-  "native share/reopen behavior",
-  "structured provider storage evidence",
-  "Provider Launch Setup",
-  "file name, file size, MIME proof",
-  "HTML-only fallback",
-])
-  && includesAll(betaHandoffPacketSource, [
+const reportBinaryExportProofTargetIsSourceBacked =
+  includesAll(mobileReleaseQaSource, [
+    "report-binary-export-proof",
+    "Report Binary Export Proof",
+    "local Care Pass PDF and Dog ID PNG bytes",
+    "native share/reopen behavior",
+    "structured provider storage evidence",
+    "Provider Launch Setup",
+    "file name, file size, MIME proof",
+    "HTML-only fallback",
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused binary export proof target: /care-twin-qa?qaSurface=report-binary-export-proof.",
     "structured provider storage proof file with locator, MIME, byte size, bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, and approvals",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused binary export proof target",
     "/care-twin-qa?qaSurface=report-binary-export-proof",
     "iOS/Android artifact proof",
@@ -1758,16 +2083,17 @@ check(
     : "keep binary export proof wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
 );
 
-const careEntryProviderSyncProofTargetIsSourceBacked = includesAll(careEntryProviderSyncProofSource, [
-  "CARE_ENTRY_PROVIDER_SYNC_PROOF_SUMMARY",
-  "CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS",
-  "care_entries.updated_at",
-  "care_entry_tombstones",
-  "/care-entries?updatedSince=",
-  "/care-entries/tombstones?updatedSince=",
-  "mobile full-refresh sign-off",
-])
-  && includesAll(mobileReleaseQaSource, [
+const careEntryProviderSyncProofTargetIsSourceBacked =
+  includesAll(careEntryProviderSyncProofSource, [
+    "CARE_ENTRY_PROVIDER_SYNC_PROOF_SUMMARY",
+    "CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS",
+    "care_entries.updated_at",
+    "care_entry_tombstones",
+    "/care-entries?updatedSince=",
+    "/care-entries/tombstones?updatedSince=",
+    "mobile full-refresh sign-off",
+  ]) &&
+  includesAll(mobileReleaseQaSource, [
     "care-entry-provider-sync-proof",
     "Care-entry Provider Sync Proof",
     "structured Supabase project",
@@ -1775,22 +2101,22 @@ const careEntryProviderSyncProofTargetIsSourceBacked = includesAll(careEntryProv
     "active-household RLS",
     "retention/export/deletion",
     "incremental sync stays blocked",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
     "Attach structured care-entry provider proof files before enabling incremental sync",
     "Supabase project id proof; migration/backfill proof for care_entries.updated_at and care_entry_tombstones with row count and existing-rows-backfilled",
     "file name or URI, MIME, byte size, and row-specific booleans or approvals",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused care-entry provider sync proof target",
     "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
     "structured proof files cover Supabase project setup",
     "migration/backfill for care_entries.updated_at and care_entry_tombstones",
     "active-household RLS",
     "row-specific booleans or approvals",
-  ])
-  && includesAll(livePreviewHandoffProofSource, [
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, [
     "care-entry-provider-sync-proof",
   ]);
 check(
@@ -1801,17 +2127,18 @@ check(
     : "keep care-entry provider sync proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
 );
 
-const careEntryProviderSyncProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "deriveCareEntryProviderSyncProof",
-  "deriveCareEntryProviderSyncProof(state.launchProviderProfile.careEntryProviderSyncEvidence)",
-  "careEntryProviderSyncProofManifest",
-  "Care-entry provider sync proof manifest",
-  "Incremental sync allowed",
-  "Mobile must remain on full-refresh care-entry refresh",
-  "careEntryProviderSyncProofManifest.items.map",
-  "careEntryProviderSyncProofManifest.blockers.map",
-])
-  && includesAll(careEntryProviderSyncProofSource, [
+const careEntryProviderSyncProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "deriveCareEntryProviderSyncProof",
+    "deriveCareEntryProviderSyncProof(state.launchProviderProfile.careEntryProviderSyncEvidence)",
+    "careEntryProviderSyncProofManifest",
+    "Care-entry provider sync proof manifest",
+    "Incremental sync allowed",
+    "Mobile must remain on full-refresh care-entry refresh",
+    "careEntryProviderSyncProofManifest.items.map",
+    "careEntryProviderSyncProofManifest.blockers.map",
+  ]) &&
+  includesAll(careEntryProviderSyncProofSource, [
     "deriveCareEntryProviderSyncProof",
     "incrementalSyncAllowed",
     "careEntryProviderSyncEvidence",
@@ -1841,18 +2168,19 @@ check(
     : "render the care-entry provider sync proof manifest on /care-twin-qa?qaSurface=care-entry-provider-sync-proof with full-refresh and provider proof boundaries",
 );
 
-const woofGuideAiProviderProofTargetIsSourceBacked = includesAll(aiProviderProofSource, [
-  "AI_PROVIDER_PROOF_SUMMARY",
-  "AI_PROVIDER_PROOF_ITEMS",
-  "WoofGuide AI provider proof packet",
-  "OpenAI key location",
-  "approved model policy",
-  "source/citation rules",
-  "owner-review write gate",
-  "veterinary safety boundary",
-  "Fallback and incident handling",
-])
-  && includesAll(mobileReleaseQaSource, [
+const woofGuideAiProviderProofTargetIsSourceBacked =
+  includesAll(aiProviderProofSource, [
+    "AI_PROVIDER_PROOF_SUMMARY",
+    "AI_PROVIDER_PROOF_ITEMS",
+    "WoofGuide AI provider proof packet",
+    "OpenAI key location",
+    "approved model policy",
+    "source/citation rules",
+    "owner-review write gate",
+    "veterinary safety boundary",
+    "Fallback and incident handling",
+  ]) &&
+  includesAll(mobileReleaseQaSource, [
     "woofguide-ai-provider-proof",
     "WoofGuide AI Provider Proof",
     "OpenAI key location",
@@ -1861,24 +2189,22 @@ const woofGuideAiProviderProofTargetIsSourceBacked = includesAll(aiProviderProof
     "owner-review write gate",
     "veterinary safety boundary",
     "live AI stays blocked",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused WoofGuide AI provider target: /care-twin-qa?qaSurface=woofguide-ai-provider-proof.",
     "Attach OpenAI key location, approved model policy, source/citation rules, and owner-review write gate",
     "Each item must be backed by structured WoofGuide AI provider proof files",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused WoofGuide AI provider proof target",
     "/care-twin-qa?qaSurface=woofguide-ai-provider-proof",
     "OpenAI key location",
     "approved model policy",
     "owner-review write gate",
     "veterinary safety boundary",
-  ])
-  && includesAll(livePreviewHandoffProofSource, [
-    "woofguide-ai-provider-proof",
-  ])
-  && includesAll(moreRouteSource, [
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, ["woofguide-ai-provider-proof"]) &&
+  includesAll(moreRouteSource, [
     "woofguide-ai-provider-proof",
     "WoofGuide AI Provider Proof",
   ]);
@@ -1890,16 +2216,17 @@ check(
     : "keep WoofGuide AI proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
-const woofGuideAiProviderProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "buildAiProviderProofManifest",
-  "woofGuideAiProviderProofManifest",
-  "WoofGuide AI provider proof manifest",
-  "Live AI allowed",
-  "structured proof files",
-  "woofGuideAiProviderProofManifest.items.map",
-  "woofGuideAiProviderProofManifest.blockers.map",
-])
-  && includesAll(aiProviderProofSource, [
+const woofGuideAiProviderProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "buildAiProviderProofManifest",
+    "woofGuideAiProviderProofManifest",
+    "WoofGuide AI provider proof manifest",
+    "Live AI allowed",
+    "structured proof files",
+    "woofGuideAiProviderProofManifest.items.map",
+    "woofGuideAiProviderProofManifest.blockers.map",
+  ]) &&
+  includesAll(aiProviderProofSource, [
     "buildAiProviderProofManifest",
     "aiProviderEvidence",
     "AI_PROVIDER_EVIDENCE_REQUIREMENTS",
@@ -1923,18 +2250,19 @@ check(
     : "render the WoofGuide AI provider proof manifest on /care-twin-qa?qaSurface=woofguide-ai-provider-proof with structured proof files for deterministic, source, write-gate, and veterinary safety boundaries",
 );
 
-const pushNotificationsProofTargetIsSourceBacked = includesAll(pushNotificationsProofSource, [
-  "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
-  "PUSH_NOTIFICATIONS_PROOF_ITEMS",
-  "Expo push project config",
-  "APNs credentials",
-  "Firebase/FCM credentials",
-  "permission prompt copy",
-  "quiet hours",
-  "opt-out behavior",
-  "delivery QA",
-])
-  && includesAll(mobileReleaseQaSource, [
+const pushNotificationsProofTargetIsSourceBacked =
+  includesAll(pushNotificationsProofSource, [
+    "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
+    "PUSH_NOTIFICATIONS_PROOF_ITEMS",
+    "Expo push project config",
+    "APNs credentials",
+    "Firebase/FCM credentials",
+    "permission prompt copy",
+    "quiet hours",
+    "opt-out behavior",
+    "delivery QA",
+  ]) &&
+  includesAll(mobileReleaseQaSource, [
     "push-notifications-proof",
     "Push Notifications Proof",
     "Expo push project config",
@@ -1942,23 +2270,21 @@ const pushNotificationsProofTargetIsSourceBacked = includesAll(pushNotifications
     "Firebase/FCM credentials",
     "reminder delivery stays blocked",
     "missed notification fallback",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
     "Attach Expo push project id, APNs credentials, Firebase/FCM credentials",
     "ios-apns-reminder-delivered",
     "android-fcm-reminder-delivered",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused push notifications proof target",
     "/care-twin-qa?qaSurface=push-notifications-proof",
     "Expo push project config",
     "APNs credentials",
     "Firebase/FCM credentials",
-  ])
-  && includesAll(livePreviewHandoffProofSource, [
-    "push-notifications-proof",
-  ]);
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, ["push-notifications-proof"]);
 check(
   "push notifications proof target is source-backed",
   pushNotificationsProofTargetIsSourceBacked,
@@ -1967,16 +2293,17 @@ check(
     : "keep push notifications proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
 );
 
-const pushNotificationsProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "buildPushNotificationsProofManifest",
-  "pushNotificationsProofManifest",
-  "Push notifications proof manifest",
-  "Reminder delivery allowed",
-  "Reminder Center must stay local",
-  "pushNotificationsProofManifest.items.map",
-  "pushNotificationsProofManifest.blockers.map",
-])
-  && includesAll(pushNotificationsProofSource, [
+const pushNotificationsProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "buildPushNotificationsProofManifest",
+    "pushNotificationsProofManifest",
+    "Push notifications proof manifest",
+    "Reminder delivery allowed",
+    "Reminder Center must stay local",
+    "pushNotificationsProofManifest.items.map",
+    "pushNotificationsProofManifest.blockers.map",
+  ]) &&
+  includesAll(pushNotificationsProofSource, [
     "buildPushNotificationsProofManifest",
     "reminderDeliveryAllowed",
     "nativeDeliveryEvidence",
@@ -1998,14 +2325,15 @@ check(
     : "render the push notifications proof manifest on /care-twin-qa?qaSurface=push-notifications-proof with Expo/APNs/FCM, permission, quiet-hours, and delivery QA boundaries",
 );
 
-const reminderCenterPushProofGuardIsSourceBacked = includesAll(reminderNotificationPreferencesSource, [
-  "buildPushNotificationsProofManifest",
-  "pushNotificationsProofEvidence",
-  "providerStaged",
-  "providerProofReady",
-  "providerConfigured: providerStaged && providerProofReady",
-])
-  && includesAll(careRemindersDomainSource, [
+const reminderCenterPushProofGuardIsSourceBacked =
+  includesAll(reminderNotificationPreferencesSource, [
+    "buildPushNotificationsProofManifest",
+    "pushNotificationsProofEvidence",
+    "providerStaged",
+    "providerProofReady",
+    "providerConfigured: providerStaged && providerProofReady",
+  ]) &&
+  includesAll(careRemindersDomainSource, [
     "providerStaged",
     "providerProofReady",
     "Push provider is staged, but Reminder Center stays in-app until structured Expo/APNs/FCM, permission, quiet-hours, opt-out, and native delivery proof is attached.",
@@ -2019,17 +2347,18 @@ check(
     : "wire Reminder Center notification preferences to the push proof manifest so provider-approved booleans alone cannot enable provider-backed notifications",
 );
 
-const paymentsProviderProofTargetIsSourceBacked = includesAll(paymentsProviderProofSource, [
-  "PAYMENTS_PROVIDER_PROOF_SUMMARY",
-  "PAYMENTS_PROVIDER_PROOF_ITEMS",
-  "WoofWatcher Plus payments proof packet",
-  "Plus and Family product ids",
-  "billing path decision",
-  "Sandbox receipt test",
-  "Entitlement mapping",
-  "Refund and support policy",
-])
-  && includesAll(mobileReleaseQaSource, [
+const paymentsProviderProofTargetIsSourceBacked =
+  includesAll(paymentsProviderProofSource, [
+    "PAYMENTS_PROVIDER_PROOF_SUMMARY",
+    "PAYMENTS_PROVIDER_PROOF_ITEMS",
+    "WoofWatcher Plus payments proof packet",
+    "Plus and Family product ids",
+    "billing path decision",
+    "Sandbox receipt test",
+    "Entitlement mapping",
+    "Refund and support policy",
+  ]) &&
+  includesAll(mobileReleaseQaSource, [
     "payments-provider-proof",
     "Payments Provider Proof",
     "Plus and Family product ids",
@@ -2037,22 +2366,20 @@ const paymentsProviderProofTargetIsSourceBacked = includesAll(paymentsProviderPr
     "paid checkout stays blocked",
     "restore purchases",
     "money movement",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
     "Attach Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox purchase/renewal/cancel/refund/expired receipt proof",
     "restorePurchaseConfirmed",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused payments provider proof target",
     "/care-twin-qa?qaSurface=payments-provider-proof",
     "Plus and Family product ids",
     "checkout stays disabled",
-  ])
-  && includesAll(livePreviewHandoffProofSource, [
-    "payments-provider-proof",
-  ])
-  && includesAll(moreRouteSource, [
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, ["payments-provider-proof"]) &&
+  includesAll(moreRouteSource, [
     "payments-provider-proof",
     "Payments Provider Proof",
   ]);
@@ -2064,17 +2391,18 @@ check(
     : "keep payments proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
-const paymentsProviderProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "buildPaymentsProviderProofManifest",
-  "buildPaymentsProviderProofManifest(state.launchProviderProfile.paymentsProviderEvidence ?? undefined)",
-  "paymentsProviderProofManifest",
-  "Payments provider proof manifest",
-  "Checkout allowed",
-  "Paid checkout must stay blocked",
-  "paymentsProviderProofManifest.rows.map",
-  "paymentsProviderProofManifest.blockers.map",
-])
-  && includesAll(paymentsProviderProofSource, [
+const paymentsProviderProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "buildPaymentsProviderProofManifest",
+    "buildPaymentsProviderProofManifest(state.launchProviderProfile.paymentsProviderEvidence ?? undefined)",
+    "paymentsProviderProofManifest",
+    "Payments provider proof manifest",
+    "Checkout allowed",
+    "Paid checkout must stay blocked",
+    "paymentsProviderProofManifest.rows.map",
+    "paymentsProviderProofManifest.blockers.map",
+  ]) &&
+  includesAll(paymentsProviderProofSource, [
     "buildPaymentsProviderProofManifest",
     "Product catalog",
     "Billing path decision",
@@ -2097,21 +2425,22 @@ check(
     : "render the payments provider proof manifest on /care-twin-qa?qaSurface=payments-provider-proof with product, billing, receipt, restore, refund, and checkout boundaries",
 );
 
-const storeAccountsProofTargetIsSourceBacked = includesAll(storeAccountsProofSource, [
-  "STORE_ACCOUNTS_PROOF_SUMMARY",
-  "STORE_ACCOUNTS_PROOF_ITEMS",
-  "Apple and Google store accounts proof packet",
-  "platform/store-named",
-  "StoreAccountEvidence",
-  "Apple Developer team id",
-  "App Store Connect app record",
-  "Google Play package record",
-  "reviewer access notes",
-  "release role approval",
-  "iOS App Store Connect developer account proof ready",
-  "Android Google Play package proof ready",
-])
-  && includesAll(mobileReleaseQaSource, [
+const storeAccountsProofTargetIsSourceBacked =
+  includesAll(storeAccountsProofSource, [
+    "STORE_ACCOUNTS_PROOF_SUMMARY",
+    "STORE_ACCOUNTS_PROOF_ITEMS",
+    "Apple and Google store accounts proof packet",
+    "platform/store-named",
+    "StoreAccountEvidence",
+    "Apple Developer team id",
+    "App Store Connect app record",
+    "Google Play package record",
+    "reviewer access notes",
+    "release role approval",
+    "iOS App Store Connect developer account proof ready",
+    "Android Google Play package proof ready",
+  ]) &&
+  includesAll(mobileReleaseQaSource, [
     "store-accounts-proof",
     "Store Accounts Proof",
     "Apple Developer team id",
@@ -2120,24 +2449,22 @@ const storeAccountsProofTargetIsSourceBacked = includesAll(storeAccountsProofSou
     "store submission stays blocked",
     "platform/store-named",
     "screenshots/metadata ownership",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
     "Attach platform/store-named proof files before claiming store submission",
     "iOS App Store Connect developer account proof",
     "Android Google Play package proof",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused store accounts proof target",
     "/care-twin-qa?qaSurface=store-accounts-proof",
     "Apple Developer team id",
     "iOS App Store Connect developer account proof",
     "store submission stays blocked",
-  ])
-  && includesAll(livePreviewHandoffProofSource, [
-    "store-accounts-proof",
-  ])
-  && includesAll(moreRouteSource, [
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, ["store-accounts-proof"]) &&
+  includesAll(moreRouteSource, [
     "store-accounts-proof",
     "Store Accounts Proof",
   ]);
@@ -2149,16 +2476,17 @@ check(
     : "keep store accounts proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
-const storeAccountsProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "buildStoreAccountsProofManifest",
-  "storeAccountsProofManifest",
-  "Store accounts proof manifest",
-  "App submission allowed",
-  "Store submission must stay blocked",
-  "storeAccountsProofManifest.items.map",
-  "storeAccountsProofManifest.blockers.map",
-])
-  && includesAll(storeAccountsProofSource, [
+const storeAccountsProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "buildStoreAccountsProofManifest",
+    "storeAccountsProofManifest",
+    "Store accounts proof manifest",
+    "App submission allowed",
+    "Store submission must stay blocked",
+    "storeAccountsProofManifest.items.map",
+    "storeAccountsProofManifest.blockers.map",
+  ]) &&
+  includesAll(storeAccountsProofSource, [
     "buildStoreAccountsProofManifest",
     "appSubmissionAllowed",
     "storeAccountEvidence",
@@ -2180,39 +2508,38 @@ check(
     : "render the store accounts proof manifest on /care-twin-qa?qaSurface=store-accounts-proof with Apple/Google, reviewer, metadata, and approval boundaries",
 );
 
-const accountDeletionProofTargetIsSourceBacked = includesAll(accountDeletionProofSource, [
-  "ACCOUNT_DELETION_PROOF_SUMMARY",
-  "ACCOUNT_DELETION_PROOF_ITEMS",
-  "Self-serve account deletion proof packet",
-  "self-serve deletion route",
-  "export-before-delete warning",
-  "data/object deletion receipt",
-  "audit trail",
-  "recovery-window policy",
-  "legal/store approval",
-])
-  && includesAll(mobileReleaseQaSource, [
+const accountDeletionProofTargetIsSourceBacked =
+  includesAll(accountDeletionProofSource, [
+    "ACCOUNT_DELETION_PROOF_SUMMARY",
+    "ACCOUNT_DELETION_PROOF_ITEMS",
+    "Self-serve account deletion proof packet",
+    "self-serve deletion route",
+    "export-before-delete warning",
+    "data/object deletion receipt",
+    "audit trail",
+    "recovery-window policy",
+    "legal/store approval",
+  ]) &&
+  includesAll(mobileReleaseQaSource, [
     "account-deletion-proof",
     "Account Deletion Proof",
     "self-serve deletion route",
     "destructive deletion stays blocked",
     "data/object deletion receipt",
     "legal/store approval",
-  ])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
     "Attach structured account deletion proof files before enabling destructive deletion",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused account deletion proof target",
     "/care-twin-qa?qaSurface=account-deletion-proof",
     "self-serve deletion route",
     "destructive deletion stays blocked",
-  ])
-  && includesAll(livePreviewHandoffProofSource, [
-    "account-deletion-proof",
-  ])
-  && includesAll(moreRouteSource, [
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, ["account-deletion-proof"]) &&
+  includesAll(moreRouteSource, [
     "account-deletion-proof",
     "Account Deletion Proof",
   ]);
@@ -2224,17 +2551,18 @@ check(
     : "keep account deletion proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
-const accountDeletionProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "buildAccountDeletionProofManifest",
-  "accountDeletionProofManifest",
-  "Account deletion proof manifest",
-  "Destructive deletion allowed",
-  "Destructive account deletion must stay blocked",
-  "structured route, export, receipt, audit, recovery, and legal/store proof files",
-  "accountDeletionProofManifest.items.map",
-  "accountDeletionProofManifest.blockers.map",
-])
-  && includesAll(accountDeletionProofSource, [
+const accountDeletionProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "buildAccountDeletionProofManifest",
+    "accountDeletionProofManifest",
+    "Account deletion proof manifest",
+    "Destructive deletion allowed",
+    "Destructive account deletion must stay blocked",
+    "structured route, export, receipt, audit, recovery, and legal/store proof files",
+    "accountDeletionProofManifest.items.map",
+    "accountDeletionProofManifest.blockers.map",
+  ]) &&
+  includesAll(accountDeletionProofSource, [
     "buildAccountDeletionProofManifest",
     "accountDeletionEvidence",
     "ACCOUNT_DELETION_EVIDENCE_REQUIREMENTS",
@@ -2262,30 +2590,31 @@ check(
     : "render the account deletion proof manifest on /care-twin-qa?qaSurface=account-deletion-proof with route, export, receipt, audit, recovery, legal, and store boundaries",
 );
 
-const supportLegalReadinessProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "support-legal-readiness-proof",
-  "Support Legal Readiness Proof",
-  "support inbox",
-  "privacy policy and terms links",
-  "refund and subscription policy",
-  "veterinary and emergency boundary",
-  "public launch stays blocked",
-])
-  && includesAll(betaHandoffPacketSource, [
+const supportLegalReadinessProofTargetIsSourceBacked =
+  includesAll(mobileReleaseQaSource, [
+    "support-legal-readiness-proof",
+    "Support Legal Readiness Proof",
+    "support inbox",
+    "privacy policy and terms links",
+    "refund and subscription policy",
+    "veterinary and emergency boundary",
+    "public launch stays blocked",
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused support legal readiness target: /care-twin-qa?qaSurface=support-legal-readiness-proof.",
     "Attach structured support/legal proof files before public launch",
     "Apollo launch approval/no-launch-boundary proof",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused support legal readiness proof target",
     "/care-twin-qa?qaSurface=support-legal-readiness-proof",
     "support inbox",
     "public launch stays blocked",
-  ])
-  && includesAll(livePreviewHandoffProofSource, [
+  ]) &&
+  includesAll(livePreviewHandoffProofSource, [
     "support-legal-readiness-proof",
-  ])
-  && includesAll(privacyRouteSource, [
+  ]) &&
+  includesAll(privacyRouteSource, [
     "openSupportLegalProofMission",
     "support-legal-readiness-proof",
     "Share support runbook",
@@ -2298,16 +2627,17 @@ check(
     : "keep support/legal readiness proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and Privacy & Safety",
 );
 
-const supportLegalReadinessProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
-  "buildSupportLegalReadinessProofManifest",
-  "supportLegalReadinessProofManifest",
-  "Support legal readiness proof manifest",
-  "Public launch allowed",
-  "Public launch must stay blocked",
-  "supportLegalReadinessProofManifest.items.map",
-  "supportLegalReadinessProofManifest.blockers.map",
-])
-  && includesAll(supportRunbookSource, [
+const supportLegalReadinessProofManifestIsSourceBacked =
+  includesAll(careTwinQaRouteSource, [
+    "buildSupportLegalReadinessProofManifest",
+    "supportLegalReadinessProofManifest",
+    "Support legal readiness proof manifest",
+    "Public launch allowed",
+    "Public launch must stay blocked",
+    "supportLegalReadinessProofManifest.items.map",
+    "supportLegalReadinessProofManifest.blockers.map",
+  ]) &&
+  includesAll(supportRunbookSource, [
     "buildSupportLegalReadinessProofManifest",
     "supportLegalEvidence",
     "SupportLegalEvidenceKind",
@@ -2336,19 +2666,22 @@ check(
     : "render the support legal readiness proof manifest on /care-twin-qa?qaSurface=support-legal-readiness-proof with structured support, policy, veterinary, incident, and Apollo approval proof-file boundaries",
 );
 
-const supportRunbookProofGuardIsSourceBacked = includesAll(supportRunbookSource, [
-  "supportLegalReadinessEvidence",
-  "buildSupportLegalReadinessProofManifest(input.supportLegalReadinessEvidence)",
-  "supportLegalProofReady",
-  "proofItemReady",
-  "Structured support/legal public-launch proof files are not attached.",
-  "Public launch stays gated until structured support/legal proof files cover support, privacy, refund, veterinary, deletion, incident, and Apollo approval.",
-  "Attach support proof",
-  "Attach policy proof",
-  "Attach boundary proof",
-  "Attach escalation proof",
-  "Attach response proof",
-]);
+const supportRunbookProofGuardIsSourceBacked = includesAll(
+  supportRunbookSource,
+  [
+    "supportLegalReadinessEvidence",
+    "buildSupportLegalReadinessProofManifest(input.supportLegalReadinessEvidence)",
+    "supportLegalProofReady",
+    "proofItemReady",
+    "Structured support/legal public-launch proof files are not attached.",
+    "Public launch stays gated until structured support/legal proof files cover support, privacy, refund, veterinary, deletion, incident, and Apollo approval.",
+    "Attach support proof",
+    "Attach policy proof",
+    "Attach boundary proof",
+    "Attach escalation proof",
+    "Attach response proof",
+  ],
+);
 check(
   "support runbook proof guard is source-backed",
   supportRunbookProofGuardIsSourceBacked,
@@ -2357,15 +2690,20 @@ check(
     : "keep deriveSupportRunbookPlan wired to the support legal proof manifest so approval booleans alone cannot mark public launch ready",
 );
 
-const privacySupportStatusProofGuardIsSourceBacked = includesAll(privacyRouteSource, [
-  "const launchProfileProviderApproved =",
-  'state.launchSupportProfile.providerStatus === "provider-approved" && supportPlan.launchReady',
-  "const requestedSupportPlan = deriveSupportRunbookPlan(launchDraft)",
-  "const savedProviderStatus =",
-  'providerStatus === "provider-approved" && !requestedSupportPlan.launchReady',
-  '"owner-reviewed"',
-  "providerStatus: savedProviderStatus",
-]);
+const privacySupportStatusProofGuardIsSourceBacked =
+  includesAll(privacyRouteSource, [
+    "const launchProfileProviderApproved =",
+    "const requestedSupportPlan = deriveSupportRunbookPlan(launchDraft)",
+    "const savedProviderStatus =",
+    '"owner-reviewed"',
+    "providerStatus: savedProviderStatus",
+  ]) &&
+  /state\.launchSupportProfile\.providerStatus === "provider-approved"\s*&&\s*supportPlan\.launchReady/.test(
+    privacyRouteSource,
+  ) &&
+  /providerStatus === "provider-approved"\s*&&\s*!requestedSupportPlan\.launchReady/.test(
+    privacyRouteSource,
+  );
 check(
   "privacy support status proof guard is source-backed",
   privacySupportStatusProofGuardIsSourceBacked,
@@ -2374,14 +2712,17 @@ check(
     : "keep Privacy display and save path clamped so provider-approved support/legal status cannot persist without structured proof",
 );
 
-const privacyExportLaunchStatusProofGuardIsSourceBacked = includesAll(privacySafetySource, [
-  "clampLaunchSupportProfileForExport",
-  "deriveSupportRunbookPlan(value as SupportRunbookInput)",
-  "clampLaunchProviderProfileForExport",
-  "deriveLaunchProviderSetup(value as Partial<LaunchProviderProfile>)",
-  "launchSupportProfile: clampLaunchSupportProfileForExport(state.launchSupportProfile)",
-  "launchProviderProfile: clampLaunchProviderProfileForExport(state.launchProviderProfile)",
-]);
+const privacyExportLaunchStatusProofGuardIsSourceBacked = includesAll(
+  privacySafetySource,
+  [
+    "clampLaunchSupportProfileForExport",
+    "deriveSupportRunbookPlan(value as SupportRunbookInput)",
+    "clampLaunchProviderProfileForExport",
+    "deriveLaunchProviderSetup(value as Partial<LaunchProviderProfile>)",
+    "launchSupportProfile: clampLaunchSupportProfileForExport(state.launchSupportProfile)",
+    "launchProviderProfile: clampLaunchProviderProfileForExport(state.launchProviderProfile)",
+  ],
+);
 check(
   "privacy export launch status proof guard is source-backed",
   privacyExportLaunchStatusProofGuardIsSourceBacked,
@@ -2390,30 +2731,31 @@ check(
     : "keep Privacy export from serializing provider-approved launch statuses unless support/provider proof models are ready",
 );
 
-const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "route-visual-consistency",
-  "Route Visual Consistency",
-  "Today",
-  "Log",
-  "Plan",
-  "Pack",
-  "Story",
-  "Health",
-  "Records",
-  "More",
+const routeVisualProofTargetIsSourceBacked =
+  includesAll(mobileReleaseQaSource, [
+    "route-visual-consistency",
+    "Route Visual Consistency",
+    "Today",
+    "Log",
+    "Plan",
+    "Pack",
+    "Story",
+    "Health",
+    "Records",
+    "More",
     "iOS screenshot of Today route top.",
     "Android screenshot of Today route top.",
     "Route-named file names or URIs for every attachment",
     'requiredNativePlatforms: ["ios", "android"]',
-])
-  && includesAll(betaHandoffPacketSource, [
+  ]) &&
+  includesAll(betaHandoffPacketSource, [
     "Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
     "Capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android before claiming route visual proof.",
     "Name or save each Route Visual screenshot with the route label and platform before attaching it",
     "Today-iOS",
     "More-Android",
-  ])
-  && includesAll(mobileReleaseSmokeChecklistSource, [
+  ]) &&
+  includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused route visual consistency target",
     "/care-twin-qa?qaSurface=route-visual-consistency",
     "Log, Plan, Today, Pack, Story, Health, Records, and More",
@@ -2429,20 +2771,21 @@ check(
     : "keep Route Visual Consistency wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
 );
 
-const routeVisualProofManifestIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "buildRouteVisualProofManifest",
-  "routeVisualEvidenceForRoute",
-  "Route visual proof manifest",
-  "Native proof blocked",
-  "Native visual proof complete",
-  "iOS ${routeCheck.label} screenshot pending",
-  "Android ${routeCheck.label} screenshot pending",
-  "const evidenceLabel = slugForQaId(`${item.fileName} ${item.uri}`)",
-  "return evidenceLabel.includes(routeSlug)",
-  "QA note pending",
-  "Web preview route proof can catch shell regressions",
-])
-  && includesAll(careTwinQaRouteSource, [
+const routeVisualProofManifestIsSourceBacked =
+  includesAll(mobileReleaseQaSource, [
+    "buildRouteVisualProofManifest",
+    "routeVisualEvidenceForRoute",
+    "Route visual proof manifest",
+    "Native proof blocked",
+    "Native visual proof complete",
+    "iOS ${routeCheck.label} screenshot pending",
+    "Android ${routeCheck.label} screenshot pending",
+    "const evidenceLabel = slugForQaId(`${item.fileName} ${item.uri}`)",
+    "return evidenceLabel.includes(routeSlug)",
+    "QA note pending",
+    "Web preview route proof can catch shell regressions",
+  ]) &&
+  includesAll(careTwinQaRouteSource, [
     "buildRouteVisualProofManifest",
     "routeVisualProofManifest",
     "Route visual proof manifest",
@@ -2459,14 +2802,20 @@ check(
     : "keep Route Visual Consistency wired to buildRouteVisualProofManifest in the focused QA route before claiming route visual proof",
 );
 
-const betaHandoffTruthBoundariesAreSourceBacked = includesAll(betaHandoffPacketSource, [
-  "Truth boundaries:",
-  "No App Store or Play Store submission is approved by this packet.",
-  "Provider-backed auth, database, storage, AI, push, and payments must stay gated until credentials and policies are configured.",
-  "WoofGuide stays non-diagnostic and owner-reviewed.",
-  "Public launch remains separate from local beta evidence.",
-])
-  && truthBoundaries.every((boundary) => boundary.includes("READY_FOR_EXPORT") || boundary.includes("does not approve") || boundary.includes("BLOCKED"));
+const betaHandoffTruthBoundariesAreSourceBacked =
+  includesAll(betaHandoffPacketSource, [
+    "Truth boundaries:",
+    "No App Store or Play Store submission is approved by this packet.",
+    "Provider-backed auth, database, storage, AI, push, and payments must stay gated until credentials and policies are configured.",
+    "WoofGuide stays non-diagnostic and owner-reviewed.",
+    "Public launch remains separate from local beta evidence.",
+  ]) &&
+  truthBoundaries.every(
+    (boundary) =>
+      boundary.includes("READY_FOR_EXPORT") ||
+      boundary.includes("does not approve") ||
+      boundary.includes("BLOCKED"),
+  );
 check(
   "beta handoff truth boundaries are source-backed",
   betaHandoffTruthBoundariesAreSourceBacked,
@@ -2488,37 +2837,54 @@ if (!jsonMode) {
 
 if (issues.length > 0) {
   if (jsonMode) {
-    console.log(JSON.stringify({
-      name: doctorName,
-      purpose: doctorPurpose,
-      result: "BLOCKED",
-      checks,
-      issues,
-      warnings,
-      proofCommands,
-      handoffProofSections,
-      nextActions,
-      truthBoundaries,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          name: doctorName,
+          purpose: doctorPurpose,
+          result: "BLOCKED",
+          checks,
+          issues,
+          warnings,
+          proofCommands,
+          handoffProofSections,
+          nextActions,
+          truthBoundaries,
+        },
+        null,
+        2,
+      ),
+    );
   } else {
-    console.log(`\nMobile beta doctor result: BLOCKED (${issues.length} issue${issues.length === 1 ? "" : "s"})`);
+    console.log(
+      `\nMobile beta doctor result: BLOCKED (${issues.length} issue${issues.length === 1 ? "" : "s"})`,
+    );
   }
   process.exitCode = 1;
 } else {
-  const suffix = warnings.length > 0 ? ` with ${warnings.length} warning${warnings.length === 1 ? "" : "s"}` : "";
+  const suffix =
+    warnings.length > 0
+      ? ` with ${warnings.length} warning${warnings.length === 1 ? "" : "s"}`
+      : "";
   if (jsonMode) {
-    console.log(JSON.stringify({
-      name: doctorName,
-      purpose: doctorPurpose,
-      result: "READY_FOR_EXPORT",
-      checks,
-      issues,
-      warnings,
-      proofCommands,
-      handoffProofSections,
-      nextActions,
-      truthBoundaries,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          name: doctorName,
+          purpose: doctorPurpose,
+          result: "READY_FOR_EXPORT",
+          checks,
+          issues,
+          warnings,
+          proofCommands,
+          handoffProofSections,
+          nextActions,
+          truthBoundaries,
+        },
+        null,
+        2,
+      ),
+    );
   } else {
     console.log(`\nMobile beta doctor result: READY FOR EXPORT${suffix}`);
   }

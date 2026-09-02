@@ -1,14 +1,28 @@
 # WoofWatcher Decision Log
 
-## 2026-09-02 — Shared care documents fail closed at the client and server
+## 2026-09-02 — Care state is principal-scoped, household-verified, and recoverable
 
-Decision: Treat whole-document care-plan editing as a server-derived capability, not a display-role inference. Authenticated clients may optimistically edit only after one exact self membership grants `careStateWriteAllowed`; stale or malformed capability state is unverified, a known denial remains read-only, and the route re-authorizes every write.
+Decision: Treat whole-document care-plan editing as a server-derived capability, not a display-role inference. Authenticated clients may optimistically edit only after one exact self membership grants `careStateWriteAllowed`; unresolved auth mounts no data providers, each exact principal owns a fresh token/query/cache boundary, and a known denial remains read-only.
 
-Decision: Scope durable care caches to the authenticated principal and verify household compatibility before reconciliation. Account changes remount/fence the session, and owner wipe supersedes queued storage snapshots before removing data-bearing keys.
+Decision: Require an identity-matched `/me` and verified household before any reconciliation, entry refresh, or retry. Send that verified id as `x-woofwatcher-household-id` on every care request; after resolving the active household, the server rejects disagreement with `409` before any care-table access. Invalidation permits only one outstanding two-second retry timer, preventing a persistent disagreement from becoming a hot loop.
 
-Reason: A caregiver role change, account switch, delayed request, or queued device write must not leak one household's data, silently preserve a denied shared edit, or resurrect erased care state.
+Decision: Mask a mismatched household synchronously and archive it under its own scope. If archival fails and `/me` returns to that same household, durably restore the full sealed document, entries/outbox, synchronized baseline, and deletion ledger to active keys before unmasking it; never let a blank sealed state replace the only recoverable copy.
 
-Boundary: Source behavior does not prove configured-provider membership/RLS, multi-device revocation timing, native accessibility, store review, or launch approval.
+Decision: Coalesce refresh requests that arrive during active sync or document writes. Resolve `409` with a three-way comparison of the server winner, synchronized baseline, and current local document so independent edits can merge and conflicting edits enter explicit recovery.
+
+Decision: Classify durable writes as discardable snapshots or critical remote-cleanup intent. Owner wipe pauses producers and executes key removal as the serialized terminal mutation while retaining critical cleanup. Hydration and delete callbacks carry erase/session generations so pre-wipe work cannot apply afterward.
+
+Decision: Serialize entry deletion against refresh. Persist every acknowledged real id as a deletion tombstone before hiding the row, fence list application with the delete generation, filter tombstoned rows, and remove the row again after DELETE so an older list cannot create a ghost. A nullable `addEntry` result is not success, so callers must not emit success feedback or advance workflow without a real id.
+
+Decision: Fence edits across both temporary and acknowledged identities while deletion is in flight, and repair tombstone removal as one failure-atomic action. Bound all CareContext-owned provider work, including `/me`, so a stalled transport releases its recovery or synchronization lock.
+
+Decision: Treat Privacy's destructive action as a local clear. Finish avatar writes before the serialized terminal care wipe, disclose provider-retained records and the opaque deletion-safety ledger, and require every targeted participant to settle before success. Keep OpenAPI and generated React/Zod clients synchronized with an executable CI drift check.
+
+Reason: Account changes, household changes, delayed requests, concurrent edits, and queued device writes must not leak another household's data, lose a requested refresh, silently overwrite a winner, claim an unsaved log, or resurrect erased care state.
+
+Evidence status: Full `mobileReadiness.test.ts` passes `192/192` locally, and all beta-doctor source-backed checks are clear. The current integrity-focused file passes `12/12`; the loader-assisted care integrity/merge/writer suite passes `90/90`, with no combined total claimed because coverage overlaps. API readiness passes `20/20`, and the household-scope/OpenAPI contract passes `4/4`. The beta doctor remains locally non-green only for pinned pnpm CLI and mobile Expo resolution, plus Corepack and unsupported bundled-pnpm warnings. Dependency-complete CI remains pending for this continuation.
+
+Boundary: Source behavior does not prove configured-provider membership/RLS, multi-device timing, real-iPhone behavior, VoiceOver/TalkBack, store review, or Apollo launch approval.
 
 ## 2026-09-02 — Whole care-document replacement is adult-only and compare-and-swap atomic
 

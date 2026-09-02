@@ -19,10 +19,9 @@ export interface CareEntryPendingDelete {
   readonly __woofWatcherPendingDelete: "delete-v1";
 }
 
-export const CARE_ENTRY_PENDING_DELETE: CareEntryPendingDelete =
-  Object.freeze({
-    __woofWatcherPendingDelete: "delete-v1",
-  });
+export const CARE_ENTRY_PENDING_DELETE: CareEntryPendingDelete = Object.freeze({
+  __woofWatcherPendingDelete: "delete-v1",
+});
 
 export function isCareEntryPendingDelete(
   value: unknown,
@@ -31,8 +30,8 @@ export function isCareEntryPendingDelete(
     !!value &&
     typeof value === "object" &&
     !Array.isArray(value) &&
-    (value as Partial<CareEntryPendingDelete>)
-      .__woofWatcherPendingDelete === "delete-v1"
+    (value as Partial<CareEntryPendingDelete>).__woofWatcherPendingDelete ===
+      "delete-v1"
   );
 }
 
@@ -106,10 +105,7 @@ export type CareDocRefreshStatus =
   | "accept-server-read-only"
   | "keep-local-unverified";
 
-export type CareDocRefreshWriteAccess =
-  | "allowed"
-  | "restricted"
-  | "unverified";
+export type CareDocRefreshWriteAccess = "allowed" | "restricted" | "unverified";
 
 export interface CareDocRefreshInput<T extends SyncableCareDoc> {
   localDoc: T;
@@ -211,15 +207,10 @@ type CareEntryPendingFields<T extends SyncableEntry> = Omit<
 export type CareEntryPendingSyncPatch<T extends SyncableEntry> = {
   [K in keyof CareEntryPendingFields<T>]?: K extends "details"
     ? CareEntryPendingFields<T>[K]
-    :
-        | CareEntryPendingFields<T>[K]
-        | CareEntryPendingDelete;
+    : CareEntryPendingFields<T>[K] | CareEntryPendingDelete;
 };
 
-function careEntryDetailValuesEqual(
-  left: unknown,
-  right: unknown,
-): boolean {
+function careEntryDetailValuesEqual(left: unknown, right: unknown): boolean {
   if (Object.is(left, right)) return true;
   try {
     return JSON.stringify(left) === JSON.stringify(right);
@@ -235,10 +226,7 @@ export function diffCareEntryPendingDetails(
   const before = previous ?? {};
   const after = next ?? {};
   const patch: Record<string, unknown> = {};
-  for (const key of new Set([
-    ...Object.keys(before),
-    ...Object.keys(after),
-  ])) {
+  for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
     // Revision is transport state, not an owner edit. Conflict recovery
     // always derives it from the winning server row.
     if (key === CARE_ENTRY_SYNC_REVISION_KEY) continue;
@@ -253,9 +241,7 @@ export function diffCareEntryPendingDetails(
   return patch;
 }
 
-export function mergeCareEntryPendingSyncPatch<
-  T extends SyncableEntry,
->(
+export function mergeCareEntryPendingSyncPatch<T extends SyncableEntry>(
   previous: CareEntryPendingSyncPatch<T> | null | undefined,
   next: CareEntryPendingSyncPatch<T>,
 ): CareEntryPendingSyncPatch<T> {
@@ -273,10 +259,7 @@ export function mergeCareEntryPendingSyncPatch<
         : value;
   }
   const previousDetails = previous?.details;
-  const nextHasDetails = Object.prototype.hasOwnProperty.call(
-    next,
-    "details",
-  );
+  const nextHasDetails = Object.prototype.hasOwnProperty.call(next, "details");
   if (
     nextHasDetails &&
     next.details &&
@@ -304,9 +287,7 @@ export function mergeCareEntryPendingSyncPatch<
  * resolving a 409 by writing an entire stale local snapshot over another
  * caregiver's newer fields.
  */
-export function rebaseCareEntryAfterConflict<
-  T extends SyncableEntry,
->(
+export function rebaseCareEntryAfterConflict<T extends SyncableEntry>(
   localEntry: T,
   serverEntry: T,
   pendingPatch: CareEntryPendingSyncPatch<T>,
@@ -341,9 +322,7 @@ export function rebaseCareEntryAfterConflict<
   return replayed as unknown as T;
 }
 
-export function applyQueuedPatchToAcknowledgedEntry<
-  T extends SyncableEntry,
->(
+export function applyQueuedPatchToAcknowledgedEntry<T extends SyncableEntry>(
   acknowledgedEntry: T,
   queuedPatch: Partial<T>,
   willSync = true,
@@ -372,9 +351,9 @@ export function prepareCareEntryForOfflineEdit<T extends SyncableEntry>(
   } as T;
 }
 
-export function recoverInterruptedCareEntryMutations<
-  T extends SyncableEntry,
->(entries: readonly T[]): T[] {
+export function recoverInterruptedCareEntryMutations<T extends SyncableEntry>(
+  entries: readonly T[],
+): T[] {
   return entries.map((entry) =>
     entry.syncStatus === "pending"
       ? ({
@@ -386,9 +365,10 @@ export function recoverInterruptedCareEntryMutations<
   );
 }
 
-export function migrateAcknowledgedTempEntryForRetry<
-  T extends SyncableEntry,
->(localEntry: T, serverEntry: T): T {
+export function migrateAcknowledgedTempEntryForRetry<T extends SyncableEntry>(
+  localEntry: T,
+  serverEntry: T,
+): T {
   const serverClientKey = serverEntry.details?.clientKey;
   const details = {
     ...(serverEntry.details ?? {}),
@@ -408,9 +388,7 @@ export function migrateAcknowledgedTempEntryForRetry<
   };
 }
 
-export function findCreatedCareEntryLocalSnapshot<
-  T extends SyncableEntry,
->(
+export function findCreatedCareEntryLocalSnapshot<T extends SyncableEntry>(
   entries: readonly T[],
   tempId: string,
   serverEntryId: string,
@@ -419,8 +397,7 @@ export function findCreatedCareEntryLocalSnapshot<
     entries.find((entry) => entry.id === tempId) ??
     entries.find(
       (entry) =>
-        entry.id === serverEntryId &&
-        entry.details?.clientKey === tempId,
+        entry.id === serverEntryId && entry.details?.clientKey === tempId,
     )
   );
 }
@@ -444,6 +421,128 @@ export interface SerializedCareEntryMutationQueue<TInput> {
   enqueue: (entryId: string, input: TInput) => number;
   cancel: (entryId: string) => void;
   cancelAll: () => void;
+}
+
+export interface CareEntryDeleteFenceLease {
+  release: () => void;
+}
+
+export interface CareEntryDeleteFence {
+  isDeleting: (entryId: string) => boolean;
+  tryAcquire: (entryIds: readonly string[]) => CareEntryDeleteFenceLease | null;
+  clear: () => void;
+}
+
+export interface CareSyncRequestTimeoutOptions {
+  timeoutMs?: number;
+  timeoutScheduler?: {
+    schedule: (callback: () => void, delayMs: number) => unknown;
+    cancel: (handle: unknown) => void;
+  };
+}
+
+export class CareSyncRequestTimeoutError extends Error {
+  readonly timeoutMs: number;
+
+  constructor(timeoutMs: number) {
+    super(`Care sync request timed out after ${timeoutMs}ms.`);
+    this.name = "CareSyncRequestTimeoutError";
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+/** Runs provider I/O with an abort signal and a deterministic time bound. */
+export function runCareSyncRequestWithTimeout<T>(
+  request: (signal: AbortSignal) => Promise<T>,
+  {
+    timeoutMs = 30_000,
+    timeoutScheduler = {
+      schedule: (callback, delayMs) => setTimeout(callback, delayMs),
+      cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+    },
+  }: CareSyncRequestTimeoutOptions = {},
+): Promise<T> {
+  const effectiveTimeoutMs =
+    Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 30_000;
+  const abortController = new AbortController();
+
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timeoutHandle = timeoutScheduler.schedule(() => {
+      if (settled) return;
+      settled = true;
+      abortController.abort();
+      reject(new CareSyncRequestTimeoutError(effectiveTimeoutMs));
+    }, effectiveTimeoutMs);
+
+    let operation: Promise<T>;
+    try {
+      operation = Promise.resolve(request(abortController.signal));
+    } catch (error) {
+      operation = Promise.reject(error);
+    }
+    void operation.then(
+      (result) => {
+        if (settled) return;
+        settled = true;
+        timeoutScheduler.cancel(timeoutHandle);
+        resolve(result);
+      },
+      (error) => {
+        if (settled) return;
+        settled = true;
+        timeoutScheduler.cancel(timeoutHandle);
+        reject(error);
+      },
+    );
+  });
+}
+
+/**
+ * Prevents edits and duplicate deletes from racing a durable delete setup.
+ * Leases are epoch-owned so a pre-erase finally cannot release a newer fence.
+ */
+export function createCareEntryDeleteFence(): CareEntryDeleteFence {
+  const deletingEntryIds = new Set<string>();
+  let epoch = 0;
+
+  return {
+    isDeleting(entryId) {
+      return deletingEntryIds.has(entryId);
+    },
+    tryAcquire(entryIds) {
+      const aliases = [
+        ...new Set(
+          entryIds
+            .filter((entryId): entryId is string => typeof entryId === "string")
+            .map((entryId) => entryId.trim())
+            .filter(Boolean),
+        ),
+      ];
+      if (
+        aliases.length === 0 ||
+        aliases.some((entryId) => deletingEntryIds.has(entryId))
+      ) {
+        return null;
+      }
+
+      for (const entryId of aliases) deletingEntryIds.add(entryId);
+      const leaseEpoch = epoch;
+      let released = false;
+      return {
+        release() {
+          if (released) return;
+          released = true;
+          if (epoch !== leaseEpoch) return;
+          for (const entryId of aliases) deletingEntryIds.delete(entryId);
+        },
+      };
+    },
+    clear() {
+      epoch += 1;
+      deletingEntryIds.clear();
+    },
+  };
 }
 
 export class CareSyncMutationTimeoutError extends Error {
@@ -510,10 +609,7 @@ export async function retryCareEntryMutationAfterConflict<
   try {
     return await mutate(rebasedInput);
   } catch (retryError) {
-    throw new CareEntryConflictRetryError(
-      rebasedInput,
-      retryError,
-    );
+    throw new CareEntryConflictRetryError(rebasedInput, retryError);
   }
 }
 
@@ -529,8 +625,7 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
   timeoutMs = 30_000,
   timeoutScheduler = {
     schedule: (callback, delayMs) => setTimeout(callback, delayMs),
-    cancel: (handle) =>
-      clearTimeout(handle as ReturnType<typeof setTimeout>),
+    cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
   },
 }: SerializedCareEntryMutationQueueOptions<
   TInput,
@@ -641,10 +736,7 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
     },
     cancel(entryId) {
       abortControllers.get(entryId)?.abort();
-      latestGeneration.set(
-        entryId,
-        (latestGeneration.get(entryId) ?? 0) + 1,
-      );
+      latestGeneration.set(entryId, (latestGeneration.get(entryId) ?? 0) + 1);
       queued.delete(entryId);
     },
     cancelAll() {
@@ -659,9 +751,7 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
   };
 }
 
-export interface CreatedCareEntryAcknowledgementInput<
-  T extends SyncableEntry,
-> {
+export interface CreatedCareEntryAcknowledgementInput<T extends SyncableEntry> {
   localEntry?: T;
   serverEntry: T;
   createWasRetried?: boolean;
@@ -692,12 +782,11 @@ export async function reconcileCreatedCareEntryAcknowledgement<
   eraseGenerationAtStart,
   currentEraseGeneration,
   deleteServerEntry,
-}: CreatedCareEntryAcknowledgementInput<
-  T
->): Promise<CreatedCareEntryAcknowledgement<T>> {
+}: CreatedCareEntryAcknowledgementInput<T>): Promise<
+  CreatedCareEntryAcknowledgement<T>
+> {
   const shouldDiscard =
-    tempWasCancelled ||
-    eraseGenerationAtStart !== currentEraseGeneration;
+    tempWasCancelled || eraseGenerationAtStart !== currentEraseGeneration;
   if (!shouldDiscard) {
     let entry: T;
     if (!localEntry) {
@@ -708,10 +797,7 @@ export async function reconcileCreatedCareEntryAcknowledgement<
     ) {
       entry = localEntry;
     } else if (createWasRetried) {
-      entry = migrateAcknowledgedTempEntryForRetry(
-        localEntry,
-        serverEntry,
-      );
+      entry = migrateAcknowledgedTempEntryForRetry(localEntry, serverEntry);
     } else {
       entry = adoptServerEntry(localEntry, serverEntry);
     }
@@ -763,6 +849,44 @@ export function removeDiscardedServerEntryId(
   );
 }
 
+export interface ClearDiscardedServerEntryDurablyInput {
+  entryId: string;
+  readEntryIds: () => readonly string[];
+  applyEntryIds: (entryIds: readonly string[]) => void;
+  persistEntryIds: (entryIds: readonly string[]) => Promise<void>;
+}
+
+/**
+ * Clears one deletion tombstone only when that clear is durable. A failed
+ * clear restores the live intent and appends a corrective write after any
+ * mutations that queued while the first storage operation was in flight.
+ */
+export async function clearDiscardedServerEntryDurably({
+  entryId,
+  readEntryIds,
+  applyEntryIds,
+  persistEntryIds,
+}: ClearDiscardedServerEntryDurablyInput): Promise<boolean> {
+  const current = normalizeDiscardedServerEntryIds(readEntryIds());
+  if (!current.includes(entryId)) return true;
+
+  const cleared = removeDiscardedServerEntryId(current, entryId);
+  applyEntryIds(cleared);
+  try {
+    await persistEntryIds(cleared);
+    return true;
+  } catch {
+    const retained = addDiscardedServerEntryId(readEntryIds(), entryId);
+    applyEntryIds(retained);
+    try {
+      await persistEntryIds(retained);
+    } catch {
+      // The caller keeps the in-memory tombstone and surfaces storage failure.
+    }
+    return false;
+  }
+}
+
 export function selectWoofWatcherKeysForOwnerWipe(
   keys: readonly string[],
   deletionLedgerKeyPrefix: string,
@@ -796,9 +920,7 @@ export function filterDiscardedServerEntries<
   });
 }
 
-export interface DiscardedServerEntryCleanupInput<
-  T extends { id: string },
-> {
+export interface DiscardedServerEntryCleanupInput<T extends { id: string }> {
   rows: readonly T[];
   markDiscarded: (entryId: string) => Promise<void>;
   deleteEntry: (entryId: string) => Promise<void>;
@@ -871,10 +993,7 @@ export function shouldRetryCreate(
 }
 
 export function shouldRetryUpdate(
-  entry: Pick<
-    SyncableEntry,
-    "id" | "syncStatus" | "pendingSyncPatch"
-  >,
+  entry: Pick<SyncableEntry, "id" | "syncStatus" | "pendingSyncPatch">,
 ): boolean {
   return (
     (entry.syncStatus === "failed" || entry.syncStatus === "local") &&
@@ -885,10 +1004,7 @@ export function shouldRetryUpdate(
 }
 
 export function requiresCareEntrySyncReview(
-  entry: Pick<
-    SyncableEntry,
-    "id" | "syncStatus" | "pendingSyncPatch"
-  >,
+  entry: Pick<SyncableEntry, "id" | "syncStatus" | "pendingSyncPatch">,
 ): boolean {
   return (
     (entry.syncStatus === "failed" || entry.syncStatus === "local") &&
@@ -910,10 +1026,7 @@ export type CareEntryEditSyncDisposition =
  * conflict-recovery history.
  */
 export function decideCareEntryEditSyncDisposition(
-  entry: Pick<
-    SyncableEntry,
-    "id" | "syncStatus" | "pendingSyncPatch"
-  >,
+  entry: Pick<SyncableEntry, "id" | "syncStatus" | "pendingSyncPatch">,
   signedIn: boolean,
 ): CareEntryEditSyncDisposition {
   if (requiresCareEntrySyncReview(entry)) return "review-required";

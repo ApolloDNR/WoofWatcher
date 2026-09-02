@@ -5,9 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { Household } from './household';
-import type { Member } from './member';
-import type { User } from './user';
+import type { Household } from "./household";
+import type { Member } from "./member";
+import type { User } from "./user";
 
 export interface Me {
   user: User;

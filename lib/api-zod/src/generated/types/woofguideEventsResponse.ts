@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { WoofguideEvent } from './woofguideEvent';
+import type { WoofguideEvent } from "./woofguideEvent";
 
 export interface WoofguideEventsResponse {
   events: WoofguideEvent[];

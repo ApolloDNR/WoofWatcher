@@ -5,10 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   MutationFunction,
   QueryFunction,
@@ -16,21 +13,21 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult
-} from '@tanstack/react-query';
+  UseQueryResult,
+} from "@tanstack/react-query";
 
 import type {
+  AccessPassActivationInput,
+  AccessPassRevocationInput,
   ApiError,
   AvatarEmotionsInput,
   AvatarEmotionsResponse,
   AvatarStylizeInput,
   AvatarStylizeResponse,
-  AccessPassActivationInput,
-  AccessPassRevocationInput,
   CareEntry,
   CareEntryConflict,
-  CareEntryTombstone,
   CareEntryInput,
+  CareEntryTombstone,
   CareEntryUpdate,
   CareHelperAnswer,
   CareHelperError,
@@ -45,2028 +42,2411 @@ import type {
   HouseholdInvitationListResponse,
   HouseholdInvitationMutationResponse,
   HouseholdInvitationRevokeInput,
-  HouseholdSharingCleanupResponse,
-  HouseholdMemberUpdate,
+  HouseholdJoinResponse,
   HouseholdMemberMutationResponse,
+  HouseholdMemberUpdate,
+  HouseholdSharingCleanupResponse,
   HouseholdUpdate,
   JoinHouseholdInput,
-  HouseholdJoinResponse,
-  ListHouseholdInvitationsParams,
-  ListHouseholdAuditEventsParams,
-  ListHouseholdSharingCleanupParams,
   ListCareEntriesParams,
   ListCareEntryTombstonesParams,
+  ListHouseholdAuditEventsParams,
+  ListHouseholdInvitationsParams,
+  ListHouseholdSharingCleanupParams,
   Me,
   MeUpdate,
   WoofguideEventsInput,
   WoofguideEventsResponse,
-  WoofguideEventsStatus
-} from './api.schemas';
+  WoofguideEventsStatus,
+} from "./api.schemas";
 
-import { customFetch } from '../custom-fetch';
-import type { ErrorType , BodyType } from '../custom-fetch';
+import { customFetch } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
-
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
-
-
 export const getHealthCheckUrl = () => {
-
-
-
-
-  return `/api/healthz`
-}
+  return `/api/healthz`;
+};
 
 /**
  * Returns server health status
  * @summary Health check
  */
-export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus> => {
-
-  return customFetch<HealthStatus>(getHealthCheckUrl(),
-  {
+export const healthCheck = async (
+  options?: RequestInit,
+): Promise<HealthStatus> => {
+  return customFetch<HealthStatus>(getHealthCheckUrl(), {
     ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
+    method: "GET",
+  });
+};
 
 export const getHealthCheckQueryKey = () => {
-    return [
-    `/api/healthz`
-    ] as const;
-    }
+  return [`/api/healthz`] as const;
+};
 
+export const getHealthCheckQueryOptions = <
+  TData = Awaited<ReturnType<typeof healthCheck>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof healthCheck>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-export const getHealthCheckQueryOptions = <TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getHealthCheckQueryKey();
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({
+    signal,
+  }) => healthCheck({ signal, ...requestOptions });
 
-  const queryKey =  queryOptions?.queryKey ?? getHealthCheckQueryKey();
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof healthCheck>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({ signal }) => healthCheck({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type HealthCheckQueryResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>
-export type HealthCheckQueryError = ErrorType<unknown>
-
+export type HealthCheckQueryResult = NonNullable<
+  Awaited<ReturnType<typeof healthCheck>>
+>;
+export type HealthCheckQueryError = ErrorType<unknown>;
 
 /**
  * @summary Health check
  */
 
-export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useHealthCheck<
+  TData = Awaited<ReturnType<typeof healthCheck>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof healthCheck>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getHealthCheckQueryOptions(options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getHealthCheckQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
-
-
-
-
-
-
 export const getGetCareHelperStatusUrl = () => {
-
-
-
-
-  return `/api/care-helper`
-}
+  return `/api/care-helper`;
+};
 
 /**
  * Returns whether the provider-backed or local care-helper mode is active.
  * @summary Get AI care helper status
  */
-export const getCareHelperStatus = async ( options?: RequestInit): Promise<CareHelperStatus> => {
-
-  return customFetch<CareHelperStatus>(getGetCareHelperStatusUrl(),
-  {
+export const getCareHelperStatus = async (
+  options?: RequestInit,
+): Promise<CareHelperStatus> => {
+  return customFetch<CareHelperStatus>(getGetCareHelperStatusUrl(), {
     ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
+    method: "GET",
+  });
+};
 
 export const getGetCareHelperStatusQueryKey = () => {
-    return [
-    `/api/care-helper`
-    ] as const;
-    }
+  return [`/api/care-helper`] as const;
+};
 
+export const getGetCareHelperStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCareHelperStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCareHelperStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-export const getGetCareHelperStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCareHelperStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCareHelperStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getGetCareHelperStatusQueryKey();
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCareHelperStatus>>
+  > = ({ signal }) => getCareHelperStatus({ signal, ...requestOptions });
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCareHelperStatusQueryKey();
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCareHelperStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCareHelperStatus>>> = ({ signal }) => getCareHelperStatus({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCareHelperStatus>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetCareHelperStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCareHelperStatus>>>
-export type GetCareHelperStatusQueryError = ErrorType<unknown>
-
+export type GetCareHelperStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCareHelperStatus>>
+>;
+export type GetCareHelperStatusQueryError = ErrorType<unknown>;
 
 /**
  * @summary Get AI care helper status
  */
 
-export function useGetCareHelperStatus<TData = Awaited<ReturnType<typeof getCareHelperStatus>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCareHelperStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetCareHelperStatus<
+  TData = Awaited<ReturnType<typeof getCareHelperStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCareHelperStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCareHelperStatusQueryOptions(options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetCareHelperStatusQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
-
-
-
-
-
-
 export const getAskCareHelperUrl = () => {
-
-
-
-
-  return `/api/care-helper`
-}
+  return `/api/care-helper`;
+};
 
 /**
  * Asks the authenticated WoofGuide care helper a dog-care question. When the provider is unavailable, the API returns a truthful local fallback response instead of claiming live AI.
  * @summary Ask the AI care helper a question
  */
-export const askCareHelper = async (careHelperInput: CareHelperInput, options?: RequestInit): Promise<CareHelperAnswer> => {
-
-  return customFetch<CareHelperAnswer>(getAskCareHelperUrl(),
-  {
+export const askCareHelper = async (
+  careHelperInput: CareHelperInput,
+  options?: RequestInit,
+): Promise<CareHelperAnswer> => {
+  return customFetch<CareHelperAnswer>(getAskCareHelperUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      careHelperInput,)
-  }
-);}
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(careHelperInput),
+  });
+};
 
+export const getAskCareHelperMutationOptions = <
+  TError = ErrorType<ApiError | CareHelperError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof askCareHelper>>,
+    TError,
+    { data: BodyType<CareHelperInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof askCareHelper>>,
+  TError,
+  { data: BodyType<CareHelperInput> },
+  TContext
+> => {
+  const mutationKey = ["askCareHelper"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof askCareHelper>>,
+    { data: BodyType<CareHelperInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return askCareHelper(data, requestOptions);
+  };
 
-export const getAskCareHelperMutationOptions = <TError = ErrorType<ApiError | CareHelperError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askCareHelper>>, TError,{data: BodyType<CareHelperInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof askCareHelper>>, TError,{data: BodyType<CareHelperInput>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['askCareHelper'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type AskCareHelperMutationResult = NonNullable<
+  Awaited<ReturnType<typeof askCareHelper>>
+>;
+export type AskCareHelperMutationBody = BodyType<CareHelperInput>;
+export type AskCareHelperMutationError = ErrorType<ApiError | CareHelperError>;
 
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof askCareHelper>>, {data: BodyType<CareHelperInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  askCareHelper(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AskCareHelperMutationResult = NonNullable<Awaited<ReturnType<typeof askCareHelper>>>
-    export type AskCareHelperMutationBody = BodyType<CareHelperInput>
-    export type AskCareHelperMutationError = ErrorType<ApiError | CareHelperError>
-
-    /**
- * Asks the authenticated WoofGuide care helper a dog-care question. When the provider is unavailable, the API returns a truthful local fallback response instead of claiming live AI.
+/**
  * @summary Ask the AI care helper a question
  */
-export const useAskCareHelper = <TError = ErrorType<ApiError | CareHelperError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askCareHelper>>, TError,{data: BodyType<CareHelperInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof askCareHelper>>,
-        TError,
-        {data: BodyType<CareHelperInput>},
-        TContext
-      > => {
-      return useMutation(getAskCareHelperMutationOptions(options));
-    }
+export const useAskCareHelper = <
+  TError = ErrorType<ApiError | CareHelperError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof askCareHelper>>,
+    TError,
+    { data: BodyType<CareHelperInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof askCareHelper>>,
+  TError,
+  { data: BodyType<CareHelperInput> },
+  TContext
+> => {
+  return useMutation(getAskCareHelperMutationOptions(options));
+};
 
 export const getGetWoofguideEventsStatusUrl = () => {
-
-
-
-
-  return `/api/woofguide-events`
-}
+  return `/api/woofguide-events`;
+};
 
 /**
  * Returns whether provider-backed dog-friendly event curation is configured. When unavailable, the API falls back to local curated suggestions instead of claiming live provider data.
  * @summary Get WoofGuide events provider status
  */
-export const getWoofguideEventsStatus = async ( options?: RequestInit): Promise<WoofguideEventsStatus> => {
-
-  return customFetch<WoofguideEventsStatus>(getGetWoofguideEventsStatusUrl(),
-  {
+export const getWoofguideEventsStatus = async (
+  options?: RequestInit,
+): Promise<WoofguideEventsStatus> => {
+  return customFetch<WoofguideEventsStatus>(getGetWoofguideEventsStatusUrl(), {
     ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
+    method: "GET",
+  });
+};
 
 export const getGetWoofguideEventsStatusQueryKey = () => {
-    return [
-    `/api/woofguide-events`
-    ] as const;
-    }
+  return [`/api/woofguide-events`] as const;
+};
 
+export const getGetWoofguideEventsStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>,
+  TError = ErrorType<ApiError>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWoofguideEventsStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-export const getGetWoofguideEventsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
+  const queryKey =
+    queryOptions?.queryKey ?? getGetWoofguideEventsStatusQueryKey();
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getWoofguideEventsStatus>>
+  > = ({ signal }) => getWoofguideEventsStatus({ signal, ...requestOptions });
 
-  const queryKey =  queryOptions?.queryKey ?? getGetWoofguideEventsStatusQueryKey();
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWoofguideEventsStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWoofguideEventsStatus>>> = ({ signal }) => getWoofguideEventsStatus({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetWoofguideEventsStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getWoofguideEventsStatus>>>
-export type GetWoofguideEventsStatusQueryError = ErrorType<ApiError>
-
+export type GetWoofguideEventsStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWoofguideEventsStatus>>
+>;
+export type GetWoofguideEventsStatusQueryError = ErrorType<ApiError>;
 
 /**
  * @summary Get WoofGuide events provider status
  */
 
-export function useGetWoofguideEventsStatus<TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<ApiError>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetWoofguideEventsStatus<
+  TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>,
+  TError = ErrorType<ApiError>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWoofguideEventsStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWoofguideEventsStatusQueryOptions(options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetWoofguideEventsStatusQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
-
-
-
-
-
-
 export const getCreateWoofguideEventsUrl = () => {
-
-
-
-
-  return `/api/woofguide-events`
-}
+  return `/api/woofguide-events`;
+};
 
 /**
  * Creates owner-reviewed outing ideas for a household dog. Suggestions are inspirational and not bookings, addresses, prices, or provider-verified events.
  * @summary Create dog-friendly WoofGuide event suggestions
  */
-export const createWoofguideEvents = async (woofguideEventsInput: WoofguideEventsInput, options?: RequestInit): Promise<WoofguideEventsResponse> => {
-
-  return customFetch<WoofguideEventsResponse>(getCreateWoofguideEventsUrl(),
-  {
+export const createWoofguideEvents = async (
+  woofguideEventsInput?: WoofguideEventsInput,
+  options?: RequestInit,
+): Promise<WoofguideEventsResponse> => {
+  return customFetch<WoofguideEventsResponse>(getCreateWoofguideEventsUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      woofguideEventsInput,)
-  }
-);}
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(woofguideEventsInput),
+  });
+};
 
+export const getCreateWoofguideEventsMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWoofguideEvents>>,
+    TError,
+    { data?: BodyType<WoofguideEventsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createWoofguideEvents>>,
+  TError,
+  { data?: BodyType<WoofguideEventsInput> },
+  TContext
+> => {
+  const mutationKey = ["createWoofguideEvents"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createWoofguideEvents>>,
+    { data?: BodyType<WoofguideEventsInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return createWoofguideEvents(data, requestOptions);
+  };
 
-export const getCreateWoofguideEventsMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWoofguideEvents>>, TError,{data: BodyType<WoofguideEventsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createWoofguideEvents>>, TError,{data: BodyType<WoofguideEventsInput>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['createWoofguideEvents'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type CreateWoofguideEventsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createWoofguideEvents>>
+>;
+export type CreateWoofguideEventsMutationBody =
+  | BodyType<WoofguideEventsInput>
+  | undefined;
+export type CreateWoofguideEventsMutationError = ErrorType<ApiError>;
 
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWoofguideEvents>>, {data: BodyType<WoofguideEventsInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createWoofguideEvents(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateWoofguideEventsMutationResult = NonNullable<Awaited<ReturnType<typeof createWoofguideEvents>>>
-    export type CreateWoofguideEventsMutationBody = BodyType<WoofguideEventsInput>
-    export type CreateWoofguideEventsMutationError = ErrorType<ApiError>
-
-    /**
+/**
  * @summary Create dog-friendly WoofGuide event suggestions
  */
-export const useCreateWoofguideEvents = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWoofguideEvents>>, TError,{data: BodyType<WoofguideEventsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createWoofguideEvents>>,
-        TError,
-        {data: BodyType<WoofguideEventsInput>},
-        TContext
-      > => {
-      return useMutation(getCreateWoofguideEventsMutationOptions(options));
-    }
+export const useCreateWoofguideEvents = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWoofguideEvents>>,
+    TError,
+    { data?: BodyType<WoofguideEventsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createWoofguideEvents>>,
+  TError,
+  { data?: BodyType<WoofguideEventsInput> },
+  TContext
+> => {
+  return useMutation(getCreateWoofguideEventsMutationOptions(options));
+};
 
 export const getStylizeAvatarUrl = () => {
-
-
-
-
-  return `/api/avatar-stylize`
-}
+  return `/api/avatar-stylize`;
+};
 
 /**
  * Generates an owner-reviewed stylized portrait from a dog photo when the image provider is configured. This is a helper for Avatar Studio and must not be represented as automatic identity verification.
  * @summary Create a stylized dog avatar portrait
  */
-export const stylizeAvatar = async (avatarStylizeInput: AvatarStylizeInput, options?: RequestInit): Promise<AvatarStylizeResponse> => {
-
-  return customFetch<AvatarStylizeResponse>(getStylizeAvatarUrl(),
-  {
+export const stylizeAvatar = async (
+  avatarStylizeInput: AvatarStylizeInput,
+  options?: RequestInit,
+): Promise<AvatarStylizeResponse> => {
+  return customFetch<AvatarStylizeResponse>(getStylizeAvatarUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      avatarStylizeInput,)
-  }
-);}
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(avatarStylizeInput),
+  });
+};
 
+export const getStylizeAvatarMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof stylizeAvatar>>,
+    TError,
+    { data: BodyType<AvatarStylizeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof stylizeAvatar>>,
+  TError,
+  { data: BodyType<AvatarStylizeInput> },
+  TContext
+> => {
+  const mutationKey = ["stylizeAvatar"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof stylizeAvatar>>,
+    { data: BodyType<AvatarStylizeInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return stylizeAvatar(data, requestOptions);
+  };
 
-export const getStylizeAvatarMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stylizeAvatar>>, TError,{data: BodyType<AvatarStylizeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof stylizeAvatar>>, TError,{data: BodyType<AvatarStylizeInput>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['stylizeAvatar'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type StylizeAvatarMutationResult = NonNullable<
+  Awaited<ReturnType<typeof stylizeAvatar>>
+>;
+export type StylizeAvatarMutationBody = BodyType<AvatarStylizeInput>;
+export type StylizeAvatarMutationError = ErrorType<ApiError>;
 
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stylizeAvatar>>, {data: BodyType<AvatarStylizeInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  stylizeAvatar(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type StylizeAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof stylizeAvatar>>>
-    export type StylizeAvatarMutationBody = BodyType<AvatarStylizeInput>
-    export type StylizeAvatarMutationError = ErrorType<ApiError>
-
-    /**
+/**
  * @summary Create a stylized dog avatar portrait
  */
-export const useStylizeAvatar = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stylizeAvatar>>, TError,{data: BodyType<AvatarStylizeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof stylizeAvatar>>,
-        TError,
-        {data: BodyType<AvatarStylizeInput>},
-        TContext
-      > => {
-      return useMutation(getStylizeAvatarMutationOptions(options));
-    }
+export const useStylizeAvatar = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof stylizeAvatar>>,
+    TError,
+    { data: BodyType<AvatarStylizeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof stylizeAvatar>>,
+  TError,
+  { data: BodyType<AvatarStylizeInput> },
+  TContext
+> => {
+  return useMutation(getStylizeAvatarMutationOptions(options));
+};
 
 export const getCreateAvatarEmotionsUrl = () => {
-
-
-
-
-  return `/api/avatar-emotions`
-}
+  return `/api/avatar-emotions`;
+};
 
 /**
  * Generates a small owner-reviewed emotion set for the same dog from one photo when the image provider is configured. Some emotions can fail independently and are returned in the errors map.
  * @summary Create a set of stylized dog avatar emotion portraits
  */
-export const createAvatarEmotions = async (avatarEmotionsInput: AvatarEmotionsInput, options?: RequestInit): Promise<AvatarEmotionsResponse> => {
-
-  return customFetch<AvatarEmotionsResponse>(getCreateAvatarEmotionsUrl(),
-  {
+export const createAvatarEmotions = async (
+  avatarEmotionsInput: AvatarEmotionsInput,
+  options?: RequestInit,
+): Promise<AvatarEmotionsResponse> => {
+  return customFetch<AvatarEmotionsResponse>(getCreateAvatarEmotionsUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      avatarEmotionsInput,)
-  }
-);}
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(avatarEmotionsInput),
+  });
+};
 
+export const getCreateAvatarEmotionsMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAvatarEmotions>>,
+    TError,
+    { data: BodyType<AvatarEmotionsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAvatarEmotions>>,
+  TError,
+  { data: BodyType<AvatarEmotionsInput> },
+  TContext
+> => {
+  const mutationKey = ["createAvatarEmotions"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAvatarEmotions>>,
+    { data: BodyType<AvatarEmotionsInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return createAvatarEmotions(data, requestOptions);
+  };
 
-export const getCreateAvatarEmotionsMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAvatarEmotions>>, TError,{data: BodyType<AvatarEmotionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createAvatarEmotions>>, TError,{data: BodyType<AvatarEmotionsInput>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['createAvatarEmotions'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type CreateAvatarEmotionsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAvatarEmotions>>
+>;
+export type CreateAvatarEmotionsMutationBody = BodyType<AvatarEmotionsInput>;
+export type CreateAvatarEmotionsMutationError = ErrorType<ApiError>;
 
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAvatarEmotions>>, {data: BodyType<AvatarEmotionsInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createAvatarEmotions(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateAvatarEmotionsMutationResult = NonNullable<Awaited<ReturnType<typeof createAvatarEmotions>>>
-    export type CreateAvatarEmotionsMutationBody = BodyType<AvatarEmotionsInput>
-    export type CreateAvatarEmotionsMutationError = ErrorType<ApiError>
-
-    /**
+/**
  * @summary Create a set of stylized dog avatar emotion portraits
  */
-export const useCreateAvatarEmotions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAvatarEmotions>>, TError,{data: BodyType<AvatarEmotionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createAvatarEmotions>>,
-        TError,
-        {data: BodyType<AvatarEmotionsInput>},
-        TContext
-      > => {
-      return useMutation(getCreateAvatarEmotionsMutationOptions(options));
-    }
+export const useCreateAvatarEmotions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAvatarEmotions>>,
+    TError,
+    { data: BodyType<AvatarEmotionsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createAvatarEmotions>>,
+  TError,
+  { data: BodyType<AvatarEmotionsInput> },
+  TContext
+> => {
+  return useMutation(getCreateAvatarEmotionsMutationOptions(options));
+};
 
 export const getGetMeUrl = () => {
-
-
-
-
-  return `/api/me`
-}
+  return `/api/me`;
+};
 
 /**
  * Returns the authenticated user. On first call this JIT-provisions the user, a default household, and a membership.
  * @summary Get the current user, their household and members
  */
-export const getMe = async ( options?: RequestInit): Promise<Me> => {
-
-  return customFetch<Me>(getGetMeUrl(),
-  {
+export const getMe = async (options?: RequestInit): Promise<Me> => {
+  return customFetch<Me>(getGetMeUrl(), {
     ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
+    method: "GET",
+  });
+};
 
 export const getGetMeQueryKey = () => {
-    return [
-    `/api/me`
-    ] as const;
-    }
+  return [`/api/me`] as const;
+};
 
+export const getGetMeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMe>>,
+  TError = ErrorType<ApiError>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-export const getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getGetMeQueryKey();
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMe>>> = ({
+    signal,
+  }) => getMe({ signal, ...requestOptions });
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMeQueryKey();
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMe>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMe>>> = ({ signal }) => getMe({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>
-export type GetMeQueryError = ErrorType<ApiError>
-
+export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>;
+export type GetMeQueryError = ErrorType<ApiError>;
 
 /**
  * @summary Get the current user, their household and members
  */
 
-export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetMe<
+  TData = Awaited<ReturnType<typeof getMe>>,
+  TError = ErrorType<ApiError>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeQueryOptions(options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetMeQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
-
-
-
-
-
-
 export const getUpdateMeUrl = () => {
-
-
-
-
-  return `/api/me`
-}
+  return `/api/me`;
+};
 
 /**
  * @summary Update the current user's profile / display name
  */
-export const updateMe = async (meUpdate: MeUpdate, options?: RequestInit): Promise<Me> => {
-
-  return customFetch<Me>(getUpdateMeUrl(),
-  {
+export const updateMe = async (
+  meUpdate: MeUpdate,
+  options?: RequestInit,
+): Promise<Me> => {
+  return customFetch<Me>(getUpdateMeUrl(), {
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      meUpdate,)
-  }
-);}
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(meUpdate),
+  });
+};
 
+export const getUpdateMeMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMe>>,
+    TError,
+    { data: BodyType<MeUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMe>>,
+  TError,
+  { data: BodyType<MeUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateMe"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMe>>,
+    { data: BodyType<MeUpdate> }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return updateMe(data, requestOptions);
+  };
 
-export const getUpdateMeMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMe>>, TError,{data: BodyType<MeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateMe>>, TError,{data: BodyType<MeUpdate>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['updateMe'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type UpdateMeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMe>>
+>;
+export type UpdateMeMutationBody = BodyType<MeUpdate>;
+export type UpdateMeMutationError = ErrorType<ApiError>;
 
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMe>>, {data: BodyType<MeUpdate>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  updateMe(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateMeMutationResult = NonNullable<Awaited<ReturnType<typeof updateMe>>>
-    export type UpdateMeMutationBody = BodyType<MeUpdate>
-    export type UpdateMeMutationError = ErrorType<ApiError>
-
-    /**
+/**
  * @summary Update the current user's profile / display name
  */
-export const useUpdateMe = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMe>>, TError,{data: BodyType<MeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof updateMe>>,
-        TError,
-        {data: BodyType<MeUpdate>},
-        TContext
-      > => {
-      return useMutation(getUpdateMeMutationOptions(options));
-    }
+export const useUpdateMe = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMe>>,
+    TError,
+    { data: BodyType<MeUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMe>>,
+  TError,
+  { data: BodyType<MeUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateMeMutationOptions(options));
+};
 
 export const getUpdateHouseholdUrl = () => {
-
-
-
-
-  return `/api/household`
-}
+  return `/api/household`;
+};
 
 /**
  * @summary Rename the current household
  */
-export const updateHousehold = async (householdUpdate: HouseholdUpdate, options?: RequestInit): Promise<Me> => {
-
-  return customFetch<Me>(getUpdateHouseholdUrl(),
-  {
+export const updateHousehold = async (
+  householdUpdate: HouseholdUpdate,
+  options?: RequestInit,
+): Promise<Me> => {
+  return customFetch<Me>(getUpdateHouseholdUrl(), {
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      householdUpdate,)
-  }
-);}
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(householdUpdate),
+  });
+};
 
+export const getUpdateHouseholdMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateHousehold>>,
+    TError,
+    { data: BodyType<HouseholdUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateHousehold>>,
+  TError,
+  { data: BodyType<HouseholdUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateHousehold"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateHousehold>>,
+    { data: BodyType<HouseholdUpdate> }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return updateHousehold(data, requestOptions);
+  };
 
-export const getUpdateHouseholdMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHousehold>>, TError,{data: BodyType<HouseholdUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateHousehold>>, TError,{data: BodyType<HouseholdUpdate>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['updateHousehold'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateHousehold>>, {data: BodyType<HouseholdUpdate>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  updateHousehold(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateHouseholdMutationResult = NonNullable<Awaited<ReturnType<typeof updateHousehold>>>
-    export type UpdateHouseholdMutationBody = BodyType<HouseholdUpdate>
-    export type UpdateHouseholdMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Rename the current household
- */
-export const useUpdateHousehold = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHousehold>>, TError,{data: BodyType<HouseholdUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof updateHousehold>>,
-        TError,
-        {data: BodyType<HouseholdUpdate>},
-        TContext
-      > => {
-      return useMutation(getUpdateHouseholdMutationOptions(options));
-    }
-
-export const getJoinHouseholdUrl = () => {
-
-
-
-
-  return `/api/household/join`
-}
+export type UpdateHouseholdMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateHousehold>>
+>;
+export type UpdateHouseholdMutationBody = BodyType<HouseholdUpdate>;
+export type UpdateHouseholdMutationError = ErrorType<ApiError>;
 
 /**
- * @summary Join an existing household by invite code
+ * @summary Rename the current household
  */
-export const joinHousehold = async (joinHouseholdInput: JoinHouseholdInput, options?: RequestInit): Promise<HouseholdJoinResponse> => {
+export const useUpdateHousehold = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateHousehold>>,
+    TError,
+    { data: BodyType<HouseholdUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateHousehold>>,
+  TError,
+  { data: BodyType<HouseholdUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateHouseholdMutationOptions(options));
+};
 
-  return customFetch<HouseholdJoinResponse>(getJoinHouseholdUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      joinHouseholdInput,)
-  }
-);}
-
-
-
-
-export const getJoinHouseholdMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinHousehold>>, TError,{data: BodyType<JoinHouseholdInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof joinHousehold>>, TError,{data: BodyType<JoinHouseholdInput>}, TContext> => {
-
-const mutationKey = ['joinHousehold'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinHousehold>>, {data: BodyType<JoinHouseholdInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  joinHousehold(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type JoinHouseholdMutationResult = NonNullable<Awaited<ReturnType<typeof joinHousehold>>>
-    export type JoinHouseholdMutationBody = BodyType<JoinHouseholdInput>
-    export type JoinHouseholdMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Join an existing household by invite code
- */
-export const useJoinHousehold = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinHousehold>>, TError,{data: BodyType<JoinHouseholdInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof joinHousehold>>,
-        TError,
-        {data: BodyType<JoinHouseholdInput>},
-        TContext
-      > => {
-      return useMutation(getJoinHouseholdMutationOptions(options));
-    }
-
-export const getListHouseholdInvitationsUrl = (params?: ListHouseholdInvitationsParams,) => {
+export const getListHouseholdInvitationsUrl = (
+  params?: ListHouseholdInvitationsParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/household/invitations?${stringifiedParams}` : `/api/household/invitations`
-}
+  return stringifiedParams.length > 0
+    ? `/api/household/invitations?${stringifiedParams}`
+    : `/api/household/invitations`;
+};
 
 /**
- * Owner/admin-only review of provider-durable household invitation lifecycle rows.
+ * Owner/admin-only review of provider-durable household invitation lifecycle rows scoped to the authenticated active household. Production Supabase migration, RLS, retention, export/deletion policy, and notification delivery remain launch approval gates.
  * @summary List household invitations
  */
-export const listHouseholdInvitations = async (params?: ListHouseholdInvitationsParams, options?: RequestInit): Promise<HouseholdInvitationListResponse> => {
+export const listHouseholdInvitations = async (
+  params?: ListHouseholdInvitationsParams,
+  options?: RequestInit,
+): Promise<HouseholdInvitationListResponse> => {
+  return customFetch<HouseholdInvitationListResponse>(
+    getListHouseholdInvitationsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
-  return customFetch<HouseholdInvitationListResponse>(getListHouseholdInvitationsUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListHouseholdInvitationsQueryKey = (params?: ListHouseholdInvitationsParams,) => {
-    return [
-    `/api/household/invitations`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getListHouseholdInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdInvitations>>, TError = ErrorType<ApiError>>(params?: ListHouseholdInvitationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListHouseholdInvitationsQueryKey = (
+  params?: ListHouseholdInvitationsParams,
 ) => {
+  return [`/api/household/invitations`, ...(params ? [params] : [])] as const;
+};
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+export const getListHouseholdInvitationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listHouseholdInvitations>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListHouseholdInvitationsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listHouseholdInvitations>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListHouseholdInvitationsQueryKey(params);
+  const queryKey =
+    queryOptions?.queryKey ?? getListHouseholdInvitationsQueryKey(params);
 
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listHouseholdInvitations>>
+  > = ({ signal }) =>
+    listHouseholdInvitations(params, { signal, ...requestOptions });
 
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listHouseholdInvitations>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHouseholdInvitations>>> = ({ signal }) => listHouseholdInvitations(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHouseholdInvitations>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListHouseholdInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof listHouseholdInvitations>>>
-export type ListHouseholdInvitationsQueryError = ErrorType<ApiError>
-
+export type ListHouseholdInvitationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listHouseholdInvitations>>
+>;
+export type ListHouseholdInvitationsQueryError = ErrorType<ApiError>;
 
 /**
  * @summary List household invitations
  */
 
-export function useListHouseholdInvitations<TData = Awaited<ReturnType<typeof listHouseholdInvitations>>, TError = ErrorType<ApiError>>(
- params?: ListHouseholdInvitationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useListHouseholdInvitations<
+  TData = Awaited<ReturnType<typeof listHouseholdInvitations>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListHouseholdInvitationsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listHouseholdInvitations>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListHouseholdInvitationsQueryOptions(params, options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListHouseholdInvitationsQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
 export const getCreateHouseholdInvitationUrl = () => {
+  return `/api/household/invitations`;
+};
 
+/**
+ * Owner/admin-only creation of provider-durable invitation rows. New invitations may start approved or pending owner approval, and the join flow only creates caregiver memberships after the row is approved and unexpired.
+ * @summary Create a household invitation
+ */
+export const createHouseholdInvitation = async (
+  householdInvitationCreateInput: HouseholdInvitationCreateInput,
+  options?: RequestInit,
+): Promise<HouseholdInvitationMutationResponse> => {
+  return customFetch<HouseholdInvitationMutationResponse>(
+    getCreateHouseholdInvitationUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(householdInvitationCreateInput),
+    },
+  );
+};
 
+export const getCreateHouseholdInvitationMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createHouseholdInvitation>>,
+    TError,
+    { data: BodyType<HouseholdInvitationCreateInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createHouseholdInvitation>>,
+  TError,
+  { data: BodyType<HouseholdInvitationCreateInput> },
+  TContext
+> => {
+  const mutationKey = ["createHouseholdInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createHouseholdInvitation>>,
+    { data: BodyType<HouseholdInvitationCreateInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
-  return `/api/household/invitations`
-}
+    return createHouseholdInvitation(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateHouseholdInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createHouseholdInvitation>>
+>;
+export type CreateHouseholdInvitationMutationBody =
+  BodyType<HouseholdInvitationCreateInput>;
+export type CreateHouseholdInvitationMutationError = ErrorType<ApiError>;
 
 /**
  * @summary Create a household invitation
  */
-export const createHouseholdInvitation = async (householdInvitationCreateInput: HouseholdInvitationCreateInput, options?: RequestInit): Promise<HouseholdInvitationMutationResponse> => {
+export const useCreateHouseholdInvitation = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createHouseholdInvitation>>,
+    TError,
+    { data: BodyType<HouseholdInvitationCreateInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createHouseholdInvitation>>,
+  TError,
+  { data: BodyType<HouseholdInvitationCreateInput> },
+  TContext
+> => {
+  return useMutation(getCreateHouseholdInvitationMutationOptions(options));
+};
 
-  return customFetch<HouseholdInvitationMutationResponse>(getCreateHouseholdInvitationUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      householdInvitationCreateInput,)
-  }
-);}
+export const getRevokeHouseholdInvitationUrl = (id: string) => {
+  return `/api/household/invitations/${id}/revoke`;
+};
 
-
-
-
-export const getCreateHouseholdInvitationMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createHouseholdInvitation>>, TError,{data: BodyType<HouseholdInvitationCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createHouseholdInvitation>>, TError,{data: BodyType<HouseholdInvitationCreateInput>}, TContext> => {
-
-const mutationKey = ['createHouseholdInvitation'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createHouseholdInvitation>>, {data: BodyType<HouseholdInvitationCreateInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createHouseholdInvitation(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateHouseholdInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof createHouseholdInvitation>>>
-    export type CreateHouseholdInvitationMutationBody = BodyType<HouseholdInvitationCreateInput>
-    export type CreateHouseholdInvitationMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Create a household invitation
+/**
+ * Owner/admin-only revocation of a provider-durable invitation before or after acceptance. The returned invitation reflects the revoked lifecycle state and includes the household audit event for owner review.
+ * @summary Revoke a household invitation
  */
-export const useCreateHouseholdInvitation = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createHouseholdInvitation>>, TError,{data: BodyType<HouseholdInvitationCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createHouseholdInvitation>>,
-        TError,
-        {data: BodyType<HouseholdInvitationCreateInput>},
-        TContext
-      > => {
-      return useMutation(getCreateHouseholdInvitationMutationOptions(options));
-    }
+export const revokeHouseholdInvitation = async (
+  id: string,
+  householdInvitationRevokeInput?: HouseholdInvitationRevokeInput,
+  options?: RequestInit,
+): Promise<HouseholdInvitationMutationResponse> => {
+  return customFetch<HouseholdInvitationMutationResponse>(
+    getRevokeHouseholdInvitationUrl(id),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(householdInvitationRevokeInput),
+    },
+  );
+};
 
-export const getRevokeHouseholdInvitationUrl = (id: string,) => {
+export const getRevokeHouseholdInvitationMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeHouseholdInvitation>>,
+    TError,
+    { id: string; data?: BodyType<HouseholdInvitationRevokeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof revokeHouseholdInvitation>>,
+  TError,
+  { id: string; data?: BodyType<HouseholdInvitationRevokeInput> },
+  TContext
+> => {
+  const mutationKey = ["revokeHouseholdInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof revokeHouseholdInvitation>>,
+    { id: string; data?: BodyType<HouseholdInvitationRevokeInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
 
+    return revokeHouseholdInvitation(id, data, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
-  return `/api/household/invitations/${id}/revoke`
-}
+export type RevokeHouseholdInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof revokeHouseholdInvitation>>
+>;
+export type RevokeHouseholdInvitationMutationBody =
+  | BodyType<HouseholdInvitationRevokeInput>
+  | undefined;
+export type RevokeHouseholdInvitationMutationError = ErrorType<ApiError>;
 
 /**
  * @summary Revoke a household invitation
  */
-export const revokeHouseholdInvitation = async (id: string,
-    householdInvitationRevokeInput: HouseholdInvitationRevokeInput, options?: RequestInit): Promise<HouseholdInvitationMutationResponse> => {
+export const useRevokeHouseholdInvitation = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeHouseholdInvitation>>,
+    TError,
+    { id: string; data?: BodyType<HouseholdInvitationRevokeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof revokeHouseholdInvitation>>,
+  TError,
+  { id: string; data?: BodyType<HouseholdInvitationRevokeInput> },
+  TContext
+> => {
+  return useMutation(getRevokeHouseholdInvitationMutationOptions(options));
+};
 
-  return customFetch<HouseholdInvitationMutationResponse>(getRevokeHouseholdInvitationUrl(id),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      householdInvitationRevokeInput,)
-  }
-);}
+export const getJoinHouseholdUrl = () => {
+  return `/api/household/join`;
+};
 
-
-
-
-export const getRevokeHouseholdInvitationMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdInvitation>>, TError,{id: string;data: BodyType<HouseholdInvitationRevokeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdInvitation>>, TError,{id: string;data: BodyType<HouseholdInvitationRevokeInput>}, TContext> => {
-
-const mutationKey = ['revokeHouseholdInvitation'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeHouseholdInvitation>>, {id: string;data: BodyType<HouseholdInvitationRevokeInput>}> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  revokeHouseholdInvitation(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RevokeHouseholdInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof revokeHouseholdInvitation>>>
-    export type RevokeHouseholdInvitationMutationBody = BodyType<HouseholdInvitationRevokeInput>
-    export type RevokeHouseholdInvitationMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Revoke a household invitation
+/**
+ * Accepts a household invite code, creates or reuses the caregiver membership, and returns a HouseholdAuditEvent for invitation acceptance.
+ * @summary Join an existing household by invite code
  */
-export const useRevokeHouseholdInvitation = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdInvitation>>, TError,{id: string;data: BodyType<HouseholdInvitationRevokeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof revokeHouseholdInvitation>>,
-        TError,
-        {id: string;data: BodyType<HouseholdInvitationRevokeInput>},
-        TContext
-      > => {
-      return useMutation(getRevokeHouseholdInvitationMutationOptions(options));
-    }
-
-export const getListHouseholdSharingCleanupUrl = (params?: ListHouseholdSharingCleanupParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
+export const joinHousehold = async (
+  joinHouseholdInput: JoinHouseholdInput,
+  options?: RequestInit,
+): Promise<HouseholdJoinResponse> => {
+  return customFetch<HouseholdJoinResponse>(getJoinHouseholdUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(joinHouseholdInput),
   });
+};
 
-  const stringifiedParams = normalizedParams.toString();
+export const getJoinHouseholdMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof joinHousehold>>,
+    TError,
+    { data: BodyType<JoinHouseholdInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof joinHousehold>>,
+  TError,
+  { data: BodyType<JoinHouseholdInput> },
+  TContext
+> => {
+  const mutationKey = ["joinHousehold"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-  return stringifiedParams.length > 0 ? `/api/household/sharing-cleanup?${stringifiedParams}` : `/api/household/sharing-cleanup`
-}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof joinHousehold>>,
+    { data: BodyType<JoinHouseholdInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
-/**
- * Owner/admin-only, non-destructive review of expired invitation rows and expired Access Pass helper memberships scoped to the authenticated active household.
- * @summary Review expired household sharing cleanup candidates
- */
-export const listHouseholdSharingCleanup = async (params?: ListHouseholdSharingCleanupParams, options?: RequestInit): Promise<HouseholdSharingCleanupResponse> => {
+    return joinHousehold(data, requestOptions);
+  };
 
-  return customFetch<HouseholdSharingCleanupResponse>(getListHouseholdSharingCleanupUrl(params),
-  {
-    ...options,
-    method: 'GET'
+  return { mutationFn, ...mutationOptions };
+};
 
-
-  }
-);}
-
-
-
-
-
-export const getListHouseholdSharingCleanupQueryKey = (params?: ListHouseholdSharingCleanupParams,) => {
-    return [
-    `/api/household/sharing-cleanup`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getListHouseholdSharingCleanupQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError = ErrorType<ApiError>>(params?: ListHouseholdSharingCleanupParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListHouseholdSharingCleanupQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>> = ({ signal }) => listHouseholdSharingCleanup(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListHouseholdSharingCleanupQueryResult = NonNullable<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>>
-export type ListHouseholdSharingCleanupQueryError = ErrorType<ApiError>
-
+export type JoinHouseholdMutationResult = NonNullable<
+  Awaited<ReturnType<typeof joinHousehold>>
+>;
+export type JoinHouseholdMutationBody = BodyType<JoinHouseholdInput>;
+export type JoinHouseholdMutationError = ErrorType<ApiError>;
 
 /**
- * @summary Review expired household sharing cleanup candidates
+ * @summary Join an existing household by invite code
  */
+export const useJoinHousehold = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof joinHousehold>>,
+    TError,
+    { data: BodyType<JoinHouseholdInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof joinHousehold>>,
+  TError,
+  { data: BodyType<JoinHouseholdInput> },
+  TContext
+> => {
+  return useMutation(getJoinHouseholdMutationOptions(options));
+};
 
-export function useListHouseholdSharingCleanup<TData = Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError = ErrorType<ApiError>>(
- params?: ListHouseholdSharingCleanupParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListHouseholdSharingCleanupQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-export const getListHouseholdAuditEventsUrl = (params?: ListHouseholdAuditEventsParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/household/audit-events?${stringifiedParams}` : `/api/household/audit-events`
-}
+export const getUpdateHouseholdMemberUrl = (id: string) => {
+  return `/api/household/members/${id}`;
+};
 
 /**
- * Owner/admin-only review of durable household invitation, role, and Access Pass audit rows scoped to the authenticated active household.
- * @summary List durable household audit events
+ * Owner/admin-only helper management for household roles, sitter/trainer scopes, and vet viewer read-only access. This is the server contract foundation for future Access Pass enforcement.
+ * @summary Update a household member role or display name
  */
-export const listHouseholdAuditEvents = async (params?: ListHouseholdAuditEventsParams, options?: RequestInit): Promise<HouseholdAuditEventListResponse> => {
+export const updateHouseholdMember = async (
+  id: string,
+  householdMemberUpdate: HouseholdMemberUpdate,
+  options?: RequestInit,
+): Promise<HouseholdMemberMutationResponse> => {
+  return customFetch<HouseholdMemberMutationResponse>(
+    getUpdateHouseholdMemberUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(householdMemberUpdate),
+    },
+  );
+};
 
-  return customFetch<HouseholdAuditEventListResponse>(getListHouseholdAuditEventsUrl(params),
-  {
-    ...options,
-    method: 'GET'
+export const getUpdateHouseholdMemberMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateHouseholdMember>>,
+    TError,
+    { id: string; data: BodyType<HouseholdMemberUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateHouseholdMember>>,
+  TError,
+  { id: string; data: BodyType<HouseholdMemberUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateHouseholdMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateHouseholdMember>>,
+    { id: string; data: BodyType<HouseholdMemberUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
 
-  }
-);}
+    return updateHouseholdMember(id, data, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
-
-
-
-export const getListHouseholdAuditEventsQueryKey = (params?: ListHouseholdAuditEventsParams,) => {
-    return [
-    `/api/household/audit-events`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getListHouseholdAuditEventsQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError = ErrorType<ApiError>>(params?: ListHouseholdAuditEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListHouseholdAuditEventsQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHouseholdAuditEvents>>> = ({ signal }) => listHouseholdAuditEvents(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListHouseholdAuditEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listHouseholdAuditEvents>>>
-export type ListHouseholdAuditEventsQueryError = ErrorType<ApiError>
-
-
-/**
- * @summary List durable household audit events
- */
-
-export function useListHouseholdAuditEvents<TData = Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError = ErrorType<ApiError>>(
- params?: ListHouseholdAuditEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListHouseholdAuditEventsQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-export const getUpdateHouseholdMemberUrl = (id: string,) => {
-
-
-
-
-  return `/api/household/members/${id}`
-}
+export type UpdateHouseholdMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateHouseholdMember>>
+>;
+export type UpdateHouseholdMemberMutationBody = BodyType<HouseholdMemberUpdate>;
+export type UpdateHouseholdMemberMutationError = ErrorType<ApiError>;
 
 /**
  * @summary Update a household member role or display name
  */
-export const updateHouseholdMember = async (id: string,
-    householdMemberUpdate: HouseholdMemberUpdate, options?: RequestInit): Promise<HouseholdMemberMutationResponse> => {
+export const useUpdateHouseholdMember = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateHouseholdMember>>,
+    TError,
+    { id: string; data: BodyType<HouseholdMemberUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateHouseholdMember>>,
+  TError,
+  { id: string; data: BodyType<HouseholdMemberUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateHouseholdMemberMutationOptions(options));
+};
 
-  return customFetch<HouseholdMemberMutationResponse>(getUpdateHouseholdMemberUrl(id),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      householdMemberUpdate,)
-  }
-);}
+export const getRevokeHouseholdMemberUrl = (id: string) => {
+  return `/api/household/members/${id}`;
+};
 
-
-
-
-export const getUpdateHouseholdMemberMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{id: string;data: BodyType<HouseholdMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{id: string;data: BodyType<HouseholdMemberUpdate>}, TContext> => {
-
-const mutationKey = ['updateHouseholdMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateHouseholdMember>>, {id: string;data: BodyType<HouseholdMemberUpdate>}> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  updateHouseholdMember(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateHouseholdMemberMutationResult = NonNullable<Awaited<ReturnType<typeof updateHouseholdMember>>>
-    export type UpdateHouseholdMemberMutationBody = BodyType<HouseholdMemberUpdate>
-    export type UpdateHouseholdMemberMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Update a household member role or display name
+/**
+ * Owner/admin-only helper revocation. Self-revocation and protected owner role changes remain blocked until last-owner-safe account flows exist.
+ * @summary Revoke a household member from the current household
  */
-export const useUpdateHouseholdMember = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{id: string;data: BodyType<HouseholdMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof updateHouseholdMember>>,
-        TError,
-        {id: string;data: BodyType<HouseholdMemberUpdate>},
-        TContext
-      > => {
-      return useMutation(getUpdateHouseholdMemberMutationOptions(options));
-    }
+export const revokeHouseholdMember = async (
+  id: string,
+  options?: RequestInit,
+): Promise<HouseholdMemberMutationResponse> => {
+  return customFetch<HouseholdMemberMutationResponse>(
+    getRevokeHouseholdMemberUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
-export const getRevokeHouseholdMemberUrl = (id: string,) => {
+export const getRevokeHouseholdMemberMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeHouseholdMember>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof revokeHouseholdMember>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["revokeHouseholdMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof revokeHouseholdMember>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
 
+    return revokeHouseholdMember(id, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
-  return `/api/household/members/${id}`
-}
+export type RevokeHouseholdMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof revokeHouseholdMember>>
+>;
+
+export type RevokeHouseholdMemberMutationError = ErrorType<ApiError>;
 
 /**
  * @summary Revoke a household member from the current household
  */
-export const revokeHouseholdMember = async (id: string, options?: RequestInit): Promise<HouseholdMemberMutationResponse> => {
-
-  return customFetch<HouseholdMemberMutationResponse>(getRevokeHouseholdMemberUrl(id),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-
-export const getRevokeHouseholdMemberMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdMember>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdMember>>, TError,{id: string}, TContext> => {
-
-const mutationKey = ['revokeHouseholdMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeHouseholdMember>>, {id: string}> = (props) => {
-          const {id} = props ?? {};
-
-          return  revokeHouseholdMember(id,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RevokeHouseholdMemberMutationResult = NonNullable<Awaited<ReturnType<typeof revokeHouseholdMember>>>
-
-    export type RevokeHouseholdMemberMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Revoke a household member from the current household
- */
-export const useRevokeHouseholdMember = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdMember>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof revokeHouseholdMember>>,
-        TError,
-        {id: string},
-        TContext
-      > => {
-      return useMutation(getRevokeHouseholdMemberMutationOptions(options));
-    }
+export const useRevokeHouseholdMember = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeHouseholdMember>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof revokeHouseholdMember>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getRevokeHouseholdMemberMutationOptions(options));
+};
 
 export const getActivateHouseholdAccessPassUrl = () => {
+  return `/api/household/access-passes/activate`;
+};
 
+/**
+ * Owner/admin-only helper activation for existing household members. This assigns a sitter, trainer, walker, or vet viewer role and returns helper audit trail metadata backed by the durable provider audit contract.
+ * @summary Activate an Access Pass helper role for a household member
+ */
+export const activateHouseholdAccessPass = async (
+  accessPassActivationInput: AccessPassActivationInput,
+  options?: RequestInit,
+): Promise<HouseholdAccessPassMutationResponse> => {
+  return customFetch<HouseholdAccessPassMutationResponse>(
+    getActivateHouseholdAccessPassUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(accessPassActivationInput),
+    },
+  );
+};
 
+export const getActivateHouseholdAccessPassMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof activateHouseholdAccessPass>>,
+    TError,
+    { data: BodyType<AccessPassActivationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof activateHouseholdAccessPass>>,
+  TError,
+  { data: BodyType<AccessPassActivationInput> },
+  TContext
+> => {
+  const mutationKey = ["activateHouseholdAccessPass"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof activateHouseholdAccessPass>>,
+    { data: BodyType<AccessPassActivationInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
-  return `/api/household/access-passes/activate`
-}
+    return activateHouseholdAccessPass(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActivateHouseholdAccessPassMutationResult = NonNullable<
+  Awaited<ReturnType<typeof activateHouseholdAccessPass>>
+>;
+export type ActivateHouseholdAccessPassMutationBody =
+  BodyType<AccessPassActivationInput>;
+export type ActivateHouseholdAccessPassMutationError = ErrorType<ApiError>;
 
 /**
  * @summary Activate an Access Pass helper role for a household member
  */
-export const activateHouseholdAccessPass = async (accessPassActivationInput: AccessPassActivationInput, options?: RequestInit): Promise<HouseholdAccessPassMutationResponse> => {
-
-  return customFetch<HouseholdAccessPassMutationResponse>(getActivateHouseholdAccessPassUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      accessPassActivationInput,)
-  }
-);}
-
-
-
-
-export const getActivateHouseholdAccessPassMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateHouseholdAccessPass>>, TError,{data: BodyType<AccessPassActivationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof activateHouseholdAccessPass>>, TError,{data: BodyType<AccessPassActivationInput>}, TContext> => {
-
-const mutationKey = ['activateHouseholdAccessPass'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateHouseholdAccessPass>>, {data: BodyType<AccessPassActivationInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  activateHouseholdAccessPass(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ActivateHouseholdAccessPassMutationResult = NonNullable<Awaited<ReturnType<typeof activateHouseholdAccessPass>>>
-    export type ActivateHouseholdAccessPassMutationBody = BodyType<AccessPassActivationInput>
-    export type ActivateHouseholdAccessPassMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Activate an Access Pass helper role for a household member
- */
-export const useActivateHouseholdAccessPass = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateHouseholdAccessPass>>, TError,{data: BodyType<AccessPassActivationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof activateHouseholdAccessPass>>,
-        TError,
-        {data: BodyType<AccessPassActivationInput>},
-        TContext
-      > => {
-      return useMutation(getActivateHouseholdAccessPassMutationOptions(options));
-    }
+export const useActivateHouseholdAccessPass = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof activateHouseholdAccessPass>>,
+    TError,
+    { data: BodyType<AccessPassActivationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof activateHouseholdAccessPass>>,
+  TError,
+  { data: BodyType<AccessPassActivationInput> },
+  TContext
+> => {
+  return useMutation(getActivateHouseholdAccessPassMutationOptions(options));
+};
 
 export const getRevokeHouseholdAccessPassUrl = () => {
+  return `/api/household/access-passes/revoke`;
+};
 
+/**
+ * Owner/admin-only helper revocation for active sitter, trainer, walker, and vet viewer roles. Core household members should use the normal member-management flow instead.
+ * @summary Revoke an Access Pass helper role
+ */
+export const revokeHouseholdAccessPass = async (
+  accessPassRevocationInput: AccessPassRevocationInput,
+  options?: RequestInit,
+): Promise<HouseholdAccessPassMutationResponse> => {
+  return customFetch<HouseholdAccessPassMutationResponse>(
+    getRevokeHouseholdAccessPassUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(accessPassRevocationInput),
+    },
+  );
+};
 
+export const getRevokeHouseholdAccessPassMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeHouseholdAccessPass>>,
+    TError,
+    { data: BodyType<AccessPassRevocationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof revokeHouseholdAccessPass>>,
+  TError,
+  { data: BodyType<AccessPassRevocationInput> },
+  TContext
+> => {
+  const mutationKey = ["revokeHouseholdAccessPass"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof revokeHouseholdAccessPass>>,
+    { data: BodyType<AccessPassRevocationInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
-  return `/api/household/access-passes/revoke`
-}
+    return revokeHouseholdAccessPass(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RevokeHouseholdAccessPassMutationResult = NonNullable<
+  Awaited<ReturnType<typeof revokeHouseholdAccessPass>>
+>;
+export type RevokeHouseholdAccessPassMutationBody =
+  BodyType<AccessPassRevocationInput>;
+export type RevokeHouseholdAccessPassMutationError = ErrorType<ApiError>;
 
 /**
  * @summary Revoke an Access Pass helper role
  */
-export const revokeHouseholdAccessPass = async (accessPassRevocationInput: AccessPassRevocationInput, options?: RequestInit): Promise<HouseholdAccessPassMutationResponse> => {
+export const useRevokeHouseholdAccessPass = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeHouseholdAccessPass>>,
+    TError,
+    { data: BodyType<AccessPassRevocationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof revokeHouseholdAccessPass>>,
+  TError,
+  { data: BodyType<AccessPassRevocationInput> },
+  TContext
+> => {
+  return useMutation(getRevokeHouseholdAccessPassMutationOptions(options));
+};
 
-  return customFetch<HouseholdAccessPassMutationResponse>(getRevokeHouseholdAccessPassUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      accessPassRevocationInput,)
-  }
-);}
+export const getListHouseholdSharingCleanupUrl = (
+  params?: ListHouseholdSharingCleanupParams,
+) => {
+  const normalizedParams = new URLSearchParams();
 
-
-
-
-export const getRevokeHouseholdAccessPassMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>, TError,{data: BodyType<AccessPassRevocationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>, TError,{data: BodyType<AccessPassRevocationInput>}, TContext> => {
-
-const mutationKey = ['revokeHouseholdAccessPass'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>, {data: BodyType<AccessPassRevocationInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  revokeHouseholdAccessPass(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RevokeHouseholdAccessPassMutationResult = NonNullable<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>>
-    export type RevokeHouseholdAccessPassMutationBody = BodyType<AccessPassRevocationInput>
-    export type RevokeHouseholdAccessPassMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Revoke an Access Pass helper role
- */
-export const useRevokeHouseholdAccessPass = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>, TError,{data: BodyType<AccessPassRevocationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof revokeHouseholdAccessPass>>,
-        TError,
-        {data: BodyType<AccessPassRevocationInput>},
-        TContext
-      > => {
-      return useMutation(getRevokeHouseholdAccessPassMutationOptions(options));
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/household/sharing-cleanup?${stringifiedParams}`
+    : `/api/household/sharing-cleanup`;
+};
+
+/**
+ * Owner/admin-only, non-destructive review of expired invitation rows and expired Access Pass helper memberships scoped to the authenticated active household. This endpoint does not revoke, delete, or mutate household access; applying cleanup, production Supabase migration/RLS, retention/export/deletion policy, notification delivery, and legal/privacy approval remain launch gates.
+ * @summary Review expired household sharing cleanup candidates
+ */
+export const listHouseholdSharingCleanup = async (
+  params?: ListHouseholdSharingCleanupParams,
+  options?: RequestInit,
+): Promise<HouseholdSharingCleanupResponse> => {
+  return customFetch<HouseholdSharingCleanupResponse>(
+    getListHouseholdSharingCleanupUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListHouseholdSharingCleanupQueryKey = (
+  params?: ListHouseholdSharingCleanupParams,
+) => {
+  return [
+    `/api/household/sharing-cleanup`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getListHouseholdSharingCleanupQueryOptions = <
+  TData = Awaited<ReturnType<typeof listHouseholdSharingCleanup>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListHouseholdSharingCleanupParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listHouseholdSharingCleanup>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListHouseholdSharingCleanupQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listHouseholdSharingCleanup>>
+  > = ({ signal }) =>
+    listHouseholdSharingCleanup(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listHouseholdSharingCleanup>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListHouseholdSharingCleanupQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listHouseholdSharingCleanup>>
+>;
+export type ListHouseholdSharingCleanupQueryError = ErrorType<ApiError>;
+
+/**
+ * @summary Review expired household sharing cleanup candidates
+ */
+
+export function useListHouseholdSharingCleanup<
+  TData = Awaited<ReturnType<typeof listHouseholdSharingCleanup>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListHouseholdSharingCleanupParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listHouseholdSharingCleanup>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListHouseholdSharingCleanupQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getListHouseholdAuditEventsUrl = (
+  params?: ListHouseholdAuditEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/household/audit-events?${stringifiedParams}`
+    : `/api/household/audit-events`;
+};
+
+/**
+ * Owner/admin-only review of durable household invitation, role, and Access Pass audit rows scoped to the authenticated active household. Production migration, RLS, retention, export, and deletion policy remain launch approval gates.
+ * @summary List durable household audit events
+ */
+export const listHouseholdAuditEvents = async (
+  params?: ListHouseholdAuditEventsParams,
+  options?: RequestInit,
+): Promise<HouseholdAuditEventListResponse> => {
+  return customFetch<HouseholdAuditEventListResponse>(
+    getListHouseholdAuditEventsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListHouseholdAuditEventsQueryKey = (
+  params?: ListHouseholdAuditEventsParams,
+) => {
+  return [`/api/household/audit-events`, ...(params ? [params] : [])] as const;
+};
+
+export const getListHouseholdAuditEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listHouseholdAuditEvents>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListHouseholdAuditEventsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listHouseholdAuditEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListHouseholdAuditEventsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listHouseholdAuditEvents>>
+  > = ({ signal }) =>
+    listHouseholdAuditEvents(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listHouseholdAuditEvents>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListHouseholdAuditEventsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listHouseholdAuditEvents>>
+>;
+export type ListHouseholdAuditEventsQueryError = ErrorType<ApiError>;
+
+/**
+ * @summary List durable household audit events
+ */
+
+export function useListHouseholdAuditEvents<
+  TData = Awaited<ReturnType<typeof listHouseholdAuditEvents>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListHouseholdAuditEventsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listHouseholdAuditEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListHouseholdAuditEventsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getGetCareStateUrl = () => {
-
-
-
-
-  return `/api/care-state`
-}
+  return `/api/care-state`;
+};
 
 /**
  * @summary Get the household's synced care document
  */
-export const getCareState = async ( options?: RequestInit): Promise<CareStateEnvelope> => {
-
-  return customFetch<CareStateEnvelope>(getGetCareStateUrl(),
-  {
+export const getCareState = async (
+  options?: RequestInit,
+): Promise<CareStateEnvelope> => {
+  return customFetch<CareStateEnvelope>(getGetCareStateUrl(), {
     ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
+    method: "GET",
+  });
+};
 
 export const getGetCareStateQueryKey = () => {
-    return [
-    `/api/care-state`
-    ] as const;
-    }
+  return [`/api/care-state`] as const;
+};
 
+export const getGetCareStateQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCareState>>,
+  TError = ErrorType<ApiError>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCareState>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-export const getGetCareStateQueryOptions = <TData = Awaited<ReturnType<typeof getCareState>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCareState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getGetCareStateQueryKey();
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCareState>>> = ({
+    signal,
+  }) => getCareState({ signal, ...requestOptions });
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCareStateQueryKey();
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCareState>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCareState>>> = ({ signal }) => getCareState({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCareState>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetCareStateQueryResult = NonNullable<Awaited<ReturnType<typeof getCareState>>>
-export type GetCareStateQueryError = ErrorType<ApiError>
-
+export type GetCareStateQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCareState>>
+>;
+export type GetCareStateQueryError = ErrorType<ApiError>;
 
 /**
  * @summary Get the household's synced care document
  */
 
-export function useGetCareState<TData = Awaited<ReturnType<typeof getCareState>>, TError = ErrorType<ApiError>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCareState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetCareState<
+  TData = Awaited<ReturnType<typeof getCareState>>,
+  TError = ErrorType<ApiError>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCareState>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCareStateQueryOptions(options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetCareStateQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
-
-
-
-
-
 
 export const getPutCareStateUrl = () => {
-
-
-
-
-  return `/api/care-state`
-}
+  return `/api/care-state`;
+};
 
 /**
  * @summary Replace the household's synced care document
  */
-export const putCareState = async (careStateInput: CareStateInput, options?: RequestInit): Promise<CareStateEnvelope> => {
-
-  return customFetch<CareStateEnvelope>(getPutCareStateUrl(),
-  {
+export const putCareState = async (
+  careStateInput: CareStateInput,
+  options?: RequestInit,
+): Promise<CareStateEnvelope> => {
+  return customFetch<CareStateEnvelope>(getPutCareStateUrl(), {
     ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      careStateInput,)
-  }
-);}
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(careStateInput),
+  });
+};
 
+export const getPutCareStateMutationOptions = <
+  TError = ErrorType<ApiError | CareStateEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof putCareState>>,
+    TError,
+    { data: BodyType<CareStateInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof putCareState>>,
+  TError,
+  { data: BodyType<CareStateInput> },
+  TContext
+> => {
+  const mutationKey = ["putCareState"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof putCareState>>,
+    { data: BodyType<CareStateInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return putCareState(data, requestOptions);
+  };
 
-export const getPutCareStateMutationOptions = <TError = ErrorType<ApiError | CareStateEnvelope>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putCareState>>, TError,{data: BodyType<CareStateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof putCareState>>, TError,{data: BodyType<CareStateInput>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['putCareState'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type PutCareStateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof putCareState>>
+>;
+export type PutCareStateMutationBody = BodyType<CareStateInput>;
+export type PutCareStateMutationError = ErrorType<ApiError | CareStateEnvelope>;
 
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putCareState>>, {data: BodyType<CareStateInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  putCareState(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PutCareStateMutationResult = NonNullable<Awaited<ReturnType<typeof putCareState>>>
-    export type PutCareStateMutationBody = BodyType<CareStateInput>
-    export type PutCareStateMutationError = ErrorType<ApiError | CareStateEnvelope>
-
-    /**
+/**
  * @summary Replace the household's synced care document
  */
-export const usePutCareState = <TError = ErrorType<ApiError | CareStateEnvelope>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putCareState>>, TError,{data: BodyType<CareStateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putCareState>>,
-        TError,
-        {data: BodyType<CareStateInput>},
-        TContext
-      > => {
-      return useMutation(getPutCareStateMutationOptions(options));
-    }
+export const usePutCareState = <
+  TError = ErrorType<ApiError | CareStateEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof putCareState>>,
+    TError,
+    { data: BodyType<CareStateInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof putCareState>>,
+  TError,
+  { data: BodyType<CareStateInput> },
+  TContext
+> => {
+  return useMutation(getPutCareStateMutationOptions(options));
+};
 
-export const getListCareEntriesUrl = (params?: ListCareEntriesParams,) => {
+export const getListCareEntriesUrl = (params?: ListCareEntriesParams) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/care-entries?${stringifiedParams}` : `/api/care-entries`
-}
+  return stringifiedParams.length > 0
+    ? `/api/care-entries?${stringifiedParams}`
+    : `/api/care-entries`;
+};
 
 /**
  * @summary List the household's care log entries
  */
-export const listCareEntries = async (params?: ListCareEntriesParams, options?: RequestInit): Promise<CareEntry[]> => {
-
-  return customFetch<CareEntry[]>(getListCareEntriesUrl(params),
-  {
+export const listCareEntries = async (
+  params?: ListCareEntriesParams,
+  options?: RequestInit,
+): Promise<CareEntry[]> => {
+  return customFetch<CareEntry[]>(getListCareEntriesUrl(params), {
     ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListCareEntriesQueryKey = (params?: ListCareEntriesParams,) => {
-    return [
-    `/api/care-entries`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getListCareEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listCareEntries>>, TError = ErrorType<ApiError>>(params?: ListCareEntriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListCareEntriesQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCareEntries>>> = ({ signal }) => listCareEntries(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCareEntries>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListCareEntriesQueryResult = NonNullable<Awaited<ReturnType<typeof listCareEntries>>>
-export type ListCareEntriesQueryError = ErrorType<ApiError>
-
-
-/**
- * @summary List the household's care log entries
- */
-
-export function useListCareEntries<TData = Awaited<ReturnType<typeof listCareEntries>>, TError = ErrorType<ApiError>>(
- params?: ListCareEntriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListCareEntriesQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-export const getListCareEntryTombstonesUrl = (params?: ListCareEntryTombstonesParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
+    method: "GET",
   });
+};
 
-  const stringifiedParams = normalizedParams.toString();
+export const getListCareEntriesQueryKey = (params?: ListCareEntriesParams) => {
+  return [`/api/care-entries`, ...(params ? [params] : [])] as const;
+};
 
-  return stringifiedParams.length > 0 ? `/api/care-entries/tombstones?${stringifiedParams}` : `/api/care-entries/tombstones`
-}
-
-/**
- * @summary List deleted care log tombstones for household sync
- */
-export const listCareEntryTombstones = async (params?: ListCareEntryTombstonesParams, options?: RequestInit): Promise<CareEntryTombstone[]> => {
-
-  return customFetch<CareEntryTombstone[]>(getListCareEntryTombstonesUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListCareEntryTombstonesQueryKey = (params?: ListCareEntryTombstonesParams,) => {
-    return [
-    `/api/care-entries/tombstones`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getListCareEntryTombstonesQueryOptions = <TData = Awaited<ReturnType<typeof listCareEntryTombstones>>, TError = ErrorType<ApiError>>(params?: ListCareEntryTombstonesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntryTombstones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListCareEntriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCareEntries>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListCareEntriesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCareEntries>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListCareEntriesQueryKey(params);
 
-  const queryKey =  queryOptions?.queryKey ?? getListCareEntryTombstonesQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCareEntries>>> = ({
+    signal,
+  }) => listCareEntries(params, { signal, ...requestOptions });
 
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCareEntries>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
 
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCareEntryTombstones>>> = ({ signal }) => listCareEntryTombstones(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCareEntryTombstones>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListCareEntryTombstonesQueryResult = NonNullable<Awaited<ReturnType<typeof listCareEntryTombstones>>>
-export type ListCareEntryTombstonesQueryError = ErrorType<ApiError>
-
+export type ListCareEntriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCareEntries>>
+>;
+export type ListCareEntriesQueryError = ErrorType<ApiError>;
 
 /**
- * @summary List deleted care log tombstones for household sync
+ * @summary List the household's care log entries
  */
 
-export function useListCareEntryTombstones<TData = Awaited<ReturnType<typeof listCareEntryTombstones>>, TError = ErrorType<ApiError>>(
- params?: ListCareEntryTombstonesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntryTombstones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useListCareEntries<
+  TData = Awaited<ReturnType<typeof listCareEntries>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListCareEntriesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCareEntries>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCareEntriesQueryOptions(params, options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListCareEntryTombstonesQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
 
 export const getCreateCareEntryUrl = () => {
-
-
-
-
-  return `/api/care-entries`
-}
+  return `/api/care-entries`;
+};
 
 /**
  * @summary Append a care log entry
  */
-export const createCareEntry = async (careEntryInput: CareEntryInput, options?: RequestInit): Promise<CareEntry> => {
-
-  return customFetch<CareEntry>(getCreateCareEntryUrl(),
-  {
+export const createCareEntry = async (
+  careEntryInput: CareEntryInput,
+  options?: RequestInit,
+): Promise<CareEntry> => {
+  return customFetch<CareEntry>(getCreateCareEntryUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      careEntryInput,)
-  }
-);}
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(careEntryInput),
+  });
+};
 
+export const getCreateCareEntryMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCareEntry>>,
+    TError,
+    { data: BodyType<CareEntryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createCareEntry>>,
+  TError,
+  { data: BodyType<CareEntryInput> },
+  TContext
+> => {
+  const mutationKey = ["createCareEntry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createCareEntry>>,
+    { data: BodyType<CareEntryInput> }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return createCareEntry(data, requestOptions);
+  };
 
-export const getCreateCareEntryMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCareEntry>>, TError,{data: BodyType<CareEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createCareEntry>>, TError,{data: BodyType<CareEntryInput>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['createCareEntry'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type CreateCareEntryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createCareEntry>>
+>;
+export type CreateCareEntryMutationBody = BodyType<CareEntryInput>;
+export type CreateCareEntryMutationError = ErrorType<ApiError>;
 
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCareEntry>>, {data: BodyType<CareEntryInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createCareEntry(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateCareEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createCareEntry>>>
-    export type CreateCareEntryMutationBody = BodyType<CareEntryInput>
-    export type CreateCareEntryMutationError = ErrorType<ApiError>
-
-    /**
+/**
  * @summary Append a care log entry
  */
-export const useCreateCareEntry = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCareEntry>>, TError,{data: BodyType<CareEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createCareEntry>>,
-        TError,
-        {data: BodyType<CareEntryInput>},
-        TContext
-      > => {
-      return useMutation(getCreateCareEntryMutationOptions(options));
+export const useCreateCareEntry = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCareEntry>>,
+    TError,
+    { data: BodyType<CareEntryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createCareEntry>>,
+  TError,
+  { data: BodyType<CareEntryInput> },
+  TContext
+> => {
+  return useMutation(getCreateCareEntryMutationOptions(options));
+};
+
+export const getListCareEntryTombstonesUrl = (
+  params?: ListCareEntryTombstonesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
+  });
 
-export const getUpdateCareEntryUrl = (id: string,) => {
+  const stringifiedParams = normalizedParams.toString();
 
+  return stringifiedParams.length > 0
+    ? `/api/care-entries/tombstones?${stringifiedParams}`
+    : `/api/care-entries/tombstones`;
+};
 
+/**
+ * @summary List deleted care log tombstones for household sync
+ */
+export const listCareEntryTombstones = async (
+  params?: ListCareEntryTombstonesParams,
+  options?: RequestInit,
+): Promise<CareEntryTombstone[]> => {
+  return customFetch<CareEntryTombstone[]>(
+    getListCareEntryTombstonesUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
+export const getListCareEntryTombstonesQueryKey = (
+  params?: ListCareEntryTombstonesParams,
+) => {
+  return [`/api/care-entries/tombstones`, ...(params ? [params] : [])] as const;
+};
 
-  return `/api/care-entries/${id}`
+export const getListCareEntryTombstonesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCareEntryTombstones>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListCareEntryTombstonesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCareEntryTombstones>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListCareEntryTombstonesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listCareEntryTombstones>>
+  > = ({ signal }) =>
+    listCareEntryTombstones(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCareEntryTombstones>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCareEntryTombstonesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCareEntryTombstones>>
+>;
+export type ListCareEntryTombstonesQueryError = ErrorType<ApiError>;
+
+/**
+ * @summary List deleted care log tombstones for household sync
+ */
+
+export function useListCareEntryTombstones<
+  TData = Awaited<ReturnType<typeof listCareEntryTombstones>>,
+  TError = ErrorType<ApiError>,
+>(
+  params?: ListCareEntryTombstonesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCareEntryTombstones>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCareEntryTombstonesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
 }
+
+export const getUpdateCareEntryUrl = (id: string) => {
+  return `/api/care-entries/${id}`;
+};
 
 /**
  * @summary Update a care log entry (e.g. add a quick note)
  */
-export const updateCareEntry = async (id: string,
-    careEntryUpdate: CareEntryUpdate, options?: RequestInit): Promise<CareEntry> => {
-
-  return customFetch<CareEntry>(getUpdateCareEntryUrl(id),
-  {
+export const updateCareEntry = async (
+  id: string,
+  careEntryUpdate: CareEntryUpdate,
+  options?: RequestInit,
+): Promise<CareEntry> => {
+  return customFetch<CareEntry>(getUpdateCareEntryUrl(id), {
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      careEntryUpdate,)
-  }
-);}
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(careEntryUpdate),
+  });
+};
 
+export const getUpdateCareEntryMutationOptions = <
+  TError = ErrorType<ApiError | CareEntryConflict>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCareEntry>>,
+    TError,
+    { id: string; data: BodyType<CareEntryUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateCareEntry>>,
+  TError,
+  { id: string; data: BodyType<CareEntryUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateCareEntry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateCareEntry>>,
+    { id: string; data: BodyType<CareEntryUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
 
+    return updateCareEntry(id, data, requestOptions);
+  };
 
-export const getUpdateCareEntryMutationOptions = <TError = ErrorType<ApiError | CareEntryConflict>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCareEntry>>, TError,{id: string;data: BodyType<CareEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateCareEntry>>, TError,{id: string;data: BodyType<CareEntryUpdate>}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['updateCareEntry'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type UpdateCareEntryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateCareEntry>>
+>;
+export type UpdateCareEntryMutationBody = BodyType<CareEntryUpdate>;
+export type UpdateCareEntryMutationError = ErrorType<
+  ApiError | CareEntryConflict
+>;
 
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCareEntry>>, {id: string;data: BodyType<CareEntryUpdate>}> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  updateCareEntry(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateCareEntryMutationResult = NonNullable<Awaited<ReturnType<typeof updateCareEntry>>>
-    export type UpdateCareEntryMutationBody = BodyType<CareEntryUpdate>
-    export type UpdateCareEntryMutationError = ErrorType<ApiError | CareEntryConflict>
-
-    /**
+/**
  * @summary Update a care log entry (e.g. add a quick note)
  */
-export const useUpdateCareEntry = <TError = ErrorType<ApiError | CareEntryConflict>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCareEntry>>, TError,{id: string;data: BodyType<CareEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof updateCareEntry>>,
-        TError,
-        {id: string;data: BodyType<CareEntryUpdate>},
-        TContext
-      > => {
-      return useMutation(getUpdateCareEntryMutationOptions(options));
-    }
+export const useUpdateCareEntry = <
+  TError = ErrorType<ApiError | CareEntryConflict>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCareEntry>>,
+    TError,
+    { id: string; data: BodyType<CareEntryUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateCareEntry>>,
+  TError,
+  { id: string; data: BodyType<CareEntryUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateCareEntryMutationOptions(options));
+};
 
-export const getDeleteCareEntryUrl = (id: string,) => {
-
-
-
-
-  return `/api/care-entries/${id}`
-}
+export const getDeleteCareEntryUrl = (id: string) => {
+  return `/api/care-entries/${id}`;
+};
 
 /**
  * @summary Delete a care log entry
  */
-export const deleteCareEntry = async (id: string, options?: RequestInit): Promise<void> => {
-
-  return customFetch<void>(getDeleteCareEntryUrl(id),
-  {
+export const deleteCareEntry = async (
+  id: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteCareEntryUrl(id), {
     ...options,
-    method: 'DELETE'
+    method: "DELETE",
+  });
+};
 
+export const getDeleteCareEntryMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCareEntry>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCareEntry>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deleteCareEntry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-  }
-);}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCareEntry>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
 
+    return deleteCareEntry(id, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
+export type DeleteCareEntryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCareEntry>>
+>;
 
-export const getDeleteCareEntryMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCareEntry>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteCareEntry>>, TError,{id: string}, TContext> => {
+export type DeleteCareEntryMutationError = ErrorType<ApiError>;
 
-const mutationKey = ['deleteCareEntry'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCareEntry>>, {id: string}> = (props) => {
-          const {id} = props ?? {};
-
-          return  deleteCareEntry(id,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteCareEntryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCareEntry>>>
-
-    export type DeleteCareEntryMutationError = ErrorType<ApiError>
-
-    /**
+/**
  * @summary Delete a care log entry
  */
-export const useDeleteCareEntry = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCareEntry>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteCareEntry>>,
-        TError,
-        {id: string},
-        TContext
-      > => {
-      return useMutation(getDeleteCareEntryMutationOptions(options));
-    }
+export const useDeleteCareEntry = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCareEntry>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCareEntry>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeleteCareEntryMutationOptions(options));
+};

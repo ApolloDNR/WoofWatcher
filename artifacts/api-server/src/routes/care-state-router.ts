@@ -1,4 +1,5 @@
 import { assertCareStateWriteAllowed } from "../lib/care-state-authorization.ts";
+import { rejectMismatchedHouseholdRequestScope } from "../lib/household-request-scope.ts";
 
 type RouteHandler = (...args: any[]) => unknown;
 
@@ -66,6 +67,9 @@ export function createCareStateRouter(
     async (req: any, res: any): Promise<void> => {
       const userId = getUserId(req);
       const householdId = await getActiveHouseholdId(userId);
+      if (rejectMismatchedHouseholdRequestScope(req, res, householdId)) {
+        return;
+      }
       const [row] = await db
         .select()
         .from(careStateTable)
@@ -90,6 +94,9 @@ export function createCareStateRouter(
       }
 
       const householdId = await getActiveHouseholdId(userId);
+      if (rejectMismatchedHouseholdRequestScope(req, res, householdId)) {
+        return;
+      }
       const member = await getHouseholdMemberAuthz(householdId, userId);
       const policy = assertCareStateWriteAllowed(
         member?.storedRole,

@@ -32,7 +32,9 @@ import {
   applyQueuedPatchToAcknowledgedEntry,
   buildCareEntryRefreshPlan,
   CareEntryConflictRetryError,
+  clearDiscardedServerEntryDurably,
   cleanupDiscardedServerEntryRows,
+  createCareEntryDeleteFence,
   createSerializedCareSyncWriter,
   createSerializedCareEntryMutationQueue,
   decideCareEntryEditSyncDisposition,
@@ -51,6 +53,7 @@ import {
   removeDiscardedServerEntryId,
   restoreEntryAfterDeleteFailure,
   retryCareEntryMutationAfterConflict,
+  runCareSyncRequestWithTimeout,
   sanitizeCareEntryDetailsForSync,
   selectWoofWatcherKeysForOwnerWipe,
   shouldRetryCreate,
@@ -91,6 +94,7 @@ import {
   householdCacheIsCompatible,
   normalizeStorageUserId,
 } from "@/lib/careStateStorage";
+import { mergeCareDocThreeWay } from "@/lib/careDocConflictMerge";
 import {
   normalizeReminderNotificationPreferences,
   type ReminderNotificationPreferences,
@@ -121,6 +125,34 @@ import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 const STORAGE_KEY = "woofwatcher.v2.state";
 const DISCARDED_SERVER_ENTRY_IDS_KEY =
   "woofwatcher.v2.discarded-server-entry-ids";
+const HOUSEHOLD_SCOPE_HEADER = "x-woofwatcher-household-id";
+const HOUSEHOLD_SCOPE_CHANGED_MESSAGE =
+  "Household scope changed. Refresh before retrying.";
+
+function householdScopedRequest(
+  householdId: string | null,
+  signal?: AbortSignal,
+): RequestInit {
+  return {
+    ...(signal ? { signal } : {}),
+    ...(householdId
+      ? { headers: { [HOUSEHOLD_SCOPE_HEADER]: householdId } }
+      : {}),
+  };
+}
+
+function isCareStateEnvelope(value: unknown): value is CareStateEnvelope {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<CareStateEnvelope>;
+  return (
+    typeof candidate.version === "number" &&
+    Number.isFinite(candidate.version) &&
+    typeof candidate.updatedAt === "string" &&
+    !!candidate.doc &&
+    typeof candidate.doc === "object" &&
+    !Array.isArray(candidate.doc)
+  );
+}
 
 type DurableCareStorageMutation =
   | { kind: "set"; key: string; value: string }
@@ -337,7 +369,9 @@ export interface CareState extends CareDoc {
 function normalizeSupportLegalReadinessEvidence(
   value: SupportLegalReadinessProofEvidence | null | undefined,
 ): SupportLegalReadinessProofEvidence | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : null;
 }
 
 function getDefaultDoc(): CareDoc {
@@ -390,7 +424,8 @@ function getDefaultDoc(): CareDoc {
       providerStatus: "local-draft",
     },
     launchProviderProfile: normalizeLaunchProviderProfile(null),
-    reminderNotificationPreferences: normalizeReminderNotificationPreferences(null),
+    reminderNotificationPreferences:
+      normalizeReminderNotificationPreferences(null),
     dietProfile: {
       primaryFood: "",
       normalPortion: "",
@@ -416,46 +451,87 @@ function getDefaultDoc(): CareDoc {
 
 function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
   const merged = { ...getDefaultDoc(), ...(partial ?? {}) };
-  const launchSupportProfile = merged.launchSupportProfile ?? getDefaultDoc().launchSupportProfile;
+  const launchSupportProfile =
+    merged.launchSupportProfile ?? getDefaultDoc().launchSupportProfile;
   return {
     ...merged,
-    activePetId: typeof merged.activePetId === "string" && merged.activePetId.trim() ? merged.activePetId : "primary",
+    activePetId:
+      typeof merged.activePetId === "string" && merged.activePetId.trim()
+        ? merged.activePetId
+        : "primary",
     pets: Array.isArray(merged.pets) ? merged.pets : [],
     accessPasses: Array.isArray(merged.accessPasses) ? merged.accessPasses : [],
-    adventureMemories: Array.isArray(merged.adventureMemories) ? merged.adventureMemories : [],
-    reportArtifacts: Array.isArray(merged.reportArtifacts) ? merged.reportArtifacts : [],
+    adventureMemories: Array.isArray(merged.adventureMemories)
+      ? merged.adventureMemories
+      : [],
+    reportArtifacts: Array.isArray(merged.reportArtifacts)
+      ? merged.reportArtifacts
+      : [],
     householdSetup: {
       mode:
-        merged.householdSetup?.mode === "join" || merged.householdSetup?.mode === "local"
+        merged.householdSetup?.mode === "join" ||
+        merged.householdSetup?.mode === "local"
           ? merged.householdSetup.mode
           : "create",
-      householdName: typeof merged.householdSetup?.householdName === "string" ? merged.householdSetup.householdName : "",
-      inviteCode: typeof merged.householdSetup?.inviteCode === "string" ? merged.householdSetup.inviteCode : "",
+      householdName:
+        typeof merged.householdSetup?.householdName === "string"
+          ? merged.householdSetup.householdName
+          : "",
+      inviteCode:
+        typeof merged.householdSetup?.inviteCode === "string"
+          ? merged.householdSetup.inviteCode
+          : "",
       providerStatus:
-        merged.householdSetup?.providerStatus === "pending-provider" ? "pending-provider" : "local-only",
-      updatedAt: typeof merged.householdSetup?.updatedAt === "string" ? merged.householdSetup.updatedAt : undefined,
+        merged.householdSetup?.providerStatus === "pending-provider"
+          ? "pending-provider"
+          : "local-only",
+      updatedAt:
+        typeof merged.householdSetup?.updatedAt === "string"
+          ? merged.householdSetup.updatedAt
+          : undefined,
     },
     launchSupportProfile: {
       supportEmail:
-        typeof launchSupportProfile.supportEmail === "string" ? launchSupportProfile.supportEmail : "",
+        typeof launchSupportProfile.supportEmail === "string"
+          ? launchSupportProfile.supportEmail
+          : "",
       privacyPolicyUrl:
-        typeof launchSupportProfile.privacyPolicyUrl === "string" ? launchSupportProfile.privacyPolicyUrl : "",
-      termsUrl: typeof launchSupportProfile.termsUrl === "string" ? launchSupportProfile.termsUrl : "",
+        typeof launchSupportProfile.privacyPolicyUrl === "string"
+          ? launchSupportProfile.privacyPolicyUrl
+          : "",
+      termsUrl:
+        typeof launchSupportProfile.termsUrl === "string"
+          ? launchSupportProfile.termsUrl
+          : "",
       refundPolicyApproved: Boolean(launchSupportProfile.refundPolicyApproved),
-      veterinaryBoundaryApproved: Boolean(launchSupportProfile.veterinaryBoundaryApproved),
-      accountDeletionEscalationApproved: Boolean(launchSupportProfile.accountDeletionEscalationApproved),
-      incidentResponseApproved: Boolean(launchSupportProfile.incidentResponseApproved),
-      supportLegalReadinessEvidence: normalizeSupportLegalReadinessEvidence(launchSupportProfile.supportLegalReadinessEvidence),
+      veterinaryBoundaryApproved: Boolean(
+        launchSupportProfile.veterinaryBoundaryApproved,
+      ),
+      accountDeletionEscalationApproved: Boolean(
+        launchSupportProfile.accountDeletionEscalationApproved,
+      ),
+      incidentResponseApproved: Boolean(
+        launchSupportProfile.incidentResponseApproved,
+      ),
+      supportLegalReadinessEvidence: normalizeSupportLegalReadinessEvidence(
+        launchSupportProfile.supportLegalReadinessEvidence,
+      ),
       ownerReviewedAt:
-        typeof launchSupportProfile.ownerReviewedAt === "string" ? launchSupportProfile.ownerReviewedAt : undefined,
+        typeof launchSupportProfile.ownerReviewedAt === "string"
+          ? launchSupportProfile.ownerReviewedAt
+          : undefined,
       providerStatus:
         launchSupportProfile.providerStatus === "owner-reviewed" ||
         launchSupportProfile.providerStatus === "provider-approved"
           ? launchSupportProfile.providerStatus
           : "local-draft",
     },
-    launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile),
-    reminderNotificationPreferences: normalizeReminderNotificationPreferences(merged.reminderNotificationPreferences),
+    launchProviderProfile: normalizeLaunchProviderProfile(
+      merged.launchProviderProfile,
+    ),
+    reminderNotificationPreferences: normalizeReminderNotificationPreferences(
+      merged.reminderNotificationPreferences,
+    ),
   };
 }
 
@@ -500,8 +576,7 @@ function advanceCareEntrySyncRevision(
     ...entry,
     details: {
       ...(details ?? {}),
-      [CARE_ENTRY_SYNC_REVISION_KEY]:
-        nextCareEntrySyncRevision(entry.details),
+      [CARE_ENTRY_SYNC_REVISION_KEY]: nextCareEntrySyncRevision(entry.details),
     },
   };
 }
@@ -529,15 +604,10 @@ function toPendingCareEntrySyncPatch(
     current.details,
     mutablePatch.details,
   );
-  const {
-    details: _details,
-    ...topLevelPatch
-  } = mutablePatch;
+  const { details: _details, ...topLevelPatch } = mutablePatch;
   return {
     ...topLevelPatch,
-    ...(Object.keys(detailPatch).length > 0
-      ? { details: detailPatch }
-      : {}),
+    ...(Object.keys(detailPatch).length > 0 ? { details: detailPatch } : {}),
   };
 }
 
@@ -558,13 +628,17 @@ function rebasePendingCareEntryAfterConflict(
     ...rebased,
     details: {
       ...(rebased.details ?? {}),
-      [CARE_ENTRY_SYNC_REVISION_KEY]:
-        nextCareEntrySyncRevision(serverEntry.details),
+      [CARE_ENTRY_SYNC_REVISION_KEY]: nextCareEntrySyncRevision(
+        serverEntry.details,
+      ),
     },
   };
 }
 
-function toCreateInput(e: Omit<Entry, "id">, clientKey?: string): CareEntryInput {
+function toCreateInput(
+  e: Omit<Entry, "id">,
+  clientKey?: string,
+): CareEntryInput {
   const details = sanitizeCareEntryDetailsForSync(e.details);
   if (e.title) details.title = e.title;
   if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
@@ -696,18 +770,21 @@ const CareContext = createContext<CareContextValue | null>(null);
  * mutations, and rendered care never survive into account B's first frame.
  */
 export function CareProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, userId } = useWoofAuth();
-  const authenticatedStorageUserId = isClerkEnabledForBuild && isSignedIn
-    ? normalizeStorageUserId(userId) ?? undefined
-    : null;
-  const sessionKey = authenticatedStorageUserId === undefined
-    ? "authenticated-unverified"
-    : authenticatedStorageUserId
-      ? `account:${authenticatedStorageUserId}`
-      : "local";
-  const storageWriterRef = useRef<
-    SerializedCareSyncWriter<DurableCareStorageMutation> | null
-  >(null);
+  const { isLoaded, isSignedIn, userId } = useWoofAuth();
+  const authenticatedStorageUserId =
+    isClerkEnabledForBuild && !isLoaded
+      ? undefined
+      : isClerkEnabledForBuild && isSignedIn
+        ? (normalizeStorageUserId(userId) ?? undefined)
+        : null;
+  const sessionKey =
+    authenticatedStorageUserId === undefined
+      ? "authenticated-unverified"
+      : authenticatedStorageUserId
+        ? `account:${authenticatedStorageUserId}`
+        : "local";
+  const storageWriterRef =
+    useRef<SerializedCareSyncWriter<DurableCareStorageMutation> | null>(null);
   if (!storageWriterRef.current) {
     storageWriterRef.current =
       createSerializedCareSyncWriter<DurableCareStorageMutation>(
@@ -744,6 +821,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+function isHouseholdScopeChangedError(error: unknown): boolean {
+  const candidate =
+    error instanceof CareEntryConflictRetryError ? error.originalError : error;
+  return (
+    isConflict(candidate) &&
+    !!candidate.data &&
+    typeof candidate.data === "object" &&
+    (candidate.data as { error?: unknown }).error ===
+      HOUSEHOLD_SCOPE_CHANGED_MESSAGE
+  );
+}
+
 function CareProviderSession({
   children,
   storageUserId,
@@ -772,8 +861,9 @@ function CareProviderSession({
   const [entries, setEntries] = useState<Entry[]>([]);
   const [serverVersion, setServerVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
-  const [householdScopeChanging, setHouseholdScopeChanging] =
-    useState(false);
+  const [householdScopeChanging, setHouseholdScopeChanging] = useState(
+    storageUserId !== null,
+  );
   const [isSyncing, setIsSyncing] = useState(false);
   const [careStateWriteAccess, setCareStateWriteAccess] =
     useState<CareStateWriteAccess>(
@@ -804,13 +894,28 @@ function CareProviderSession({
   const storageHouseholdIdRef = useRef<string | null>(null);
   const discardedLedgerHouseholdIdRef = useRef<string | null>(null);
   const householdScopeVerifiedRef = useRef(storageUserId === null);
-  const householdScopeChangingRef = useRef(false);
+  const householdScopeChangingRef = useRef(storageUserId !== null);
+  const pendingHouseholdArchiveRef = useRef<{
+    stateHouseholdId: string | null;
+    ledgerHouseholdId: string | null;
+    doc: CareDoc;
+    entries: Entry[];
+    serverVersion: number;
+    lastServerCareState: { doc: CareDoc; version: number } | null;
+    discardedEntryIds: string[];
+  } | null>(null);
   const syncRequestedRef = useRef(false);
+  const householdScopeRetryTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const invalidateHouseholdScopeRef = useRef<() => void>(() => {});
   const syncFromServerRef = useRef<() => Promise<void>>(async () => {});
   // Maps optimistic temp ids to their server ids, and queues patches that
   // arrive before a create resolves (post-log quick-note race).
   const realIdByTemp = useRef<Map<string, string>>(new Map());
-  const pendingPatch = useRef<Map<string, Partial<Omit<Entry, "id">>>>(new Map());
+  const pendingPatch = useRef<Map<string, Partial<Omit<Entry, "id">>>>(
+    new Map(),
+  );
   const cancelledTempEntries = useRef<Set<string>>(new Set());
   const creatingTempEntries = useRef<Set<string>>(new Set());
   // A cancelled create is hidden until its newly-created server row is
@@ -818,17 +923,23 @@ function CareProviderSession({
   // reviving a care moment on the next refresh in the same session.
   const discardedServerEntryIdsRef = useRef<Set<string>>(new Set());
   const recentlyDiscardedServerEntryIdsRef = useRef<Set<string>>(new Set());
+  const entryDeleteFence = useMemo(() => createCareEntryDeleteFence(), []);
   const entryUpdateQueueRef =
     useRef<SerializedCareEntryMutationQueue<Entry> | null>(null);
   // Bumped by eraseAllLocalData so in-flight sync results can't resurrect
   // data the owner just deleted from this device.
   const eraseGenerationRef = useRef(0);
   const householdSessionGenerationRef = useRef(0);
+  const householdScopeInvalidationGenerationRef = useRef(0);
   const careDocWriteGenerationRef = useRef(0);
   const careDocWritesInFlightRef = useRef(0);
+  const entryDeletesInFlightRef = useRef(0);
+  const entryDeleteGenerationRef = useRef(0);
   const careDocOptimisticBaselineRef = useRef<CareDoc | null>(null);
   const careDocRecoveryInFlightRef = useRef(false);
+  const careDocRecoveryGenerationRef = useRef(0);
   const careDocPermissionNoticeAtRef = useRef(0);
+  const eraseInFlightRef = useRef<Promise<void> | null>(null);
   const lastServerCareStateRef = useRef<{
     doc: CareDoc;
     version: number;
@@ -847,7 +958,7 @@ function CareProviderSession({
       recentlyDiscardedServerEntryIdsRef.current.add(entryId);
       try {
         const writerEpoch = discardedServerEntryWriter.currentEpoch();
-        await discardedServerEntryWriter.enqueue(
+        const result = await discardedServerEntryWriter.enqueue(
           {
             kind: "set",
             key: discardedEntryStorageKey,
@@ -858,134 +969,137 @@ function CareProviderSession({
             }),
           },
           writerEpoch,
+          "critical",
         );
+        if (result !== "applied") {
+          throw new Error("Cleanup ledger write was superseded.");
+        }
       } catch {
         setStorageWarning("save-failed");
         throw new Error("Could not persist cancelled care-entry cleanup.");
       }
     },
-    [
-      discardedEntryStorageKey,
-      discardedServerEntryWriter,
-      storageUserId,
-    ],
+    [discardedEntryStorageKey, discardedServerEntryWriter, storageUserId],
   );
 
   const clearDiscardedServerEntry = useCallback(
     async (entryId: string) => {
-      if (!sessionActiveRef.current) return;
-      const next = removeDiscardedServerEntryId(
-        [...discardedServerEntryIdsRef.current],
+      if (!sessionActiveRef.current) return false;
+      const cleared = await clearDiscardedServerEntryDurably({
         entryId,
-      );
-      discardedServerEntryIdsRef.current = new Set(next);
-      try {
-        const writerEpoch = discardedServerEntryWriter.currentEpoch();
-        await discardedServerEntryWriter.enqueue(
-          next.length > 0
-            ? {
-                kind: "set",
-                key: discardedEntryStorageKey,
-                value: JSON.stringify({
-                  ownerUserId: storageUserId ?? null,
-                  householdId: discardedLedgerHouseholdIdRef.current,
-                  entryIds: next,
-                }),
-              }
-            : { kind: "remove", key: discardedEntryStorageKey },
-          writerEpoch,
-        );
-      } catch {
+        readEntryIds: () => [...discardedServerEntryIdsRef.current],
+        applyEntryIds: (entryIds) => {
+          discardedServerEntryIdsRef.current = new Set(entryIds);
+        },
+        persistEntryIds: async (entryIds) => {
+          const writerEpoch = discardedServerEntryWriter.currentEpoch();
+          const result = await discardedServerEntryWriter.enqueue(
+            entryIds.length > 0
+              ? {
+                  kind: "set",
+                  key: discardedEntryStorageKey,
+                  value: JSON.stringify({
+                    ownerUserId: storageUserId ?? null,
+                    householdId: discardedLedgerHouseholdIdRef.current,
+                    entryIds,
+                  }),
+                }
+              : { kind: "remove", key: discardedEntryStorageKey },
+            writerEpoch,
+            "critical",
+          );
+          if (result !== "applied") {
+            throw new Error("Cleanup ledger write was superseded.");
+          }
+        },
+      });
+      if (!cleared) {
+        recentlyDiscardedServerEntryIdsRef.current.add(entryId);
         setStorageWarning("save-failed");
       }
+      return cleared;
     },
-    [
-      discardedEntryStorageKey,
-      discardedServerEntryWriter,
-      storageUserId,
-    ],
+    [discardedEntryStorageKey, discardedServerEntryWriter, storageUserId],
   );
 
   if (!entryUpdateQueueRef.current) {
-    entryUpdateQueueRef.current =
-      createSerializedCareEntryMutationQueue<Entry, ApiCareEntry>({
-        mutate: async (entryId, entry, signal) => {
-          try {
-            return await updateCareEntry(
-              entryId,
-              toUpdateInput(entry),
-              { signal },
-            );
-          } catch (error) {
-            return retryCareEntryMutationAfterConflict({
-              error,
-              input: entry,
-              isConflict,
-              fetchCurrent: async () => {
-                const conflictEntry = getCareEntryConflictEntry(
-                  error,
-                  entryId,
-                );
-                if (conflictEntry) return conflictEntry;
-                const rows = await listCareEntries(undefined, {
-                  signal,
-                });
-                const currentServerEntry = rows.find(
-                  (row) => row.id === entryId,
-                );
-                return currentServerEntry
-                  ? toEntry(currentServerEntry)
-                  : null;
-              },
-              rebase: rebasePendingCareEntryAfterConflict,
-              mutate: (rebasedEntry) =>
-                updateCareEntry(
-                  entryId,
-                  toUpdateInput(rebasedEntry),
-                  { signal },
-                ),
-            });
-          }
-        },
-        onSuccess: (entryId, localEntry, updated) => {
-          if (!sessionActiveRef.current) return;
-          const synced = {
-            ...adoptServerEntry(localEntry, toEntry(updated)),
-            pendingSyncPatch: undefined,
-          };
-          entriesRef.current = entriesRef.current.map((entry) =>
-            entry.id === entryId ? synced : entry,
+    entryUpdateQueueRef.current = createSerializedCareEntryMutationQueue<
+      Entry,
+      ApiCareEntry
+    >({
+      mutate: async (entryId, entry, signal) => {
+        try {
+          return await updateCareEntry(
+            entryId,
+            toUpdateInput(entry),
+            householdScopedRequest(storageHouseholdIdRef.current, signal),
           );
-          setEntries((previous) =>
-            previous.map((entry) =>
-              entry.id === entryId ? synced : entry,
-            ),
-          );
-          queryClient.invalidateQueries({
-            queryKey: getListCareEntriesQueryKey(),
+        } catch (error) {
+          return retryCareEntryMutationAfterConflict({
+            error,
+            input: entry,
+            isConflict,
+            fetchCurrent: async () => {
+              const conflictEntry = getCareEntryConflictEntry(error, entryId);
+              if (conflictEntry) return conflictEntry;
+              const rows = await listCareEntries(
+                undefined,
+                householdScopedRequest(storageHouseholdIdRef.current, signal),
+              );
+              const currentServerEntry = rows.find((row) => row.id === entryId);
+              return currentServerEntry ? toEntry(currentServerEntry) : null;
+            },
+            rebase: rebasePendingCareEntryAfterConflict,
+            mutate: (rebasedEntry) =>
+              updateCareEntry(
+                entryId,
+                toUpdateInput(rebasedEntry),
+                householdScopedRequest(storageHouseholdIdRef.current, signal),
+              ),
           });
-        },
-        onFailure: (entryId, localEntry, error) => {
-          if (!sessionActiveRef.current) return;
-          const retryBase =
-            error instanceof CareEntryConflictRetryError
-              ? error.rebasedInput
-              : localEntry;
-          const failedEntry = advanceCareEntrySyncRevision({
-            ...retryBase,
-            syncStatus: "failed",
-            syncError: "Saved locally. Refresh to retry sync.",
-          });
-          entriesRef.current = entriesRef.current.map((entry) =>
-            entry.id === entryId ? failedEntry : entry,
-          );
-          setEntries((previous) =>
-            previous.map((entry) =>
-              entry.id === entryId ? failedEntry : entry,
-            ),
-          );
-        },
-      });
+        }
+      },
+      onSuccess: (entryId, localEntry, updated) => {
+        if (!sessionActiveRef.current) return;
+        const synced = {
+          ...adoptServerEntry(localEntry, toEntry(updated)),
+          pendingSyncPatch: undefined,
+        };
+        entriesRef.current = entriesRef.current.map((entry) =>
+          entry.id === entryId ? synced : entry,
+        );
+        setEntries((previous) =>
+          previous.map((entry) => (entry.id === entryId ? synced : entry)),
+        );
+        queryClient.invalidateQueries({
+          queryKey: getListCareEntriesQueryKey(),
+        });
+      },
+      onFailure: (entryId, localEntry, error) => {
+        if (!sessionActiveRef.current) return;
+        if (isHouseholdScopeChangedError(error)) {
+          // Keep the failed local draft in memory so the verified
+          // household-transition path can archive it, but immediately mask
+          // the stale household and stop every further mutation.
+          invalidateHouseholdScopeRef.current();
+        }
+        const retryBase =
+          error instanceof CareEntryConflictRetryError
+            ? error.rebasedInput
+            : localEntry;
+        const failedEntry = advanceCareEntrySyncRevision({
+          ...retryBase,
+          syncStatus: "failed",
+          syncError: "Saved locally. Refresh to retry sync.",
+        });
+        entriesRef.current = entriesRef.current.map((entry) =>
+          entry.id === entryId ? failedEntry : entry,
+        );
+        setEntries((previous) =>
+          previous.map((entry) => (entry.id === entryId ? failedEntry : entry)),
+        );
+      },
+    });
   }
   const entryUpdateQueue = entryUpdateQueueRef.current;
   useLayoutEffect(() => {
@@ -1000,9 +1114,15 @@ function CareProviderSession({
       eraseGenerationRef.current += 1;
       careDocWriteGenerationRef.current += 1;
       syncRequestedRef.current = false;
+      entryDeletesInFlightRef.current = 0;
+      entryDeleteFence.clear();
+      if (householdScopeRetryTimerRef.current) {
+        clearTimeout(householdScopeRetryTimerRef.current);
+        householdScopeRetryTimerRef.current = null;
+      }
       entryUpdateQueue.cancelAll();
     };
-  }, [entryUpdateQueue]);
+  }, [entryDeleteFence, entryUpdateQueue]);
   useEffect(() => {
     docRef.current = doc;
   }, [doc]);
@@ -1018,8 +1138,7 @@ function CareProviderSession({
   const normalizedAuthenticatedUserId =
     typeof authenticatedUserId === "string" ? authenticatedUserId : null;
   const previousAuthenticatedUserId = authenticatedUserIdRef.current;
-  signedInRef.current =
-    !!isSignedIn && normalizedAuthenticatedUserId !== null;
+  signedInRef.current = !!isSignedIn && normalizedAuthenticatedUserId !== null;
   authenticatedUserIdRef.current = normalizedAuthenticatedUserId;
   if (!isSignedIn) {
     careStateWriteAccessRef.current = isClerkEnabledForBuild
@@ -1043,9 +1162,7 @@ function CareProviderSession({
 
   const applyAuthoritativeCareState = useCallback(
     (envelope: CareStateEnvelope) => {
-      const authoritativeDoc = mergeDoc(
-        envelope.doc as Partial<CareDoc>,
-      );
+      const authoritativeDoc = mergeDoc(envelope.doc as Partial<CareDoc>);
       lastServerCareStateRef.current = {
         doc: authoritativeDoc,
         version: envelope.version,
@@ -1089,6 +1206,62 @@ function CareProviderSession({
     );
   }, [applyCareStateWriteAccess]);
 
+  const scheduleHouseholdScopeRetry = useCallback(() => {
+    if (householdScopeRetryTimerRef.current) return;
+    householdScopeRetryTimerRef.current = setTimeout(() => {
+      householdScopeRetryTimerRef.current = null;
+      if (
+        sessionActiveRef.current &&
+        hydratedRef.current &&
+        signedInRef.current
+      ) {
+        void syncFromServerRef.current();
+      }
+    }, 2_000);
+  }, []);
+
+  const invalidateHouseholdScope = useCallback(() => {
+    if (!sessionActiveRef.current || !signedInRef.current) return;
+    householdScopeInvalidationGenerationRef.current += 1;
+    householdSessionGenerationRef.current += 1;
+    careDocWriteGenerationRef.current += 1;
+    careDocRecoveryGenerationRef.current += 1;
+    careDocRecoveryInFlightRef.current = false;
+    entryUpdateQueue.cancelAll();
+    householdScopeVerifiedRef.current = false;
+    householdScopeChangingRef.current = true;
+    persistencePausedRef.current = true;
+    setHouseholdScopeChanging(true);
+    applyCareStateWriteAccess("checking");
+    setCareDocSyncNotice({
+      kind: "checking",
+      message: CARE_DOC_CHECKING_MESSAGE,
+      assertive: true,
+    });
+    if (syncingRef.current) {
+      // A scope failure inside the active sync must not request an immediate
+      // trailing microtask. Persistent /me/request disagreement is retried at
+      // a bounded cadence so it cannot become a hot network loop.
+      syncRequestedRef.current = false;
+      scheduleHouseholdScopeRetry();
+      return;
+    }
+    syncRequestedRef.current = true;
+    if (
+      !syncingRef.current &&
+      hydratedRef.current &&
+      careDocWritesInFlightRef.current === 0 &&
+      entryDeletesInFlightRef.current === 0
+    ) {
+      void Promise.resolve().then(() => syncFromServerRef.current());
+    }
+  }, [
+    applyCareStateWriteAccess,
+    entryUpdateQueue,
+    scheduleHouseholdScopeRetry,
+  ]);
+  invalidateHouseholdScopeRef.current = invalidateHouseholdScope;
+
   const handleCareStateWriteForbidden = useCallback(
     async (
       error: unknown,
@@ -1102,8 +1275,13 @@ function CareProviderSession({
       careDocWriteGenerationRef.current += 1;
       if (careDocRecoveryInFlightRef.current) return true;
       careDocRecoveryInFlightRef.current = true;
+      const recoveryGenerationAtStart =
+        careDocRecoveryGenerationRef.current + 1;
+      careDocRecoveryGenerationRef.current = recoveryGenerationAtStart;
 
       const eraseGenerationAtStart = eraseGenerationRef.current;
+      const householdScopeInvalidationAtStart =
+        householdScopeInvalidationGenerationRef.current;
       const authenticatedUserAtStart = authenticatedUserIdRef.current;
       const confirmed = lastServerCareStateRef.current;
       if (knownEnvelope) {
@@ -1128,10 +1306,37 @@ function CareProviderSession({
         // The pre-PUT envelope is only an immediate visual fallback. A 403
         // can race another writer, so always fetch the latest household
         // winner before declaring recovery complete.
-        const envelope = await getCareState();
+        const me = await runCareSyncRequestWithTimeout((signal) =>
+          getMe({ signal }),
+        );
+        const responseUserId = normalizeStorageUserId(me.user?.id);
+        const responseHouseholdId = normalizeStorageUserId(me.household?.id);
+        if (
+          responseUserId !== authenticatedUserAtStart ||
+          !responseHouseholdId
+        ) {
+          throw new Error("Care recovery identity could not be verified.");
+        }
+        if (
+          storageHouseholdIdRef.current &&
+          storageHouseholdIdRef.current !== responseHouseholdId
+        ) {
+          // Membership changed underneath the rejected write. Seal the old
+          // household and let the normal /me-first transition archive it;
+          // never apply the new household's document into old entries.
+          invalidateHouseholdScope();
+          return true;
+        }
+        const envelope = await runCareSyncRequestWithTimeout((signal) =>
+          getCareState(
+            householdScopedRequest(storageHouseholdIdRef.current, signal),
+          ),
+        );
         if (
           !sessionActiveRef.current ||
           eraseGenerationRef.current !== eraseGenerationAtStart ||
+          householdScopeInvalidationGenerationRef.current !==
+            householdScopeInvalidationAtStart ||
           !signedInRef.current ||
           authenticatedUserIdRef.current !== authenticatedUserAtStart
         ) {
@@ -1143,27 +1348,44 @@ function CareProviderSession({
           message: CARE_DOC_RESTORED_MESSAGE,
           assertive: true,
         });
-      } catch {
+      } catch (error) {
         if (
           sessionActiveRef.current &&
           eraseGenerationRef.current === eraseGenerationAtStart &&
+          householdScopeInvalidationGenerationRef.current ===
+            householdScopeInvalidationAtStart &&
           signedInRef.current &&
           authenticatedUserIdRef.current === authenticatedUserAtStart
         ) {
-          setCareDocSyncNotice({
-            kind: "read-only",
-            message: `${CARE_DOC_READ_ONLY_MESSAGE} Reconnect and refresh to restore the latest household version.`,
-            assertive: true,
-          });
+          if (isHouseholdScopeChangedError(error)) {
+            invalidateHouseholdScope();
+          } else {
+            setCareDocSyncNotice({
+              kind: "read-only",
+              message: `${CARE_DOC_READ_ONLY_MESSAGE} Reconnect and refresh to restore the latest household version.`,
+              assertive: true,
+            });
+          }
         }
       } finally {
-        careDocRecoveryInFlightRef.current = false;
+        // Owner erase deliberately releases this lock so a fresh generation
+        // can recover. A late pre-erase request must not unlock a newer
+        // recovery that now owns the same ref.
+        if (
+          sessionActiveRef.current &&
+          eraseGenerationRef.current === eraseGenerationAtStart &&
+          authenticatedUserIdRef.current === authenticatedUserAtStart &&
+          careDocRecoveryGenerationRef.current === recoveryGenerationAtStart
+        ) {
+          careDocRecoveryInFlightRef.current = false;
+        }
       }
       return true;
     },
     [
       applyAuthoritativeCareState,
       applyCareStateWriteAccess,
+      invalidateHouseholdScope,
       presentCareDocBlockedNotice,
     ],
   );
@@ -1195,9 +1417,12 @@ function CareProviderSession({
     if (storageUserId === undefined) return;
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const eraseGenerationAtHydrationStart = eraseGenerationRef.current;
     const isCurrentSession = () =>
-      !cancelled && sessionActiveRef.current;
-    const hydrationWriterEpoch = storageWriter.currentEpoch();
+      !cancelled &&
+      sessionActiveRef.current &&
+      eraseGenerationRef.current === eraseGenerationAtHydrationStart;
+    let hydrationWriterEpoch = storageWriter.currentEpoch();
     const preserveRecoveryCopy = (key: string, value: string) => {
       void storageWriter
         .enqueue({ kind: "set", key, value }, hydrationWriterEpoch)
@@ -1258,7 +1483,10 @@ function CareProviderSession({
             version: parsed.lastServerCareState.version,
           };
         }
-        const docUpdatedAt = typeof parsed?.doc?.updatedAt === "string" ? parsed.doc.updatedAt : "";
+        const docUpdatedAt =
+          typeof parsed?.doc?.updatedAt === "string"
+            ? parsed.doc.updatedAt
+            : "";
         return (
           cachedEntries.length === 0 &&
           (!docUpdatedAt || docUpdatedAt === new Date(0).toISOString())
@@ -1276,13 +1504,8 @@ function CareProviderSession({
       try {
         const parsed = raw ? JSON.parse(raw) : null;
         const legacyEntryIds = Array.isArray(parsed) ? parsed : null;
-        const embeddedOwner = legacyEntryIds
-          ? null
-          : parsed?.ownerUserId;
-        if (
-          raw &&
-          !cacheBelongsToPrincipal(embeddedOwner, storageUserId)
-        ) {
+        const embeddedOwner = legacyEntryIds ? null : parsed?.ownerUserId;
+        if (raw && !cacheBelongsToPrincipal(embeddedOwner, storageUserId)) {
           preserveRecoveryCopy(
             `${discardedEntryStorageKey}.principal-mismatch.recovery`,
             raw,
@@ -1293,14 +1516,13 @@ function CareProviderSession({
           ? null
           : normalizeStorageUserId(parsed?.householdId);
         const storedEntryIds = legacyEntryIds ?? parsed?.entryIds ?? [];
-        const cachedDiscardedServerEntryIds =
-          normalizeDiscardedServerEntryIds([
-            ...storedEntryIds,
-            // A cancellation may occur while the two storage reads are in
-            // flight. Union it instead of letting the older disk snapshot
-            // erase the newer in-memory deletion intent.
-            ...discardedServerEntryIdsRef.current,
-          ]);
+        const cachedDiscardedServerEntryIds = normalizeDiscardedServerEntryIds([
+          ...storedEntryIds,
+          // A cancellation may occur while the two storage reads are in
+          // flight. Union it instead of letting the older disk snapshot
+          // erase the newer in-memory deletion intent.
+          ...discardedServerEntryIdsRef.current,
+        ]);
         discardedServerEntryIdsRef.current = new Set(
           cachedDiscardedServerEntryIds,
         );
@@ -1308,10 +1530,7 @@ function CareProviderSession({
         // Keep corrupt deletion metadata for support/recovery while refusing
         // to let it delay hydration indefinitely.
         if (raw) {
-          preserveRecoveryCopy(
-            `${discardedEntryStorageKey}.recovery`,
-            raw,
-          );
+          preserveRecoveryCopy(`${discardedEntryStorageKey}.recovery`, raw);
         }
         // Preserve any cancellation recorded in this live session even when
         // the older on-disk ledger is corrupt.
@@ -1320,7 +1539,8 @@ function CareProviderSession({
     };
     // One-time adoption of the legacy web PWA's data (see lib/legacyImport).
     // Runs only into a pristine store; the legacy key is left in place as
-    // its own backup (the owner wipe removes every woofwatcher* key).
+    // its own backup (owner clear removes data-bearing keys but preserves the
+    // deletion-safety ledger).
     const maybeImportLegacyState = async () => {
       if (storageUserId !== null) return;
       try {
@@ -1379,10 +1599,7 @@ function CareProviderSession({
           setDoc(importedDoc);
         }
         if (result.entries.length) {
-          const importedEntries = [
-            ...entriesRef.current,
-            ...result.entries,
-          ];
+          const importedEntries = [...entriesRef.current, ...result.entries];
           entriesRef.current = importedEntries;
           setEntries(importedEntries);
         }
@@ -1399,6 +1616,13 @@ function CareProviderSession({
       ]);
     const hydrate = async (attempt: number) => {
       try {
+        // A principal may remount before its previous session's queued
+        // snapshot reaches AsyncStorage (B -> A -> B). Read only after that
+        // shared writer is idle or the older snapshot can land after this
+        // hydration and regress the cache we subsequently persist.
+        await storageWriter.drain();
+        if (!isCurrentSession()) return;
+        hydrationWriterEpoch = storageWriter.currentEpoch();
         const [raw, discardedRaw] = await readCacheAndDeletionLedger();
         if (!isCurrentSession()) return;
         // Both reads finish before provider sync is enabled. Otherwise a
@@ -1427,12 +1651,7 @@ function CareProviderSession({
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [
-    discardedEntryStorageKey,
-    stateStorageKey,
-    storageUserId,
-    storageWriter,
-  ]);
+  }, [discardedEntryStorageKey, stateStorageKey, storageUserId, storageWriter]);
 
   // Persist the offline cache whenever synced state changes. A failing
   // device store is a data risk in a local-first app, so surface it instead
@@ -1442,6 +1661,7 @@ function CareProviderSession({
       !hydrated ||
       !hydratedRef.current ||
       persistencePausedRef.current ||
+      householdScopeChangingRef.current ||
       !sessionActiveRef.current ||
       storageUserId === undefined
     ) {
@@ -1475,6 +1695,7 @@ function CareProviderSession({
     entries,
     serverVersion,
     hydrated,
+    householdScopeChanging,
     stateWriter,
     stateStorageKey,
     storageUserId,
@@ -1489,28 +1710,80 @@ function CareProviderSession({
       // Guard every post-await state write against owner wipe, sign-out,
       // account switches, and a newer document edit or permission recovery.
       const eraseGenerationAtStart = eraseGenerationRef.current;
+      const householdScopeInvalidationAtStart =
+        householdScopeInvalidationGenerationRef.current;
       const authenticatedUserAtStart = authenticatedUserIdRef.current;
+      const confirmedBaseAtStart = lastServerCareStateRef.current?.doc ?? null;
       const resultIsCurrent = () =>
         sessionActiveRef.current &&
         eraseGenerationRef.current === eraseGenerationAtStart &&
+        householdScopeInvalidationGenerationRef.current ===
+          householdScopeInvalidationAtStart &&
         signedInRef.current &&
         authenticatedUserIdRef.current === authenticatedUserAtStart &&
         careDocWriteGenerationRef.current === writeGeneration;
+      const restartHouseholdVerification = () =>
+        invalidateHouseholdScopeRef.current();
+      const preserveConflictAndAdoptRemote = async (
+        base: CareDoc | null,
+        localDraft: CareDoc,
+        remoteEnvelope: CareStateEnvelope,
+        conflictPaths: string[],
+      ) => {
+        const remoteDoc = mergeDoc(remoteEnvelope.doc as Partial<CareDoc>);
+        const writerEpoch = stateWriter.currentEpoch();
+        let draftPreserved = false;
+        try {
+          const result = await stateWriter.enqueue(
+            {
+              kind: "set",
+              key: `${stateStorageKey}.care-doc-conflict.${Date.now()}`,
+              value: JSON.stringify({
+                ownerUserId: storageUserId ?? null,
+                householdId: storageHouseholdIdRef.current,
+                base,
+                local: localDraft,
+                remote: remoteDoc,
+                conflictPaths,
+              }),
+            },
+            writerEpoch,
+          );
+          draftPreserved = result === "applied";
+        } catch {
+          setStorageWarning("save-failed");
+        }
+        if (!resultIsCurrent()) return;
+        // Server truth is always adopted on a same-field conflict. Keeping an
+        // unrebased local document would let the next refresh overwrite the
+        // winning value, especially if recovery storage is unavailable.
+        applyAuthoritativeCareState(remoteEnvelope);
+        applyCareStateWriteAccess("allowed");
+        presentCareDocBlockedNotice(
+          draftPreserved
+            ? "Another caregiver changed the same field. Their current version is shown, and your unsent draft was kept in this device's recovery storage."
+            : "Another caregiver changed the same field. Their current version is shown, but this device could not preserve your unsent draft.",
+          "not-shared",
+        );
+      };
 
       try {
-        const res = await putCareState({
-          version: versionRef.current,
-          doc: next as unknown as CareStateEnvelope["doc"],
-        });
+        const res = await runCareSyncRequestWithTimeout((signal) =>
+          putCareState(
+            {
+              version: versionRef.current,
+              doc: next as unknown as CareStateEnvelope["doc"],
+            },
+            householdScopedRequest(storageHouseholdIdRef.current, signal),
+          ),
+        );
         if (!resultIsCurrent()) return;
         applyAuthoritativeCareState(res);
         applyCareStateWriteAccess("allowed");
         setCareDocSyncNotice(null);
       } catch (err) {
         if (!resultIsCurrent()) return;
-        if (
-          await handleCareStateWriteForbidden(err, optimisticBaseline)
-        ) {
+        if (await handleCareStateWriteForbidden(err, optimisticBaseline)) {
           return;
         }
         if (!isConflict(err)) {
@@ -1518,32 +1791,55 @@ function CareProviderSession({
           return;
         }
 
-        // Another device wrote first. Adopt their version, replay the latest
-        // local document once, and let the server's CAS decide again. A 403
-        // from that retry enters the same authoritative rollback path.
-        const envelope = err.data as CareStateEnvelope | null;
-        if (!envelope) {
-          markCareDocNotShared();
+        // Another device wrote first. Merge only changes that are independent
+        // from the last confirmed server base; whole-document local overlay
+        // would silently clobber a caregiver's concurrent nested edits.
+        const envelope = err.data;
+        if (!isCareStateEnvelope(envelope)) {
+          // A household-scope guard also uses 409, but deliberately returns
+          // no document envelope. Re-run /me instead of treating its error
+          // body as a concurrent care document.
+          restartHouseholdVerification();
+          return;
+        }
+        const remoteDoc = mergeDoc(envelope.doc as Partial<CareDoc>);
+        const localDraft = docRef.current;
+        const mergeResult = confirmedBaseAtStart
+          ? mergeCareDocThreeWay({
+              base: confirmedBaseAtStart,
+              local: localDraft,
+              remote: remoteDoc,
+              updatedAt: new Date().toISOString(),
+            })
+          : { status: "conflict" as const, conflictPaths: ["/"] };
+        if (mergeResult.status === "conflict") {
+          await preserveConflictAndAdoptRemote(
+            confirmedBaseAtStart,
+            localDraft,
+            envelope,
+            mergeResult.conflictPaths,
+          );
           return;
         }
         lastServerCareStateRef.current = {
-          doc: mergeDoc(envelope.doc as Partial<CareDoc>),
+          doc: remoteDoc,
           version: envelope.version,
         };
-        const merged: CareDoc = {
-          ...lastServerCareStateRef.current.doc,
-          ...docRef.current,
-          updatedAt: new Date().toISOString(),
-        };
+        const merged = mergeResult.doc;
         versionRef.current = envelope.version;
         setServerVersion(envelope.version);
         docRef.current = merged;
         setDoc(merged);
         try {
-          const res = await putCareState({
-            version: envelope.version,
-            doc: merged as unknown as CareStateEnvelope["doc"],
-          });
+          const res = await runCareSyncRequestWithTimeout((signal) =>
+            putCareState(
+              {
+                version: envelope.version,
+                doc: merged as unknown as CareStateEnvelope["doc"],
+              },
+              householdScopedRequest(storageHouseholdIdRef.current, signal),
+            ),
+          );
           if (!resultIsCurrent()) return;
           applyAuthoritativeCareState(res);
           applyCareStateWriteAccess("allowed");
@@ -1551,12 +1847,45 @@ function CareProviderSession({
         } catch (retryError) {
           if (!resultIsCurrent()) return;
           if (
-            await handleCareStateWriteForbidden(
-              retryError,
-              optimisticBaseline,
-            )
+            await handleCareStateWriteForbidden(retryError, optimisticBaseline)
           ) {
             return;
+          }
+          if (isConflict(retryError)) {
+            const retryEnvelope = retryError.data;
+            if (isCareStateEnvelope(retryEnvelope)) {
+              const retryRemoteDoc = mergeDoc(
+                retryEnvelope.doc as Partial<CareDoc>,
+              );
+              const retryLocalDraft = docRef.current;
+              const retryMerge = mergeCareDocThreeWay({
+                base: remoteDoc,
+                local: retryLocalDraft,
+                remote: retryRemoteDoc,
+                updatedAt: new Date().toISOString(),
+              });
+              if (retryMerge.status === "conflict") {
+                await preserveConflictAndAdoptRemote(
+                  remoteDoc,
+                  retryLocalDraft,
+                  retryEnvelope,
+                  retryMerge.conflictPaths,
+                );
+                return;
+              } else {
+                lastServerCareStateRef.current = {
+                  doc: retryRemoteDoc,
+                  version: retryEnvelope.version,
+                };
+                versionRef.current = retryEnvelope.version;
+                setServerVersion(retryEnvelope.version);
+                docRef.current = retryMerge.doc;
+                setDoc(retryMerge.doc);
+              }
+            } else {
+              restartHouseholdVerification();
+              return;
+            }
           }
           markCareDocNotShared();
         }
@@ -1567,6 +1896,10 @@ function CareProviderSession({
       applyCareStateWriteAccess,
       handleCareStateWriteForbidden,
       markCareDocNotShared,
+      presentCareDocBlockedNotice,
+      stateStorageKey,
+      stateWriter,
+      storageUserId,
     ],
   );
 
@@ -1581,8 +1914,7 @@ function CareProviderSession({
       }
       const eraseGenerationAtStart = eraseGenerationRef.current;
       const authenticatedUserAtStart = authenticatedUserIdRef.current;
-      const householdGenerationAtStart =
-        householdSessionGenerationRef.current;
+      const householdGenerationAtStart = householdSessionGenerationRef.current;
       const sessionIsCurrent = () =>
         sessionActiveRef.current &&
         signedInRef.current &&
@@ -1603,19 +1935,33 @@ function CareProviderSession({
             : e,
         ),
       );
-      createCareEntry(toCreateInput(entry, tempId))
+      runCareSyncRequestWithTimeout((signal) =>
+        createCareEntry(
+          toCreateInput(entry, tempId),
+          householdScopedRequest(storageHouseholdIdRef.current, signal),
+        ),
+      )
         .then(async (created) => {
           if (!sessionIsCurrent()) return;
           const serverEntry = toEntry(created);
-          const deleteAcknowledgedServerEntry = async (
-            entryId: string,
-          ) => {
+          const deleteAcknowledgedServerEntry = async (entryId: string) => {
             if (!sessionIsCurrent()) {
               throw new Error("Care session changed before cleanup.");
             }
             try {
-              await deleteCareEntry(entryId);
+              await runCareSyncRequestWithTimeout((signal) =>
+                deleteCareEntry(
+                  entryId,
+                  householdScopedRequest(storageHouseholdIdRef.current, signal),
+                ),
+              );
             } catch (error) {
+              // The acknowledgement helper intentionally converts delete
+              // failures into durable cleanup intent. Observe a membership
+              // fence here before that helper swallows the transport error.
+              if (isHouseholdScopeChangedError(error)) {
+                invalidateHouseholdScopeRef.current();
+              }
               if (!isNotFound(error)) throw error;
             }
           };
@@ -1670,8 +2016,7 @@ function CareProviderSession({
                 localEntry,
                 serverEntry,
                 createWasRetried,
-                tempWasCancelled:
-                  cancelledTempEntries.current.has(tempId),
+                tempWasCancelled: cancelledTempEntries.current.has(tempId),
                 eraseGenerationAtStart,
                 currentEraseGeneration: eraseGenerationRef.current,
                 deleteServerEntry: deleteAcknowledgedServerEntry,
@@ -1682,13 +2027,9 @@ function CareProviderSession({
           if (acknowledgement.status === "discarded") {
             if (!sessionIsCurrent()) return;
             if (acknowledgement.deleteSucceeded) {
-              await clearDiscardedServerEntry(
-                acknowledgement.serverEntryId,
-              );
+              await clearDiscardedServerEntry(acknowledgement.serverEntryId);
             } else {
-              await markServerEntryDiscarded(
-                acknowledgement.serverEntryId,
-              );
+              await markServerEntryDiscarded(acknowledgement.serverEntryId);
             }
             cancelledTempEntries.current.delete(tempId);
             pendingPatch.current.delete(tempId);
@@ -1736,10 +2077,7 @@ function CareProviderSession({
             let inserted = false;
             const next: Entry[] = [];
             for (const current of currentEntries) {
-              if (
-                current.id === tempId ||
-                current.id === serverEntry.id
-              ) {
+              if (current.id === tempId || current.id === serverEntry.id) {
                 if (!inserted) {
                   next.push(merged);
                   inserted = true;
@@ -1751,12 +2089,8 @@ function CareProviderSession({
             if (!inserted) next.unshift(merged);
             return next;
           };
-          entriesRef.current = replaceAcknowledgedEntry(
-            entriesRef.current,
-          );
-          setEntries((previous) =>
-            replaceAcknowledgedEntry(previous),
-          );
+          entriesRef.current = replaceAcknowledgedEntry(entriesRef.current);
+          setEntries((previous) => replaceAcknowledgedEntry(previous));
           queryClient.invalidateQueries({
             queryKey: getListCareEntriesQueryKey(),
           });
@@ -1764,13 +2098,16 @@ function CareProviderSession({
             entryUpdateQueue.enqueue(real.id, merged);
           }
         })
-        .catch(() => {
+        .catch((error) => {
           if (
             !sessionIsCurrent() ||
             cancelledTempEntries.current.has(tempId) ||
             eraseGenerationRef.current !== eraseGenerationAtStart
           ) {
             return;
+          }
+          if (isHouseholdScopeChangedError(error)) {
+            invalidateHouseholdScopeRef.current();
           }
           entriesRef.current = entriesRef.current.map((current) =>
             current.id === tempId
@@ -1807,10 +2144,7 @@ function CareProviderSession({
 
   const persistEntryUpdate = useCallback(
     (id: string, entry: Entry) => {
-      if (
-        !signedInRef.current ||
-        !householdScopeVerifiedRef.current
-      ) {
+      if (!signedInRef.current || !householdScopeVerifiedRef.current) {
         entryUpdateQueue.cancel(id);
         return;
       }
@@ -1838,7 +2172,11 @@ function CareProviderSession({
     ) {
       return;
     }
-    if (syncingRef.current || careDocWritesInFlightRef.current > 0) {
+    if (
+      syncingRef.current ||
+      careDocWritesInFlightRef.current > 0 ||
+      entryDeletesInFlightRef.current > 0
+    ) {
       syncRequestedRef.current = true;
       return;
     }
@@ -1847,15 +2185,22 @@ function CareProviderSession({
     // flight when the owner wiped this device are discarded instead of
     // resurrecting the deleted data.
     const eraseGenerationAtStart = eraseGenerationRef.current;
+    const householdScopeInvalidationAtStart =
+      householdScopeInvalidationGenerationRef.current;
+    const entryDeleteGenerationAtStart = entryDeleteGenerationRef.current;
     const authenticatedUserAtStart = authenticatedUserIdRef.current;
     const syncIsCurrent = () =>
       sessionActiveRef.current &&
       eraseGenerationRef.current === eraseGenerationAtStart &&
+      householdScopeInvalidationGenerationRef.current ===
+        householdScopeInvalidationAtStart &&
+      entryDeleteGenerationRef.current === entryDeleteGenerationAtStart &&
       signedInRef.current &&
       authenticatedUserIdRef.current === authenticatedUserAtStart;
     let useFreshHouseholdStateOnly = false;
-    let householdScopeReady = true;
-    let householdDocumentReady = true;
+    // Entry provider work is fail-closed until this exact authenticated
+    // principal has a fresh, verified household from /me in this sync run.
+    let householdScopeReady = false;
     syncingRef.current = true;
     setIsSyncing(true);
     try {
@@ -1867,50 +2212,72 @@ function CareProviderSession({
           applyCareStateWriteAccess("checking");
         }
         householdScopeVerifiedRef.current = false;
-        const me = await getMe();
+        const me = await runCareSyncRequestWithTimeout((signal) =>
+          getMe({ signal }),
+        );
         if (!syncIsCurrent()) return;
+        const responseUserId = normalizeStorageUserId(me.user?.id);
+        if (
+          !authenticatedUserAtStart ||
+          responseUserId !== authenticatedUserAtStart
+        ) {
+          throw new Error("Authenticated principal identity changed.");
+        }
         const householdId = normalizeStorageUserId(me.household?.id);
         if (!householdId) {
           throw new Error("Authenticated household identity is unavailable.");
         }
         const previousStateHouseholdId = storageHouseholdIdRef.current;
-        const previousLedgerHouseholdId =
-          discardedLedgerHouseholdIdRef.current;
+        const previousLedgerHouseholdId = discardedLedgerHouseholdIdRef.current;
         const scopeMismatch =
-          !householdCacheIsCompatible(
-            previousStateHouseholdId,
-            householdId,
-          ) ||
-          !householdCacheIsCompatible(
-            previousLedgerHouseholdId,
-            householdId,
-          );
+          !householdCacheIsCompatible(previousStateHouseholdId, householdId) ||
+          !householdCacheIsCompatible(previousLedgerHouseholdId, householdId);
 
-        if (scopeMismatch) {
-          // Hide the former household immediately without destroying it; the
-          // captured data remains recoverable until archival completes.
+        const pendingHousehold = pendingHouseholdArchiveRef.current;
+        if (!scopeMismatch && pendingHousehold) {
+          const pendingStateHouseholdId = normalizeStorageUserId(
+            pendingHousehold.stateHouseholdId,
+          );
+          const pendingLedgerHouseholdId = normalizeStorageUserId(
+            pendingHousehold.ledgerHouseholdId,
+          );
+          if (
+            !householdCacheIsCompatible(pendingStateHouseholdId, householdId) ||
+            !householdCacheIsCompatible(pendingLedgerHouseholdId, householdId)
+          ) {
+            // An unresolved snapshot must never be interpreted as the live
+            // cache of a different verified household.
+            throw new Error(
+              "Pending household cache identity could not be verified.",
+            );
+          }
+
           householdScopeChangingRef.current = true;
+          persistencePausedRef.current = true;
           setHouseholdScopeChanging(true);
-          // Fence old async mutations immediately, but retain all active data
-          // until both recoverable household archives are durable.
-          householdSessionGenerationRef.current += 1;
-          careDocWriteGenerationRef.current += 1;
-          entryUpdateQueue.cancelAll();
+
+          // A prior A -> B archive attempt can fail after sealing A, then
+          // /me may resolve back to A. Persist the full pending A snapshot to
+          // its active keys before restoring it; otherwise the blank sealed
+          // state could replace the only copy on process exit.
+          const restoredPendingEntries = filterDiscardedServerEntries(
+            recoverInterruptedCareEntryMutations(pendingHousehold.entries),
+            pendingHousehold.discardedEntryIds,
+          );
           const writerEpoch = storageWriter.currentEpoch();
           try {
-            await Promise.all([
+            const results = await Promise.all([
               storageWriter.enqueue(
                 {
                   kind: "set",
-                  key: `${stateStorageKey}.household-archive.${encodeURIComponent(previousStateHouseholdId ?? "unknown")}`,
+                  key: stateStorageKey,
                   value: JSON.stringify({
                     ownerUserId: storageUserId ?? null,
-                    householdId: previousStateHouseholdId,
-                    doc: docRef.current,
-                    entries: entriesRef.current,
-                    serverVersion: versionRef.current,
-                    lastServerCareState:
-                      lastServerCareStateRef.current,
+                    householdId,
+                    doc: pendingHousehold.doc,
+                    entries: restoredPendingEntries,
+                    serverVersion: pendingHousehold.serverVersion,
+                    lastServerCareState: pendingHousehold.lastServerCareState,
                   }),
                 },
                 writerEpoch,
@@ -1918,31 +2285,68 @@ function CareProviderSession({
               storageWriter.enqueue(
                 {
                   kind: "set",
-                  key: `${discardedEntryStorageKey}.household-archive.${encodeURIComponent(previousLedgerHouseholdId ?? "unknown")}`,
+                  key: discardedEntryStorageKey,
                   value: JSON.stringify({
                     ownerUserId: storageUserId ?? null,
-                    householdId: previousLedgerHouseholdId,
-                    entryIds: [
-                      ...discardedServerEntryIdsRef.current,
-                    ],
+                    householdId,
+                    entryIds: pendingHousehold.discardedEntryIds,
                   }),
                 },
                 writerEpoch,
               ),
             ]);
+            if (results.some((result) => result !== "applied")) {
+              throw new Error("Pending household cache was superseded.");
+            }
           } catch {
             householdScopeReady = false;
             setStorageWarning("save-failed");
-            throw new Error(
-              "Could not preserve the previous household cache.",
-            );
+            throw new Error("Could not restore the pending household cache.");
           }
           if (!syncIsCurrent()) return;
-          useFreshHouseholdStateOnly = true;
-          householdDocumentReady = false;
+
+          pendingHouseholdArchiveRef.current = null;
+          docRef.current = pendingHousehold.doc;
+          entriesRef.current = restoredPendingEntries;
+          versionRef.current = pendingHousehold.serverVersion;
+          lastServerCareStateRef.current = pendingHousehold.lastServerCareState;
+          discardedServerEntryIdsRef.current = new Set(
+            pendingHousehold.discardedEntryIds,
+          );
+          setDoc(pendingHousehold.doc);
+          setEntries(restoredPendingEntries);
+          setServerVersion(pendingHousehold.serverVersion);
+        }
+
+        if (scopeMismatch) {
+          // Capture once, then sever the former household synchronously before
+          // any storage await. If archival fails, the sealed snapshot remains
+          // in memory for a later retry but is never renderable or uploadable.
+          if (!pendingHouseholdArchiveRef.current) {
+            pendingHouseholdArchiveRef.current = {
+              stateHouseholdId: previousStateHouseholdId,
+              ledgerHouseholdId: previousLedgerHouseholdId,
+              doc: docRef.current,
+              entries: entriesRef.current,
+              serverVersion: versionRef.current,
+              lastServerCareState: lastServerCareStateRef.current,
+              discardedEntryIds: [...discardedServerEntryIdsRef.current],
+            };
+          }
+          const previousHousehold = pendingHouseholdArchiveRef.current;
+          if (!previousHousehold) {
+            throw new Error("Previous household cache was unavailable.");
+          }
+          householdScopeChangingRef.current = true;
+          persistencePausedRef.current = true;
+          setHouseholdScopeChanging(true);
+          householdSessionGenerationRef.current += 1;
+          careDocWriteGenerationRef.current += 1;
+          entryUpdateQueue.cancelAll();
           careDocWritesInFlightRef.current = 0;
           careDocOptimisticBaselineRef.current = null;
           careDocRecoveryInFlightRef.current = false;
+          careDocRecoveryGenerationRef.current += 1;
           lastServerCareStateRef.current = null;
           realIdByTemp.current.clear();
           pendingPatch.current.clear();
@@ -1954,26 +2358,163 @@ function CareProviderSession({
           docRef.current = defaultDoc;
           entriesRef.current = [];
           versionRef.current = 0;
-          storageHouseholdIdRef.current = householdId;
-          discardedLedgerHouseholdIdRef.current = householdId;
           setDoc(defaultDoc);
           setEntries([]);
           setServerVersion(0);
+
+          const writerEpoch = storageWriter.currentEpoch();
+          try {
+            await Promise.all([
+              storageWriter.enqueue(
+                {
+                  kind: "set",
+                  key: `${stateStorageKey}.household-archive.${encodeURIComponent(previousHousehold.stateHouseholdId ?? "unknown")}`,
+                  value: JSON.stringify({
+                    ownerUserId: storageUserId ?? null,
+                    householdId: previousHousehold.stateHouseholdId,
+                    doc: previousHousehold.doc,
+                    entries: previousHousehold.entries,
+                    serverVersion: previousHousehold.serverVersion,
+                    lastServerCareState: previousHousehold.lastServerCareState,
+                  }),
+                },
+                writerEpoch,
+              ),
+              storageWriter.enqueue(
+                {
+                  kind: "set",
+                  key: `${discardedEntryStorageKey}.household-archive.${encodeURIComponent(previousHousehold.ledgerHouseholdId ?? "unknown")}`,
+                  value: JSON.stringify({
+                    ownerUserId: storageUserId ?? null,
+                    householdId: previousHousehold.ledgerHouseholdId,
+                    entryIds: previousHousehold.discardedEntryIds,
+                  }),
+                },
+                writerEpoch,
+              ),
+            ]);
+          } catch {
+            householdScopeReady = false;
+            setStorageWarning("save-failed");
+            throw new Error("Could not preserve the previous household cache.");
+          }
+          if (!syncIsCurrent()) return;
+
+          // Restore only an archive whose embedded owner and household both
+          // exactly match the freshly verified target. This keeps that
+          // household's offline outbox available when the owner returns.
+          const targetArchiveSuffix = encodeURIComponent(householdId);
+          const [targetStateRaw, targetLedgerRaw] = await Promise.all([
+            AsyncStorage.getItem(
+              `${stateStorageKey}.household-archive.${targetArchiveSuffix}`,
+            ),
+            AsyncStorage.getItem(
+              `${discardedEntryStorageKey}.household-archive.${targetArchiveSuffix}`,
+            ),
+          ]);
+          if (!syncIsCurrent()) return;
+          let targetDiscardedIds: string[] = [];
+          try {
+            const targetLedger = targetLedgerRaw
+              ? JSON.parse(targetLedgerRaw)
+              : null;
+            if (
+              targetLedger &&
+              cacheBelongsToPrincipal(
+                targetLedger.ownerUserId,
+                storageUserId ?? null,
+              ) &&
+              normalizeStorageUserId(targetLedger.householdId) === householdId
+            ) {
+              targetDiscardedIds = normalizeDiscardedServerEntryIds(
+                targetLedger.entryIds ?? [],
+              );
+            }
+          } catch {
+            setStorageWarning("reset");
+          }
+
+          let restoredTargetState = false;
+          let targetDoc = defaultDoc;
+          let targetEntries: Entry[] = [];
+          let targetVersion = 0;
+          let targetLastServer: { doc: CareDoc; version: number } | null = null;
+          try {
+            const targetState = targetStateRaw
+              ? JSON.parse(targetStateRaw)
+              : null;
+            if (
+              targetState?.doc &&
+              cacheBelongsToPrincipal(
+                targetState.ownerUserId,
+                storageUserId ?? null,
+              ) &&
+              normalizeStorageUserId(targetState.householdId) === householdId
+            ) {
+              targetDoc = mergeDoc(targetState.doc);
+              targetEntries = filterDiscardedServerEntries(
+                recoverInterruptedCareEntryMutations(
+                  Array.isArray(targetState.entries)
+                    ? targetState.entries.filter(
+                        (entry: unknown): entry is Entry =>
+                          !!entry && typeof (entry as Entry).id === "string",
+                      )
+                    : [],
+                ),
+                targetDiscardedIds,
+              );
+              targetVersion =
+                typeof targetState.serverVersion === "number"
+                  ? targetState.serverVersion
+                  : 0;
+              if (
+                targetState.lastServerCareState?.doc &&
+                typeof targetState.lastServerCareState.version === "number"
+              ) {
+                targetLastServer = {
+                  doc: mergeDoc(targetState.lastServerCareState.doc),
+                  version: targetState.lastServerCareState.version,
+                };
+              }
+              restoredTargetState = true;
+            }
+          } catch {
+            setStorageWarning("reset");
+          }
+
+          useFreshHouseholdStateOnly = !restoredTargetState;
+          pendingHouseholdArchiveRef.current = null;
+          docRef.current = targetDoc;
+          entriesRef.current = targetEntries;
+          versionRef.current = targetVersion;
+          lastServerCareStateRef.current = targetLastServer;
+          discardedServerEntryIdsRef.current = new Set(targetDiscardedIds);
+          storageHouseholdIdRef.current = householdId;
+          discardedLedgerHouseholdIdRef.current = householdId;
+          setDoc(targetDoc);
+          setEntries(targetEntries);
+          setServerVersion(targetVersion);
         }
         if (!scopeMismatch) {
           storageHouseholdIdRef.current = householdId;
           discardedLedgerHouseholdIdRef.current = householdId;
         }
         householdScopeVerifiedRef.current = true;
-        const access = deriveCareStateWriteAccess(
-          me,
-          authenticatedUserAtStart,
-        );
+        householdScopeReady = true;
+        if (householdScopeRetryTimerRef.current) {
+          clearTimeout(householdScopeRetryTimerRef.current);
+          householdScopeRetryTimerRef.current = null;
+        }
+        const access = deriveCareStateWriteAccess(me, authenticatedUserAtStart);
         // Keep a fresh allow in `checking` until its care-state refresh/PUT
         // completes, preventing a user edit from racing this reconciliation.
         if (access !== "allowed") applyCareStateWriteAccess(access);
 
-        const envelope = await getCareState();
+        const envelope = await runCareSyncRequestWithTimeout((signal) =>
+          getCareState(
+            householdScopedRequest(storageHouseholdIdRef.current, signal),
+          ),
+        );
         if (!syncIsCurrent()) return;
         if (useFreshHouseholdStateOnly) {
           storageHouseholdIdRef.current = householdId;
@@ -1993,17 +2534,13 @@ function CareProviderSession({
           serverUpdatedAt: envelope.updatedAt,
           // A known household switch is always server-wins. The archived
           // former cache is recoverable but can never seed this household.
-          writeAccess: useFreshHouseholdStateOnly
-            ? "restricted"
-            : writeAccess,
+          writeAccess: useFreshHouseholdStateOnly ? "restricted" : writeAccess,
         });
 
         if (plan.shouldPushLocal) {
           // Seed the rollback point from the GET, then use the same 409
           // one-retry and 403 fresh-recovery path as interactive edits.
-          const serverDoc = mergeDoc(
-            envelope.doc as Partial<CareDoc>,
-          );
+          const serverDoc = mergeDoc(envelope.doc as Partial<CareDoc>);
           const localDocToPush = mergeDoc(plan.doc as Partial<CareDoc>);
           lastServerCareStateRef.current = {
             doc: serverDoc,
@@ -2044,9 +2581,11 @@ function CareProviderSession({
               : null,
           );
         }
-        householdDocumentReady = true;
-      } catch {
-        if (syncIsCurrent()) {
+      } catch (error) {
+        if (syncIsCurrent() && isHouseholdScopeChangedError(error)) {
+          householdScopeReady = false;
+          invalidateHouseholdScopeRef.current();
+        } else if (syncIsCurrent()) {
           const nextAccess = degradeCareStateWriteAccess(
             careStateWriteAccessRef.current,
           );
@@ -2067,7 +2606,16 @@ function CareProviderSession({
         }
       }
 
-      if (!householdScopeReady || !householdDocumentReady) return;
+      if (!householdScopeReady) {
+        // Authenticated caches stay masked until an exact /me response is
+        // available. Retry with a bounded delay instead of leaving an offline
+        // launch permanently frozen or spinning a tight request loop.
+        if (syncIsCurrent()) {
+          syncRequestedRef.current = false;
+          scheduleHouseholdScopeRetry();
+        }
+        return;
+      }
       if (!syncIsCurrent()) return;
 
       if (useFreshHouseholdStateOnly) {
@@ -2084,7 +2632,7 @@ function CareProviderSession({
               value: JSON.stringify({
                 ownerUserId: storageUserId ?? null,
                 householdId: storageHouseholdIdRef.current,
-                entryIds: [],
+                entryIds: [...discardedServerEntryIdsRef.current],
               }),
             },
             writerEpoch,
@@ -2099,11 +2647,14 @@ function CareProviderSession({
         hasUpdatedAtCursor: false,
         hasDeleteTombstones: false,
       });
-      const rows = await listCareEntries(entryRefreshPlan.params);
+      const rows = await runCareSyncRequestWithTimeout((signal) =>
+        listCareEntries(
+          entryRefreshPlan.params,
+          householdScopedRequest(storageHouseholdIdRef.current, signal),
+        ),
+      );
       if (!syncIsCurrent()) return;
-      const suppressedIds = useFreshHouseholdStateOnly
-        ? new Set<string>()
-        : new Set(discardedServerEntryIdsRef.current);
+      const suppressedIds = new Set(discardedServerEntryIdsRef.current);
       const rowsById = new Map(rows.map((row) => [row.id, row]));
       const rowsByClientKey = new Map<string, ApiCareEntry[]>();
       for (const row of rows) {
@@ -2138,14 +2689,31 @@ function CareProviderSession({
                 throw new Error("Care session changed before cleanup.");
               }
               try {
-                await deleteCareEntry(entryId);
+                await runCareSyncRequestWithTimeout((signal) =>
+                  deleteCareEntry(
+                    entryId,
+                    householdScopedRequest(
+                      storageHouseholdIdRef.current,
+                      signal,
+                    ),
+                  ),
+                );
               } catch (error) {
+                if (isHouseholdScopeChangedError(error)) {
+                  householdScopeReady = false;
+                  invalidateHouseholdScopeRef.current();
+                }
                 if (!isNotFound(error)) throw error;
               }
             },
-            clearDiscarded: clearDiscardedServerEntry,
-            shouldContinue: syncIsCurrent,
+            clearDiscarded: async (entryId) => {
+              if (!(await clearDiscardedServerEntry(entryId))) {
+                throw new Error("Could not clear the cleanup tombstone.");
+              }
+            },
+            shouldContinue: () => syncIsCurrent() && householdScopeReady,
           });
+          if (!householdScopeReady) return;
           continue;
         }
         if (!rowsById.has(discardedId)) {
@@ -2156,13 +2724,23 @@ function CareProviderSession({
         try {
           if (!syncIsCurrent()) return;
           try {
-            await deleteCareEntry(discardedId);
+            await runCareSyncRequestWithTimeout((signal) =>
+              deleteCareEntry(
+                discardedId,
+                householdScopedRequest(storageHouseholdIdRef.current, signal),
+              ),
+            );
           } catch (error) {
             if (!isNotFound(error)) throw error;
           }
           if (!syncIsCurrent()) return;
           await clearDiscardedServerEntry(discardedId);
-        } catch {
+        } catch (error) {
+          if (isHouseholdScopeChangedError(error)) {
+            householdScopeReady = false;
+            invalidateHouseholdScopeRef.current();
+            return;
+          }
           // Keep suppressing the cancelled create and retry next refresh.
         }
       }
@@ -2190,8 +2768,8 @@ function CareProviderSession({
       const retryableCreates = mergedEntries.filter(
         (entry) => shouldRetryCreate(entry) && entry.syncStatus !== "pending",
       );
-      const retryableUpdates = mergedEntries.filter(
-        (entry) => shouldRetryUpdate(entry),
+      const retryableUpdates = mergedEntries.filter((entry) =>
+        shouldRetryUpdate(entry),
       );
       retryableCreates.forEach((entry) => {
         persistEntryCreate(entry.id, entry);
@@ -2199,9 +2777,25 @@ function CareProviderSession({
       retryableUpdates.forEach((entry) => {
         persistEntryUpdate(entry.id, entry);
       });
-    } catch {
+      // A household transition stays visually and mutationally sealed until
+      // both the authoritative document and entry list have committed.
+      persistencePausedRef.current = false;
+      householdScopeChangingRef.current = false;
+      setHouseholdScopeChanging(false);
+    } catch (error) {
       // Entry sync already carries per-entry retry state. Keep the cached
       // list; document access/status was handled independently above.
+      // Once /me established the exact target household, it is safe to show
+      // that target's restored archive (or blank local fallback) even if a
+      // provider read failed. Only archive/identity failure remains sealed.
+      if (syncIsCurrent() && isHouseholdScopeChangedError(error)) {
+        householdScopeReady = false;
+        invalidateHouseholdScopeRef.current();
+      } else if (syncIsCurrent() && householdScopeReady) {
+        persistencePausedRef.current = false;
+        householdScopeChangingRef.current = false;
+        setHouseholdScopeChanging(false);
+      }
     } finally {
       syncingRef.current = false;
       const runTrailingSync =
@@ -2225,6 +2819,7 @@ function CareProviderSession({
     persistEntryCreate,
     persistEntryUpdate,
     pushDoc,
+    scheduleHouseholdScopeRetry,
     stateStorageKey,
     discardedEntryStorageKey,
     storageUserId,
@@ -2236,13 +2831,7 @@ function CareProviderSession({
   useEffect(() => {
     if (!hydrated || !clerkLoaded || !isSignedIn) return;
     void syncFromServer();
-  }, [
-    authenticatedUserId,
-    clerkLoaded,
-    hydrated,
-    isSignedIn,
-    syncFromServer,
-  ]);
+  }, [authenticatedUserId, clerkLoaded, hydrated, isSignedIn, syncFromServer]);
 
   const addEntry = useCallback(
     (entry: Omit<Entry, "id">) => {
@@ -2280,17 +2869,29 @@ function CareProviderSession({
 
   const deleteEntry = useCallback(
     async (id: string) => {
-      if (!sessionActiveRef.current) return false;
+      if (
+        !sessionActiveRef.current ||
+        !hydratedRef.current ||
+        householdScopeChangingRef.current ||
+        storageUserId === undefined
+      ) {
+        presentCareDocBlockedNotice(
+          "Household care is still loading. Wait for the current care timeline before deleting an event.",
+          "checking",
+        );
+        return false;
+      }
       const authenticatedUserAtStart = authenticatedUserIdRef.current;
-      const householdGenerationAtStart =
-        householdSessionGenerationRef.current;
+      const householdGenerationAtStart = householdSessionGenerationRef.current;
       const sessionIsCurrent = () =>
         sessionActiveRef.current &&
         authenticatedUserIdRef.current === authenticatedUserAtStart &&
         householdSessionGenerationRef.current === householdGenerationAtStart;
-      // A quick undo can arrive after the optimistic create already swapped
-      // its temp id for the server id; resolve through the mapping so the
-      // right row is removed locally AND on the server.
+      const eraseGenerationAtStart = eraseGenerationRef.current;
+      const deleteOwnerIsCurrent = () =>
+        sessionActiveRef.current &&
+        authenticatedUserIdRef.current === authenticatedUserAtStart &&
+        eraseGenerationRef.current === eraseGenerationAtStart;
       const realId = realIdByTemp.current.get(id) ?? id;
       const removed = entriesRef.current.find(
         (entry) => entry.id === realId || entry.id === id,
@@ -2300,119 +2901,276 @@ function CareProviderSession({
         removed.details.clientKey.startsWith("temp_")
           ? removed.details.clientKey
           : undefined;
-      const cancelledTempId = realId.startsWith("temp_")
-        ? realId
-        : cancelledClientKey;
-      const deletionLedgerIds: string[] = [];
-      if (realId.startsWith("temp_")) {
-        const mayHaveReachedServer =
-          creatingTempEntries.current.has(realId) ||
-          removed?.syncStatus === "pending" ||
-          removed?.syncStatus === "failed";
-        if (mayHaveReachedServer) {
-          deletionLedgerIds.push(realId);
-        }
-        cancelledTempEntries.current.add(realId);
-        pendingPatch.current.delete(realId);
-      } else if (cancelledClientKey) {
-        // A refresh may already have migrated the temp row onto its server id
-        // before the original CREATE callback resolves. Cancel by both
-        // identities so that late callback cannot revive the entry.
-        deletionLedgerIds.push(cancelledClientKey, realId);
-        cancelledTempEntries.current.add(cancelledClientKey);
-        pendingPatch.current.delete(cancelledClientKey);
-      }
-      try {
-        // Commit cancellation intent before hiding the row. If the create
-        // response was lost, a future refresh will suppress/delete the server
-        // row by id or by details.clientKey.
-        for (const discardedId of deletionLedgerIds) {
-          await markServerEntryDiscarded(discardedId);
-          if (!sessionIsCurrent()) return false;
-        }
-      } catch {
-        for (const discardedId of deletionLedgerIds) {
-          await clearDiscardedServerEntry(discardedId);
-          recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
-        }
-        if (cancelledTempId) {
-          cancelledTempEntries.current.delete(cancelledTempId);
-        }
-        return false;
-      }
-      if (!sessionIsCurrent()) return false;
+      const deleteFenceLease = entryDeleteFence.tryAcquire([
+        id,
+        realId,
+        ...(cancelledClientKey ? [cancelledClientKey] : []),
+      ]);
+      if (!deleteFenceLease) return false;
       entryUpdateQueue.cancel(realId);
-      const eraseGenerationAtStart = eraseGenerationRef.current;
-      // Computed outside the updater (see updateEntry): a deferred updater
-      // left `removed` undefined, silently losing the failure-restore.
-      entriesRef.current = entriesRef.current.filter(
-        (e) => e.id !== realId && e.id !== id,
-      );
-      setEntries((prev) => prev.filter((e) => e.id !== realId && e.id !== id));
-      if (
-        !signedInRef.current ||
-        !householdScopeVerifiedRef.current ||
-        householdScopeChangingRef.current ||
-        realId.startsWith("temp_")
-      ) {
-        return true;
-      }
+      if (id !== realId) entryUpdateQueue.cancel(id);
+      if (cancelledClientKey) entryUpdateQueue.cancel(cancelledClientKey);
+      entryDeleteGenerationRef.current += 1;
+      entryDeletesInFlightRef.current += 1;
+      if (syncingRef.current) syncRequestedRef.current = true;
       try {
-        if (!sessionIsCurrent()) return false;
+        // A quick undo can arrive after the optimistic create already swapped
+        // its temp id for the server id; resolve through the mapping so the
+        // right row is removed locally AND on the server.
+        const cancelledTempId = realId.startsWith("temp_")
+          ? realId
+          : cancelledClientKey;
+        const deletionLedgerIds: string[] = [];
+        if (realId.startsWith("temp_")) {
+          const mayHaveReachedServer =
+            creatingTempEntries.current.has(realId) ||
+            removed?.syncStatus === "pending" ||
+            removed?.syncStatus === "failed";
+          if (mayHaveReachedServer) {
+            deletionLedgerIds.push(realId);
+          }
+          cancelledTempEntries.current.add(realId);
+          pendingPatch.current.delete(realId);
+        } else {
+          // Every acknowledged delete gets a durable server-id tombstone before
+          // the row is hidden. It suppresses a concurrent stale list response
+          // and lets refresh finish the delete after a transient failure.
+          deletionLedgerIds.push(realId);
+          if (cancelledClientKey) {
+            // A refresh may already have migrated the temp row onto its server
+            // id before the original CREATE callback resolves. Cancel by both
+            // identities so that late callback cannot revive the entry.
+            deletionLedgerIds.push(cancelledClientKey);
+            cancelledTempEntries.current.add(cancelledClientKey);
+            pendingPatch.current.delete(cancelledClientKey);
+          }
+        }
         try {
-          await deleteCareEntry(realId);
-        } catch (error) {
-          if (!isNotFound(error)) throw error;
-        }
-        for (const discardedId of deletionLedgerIds) {
-          if (!sessionIsCurrent()) return false;
-          if (!discardedId.startsWith("temp_")) {
-            await clearDiscardedServerEntry(discardedId);
-          }
-        }
-        queryClient.invalidateQueries({
-          queryKey: getListCareEntriesQueryKey(),
-        });
-        return true;
-      } catch {
-        // Never restore across an owner wipe: a slow delete that fails after
-        // "All data deleted" must not resurrect the entry into the freshly
-        // wiped store.
-        if (
-          removed &&
-          sessionIsCurrent() &&
-          eraseGenerationRef.current === eraseGenerationAtStart
-        ) {
+          // Commit cancellation intent before hiding the row. If the create
+          // response was lost, a future refresh will suppress/delete the server
+          // row by id or by details.clientKey.
           for (const discardedId of deletionLedgerIds) {
-            await clearDiscardedServerEntry(discardedId);
-            recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
+            await markServerEntryDiscarded(discardedId);
+            if (!sessionIsCurrent()) return false;
           }
-          if (cancelledTempId) {
-            cancelledTempEntries.current.delete(cancelledTempId);
+        } catch {
+          // A partially written ledger is safer than clearing deletion intent
+          // after identity may have changed. The row is still visible because
+          // optimistic removal has not started; refresh can retry cleanup.
+          return false;
+        }
+        if (!sessionIsCurrent()) return false;
+        entryUpdateQueue.cancel(realId);
+        // Computed outside the updater (see updateEntry): a deferred updater
+        // left `removed` undefined, silently losing the failure-restore.
+        entriesRef.current = entriesRef.current.filter(
+          (e) => e.id !== realId && e.id !== id,
+        );
+        setEntries((prev) =>
+          prev.filter((e) => e.id !== realId && e.id !== id),
+        );
+        if (
+          !signedInRef.current ||
+          !householdScopeVerifiedRef.current ||
+          householdScopeChangingRef.current ||
+          realId.startsWith("temp_")
+        ) {
+          return true;
+        }
+        try {
+          if (!sessionIsCurrent()) return false;
+          try {
+            await runCareSyncRequestWithTimeout((signal) =>
+              deleteCareEntry(
+                realId,
+                householdScopedRequest(storageHouseholdIdRef.current, signal),
+              ),
+            );
+          } catch (error) {
+            if (!isNotFound(error)) throw error;
           }
-          const restored = removed;
-          entriesRef.current = restoreEntryAfterDeleteFailure(
-            entriesRef.current,
-            restored,
+          for (const discardedId of deletionLedgerIds) {
+            if (!sessionIsCurrent()) return false;
+            if (!discardedId.startsWith("temp_")) {
+              await clearDiscardedServerEntry(discardedId);
+            }
+          }
+          queryClient.invalidateQueries({
+            queryKey: getListCareEntriesQueryKey(),
+          });
+          // A list request that started before DELETE may have committed its
+          // stale row while the provider call was pending. Remove it again;
+          // the recent tombstone also filters any response that lands later.
+          entriesRef.current = entriesRef.current.filter(
+            (entry) => entry.id !== realId && entry.id !== id,
           );
           setEntries((previous) =>
-            restoreEntryAfterDeleteFailure(previous, restored),
+            previous.filter((entry) => entry.id !== realId && entry.id !== id),
           );
+          return true;
+        } catch (error) {
+          if (isHouseholdScopeChangedError(error)) {
+            // Restore the optimistic removal synchronously before invalidation
+            // can start the /me transition in a microtask. The old household
+            // snapshot can then archive the complete local draft without ever
+            // rendering it under the newly verified household.
+            if (removed && deleteOwnerIsCurrent()) {
+              const restored = removed;
+              entriesRef.current = restoreEntryAfterDeleteFailure(
+                entriesRef.current,
+                restored,
+              );
+              setEntries((previous) =>
+                restoreEntryAfterDeleteFailure(previous, restored),
+              );
+            }
+            invalidateHouseholdScopeRef.current();
+            let rollbackConfirmed = true;
+            for (const discardedId of deletionLedgerIds) {
+              if (!deleteOwnerIsCurrent()) return false;
+              if (!(await clearDiscardedServerEntry(discardedId))) {
+                rollbackConfirmed = false;
+                break;
+              }
+              if (!deleteOwnerIsCurrent()) return false;
+              recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
+            }
+            if (!deleteOwnerIsCurrent()) return false;
+            if (!rollbackConfirmed) {
+              entriesRef.current = entriesRef.current.filter(
+                (entry) => entry.id !== realId && entry.id !== id,
+              );
+              setEntries((previous) =>
+                previous.filter(
+                  (entry) => entry.id !== realId && entry.id !== id,
+                ),
+              );
+              return true;
+            }
+            if (cancelledTempId) {
+              cancelledTempEntries.current.delete(cancelledTempId);
+            }
+            return false;
+          }
+          // Never restore across an owner wipe: a slow delete that fails after
+          // "Local care data cleared" must not resurrect the entry into the freshly
+          // wiped store.
+          if (
+            removed &&
+            sessionIsCurrent() &&
+            eraseGenerationRef.current === eraseGenerationAtStart
+          ) {
+            // Restore before the first cleanup await. While the in-flight-delete
+            // counter keeps household sync deferred, owner erase can still run;
+            // seeing the complete row is safer than a transient empty cache.
+            const restored = removed;
+            entriesRef.current = restoreEntryAfterDeleteFailure(
+              entriesRef.current,
+              restored,
+            );
+            setEntries((previous) =>
+              restoreEntryAfterDeleteFailure(previous, restored),
+            );
+            for (const discardedId of deletionLedgerIds) {
+              if (
+                !sessionIsCurrent() ||
+                eraseGenerationRef.current !== eraseGenerationAtStart
+              ) {
+                return false;
+              }
+              const cleared = await clearDiscardedServerEntry(discardedId);
+              if (
+                !sessionIsCurrent() ||
+                eraseGenerationRef.current !== eraseGenerationAtStart
+              ) {
+                return false;
+              }
+              if (!cleared) {
+                entriesRef.current = entriesRef.current.filter(
+                  (entry) => entry.id !== realId && entry.id !== id,
+                );
+                setEntries((previous) =>
+                  previous.filter(
+                    (entry) => entry.id !== realId && entry.id !== id,
+                  ),
+                );
+                return true;
+              }
+              recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
+            }
+            if (
+              !sessionIsCurrent() ||
+              eraseGenerationRef.current !== eraseGenerationAtStart
+            ) {
+              return false;
+            }
+            if (cancelledTempId) {
+              cancelledTempEntries.current.delete(cancelledTempId);
+            }
+          }
+          return false;
         }
-        return false;
+      } finally {
+        deleteFenceLease.release();
+        // Erase resets this counter before allowing a new generation to
+        // mutate. A late pre-erase DELETE must not decrement newer work.
+        if (
+          sessionActiveRef.current &&
+          eraseGenerationRef.current === eraseGenerationAtStart &&
+          authenticatedUserIdRef.current === authenticatedUserAtStart
+        ) {
+          entryDeletesInFlightRef.current = Math.max(
+            0,
+            entryDeletesInFlightRef.current - 1,
+          );
+          if (
+            entryDeletesInFlightRef.current === 0 &&
+            syncRequestedRef.current &&
+            !syncingRef.current &&
+            hydratedRef.current &&
+            signedInRef.current
+          ) {
+            syncRequestedRef.current = false;
+            void Promise.resolve().then(() => syncFromServerRef.current());
+          }
+        }
       }
     },
     [
       clearDiscardedServerEntry,
+      entryDeleteFence,
       entryUpdateQueue,
       markServerEntryDiscarded,
+      presentCareDocBlockedNotice,
       queryClient,
+      storageUserId,
     ],
   );
 
   const updateEntry = useCallback(
     (id: string, patch: Partial<Omit<Entry, "id">>) => {
+      if (
+        !hydratedRef.current ||
+        householdScopeChangingRef.current ||
+        storageUserId === undefined
+      ) {
+        presentCareDocBlockedNotice(
+          "Household care is still loading. Wait for the current care timeline before editing an event.",
+          "checking",
+        );
+        return;
+      }
       const realId = realIdByTemp.current.get(id) ?? id;
+      if (
+        entryDeleteFence.isDeleting(id) ||
+        entryDeleteFence.isDeleting(realId)
+      ) {
+        presentCareDocBlockedNotice(
+          "This care event is still being deleted. Wait for that delete to finish before editing it.",
+          "checking",
+        );
+        return;
+      }
       // Compute the merge OUTSIDE the setState updater. The old pattern
       // (assign inside the updater, read synchronously after) silently
       // skipped the server patch whenever React deferred the updater - the
@@ -2430,10 +3188,7 @@ function CareProviderSession({
       );
       if (syncDisposition === "review-required") {
         const preserved: Entry = {
-          ...prepareCareEntryForOfflineEdit<Entry>(
-            current,
-            mutablePatch,
-          ),
+          ...prepareCareEntryForOfflineEdit<Entry>(current, mutablePatch),
           syncError:
             "Older saved change preserved on this device. Contact support before household sync.",
         };
@@ -2442,9 +3197,7 @@ function CareProviderSession({
           entry.id === realId ? preserved : entry,
         );
         setEntries((previous) =>
-          previous.map((entry) =>
-            entry.id === realId ? preserved : entry,
-          ),
+          previous.map((entry) => (entry.id === realId ? preserved : entry)),
         );
         return;
       }
@@ -2452,27 +3205,27 @@ function CareProviderSession({
         current,
         mutablePatch,
       );
-      const pendingSyncPatch =
-        mergeCareEntryPendingSyncPatch<Entry>(
-          current.pendingSyncPatch,
-          pendingPatchDelta,
-        );
-      const merged: Entry = syncDisposition === "queue"
-        ? advanceCareEntrySyncRevision(
-            {
-              ...current,
-              ...mutablePatch,
+      const pendingSyncPatch = mergeCareEntryPendingSyncPatch<Entry>(
+        current.pendingSyncPatch,
+        pendingPatchDelta,
+      );
+      const merged: Entry =
+        syncDisposition === "queue"
+          ? advanceCareEntrySyncRevision(
+              {
+                ...current,
+                ...mutablePatch,
+                pendingSyncPatch,
+                syncStatus: "pending",
+                syncError: undefined,
+              },
+              mutablePatch.details ?? current.details,
+            )
+          : prepareCareEntryForOfflineEdit<Entry>(
+              current,
+              mutablePatch,
               pendingSyncPatch,
-              syncStatus: "pending",
-              syncError: undefined,
-            },
-            mutablePatch.details ?? current.details,
-          )
-        : prepareCareEntryForOfflineEdit<Entry>(
-            current,
-            mutablePatch,
-            pendingSyncPatch,
-          );
+            );
       entriesRef.current = entriesRef.current.map((e) =>
         e.id === realId ? merged : e,
       );
@@ -2498,7 +3251,12 @@ function CareProviderSession({
       }
       entryUpdateQueue.enqueue(realId, merged);
     },
-    [entryUpdateQueue],
+    [
+      entryDeleteFence,
+      entryUpdateQueue,
+      presentCareDocBlockedNotice,
+      storageUserId,
+    ],
   );
 
   const updateCareDoc = useCallback(
@@ -2517,8 +3275,8 @@ function CareProviderSession({
             (householdScopeChangingRef.current || !hydratedRef.current
               ? "Household care is still loading. Wait for the access check before making shared changes."
               : access === "restricted"
-              ? CARE_DOC_READ_ONLY_MESSAGE
-              : CARE_DOC_CHECKING_MESSAGE),
+                ? CARE_DOC_READ_ONLY_MESSAGE
+                : CARE_DOC_CHECKING_MESSAGE),
           access === "restricted" ? "read-only" : "checking",
         );
         return false;
@@ -2536,6 +3294,7 @@ function CareProviderSession({
       docRef.current = next;
       setDoc(next);
       if (signedInRef.current && access === "allowed") {
+        const eraseGenerationAtWriteStart = eraseGenerationRef.current;
         if (careDocWritesInFlightRef.current === 0) {
           careDocOptimisticBaselineRef.current = previous;
         }
@@ -2547,6 +3306,14 @@ function CareProviderSession({
           careDocOptimisticBaselineRef.current ?? previous,
           writeGeneration,
         ).finally(() => {
+          // A pre-erase promise must not decrement or clear the counters for
+          // a new post-erase write that happens to share this provider ref.
+          if (
+            !sessionActiveRef.current ||
+            eraseGenerationRef.current !== eraseGenerationAtWriteStart
+          ) {
+            return;
+          }
           careDocWritesInFlightRef.current = Math.max(
             0,
             careDocWritesInFlightRef.current - 1,
@@ -2561,9 +3328,7 @@ function CareProviderSession({
               signedInRef.current
             ) {
               syncRequestedRef.current = false;
-              void Promise.resolve().then(
-                () => syncFromServerRef.current(),
-              );
+              void Promise.resolve().then(() => syncFromServerRef.current());
             }
           }
         });
@@ -2573,107 +3338,169 @@ function CareProviderSession({
     [presentCareDocBlockedNotice, pushDoc],
   );
 
-  const state = useMemo<CareState>(
-    () => ({
-      version: serverVersion,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      activePetId: doc.activePetId,
-      profile: doc.profile,
-      pets: doc.pets,
-      caregivers: doc.caregivers,
-      householdSetup: doc.householdSetup,
-      launchSupportProfile: doc.launchSupportProfile,
-      launchProviderProfile: doc.launchProviderProfile,
-      reminderNotificationPreferences: doc.reminderNotificationPreferences,
-      dietProfile: doc.dietProfile,
-      routines: doc.routines,
-      goals: doc.goals,
-      records: doc.records,
-      accessPasses: doc.accessPasses,
-      adventureMemories: doc.adventureMemories,
-      reportArtifacts: doc.reportArtifacts,
-      calendarEvents: doc.calendarEvents,
-      entries,
-    }),
-    [doc, entries, serverVersion],
+  const state = useMemo<CareState>(() => {
+    // Never render the previous household while a newly verified scope is
+    // being archived and loaded. Consumers also receive isLoaded=false,
+    // but this data-level mask protects screens that retain old subtrees.
+    const visibleDoc = householdScopeChanging ? getDefaultDoc() : doc;
+    const visibleEntries = householdScopeChanging ? [] : entries;
+    return {
+      version: householdScopeChanging ? 0 : serverVersion,
+      createdAt: visibleDoc.createdAt,
+      updatedAt: visibleDoc.updatedAt,
+      activePetId: visibleDoc.activePetId,
+      profile: visibleDoc.profile,
+      pets: visibleDoc.pets,
+      caregivers: visibleDoc.caregivers,
+      householdSetup: visibleDoc.householdSetup,
+      launchSupportProfile: visibleDoc.launchSupportProfile,
+      launchProviderProfile: visibleDoc.launchProviderProfile,
+      reminderNotificationPreferences:
+        visibleDoc.reminderNotificationPreferences,
+      dietProfile: visibleDoc.dietProfile,
+      routines: visibleDoc.routines,
+      goals: visibleDoc.goals,
+      records: visibleDoc.records,
+      accessPasses: visibleDoc.accessPasses,
+      adventureMemories: visibleDoc.adventureMemories,
+      reportArtifacts: visibleDoc.reportArtifacts,
+      calendarEvents: visibleDoc.calendarEvents,
+      entries: visibleEntries,
+    };
+  }, [doc, entries, householdScopeChanging, serverVersion]);
+
+  const syncOutbox = useMemo(
+    () => deriveCareSyncOutbox(householdScopeChanging ? [] : entries),
+    [entries, householdScopeChanging],
   );
 
-  const syncOutbox = useMemo(() => deriveCareSyncOutbox(entries), [entries]);
+  const eraseAllLocalData = useCallback(() => {
+    // Coalesce two confirmation taps onto the same durable outcome. A second
+    // caller must not report completion while the first wipe is still queued.
+    if (eraseInFlightRef.current) return eraseInFlightRef.current;
 
-  const eraseAllLocalData = useCallback(async () => {
-    // Invalidate in-flight work, commit any remote-cleanup identifiers, then
-    // reset the live document and remove every data-bearing WoofWatcher key.
-    // The persist effect re-saves only a pristine default household.
-    eraseGenerationRef.current += 1;
-    careDocWriteGenerationRef.current += 1;
-    careDocWritesInFlightRef.current = 0;
-    careDocOptimisticBaselineRef.current = null;
-    careDocRecoveryInFlightRef.current = false;
-    lastServerCareStateRef.current = null;
-    setCareDocSyncNotice(null);
-    const tempIdsNeedingRemoteCleanup = entriesRef.current
-      .filter(
-        (entry) =>
-          entry.id.startsWith("temp_") &&
-          (creatingTempEntries.current.has(entry.id) ||
-            entry.syncStatus === "pending" ||
-            entry.syncStatus === "failed"),
-      )
-      .map((entry) => entry.id);
-    for (const entry of entriesRef.current) {
-      if (entry.id.startsWith("temp_")) {
-        cancelledTempEntries.current.add(entry.id);
+    const operation = (async () => {
+      const authenticatedUserAtStart = authenticatedUserIdRef.current;
+      const eraseGenerationAtStart = eraseGenerationRef.current + 1;
+      eraseGenerationRef.current = eraseGenerationAtStart;
+      const eraseIsCurrent = () =>
+        sessionActiveRef.current &&
+        authenticatedUserIdRef.current === authenticatedUserAtStart &&
+        eraseGenerationRef.current === eraseGenerationAtStart;
+
+      // Seal render, mutation, sync, and persistence producers before the
+      // first await. This prevents a slow platform write or provider callback
+      // from re-creating private state behind the wipe.
+      persistencePausedRef.current = true;
+      hydratedRef.current = false;
+      householdScopeVerifiedRef.current = false;
+      householdScopeChangingRef.current = true;
+      pendingHouseholdArchiveRef.current = null;
+      syncRequestedRef.current = false;
+      if (householdScopeRetryTimerRef.current) {
+        clearTimeout(householdScopeRetryTimerRef.current);
+        householdScopeRetryTimerRef.current = null;
       }
-    }
-    // Deleting visible local data must not delete the opaque intent needed to
-    // clean up an in-flight/lost-response create on the provider. Commit those
-    // client keys before clearing the cache; the ledger cannot render or
-    // repopulate a care entry.
-    for (const tempId of tempIdsNeedingRemoteCleanup) {
+      setHydrated(false);
+      setHouseholdScopeChanging(true);
+      careDocWriteGenerationRef.current += 1;
+      careDocWritesInFlightRef.current = 0;
+      entryDeletesInFlightRef.current = 0;
+      entryDeleteFence.clear();
+      careDocOptimisticBaselineRef.current = null;
+      careDocRecoveryInFlightRef.current = false;
+      careDocRecoveryGenerationRef.current += 1;
+      lastServerCareStateRef.current = null;
+      setCareDocSyncNotice(null);
+
+      const tempIdsNeedingRemoteCleanup = entriesRef.current
+        .filter(
+          (entry) =>
+            entry.id.startsWith("temp_") &&
+            (creatingTempEntries.current.has(entry.id) ||
+              entry.syncStatus === "pending" ||
+              entry.syncStatus === "failed"),
+        )
+        .map((entry) => entry.id);
+      for (const entry of entriesRef.current) {
+        if (entry.id.startsWith("temp_")) {
+          cancelledTempEntries.current.add(entry.id);
+        }
+      }
+
+      // Keep only opaque remote-cleanup intent. These critical writes are
+      // retained by `supersede`; ordinary snapshots/recovery copies are not.
+      for (const tempId of tempIdsNeedingRemoteCleanup) {
+        try {
+          await markServerEntryDiscarded(tempId);
+        } catch {
+          // Continue the local privacy action, but retain a visible warning.
+          setStorageWarning("save-failed");
+        }
+        if (!eraseIsCurrent()) return;
+      }
+
+      entryUpdateQueue.cancelAll();
+      entriesRef.current = [];
+      const defaultDoc = getDefaultDoc();
+      docRef.current = defaultDoc;
+      versionRef.current = 0;
+      storageHouseholdIdRef.current = null;
+      setDoc(defaultDoc);
+      setEntries([]);
+      setServerVersion(0);
+      realIdByTemp.current.clear();
+      pendingPatch.current.clear();
+
+      // Re-check immediately before the destructive shared-writer transition;
+      // a stale account-A callback must never supersede account B's writes.
+      if (!eraseIsCurrent()) return;
       try {
-        await markServerEntryDiscarded(tempId);
-      } catch {
-        // The storage warning is already visible. Continue the owner-requested
-        // local wipe; the in-memory ledger remains available this session.
+        await storageWriter.supersede({
+          kind: "wipe",
+          preserveLedgerPrefix: DISCARDED_SERVER_ENTRY_IDS_KEY,
+        });
+      } catch (error) {
+        setStorageWarning("save-failed");
+        throw error;
       }
-    }
-    entryUpdateQueue.cancelAll();
-    entriesRef.current = [];
-    const defaultDoc = getDefaultDoc();
-    docRef.current = defaultDoc;
-    versionRef.current = 0;
-    setDoc(defaultDoc);
-    setEntries([]);
-    setServerVersion(0);
-    realIdByTemp.current.clear();
-    pendingPatch.current.clear();
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-      const owned = selectWoofWatcherKeysForOwnerWipe(
-        keys,
-        DISCARDED_SERVER_ENTRY_IDS_KEY,
-      );
-      if (owned.length) {
-        await AsyncStorage.multiRemove(owned);
+      if (!eraseIsCurrent()) return;
+
+      // "Local care data cleared" includes files written by WoofWatcher, not only
+      // key-value state: exports and record attachments live here on native.
+      if (Platform.OS !== "web" && FileSystem.documentDirectory) {
+        await Promise.all(
+          ["WoofWatcherReports", "woofwatcher-attachments"].map((dir) =>
+            FileSystem.deleteAsync(`${FileSystem.documentDirectory}${dir}/`, {
+              idempotent: true,
+            }),
+          ),
+        );
       }
-    } catch {
-      // Best effort: the in-memory reset above already cleared the live
-      // document, and the persist effect overwrites the primary cache key.
-    }
-    // "All data deleted" must include the files WoofWatcher wrote, not just
-    // its key-value store: exported report artifacts and durable record
-    // attachments both live under documentDirectory on native.
-    if (Platform.OS !== "web" && FileSystem.documentDirectory) {
-      await Promise.all(
-        ["WoofWatcherReports", "woofwatcher-attachments"].map((dir) =>
-          FileSystem.deleteAsync(`${FileSystem.documentDirectory}${dir}/`, {
-            idempotent: true,
-          }).catch(() => {}),
-        ),
-      );
-    }
-  }, [entryUpdateQueue, markServerEntryDiscarded]);
+    })();
+
+    eraseInFlightRef.current = operation;
+    void operation
+      .finally(() => {
+        if (eraseInFlightRef.current === operation) {
+          eraseInFlightRef.current = null;
+        }
+        if (sessionActiveRef.current) {
+          persistencePausedRef.current = false;
+          householdScopeChangingRef.current = false;
+          setHouseholdScopeChanging(false);
+          hydratedRef.current = true;
+          setHydrated(true);
+        }
+      })
+      .catch(() => {});
+    return operation;
+  }, [
+    entryDeleteFence,
+    entryUpdateQueue,
+    markServerEntryDiscarded,
+    storageWriter,
+  ]);
 
   const value = useMemo<CareContextValue>(
     () => ({
@@ -2685,7 +3512,7 @@ function CareProviderSession({
       refresh: () => void syncFromServer(),
       eraseAllLocalData,
       syncOutbox,
-      isLoaded: hydrated,
+      isLoaded: hydrated && !householdScopeChanging,
       isSyncing,
       careStateWriteAccess,
       careDocSyncNotice,
@@ -2702,6 +3529,7 @@ function CareProviderSession({
       eraseAllLocalData,
       syncOutbox,
       hydrated,
+      householdScopeChanging,
       isSyncing,
       careStateWriteAccess,
       careDocSyncNotice,

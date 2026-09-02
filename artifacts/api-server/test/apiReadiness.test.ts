@@ -80,11 +80,32 @@ test("OpenAPI and generated clients cover WoofGuide events and Avatar Studio API
 
 test("root focused tests include API readiness so backend contracts do not drift silently", () => {
   const packageJson = read("package.json");
+  const verifyWorkflow = read(".github/workflows/verify.yml");
 
   assert.match(
     packageJson,
     /artifacts\/api-server\/test\/\*\.test\.ts/,
     "package.json test:focused must run API readiness tests",
+  );
+  assert.match(
+    verifyWorkflow,
+    /pnpm --filter @workspace\/api-spec exec orval --config \.\/orval\.config\.ts/,
+    "CI must regenerate typed API clients from the checked-in OpenAPI contract",
+  );
+  assert.match(
+    verifyWorkflow,
+    /git diff --exit-code -- lib\/api-client-react\/src\/generated lib\/api-zod\/src\/generated/,
+    "CI must reject generated API client drift",
+  );
+  assert.match(
+    verifyWorkflow,
+    /git status --porcelain --untracked-files=all -- lib\/api-client-react\/src\/generated lib\/api-zod\/src\/generated/,
+    "CI must reject newly generated untracked API client files",
+  );
+  assert.match(
+    verifyWorkflow,
+    /pnpm exec prettier --write lib\/api-client-react\/src\/generated lib\/api-zod\/src\/generated/,
+    "CI must normalize generated clients before checking drift",
   );
 });
 
@@ -116,9 +137,9 @@ test("care entries list query stays documented, typed, and validation-aware", ()
   assert.match(zodTypes, /updatedSince\?:\s*Date/, "Zod generated param types must type the care-entries updatedSince query");
   assert.match(zodTypes, /since\?:\s*Date/, "Zod generated param types must type the care-entries since query");
   assert.match(zodTypes, /limit\?:\s*number/, "Zod generated param types must type the care-entries limit query");
-  assert.match(zodSchemas, /"updatedSince":\s*zod\.date\(\)\.optional\(\)/, "Zod generated validator must validate the care-entries updatedSince query");
-  assert.match(zodSchemas, /"since":\s*zod\.date\(\)\.optional\(\)/, "Zod generated validator must validate the care-entries since query");
-  assert.match(zodSchemas, /"limit":\s*zod\.number\(\)/, "Zod generated validator must validate the care-entries limit query");
+  assert.match(zodSchemas, /["']?updatedSince["']?:\s*zod\s*\.date\(\)\s*\.optional\(\)/, "Zod generated validator must validate the care-entries updatedSince query");
+  assert.match(zodSchemas, /["']?since["']?:\s*zod\s*\.date\(\)\s*\.optional\(\)/, "Zod generated validator must validate the care-entries since query");
+  assert.match(zodSchemas, /["']?limit["']?:\s*zod\s*\.number\(\)/, "Zod generated validator must validate the care-entries limit query");
 });
 
 test("care entry server cursor and tombstone contract stays source-backed", () => {
@@ -141,7 +162,11 @@ test("care entry server cursor and tombstone contract stays source-backed", () =
   assert.match(schema, /entryId:\s*uuid\("entry_id"\)/, "tombstones must preserve the deleted care-entry id");
   assert.match(schema, /deletedAt:\s*timestamp\("deleted_at"/, "tombstones must preserve delete time");
 
-  assert.match(route, /router\.get\("\/care-entries\/tombstones", requireAuth/, "care-entry tombstones need an authenticated list route");
+  assert.match(
+    route,
+    /router\.get\(\s*"\/care-entries\/tombstones",\s*requireAuth/,
+    "care-entry tombstones need an authenticated list route",
+  );
   assert.match(route, /ListCareEntryTombstonesResponse\.parse/, "care-entry tombstones should use the generated response validator");
   assert.match(route, /(?:db|tx)\s*\.\s*insert\(careEntryTombstonesTable\)/, "care-entry deletes should insert a tombstone with the delete mutation");
   assert.match(route, /entryId:\s*deleted\.id/, "care-entry tombstones should preserve the deleted entry id");
@@ -155,11 +180,15 @@ test("care entry server cursor and tombstone contract stays source-backed", () =
   assert.match(openapi, /CareEntryTombstone:/, "OpenAPI must expose the care-entry tombstone schema");
 
   assert.match(zodApi, /export const ListCareEntryTombstonesQueryParams/, "Zod must validate tombstone query params");
-  assert.match(zodApi, /export const CareEntryTombstone/, "Zod must expose the tombstone schema");
+  assert.match(
+    zodApi,
+    /export const ListCareEntryTombstonesResponseItem/,
+    "Zod must expose each tombstone row through the generated operation response",
+  );
   assert.match(zodApi, /export const ListCareEntryTombstonesResponse/, "Zod must expose the tombstone response");
   assert.match(zodTypesIndex, /careEntryTombstone/, "Zod generated type exports must include tombstones");
   assert.match(reactSchemas, /export interface CareEntryTombstone/, "React schemas must type tombstone rows");
-  assert.match(reactSchemas, /export interface ListCareEntryTombstonesParams/, "React schemas must type tombstone query params");
+  assert.match(reactSchemas, /export type ListCareEntryTombstonesParams/, "React schemas must type tombstone query params");
   assert.match(reactClient, /listCareEntryTombstones/, "React client must expose the tombstone fetcher");
   assert.match(
     reactClient,
@@ -183,7 +212,7 @@ test("care state write errors stay documented and typed", () => {
   assert.match(putCareStateBlock, /"409":/, "OpenAPI must document stale care-state write conflicts");
   assert.match(
     reactClient,
-    /getPutCareStateMutationOptions = <TError = ErrorType<ApiError \| CareStateEnvelope>/,
+    /getPutCareStateMutationOptions\s*=\s*<\s*TError\s*=\s*ErrorType<ApiError \| CareStateEnvelope>/,
     "React API mutation must type care-state write errors as ApiError or conflict envelope",
   );
   assert.match(
@@ -303,7 +332,7 @@ test("care entry write errors stay documented and typed", () => {
   assert.match(deleteBlock, /"404":/, "OpenAPI must keep documenting delete-care-entry not-found errors");
   assert.match(
     reactClient,
-    /getCreateCareEntryMutationOptions = <TError = ErrorType<ApiError>/,
+    /getCreateCareEntryMutationOptions\s*=\s*<\s*TError\s*=\s*ErrorType<ApiError>/,
     "React API create mutation must type validation errors as ApiError",
   );
   assert.match(
@@ -313,7 +342,7 @@ test("care entry write errors stay documented and typed", () => {
   );
   assert.match(
     reactClient,
-    /UpdateCareEntryMutationError = ErrorType<ApiError \| CareEntryConflict>/,
+    /UpdateCareEntryMutationError\s*=\s*ErrorType<\s*ApiError \| CareEntryConflict\s*>/,
     "React API update mutation error alias must preserve invalid, not-found, and conflict bodies",
   );
   assert.match(
@@ -359,12 +388,12 @@ test("care entry revision protocol stays documented, validated, and emitted by t
   );
   assert.match(
     reactSchemas,
-    /export const CareEntryUpdateClientSyncProtocol = \{\s*'revision-v1': 'revision-v1',\s*\} as const/,
+    /export const CareEntryUpdateClientSyncProtocol\s*=\s*\{\s*["']revision-v1["']:\s*["']revision-v1["'],?\s*\}\s*as const/,
     "React API models must preserve the generated revision-protocol enum",
   );
   assert.match(
     zodSchemas,
-    /"clientSyncProtocol":\s*zod\.enum\(\["revision-v1"\]\)\.optional\(\)/,
+    /["']?clientSyncProtocol["']?:\s*zod\s*\.enum\(\[\s*["']revision-v1["'],?\s*\]\)\s*\.optional\(\)/,
     "Zod must validate the current care-entry revision protocol",
   );
   assert.match(
@@ -374,7 +403,7 @@ test("care entry revision protocol stays documented, validated, and emitted by t
   );
   assert.match(
     zodProtocolType,
-    /export const CareEntryUpdateClientSyncProtocol = \{\s*'revision-v1': 'revision-v1',\s*\} as const/,
+    /export const CareEntryUpdateClientSyncProtocol\s*=\s*\{\s*["']revision-v1["']:\s*["']revision-v1["'],?\s*\}\s*as const/,
     "Zod models must preserve the generated revision-protocol enum",
   );
   assert.match(
@@ -384,7 +413,7 @@ test("care entry revision protocol stays documented, validated, and emitted by t
   );
   assert.match(
     zodTypesIndex,
-    /export \* from '\.\/careEntryConflict'/,
+    /export \* from ["']\.\/careEntryConflict["']/,
     "Zod generated types must export the conflict envelope",
   );
   assert.match(
@@ -482,7 +511,7 @@ test("household provisioning and auth errors stay documented and typed", () => {
   assert.match(joinHouseholdBlock, /"404":/, "OpenAPI must keep documenting missing invite errors");
   assert.match(
     reactClient,
-    /getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<ApiError>>/,
+    /getGetMeQueryOptions\s*=\s*<\s*TData\s*=\s*Awaited<ReturnType<typeof getMe>>,\s*TError\s*=\s*ErrorType<ApiError>,?\s*>/,
     "React API getMe query must type auth errors as ApiError",
   );
   assert.match(
@@ -492,7 +521,7 @@ test("household provisioning and auth errors stay documented and typed", () => {
   );
   assert.match(
     reactClient,
-    /getUpdateMeMutationOptions = <TError = ErrorType<ApiError>/,
+    /getUpdateMeMutationOptions\s*=\s*<\s*TError\s*=\s*ErrorType<ApiError>/,
     "React API updateMe mutation must type validation/auth errors as ApiError",
   );
   assert.match(
@@ -502,7 +531,7 @@ test("household provisioning and auth errors stay documented and typed", () => {
   );
   assert.match(
     reactClient,
-    /getUpdateHouseholdMutationOptions = <TError = ErrorType<ApiError>/,
+    /getUpdateHouseholdMutationOptions\s*=\s*<\s*TError\s*=\s*ErrorType<ApiError>/,
     "React API updateHousehold mutation must type validation/auth errors as ApiError",
   );
   assert.match(
@@ -561,7 +590,7 @@ test("WoofGuide provider actions keep auth, rate-limit, and local-fallback contr
 
   assert.match(
     reactClient,
-    /getAskCareHelperMutationOptions = <TError = ErrorType<ApiError \| CareHelperError>/,
+    /getAskCareHelperMutationOptions\s*=\s*<\s*TError\s*=\s*ErrorType<ApiError \| CareHelperError>/,
     "React API care-helper mutation must type auth/rate-limit errors separately from provider failures",
   );
   assert.match(
@@ -571,7 +600,7 @@ test("WoofGuide provider actions keep auth, rate-limit, and local-fallback contr
   );
   assert.match(
     reactClient,
-    /getGetWoofguideEventsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<ApiError>>/,
+    /getGetWoofguideEventsStatusQueryOptions\s*=\s*<\s*TData\s*=\s*Awaited<ReturnType<typeof getWoofguideEventsStatus>>,\s*TError\s*=\s*ErrorType<ApiError>,?\s*>/,
     "React API WoofGuide events status query must type auth errors as ApiError",
   );
   assert.match(
@@ -637,9 +666,9 @@ test("care state and care entry routes keep household scoping documented and typ
   assert.match(careStateRoute, /where\(eq\(careStateTable\.householdId, householdId\)\)/, "care-state reads and writes must stay scoped to the active household");
 
   for (const route of [
-    /router\.get\("\/care-entries", requireAuth/,
-    /router\.post\("\/care-entries", requireAuth/,
-    /router\.patch\("\/care-entries\/:id", requireAuth/,
+    /router\.get\(\s*"\/care-entries",\s*requireAuth/,
+    /router\.post\(\s*"\/care-entries",\s*requireAuth/,
+    /router\.patch\(\s*"\/care-entries\/:id",\s*requireAuth/,
     /router\.delete\(\s*"\x2Fcare-entries\/:id",\s*requireAuth/,
   ]) {
     assert.match(careEntriesRoute, route, "care-entry list/create/update/delete routes must stay authenticated");
@@ -658,7 +687,7 @@ test("care state and care entry routes keep household scoping documented and typ
 
   assert.match(
     reactClient,
-    /getGetCareStateQueryOptions = <TData = Awaited<ReturnType<typeof getCareState>>, TError = ErrorType<ApiError>>/,
+    /getGetCareStateQueryOptions\s*=\s*<\s*TData\s*=\s*Awaited<ReturnType<typeof getCareState>>,\s*TError\s*=\s*ErrorType<ApiError>,?\s*>/,
     "React API care-state query must type auth and not-found errors as ApiError",
   );
   assert.match(
@@ -668,7 +697,7 @@ test("care state and care entry routes keep household scoping documented and typ
   );
   assert.match(
     reactClient,
-    /getListCareEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listCareEntries>>, TError = ErrorType<ApiError>>/,
+    /getListCareEntriesQueryOptions\s*=\s*<\s*TData\s*=\s*Awaited<ReturnType<typeof listCareEntries>>,\s*TError\s*=\s*ErrorType<ApiError>,?\s*>/,
     "React API care-entry list query must type auth errors as ApiError",
   );
   assert.match(
@@ -745,7 +774,7 @@ test("care entry writes keep role-aware trust and read-only boundaries", () => {
   );
   assert.match(
     reactClient,
-    /UpdateCareEntryMutationError = ErrorType<ApiError \| CareEntryConflict>/,
+    /UpdateCareEntryMutationError\s*=\s*ErrorType<\s*ApiError \| CareEntryConflict\s*>/,
     "React API update mutation must keep role-policy and conflict errors typed",
   );
   assert.match(
@@ -834,9 +863,17 @@ test("household member role mutations keep owner-only and revocation contracts",
   }
   assert.match(zodApi, /export const UpdateHouseholdMemberParams/, "Zod must export update-member params");
   assert.match(zodApi, /export const UpdateHouseholdMemberBody/, "Zod must export update-member body");
-  assert.match(zodApi, /zod\.enum\(\["owner", "adult", "teen", "kid", "sitter", "trainer", "walker", "vet viewer"\]\)/, "Zod must reject unknown household roles");
+  assert.match(
+    zodApi,
+    /zod\s*\.enum\(\[\s*["']owner["'],\s*["']adult["'],\s*["']teen["'],\s*["']kid["'],\s*["']sitter["'],\s*["']trainer["'],\s*["']walker["'],\s*["']vet viewer["'],?\s*\]\)/,
+    "Zod must reject unknown household roles",
+  );
   assert.match(zodApi, /export const RevokeHouseholdMemberParams/, "Zod must export revoke-member params");
-  assert.match(reactSchemas, /role\?: HouseholdMemberRole/, "React schemas must expose typed household member roles");
+  assert.match(
+    reactSchemas,
+    /role\?: HouseholdMemberUpdateRole/,
+    "React schemas must expose typed household member roles",
+  );
   assert.match(
     reactClient,
     /UpdateHouseholdMemberMutationError = ErrorType<ApiError>/,
@@ -960,17 +997,22 @@ test("household invitations and Access Pass mutations emit typed audit contracts
   assert.match(openapi, /HouseholdAuditEvent:/, "OpenAPI must document household audit events");
 
   for (const schema of [
-    "HouseholdAuditEvent",
-    "HouseholdJoinResponse",
-    "AccessPassActivationBody",
-    "AccessPassRevocationBody",
-    "HouseholdAccessPassMutationResponse",
+    "JoinHouseholdResponse",
+    "ActivateHouseholdAccessPassBody",
+    "RevokeHouseholdAccessPassBody",
+    "ActivateHouseholdAccessPassResponse",
+    "RevokeHouseholdAccessPassResponse",
   ]) {
     assert.match(zodApi, new RegExp(`export const ${schema}`), `${schema} should be exported from Zod API schemas`);
   }
   assert.match(
     zodApi,
-    /zod\.enum\(\["sitter", "trainer", "walker", "vet viewer"\]\)/,
+    /["']?auditEvent["']?:\s*zod\.object/,
+    "generated household mutation responses must validate embedded audit events",
+  );
+  assert.match(
+    zodApi,
+    /zod\.enum\(\[["']sitter["'], ["']trainer["'], ["']walker["'], ["']vet viewer["']\]\)/,
     "Zod must constrain Access Pass activation to helper-compatible roles",
   );
   for (const typeName of [
@@ -1053,17 +1095,17 @@ test("household invite and Access Pass audit storage has provider-ready lifecycl
   assert.match(openapi, /access-pass-expired/, "OpenAPI must expose expired Access Pass lifecycle state");
   assert.match(
     zodApi,
-    /"lifecycleState": zod\.enum\(\["invite-created", "invite-accepted", "invite-revoked", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"\]\)/,
+    /["']?lifecycleState["']?:\s*zod\.enum\(\[\s*["']invite-created["'],\s*["']invite-accepted["'],\s*["']invite-revoked["'],\s*["']member-updated["'],\s*["']member-revoked["'],\s*["']access-pass-active["'],\s*["']access-pass-revoked["'],\s*["']access-pass-expired["'],?\s*\]\)/,
     "Zod must validate household audit lifecycle states",
   );
   assert.match(
     zodApi,
-    /"storage": zod\.enum\(\["provider-durable"\]\)/,
+    /["']?storage["']?:\s*zod\s*\.enum\(\[\s*["']provider-durable["'],?\s*\]\)/,
     "Zod must no longer allow response-only audit storage for provider-ready household mutations",
   );
   assert.match(
     reactSchemas,
-    /export type HouseholdAuditLifecycleState = "invite-created" \| "invite-accepted" \| "invite-revoked" \| "member-updated" \| "member-revoked" \| "access-pass-active" \| "access-pass-revoked" \| "access-pass-expired"/,
+    /export type HouseholdAuditEventLifecycleState\s*=\s*\(?typeof HouseholdAuditEventLifecycleState\)?/,
     "React schemas must expose typed household audit lifecycle states",
   );
 });
@@ -1134,12 +1176,12 @@ test("household audit review API stays owner-scoped and typed", () => {
 
   assert.match(zodApi, /export const ListHouseholdAuditEventsQueryParams/, "Zod must validate audit review query params");
   assert.match(zodApi, /export const ListHouseholdAuditEventsResponse/, "Zod must expose audit review response");
-  assert.match(reactSchemas, /export interface ListHouseholdAuditEventsParams/, "React schemas must type audit review params");
+  assert.match(reactSchemas, /export type ListHouseholdAuditEventsParams/, "React schemas must type audit review params");
   assert.match(reactSchemas, /export interface HouseholdAuditEventListResponse/, "React schemas must type audit review response");
   assert.match(reactClient, /listHouseholdAuditEvents/, "React client must expose audit review fetcher");
   assert.match(
     reactClient,
-    /getListHouseholdAuditEventsQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError = ErrorType<ApiError>>/,
+    /getListHouseholdAuditEventsQueryOptions\s*=\s*<\s*TData\s*=\s*Awaited<ReturnType<typeof listHouseholdAuditEvents>>,\s*TError\s*=\s*ErrorType<ApiError>,?\s*>/,
     "React audit review query must expose ApiError for auth, validation, and forbidden states",
   );
   assert.match(
@@ -1215,7 +1257,11 @@ test("household sharing cleanup review API stays owner-scoped and typed", () => 
   assert.match(openapi, /HouseholdSharingCleanupResponse:/, "OpenAPI must expose sharing cleanup response schema");
 
   assert.match(zodApi, /export const ListHouseholdSharingCleanupQueryParams/, "Zod must validate sharing cleanup query params");
-  assert.match(zodApi, /export const HouseholdSharingCleanupCandidate/, "Zod must expose sharing cleanup candidate schema");
+  assert.match(
+    zodApi,
+    /export const ListHouseholdSharingCleanupResponse/,
+    "Zod must expose cleanup candidates through the generated operation response",
+  );
   assert.match(zodApi, /export const ListHouseholdSharingCleanupResponse/, "Zod must expose sharing cleanup response");
   assert.match(zodTypesIndex, /householdSharingCleanupCandidate/, "Zod type exports must include cleanup candidates");
   assert.match(reactSchemas, /export type HouseholdSharingCleanupKind/, "React schemas must type sharing cleanup kind");
@@ -1223,7 +1269,7 @@ test("household sharing cleanup review API stays owner-scoped and typed", () => 
   assert.match(reactClient, /listHouseholdSharingCleanup/, "React client must expose sharing cleanup fetcher");
   assert.match(
     reactClient,
-    /getListHouseholdSharingCleanupQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError = ErrorType<ApiError>>/,
+    /getListHouseholdSharingCleanupQueryOptions\s*=\s*<\s*TData\s*=\s*Awaited<ReturnType<typeof listHouseholdSharingCleanup>>,\s*TError\s*=\s*ErrorType<ApiError>,?\s*>/,
     "React sharing cleanup query must expose ApiError for auth, validation, and forbidden states",
   );
   assert.match(
@@ -1319,17 +1365,17 @@ test("Access Pass expiry is enforced at member-auth request time", () => {
   assert.match(openapi, /careStateWriteAllowed:/, "OpenAPI Member schema must expose authoritative care-document write capability");
   assert.match(
     zodApi,
-    /"accessPassExpiresAt": zod\.string\(\)\.nullish\(\)/,
+    /["']?accessPassExpiresAt["']?:\s*zod\s*\.string\(\)\s*\.nullish\(\)/,
     "Zod member payloads must parse Access Pass expiry status",
   );
   assert.match(
     zodApi,
-    /"accessPassExpired": zod\.boolean\(\)\.optional\(\)/,
+    /["']?accessPassExpired["']?:\s*zod\s*\.boolean\(\)\s*\.optional\(\)/,
     "Zod member payloads must parse expired-helper status",
   );
   assert.match(
     zodApi,
-    /"careStateWriteAllowed": zod\.boolean\(\)/,
+    /["']?careStateWriteAllowed["']?:\s*zod\s*\.boolean\(\)/,
     "Zod member payloads must require the server-derived care-document capability",
   );
   assert.match(
@@ -1453,7 +1499,11 @@ test("household invitations have provider-ready lifecycle storage and typed rout
   assert.match(zodApi, /export const ListHouseholdInvitationsQueryParams/, "Zod must validate invitation list queries");
   assert.match(zodApi, /export const CreateHouseholdInvitationBody/, "Zod must validate invitation creation body");
   assert.match(zodApi, /export const RevokeHouseholdInvitationParams/, "Zod must validate invitation revoke params");
-  assert.match(zodApi, /export const HouseholdInvitationMutationResponse/, "Zod must expose invitation mutation response");
+  assert.match(
+    zodApi,
+    /export const RevokeHouseholdInvitationResponse/,
+    "Zod must expose the shared invitation mutation shape through an operation response",
+  );
 
   assert.match(reactSchemas, /export type HouseholdInvitationLifecycleState/, "React schemas must type invitation lifecycle");
   assert.match(reactSchemas, /export interface HouseholdInvitation/, "React schemas must type invitation rows");

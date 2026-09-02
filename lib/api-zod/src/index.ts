@@ -1,4 +1,10 @@
 export * from "./generated/api.ts";
+// Keep reusable server validators outside the generated directory. Orval names
+// Zod response schemas by operation and omits a response for 201-only routes.
+export {
+  ActivateHouseholdAccessPassResponse as HouseholdAccessPassMutationResponse,
+  RevokeHouseholdInvitationResponse as HouseholdInvitationMutationResponse,
+} from "./generated/api.ts";
 export type {
   ApiError,
   AvatarEmotionImage,
@@ -28,9 +34,9 @@ export type {
   CareStateInputDoc,
   HealthStatus,
   Household,
-  HouseholdAuditAction,
+  HouseholdAuditEventAction as HouseholdAuditAction,
   HouseholdAuditEventListResponse,
-  HouseholdAuditLifecycleState,
+  HouseholdAuditEventLifecycleState as HouseholdAuditLifecycleState,
   HouseholdInvitationCreateInput,
   HouseholdInvitationListResponse,
   HouseholdInvitationRevokeInput,

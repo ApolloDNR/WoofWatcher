@@ -1,8 +1,15 @@
+export type SerializedCareSyncWriteClass = "discardable" | "critical";
+export type SerializedCareSyncWriteResult = "applied" | "superseded";
+
 export interface SerializedCareSyncWriter<T> {
   /** Current queue epoch; pass it through delayed callers to fence stale work. */
   currentEpoch: () => number;
-  enqueue: (value: T, expectedEpoch?: number) => Promise<void>;
-  /** Resolve and discard writes that have not started yet. */
+  enqueue: (
+    value: T,
+    expectedEpoch?: number,
+    writeClass?: SerializedCareSyncWriteClass,
+  ) => Promise<SerializedCareSyncWriteResult>;
+  /** Resolve and discard non-critical writes that have not started yet. */
   discardPending: () => number;
   /** Resolve after the active write and every still-queued write settle. */
   drain: () => Promise<void>;
@@ -10,7 +17,7 @@ export interface SerializedCareSyncWriter<T> {
    * Advance the epoch, discard queued older work, and make `value` the next
    * operation after any write that already reached the platform.
    */
-  supersede: (value: T) => Promise<void>;
+  supersede: (value: T) => Promise<SerializedCareSyncWriteResult>;
 }
 
 /**
@@ -23,8 +30,9 @@ export function createSerializedCareSyncWriter<T>(
 ): SerializedCareSyncWriter<T> {
   type PendingWrite = {
     epoch: number;
+    writeClass: SerializedCareSyncWriteClass;
     value: T;
-    resolve: () => void;
+    resolve: (result: SerializedCareSyncWriteResult) => void;
     reject: (error: unknown) => void;
   };
   const pending: PendingWrite[] = [];
@@ -52,32 +60,44 @@ export function createSerializedCareSyncWriter<T>(
     } catch (error) {
       operation = Promise.reject(error);
     }
-    void operation.then(next.resolve, next.reject).then(
-      () => {
-        active = false;
-        pump();
-      },
-      () => {
-        active = false;
-        pump();
-      },
-    );
+    void operation
+      .then(() => next.resolve("applied"), next.reject)
+      .then(
+        () => {
+          active = false;
+          pump();
+        },
+        () => {
+          active = false;
+          pump();
+        },
+      );
   };
 
   return {
     currentEpoch() {
       return epoch;
     },
-    enqueue(value, expectedEpoch = epoch) {
-      if (expectedEpoch !== epoch) return Promise.resolve();
-      return new Promise<void>((resolve, reject) => {
-        pending.push({ epoch: expectedEpoch, value, resolve, reject });
+    enqueue(value, expectedEpoch = epoch, writeClass = "discardable") {
+      if (expectedEpoch !== epoch) return Promise.resolve("superseded");
+      return new Promise<SerializedCareSyncWriteResult>((resolve, reject) => {
+        pending.push({
+          epoch: expectedEpoch,
+          writeClass,
+          value,
+          resolve,
+          reject,
+        });
         pump();
       });
     },
     discardPending() {
-      const discarded = pending.splice(0);
-      for (const item of discarded) item.resolve();
+      const discarded = pending.filter(
+        (item) => item.writeClass === "discardable",
+      );
+      const retained = pending.filter((item) => item.writeClass === "critical");
+      pending.splice(0, pending.length, ...retained);
+      for (const item of discarded) item.resolve("superseded");
       settleIdle();
       return discarded.length;
     },
@@ -88,11 +108,19 @@ export function createSerializedCareSyncWriter<T>(
     supersede(value) {
       epoch += 1;
       const supersedingEpoch = epoch;
-      const discarded = pending.splice(0);
-      for (const item of discarded) item.resolve();
-      return new Promise<void>((resolve, reject) => {
+      // Remote-cleanup ledgers are deliberately retained ahead of the wipe.
+      // They contain no renderable owner data and are the only durable proof
+      // needed to clean a CREATE whose response was lost during deletion.
+      const discarded = pending.filter(
+        (item) => item.writeClass === "discardable",
+      );
+      const retained = pending.filter((item) => item.writeClass === "critical");
+      pending.splice(0, pending.length, ...retained);
+      for (const item of discarded) item.resolve("superseded");
+      return new Promise<SerializedCareSyncWriteResult>((resolve, reject) => {
         pending.push({
           epoch: supersedingEpoch,
+          writeClass: "critical",
           value,
           resolve,
           reject,

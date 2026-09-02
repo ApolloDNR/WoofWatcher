@@ -1,12 +1,11 @@
 # Blockers For Apollo
 
-## 2026-09-02 Restricted-role shared-plan runtime proof
+## 2026-09-02 Care-state integrity runtime proof
 
-- Source/tests now give signed-in care-document editors an authoritative server capability, fail-closed preflight, principal/household cache isolation, stale-session fencing, serialized wipe-safe persistence, `403` rollback, and visible retry/read-only status.
-- Local focused behavior/API/static integration passes `225/225`; changed-source transpilation, PixelLab `150/150`, and whitespace checks pass. The broad run retains only the established missing `express` and two `@workspace/care-domain` entrypoints, and typecheck lacks `@tanstack/react-query` and `zod`; current-tip branch CI is required.
-- Dependency-complete `WoofWatcher Verify` run `33660728203`, job `100350336231`, passed repair commit `82001a58` through pinned install, doctor, focused tests, workspace typecheck, CI-safe builds, mobile smoke/live-preview proof, post steps, and completion.
-- BLOCKED on configured-provider evidence for owner/adult/read-only roles, live revocation, two-device version races, reconnect recovery, and native VoiceOver/TalkBack announcements.
-- REMAINS: Provider RLS/storage evidence, device screenshots, store review, public launch, and Apollo approval are not established by this source slice.
+- Source/tests now cover exact-principal auth transport, query-client and cache isolation; verified-household `/me` gating; the `x-woofwatcher-household-id` request header and server pre-care-table `409` fence; generated React/Zod contract parity plus a CI drift gate; one outstanding two-second scope retry; bounded provider requests; household archive masking plus durable same-household pending restore; coalesced refresh; three-way `409` recovery; erase-generation-fenced hydration; critical-versus-discardable storage ordering; a truthful terminal local-data clear; serialized/generation-fenced deletion with delete/edit exclusion, failure-atomic tombstone repair, durable real-id tombstones, and ghost suppression; and nullable-add success guards.
+- Full `mobileReadiness.test.ts` passes `192/192` locally, and all beta-doctor source-backed checks are clear. The current integrity-focused file passes `12/12`; the loader-assisted care integrity/merge/writer suite passes `90/90`, with no combined total claimed because coverage overlaps. API readiness passes `20/20`, and the household-scope/OpenAPI contract passes `4/4`. The beta doctor remains locally non-green only for pinned pnpm CLI and mobile Expo resolution, plus Corepack and unsupported bundled-pnpm warnings. Dependency-complete CI remains pending; the prior `33660728203` run predates these additional integrity changes.
+- BLOCKED on configured-provider evidence for owner/adult/read-only roles, live account and household switching, revocation, two-device conflict timing, reconnect recovery, and erase-versus-provider work.
+- REMAINS: Real-iPhone behavior, VoiceOver/TalkBack announcements, provider RLS/storage evidence, device screenshots, store review, public launch, and Apollo approval are not established by this source/test slice.
 
 ## 2026-09-02 Care-state authorization and concurrent-write proof
 

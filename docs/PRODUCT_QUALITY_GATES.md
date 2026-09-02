@@ -1,11 +1,14 @@
 # WoofWatcher Product Quality Gates
 
-## 2026-09-02 Restricted shared-plan trust gate
+## 2026-09-02 Care-state integrity gate
 
-- A read-only, youth, helper, expired, missing, or unverified member cannot make a whole-document shared-plan change appear saved.
-- A denied optimistic request restores the latest household winner and tells the caregiver what happened through visible and accessible status, while care-log permissions remain independently governed.
-- Account switches and household changes cannot hydrate, merge, or render another principal's cached care; erase-all-data cannot be undone by an older queued local write.
-- Provider-backed role changes, multi-device races, reconnect behavior, native screen readers, store review, and Apollo approval remain required runtime gates.
+- PASS (source scope): Unresolved auth mounts no data providers; each exact principal receives isolated token transport, query state, care cache, and cleanup ledger. Verified `/me` household identity gates every remote reconciliation/retry, each care request carries `x-woofwatcher-household-id`, and the server returns `409` on disagreement before care-table access. Scope invalidation uses one outstanding two-second retry timer.
+- PASS (source scope): Mismatched household data stays masked until its exact archive is restored; a failed archive followed by the same verified household durably restores the full pending document, entries/outbox, baseline, and ledger before unmasking. Refresh requests coalesce, and a document `409` enters three-way merge/conflict recovery.
+- PASS (source scope): Critical cleanup writes survive snapshot supersession; local clear finishes avatar writes before the serialized terminal care wipe, reports partial failure, and truthfully distinguishes local data from provider-held records and the opaque cleanup ledger. Hydration is erase-generation fenced. Entry deletes serialize against refresh, fence concurrent edits across temp/server aliases, persist real-id tombstones before hiding, repair failed tombstone clears atomically, and combine list filtering with post-DELETE removal to suppress stale ghosts. All CareContext-owned provider requests are timeout-bounded, and nullable `addEntry` callers do not claim success without an id.
+- PASS (contract scope): The expected-household header and `409` response are documented on all seven care operations, regenerated into React/Zod artifacts, and protected by a CI codegen-drift check.
+- COVERED (deterministic): Principal switching, fail-closed household verification, request-scope rejection, bounded retry, archive masking and same-household restore, trailing refresh, conflict merge, hydration/erase and delete/refresh races, tombstone ghost suppression, writer/wipe races, and all app-level nullable-add callers have regression contracts.
+- PASS/PARTIAL (local verification): Full `mobileReadiness.test.ts` passes `192/192`, and all beta-doctor source-backed checks are clear. The current integrity-focused file passes `12/12`; the loader-assisted care integrity/merge/writer suite passes `90/90`, with no combined total claimed because coverage overlaps. API readiness passes `20/20`, and the household-scope/OpenAPI contract passes `4/4`. The beta doctor remains non-green only for pinned pnpm CLI and mobile Expo resolution, plus Corepack and unsupported bundled-pnpm warnings. Dependency-complete CI remains pending.
+- OPEN (runtime/release): Configured-provider roles/RLS, multi-device races and reconnects, real-iPhone behavior, VoiceOver/TalkBack, store review, and Apollo approval remain required gates.
 
 ## 2026-09-02 Care-state authorization and atomicity gate
 

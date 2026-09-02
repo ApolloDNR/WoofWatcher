@@ -1,4 +1,10 @@
-import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import {
+  Router,
+  type IRouter,
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import {
   CARE_ENTRY_SYNC_PROTOCOL,
   CARE_ENTRY_SYNC_REVISION_KEY,
@@ -25,6 +31,7 @@ import {
   normalizeListCareEntriesQuery,
   normalizeListCareEntryTombstonesQuery,
 } from "../lib/care-entry-query.ts";
+import { rejectMismatchedHouseholdRequestScope } from "../lib/household-request-scope.ts";
 
 type QueryOperator = (...args: any[]) => any;
 
@@ -43,12 +50,20 @@ export interface CareEntriesRouterDependencies {
   requireAuth: (req: Request, res: Response, next: NextFunction) => void;
   getUserId: (req: Request) => string;
   getActiveHouseholdId: (userId: string) => Promise<string>;
-  getCaregiverName: (householdId: string, userId: string) => Promise<string | null>;
-  getHouseholdMemberAuthz: (householdId: string, userId: string) => Promise<{ role?: string | null } | null | undefined>;
+  getCaregiverName: (
+    householdId: string,
+    userId: string,
+  ) => Promise<string | null>;
+  getHouseholdMemberAuthz: (
+    householdId: string,
+    userId: string,
+  ) => Promise<{ role?: string | null } | null | undefined>;
   now: () => Date;
 }
 
-export function createCareEntriesRouter(dependencies: CareEntriesRouterDependencies): IRouter {
+export function createCareEntriesRouter(
+  dependencies: CareEntriesRouterDependencies,
+): IRouter {
   const router: IRouter = Router();
   const {
     db,
@@ -67,6 +82,7 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
   router.get("/care-entries", requireAuth, async (req, res): Promise<void> => {
     const userId = getUserId(req);
     const householdId = await getActiveHouseholdId(userId);
+    if (rejectMismatchedHouseholdRequestScope(req, res, householdId)) return;
     const query = normalizeListCareEntriesQuery(req.query);
     if (!query.ok) {
       res.status(query.status).json({ error: query.error });
@@ -82,47 +98,58 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
           gte(careEntriesTable.updatedAt, updatedSince),
         )
       : since
-      ? and(
-          eq(careEntriesTable.householdId, householdId),
-          gte(careEntriesTable.occurredAt, since),
-        )
-      : eq(careEntriesTable.householdId, householdId);
+        ? and(
+            eq(careEntriesTable.householdId, householdId),
+            gte(careEntriesTable.occurredAt, since),
+          )
+        : eq(careEntriesTable.householdId, householdId);
 
     const rows = await db
       .select()
       .from(careEntriesTable)
       .where(where)
-      .orderBy(desc(updatedSince ? careEntriesTable.updatedAt : careEntriesTable.occurredAt))
+      .orderBy(
+        desc(
+          updatedSince
+            ? careEntriesTable.updatedAt
+            : careEntriesTable.occurredAt,
+        ),
+      )
       .limit(query.limit);
 
     res.json(ListCareEntriesResponse.parse(rows));
   });
 
-  router.get("/care-entries/tombstones", requireAuth, async (req, res): Promise<void> => {
-    const userId = getUserId(req);
-    const householdId = await getActiveHouseholdId(userId);
-    const query = normalizeListCareEntryTombstonesQuery(req.query);
-    if (!query.ok) {
-      res.status(query.status).json({ error: query.error });
-      return;
-    }
+  router.get(
+    "/care-entries/tombstones",
+    requireAuth,
+    async (req, res): Promise<void> => {
+      const userId = getUserId(req);
+      const householdId = await getActiveHouseholdId(userId);
+      if (rejectMismatchedHouseholdRequestScope(req, res, householdId)) return;
+      const query = normalizeListCareEntryTombstonesQuery(req.query);
+      if (!query.ok) {
+        res.status(query.status).json({ error: query.error });
+        return;
+      }
 
-    const where = query.updatedSince
-      ? and(
-          eq(careEntryTombstonesTable.householdId, householdId),
-          gte(careEntryTombstonesTable.updatedAt, query.updatedSince),
-        )
-      : eq(careEntryTombstonesTable.householdId, householdId);
+      const where = query.updatedSince
+        ? and(
+            eq(careEntryTombstonesTable.householdId, householdId),
+            gte(careEntryTombstonesTable.updatedAt, query.updatedSince),
+          )
+        : eq(careEntryTombstonesTable.householdId, householdId);
 
-    const rows = await db
-      .select()
-      .from(careEntryTombstonesTable)
-      .where(where)
-      .orderBy(desc(careEntryTombstonesTable.updatedAt))
-      .limit(query.limit);
+      const rows = await db
+        .select()
+        .from(careEntryTombstonesTable)
+        .where(where)
+        .orderBy(desc(careEntryTombstonesTable.updatedAt))
+        .limit(query.limit);
 
-    res.json(ListCareEntryTombstonesResponse.parse(rows));
-  });
+      res.json(ListCareEntryTombstonesResponse.parse(rows));
+    },
+  );
 
   router.post("/care-entries", requireAuth, async (req, res): Promise<void> => {
     const userId = getUserId(req);
@@ -132,6 +159,7 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
       return;
     }
     const householdId = await getActiveHouseholdId(userId);
+    if (rejectMismatchedHouseholdRequestScope(req, res, householdId)) return;
     const caregiverName = await getCaregiverName(householdId, userId);
     const member = await getHouseholdMemberAuthz(householdId, userId);
     const policy = applyCareEntryWritePolicy({
@@ -150,8 +178,13 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
     // retried without duplicating the row. A partial unique index on
     // (household_id, details->>'clientKey') backstops the read-then-insert
     // race; on that conflict we return the winning row.
-    const clientKeyValue = (policy.details as Record<string, unknown> | null | undefined)?.clientKey;
-    const clientKey = typeof clientKeyValue === "string" && clientKeyValue.length > 0 ? clientKeyValue : null;
+    const clientKeyValue = (
+      policy.details as Record<string, unknown> | null | undefined
+    )?.clientKey;
+    const clientKey =
+      typeof clientKeyValue === "string" && clientKeyValue.length > 0
+        ? clientKeyValue
+        : null;
     const findByClientKey = async (): Promise<unknown | undefined> => {
       if (!clientKey) return undefined;
       const [existing] = await db
@@ -194,7 +227,8 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
     } catch (err) {
       // Unique-violation on the clientKey index: a concurrent identical
       // create won the race - return its row instead of an error.
-      const code = (err as { code?: string; cause?: { code?: string } })?.code ??
+      const code =
+        (err as { code?: string; cause?: { code?: string } })?.code ??
         (err as { cause?: { code?: string } })?.cause?.code;
       if (code !== "23505") throw err;
       const winner = await findByClientKey();
@@ -206,116 +240,26 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
     res.status(201).json(ListCareEntriesResponseItem.parse(entry));
   });
 
-  router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> => {
-    const userId = getUserId(req);
-    const params = UpdateCareEntryParams.safeParse(req.params);
-    if (!params.success) {
-      res.status(400).json({ error: params.error.message });
-      return;
-    }
-    const parsed = UpdateCareEntryBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-    const householdId = await getActiveHouseholdId(userId);
-    const member = await getHouseholdMemberAuthz(householdId, userId);
+  router.patch(
+    "/care-entries/:id",
+    requireAuth,
+    async (req, res): Promise<void> => {
+      const userId = getUserId(req);
+      const params = UpdateCareEntryParams.safeParse(req.params);
+      if (!params.success) {
+        res.status(400).json({ error: params.error.message });
+        return;
+      }
+      const parsed = UpdateCareEntryBody.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.message });
+        return;
+      }
+      const householdId = await getActiveHouseholdId(userId);
+      if (rejectMismatchedHouseholdRequestScope(req, res, householdId)) return;
+      const member = await getHouseholdMemberAuthz(householdId, userId);
 
-    const [existing] = await db
-      .select()
-      .from(careEntriesTable)
-      .where(
-        and(
-          eq(careEntriesTable.id, params.data.id),
-          eq(careEntriesTable.householdId, householdId),
-        ),
-      )
-      .limit(1);
-
-    if (!existing) {
-      res.status(404).json({ error: "Entry not found" });
-      return;
-    }
-
-    const policy = applyCareEntryWritePolicy({
-      role: member?.role,
-      type: parsed.data.type ?? existing.type,
-      details: parsed.data.details ?? existing.details ?? {},
-      action: "update",
-    });
-    if (!policy.allowed) {
-      res.status(403).json({ error: policy.reason });
-      return;
-    }
-
-    // Marked clients establish exactly the next revision. The early check
-    // gives them an immediate conflict envelope; the matching SQL predicate
-    // below closes the select/update race. Unmarked clients retain the
-    // pre-protocol advancement behavior for backwards compatibility.
-    const usesRevisionProtocol =
-      parsed.data.clientSyncProtocol === CARE_ENTRY_SYNC_PROTOCOL;
-    if (
-      usesRevisionProtocol &&
-      readCareEntrySyncRevision(policy.details) == null
-    ) {
-      res.status(400).json({
-        error:
-          "revision-v1 care entry updates require clientSyncRevision.",
-      });
-      return;
-    }
-    if (
-      usesRevisionProtocol &&
-      !isNextCareEntrySyncRevision(existing.details, policy.details)
-    ) {
-      res.status(409).json({
-        error:
-          "A newer care entry update already exists. Refresh before retrying.",
-        entry: UpdateCareEntryResponse.parse(existing),
-      });
-      return;
-    }
-    const incomingRevision = usesRevisionProtocol
-      ? readCareEntrySyncRevision(policy.details)!
-      : resolveLegacyCareEntrySyncWriteRevision({
-          storedDetails: existing.details,
-          requestedDetails: policy.details,
-          detailsWereSupplied: parsed.data.details !== undefined,
-        });
-    policy.details[CARE_ENTRY_SYNC_REVISION_KEY] = incomingRevision;
-    const storedRevision =
-      sql`CASE WHEN jsonb_typeof(${careEntriesTable.details} -> ${CARE_ENTRY_SYNC_REVISION_KEY}) = 'number' THEN CASE WHEN (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric >= 0 AND (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric <= 9007199254740991 AND trunc((${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric) = (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric THEN (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::bigint ELSE 0 END ELSE 0 END`;
-    const revisionGuard = usesRevisionProtocol
-      ? sql`${storedRevision} = ${incomingRevision - 1}`
-      : sql`${storedRevision} < ${incomingRevision}`;
-    const [updated] = await db
-      .update(careEntriesTable)
-      .set({
-        ...(parsed.data.type !== undefined
-          ? { type: normalizeCareEventType(parsed.data.type, policy.details) }
-          : {}),
-        ...(parsed.data.occurredAt !== undefined
-          ? { occurredAt: parsed.data.occurredAt }
-          : {}),
-        ...(parsed.data.mood !== undefined ? { mood: parsed.data.mood } : {}),
-        ...(parsed.data.severity !== undefined
-          ? { severity: parsed.data.severity }
-          : {}),
-        ...(parsed.data.note !== undefined ? { note: parsed.data.note } : {}),
-        details: policy.details,
-        updatedAt: now(),
-      })
-      .where(
-        and(
-          eq(careEntriesTable.id, params.data.id),
-          eq(careEntriesTable.householdId, householdId),
-          revisionGuard,
-        ),
-      )
-      .returning();
-
-    if (!updated) {
-      const [current] = await db
+      const [existing] = await db
         .select()
         .from(careEntriesTable)
         .where(
@@ -325,20 +269,113 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
           ),
         )
         .limit(1);
-      if (!current) {
+
+      if (!existing) {
         res.status(404).json({ error: "Entry not found" });
         return;
       }
-      res.status(409).json({
-        error:
-          "A newer care entry update already exists. Refresh before retrying.",
-        entry: UpdateCareEntryResponse.parse(current),
-      });
-      return;
-    }
 
-    res.json(UpdateCareEntryResponse.parse(updated));
-  });
+      const policy = applyCareEntryWritePolicy({
+        role: member?.role,
+        type: parsed.data.type ?? existing.type,
+        details: parsed.data.details ?? existing.details ?? {},
+        action: "update",
+      });
+      if (!policy.allowed) {
+        res.status(403).json({ error: policy.reason });
+        return;
+      }
+
+      // Marked clients establish exactly the next revision. The early check
+      // gives them an immediate conflict envelope; the matching SQL predicate
+      // below closes the select/update race. Unmarked clients retain the
+      // pre-protocol advancement behavior for backwards compatibility.
+      const usesRevisionProtocol =
+        parsed.data.clientSyncProtocol === CARE_ENTRY_SYNC_PROTOCOL;
+      if (
+        usesRevisionProtocol &&
+        readCareEntrySyncRevision(policy.details) == null
+      ) {
+        res.status(400).json({
+          error: "revision-v1 care entry updates require clientSyncRevision.",
+        });
+        return;
+      }
+      if (
+        usesRevisionProtocol &&
+        !isNextCareEntrySyncRevision(existing.details, policy.details)
+      ) {
+        res.status(409).json({
+          error:
+            "A newer care entry update already exists. Refresh before retrying.",
+          entry: UpdateCareEntryResponse.parse(existing),
+        });
+        return;
+      }
+      const incomingRevision = usesRevisionProtocol
+        ? readCareEntrySyncRevision(policy.details)!
+        : resolveLegacyCareEntrySyncWriteRevision({
+            storedDetails: existing.details,
+            requestedDetails: policy.details,
+            detailsWereSupplied: parsed.data.details !== undefined,
+          });
+      policy.details[CARE_ENTRY_SYNC_REVISION_KEY] = incomingRevision;
+      const storedRevision = sql`CASE WHEN jsonb_typeof(${careEntriesTable.details} -> ${CARE_ENTRY_SYNC_REVISION_KEY}) = 'number' THEN CASE WHEN (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric >= 0 AND (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric <= 9007199254740991 AND trunc((${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric) = (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric THEN (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::bigint ELSE 0 END ELSE 0 END`;
+      const revisionGuard = usesRevisionProtocol
+        ? sql`${storedRevision} = ${incomingRevision - 1}`
+        : sql`${storedRevision} < ${incomingRevision}`;
+      const [updated] = await db
+        .update(careEntriesTable)
+        .set({
+          ...(parsed.data.type !== undefined
+            ? { type: normalizeCareEventType(parsed.data.type, policy.details) }
+            : {}),
+          ...(parsed.data.occurredAt !== undefined
+            ? { occurredAt: parsed.data.occurredAt }
+            : {}),
+          ...(parsed.data.mood !== undefined ? { mood: parsed.data.mood } : {}),
+          ...(parsed.data.severity !== undefined
+            ? { severity: parsed.data.severity }
+            : {}),
+          ...(parsed.data.note !== undefined ? { note: parsed.data.note } : {}),
+          details: policy.details,
+          updatedAt: now(),
+        })
+        .where(
+          and(
+            eq(careEntriesTable.id, params.data.id),
+            eq(careEntriesTable.householdId, householdId),
+            revisionGuard,
+          ),
+        )
+        .returning();
+
+      if (!updated) {
+        const [current] = await db
+          .select()
+          .from(careEntriesTable)
+          .where(
+            and(
+              eq(careEntriesTable.id, params.data.id),
+              eq(careEntriesTable.householdId, householdId),
+            ),
+          )
+          .limit(1);
+        if (!current) {
+          res.status(404).json({ error: "Entry not found" });
+          return;
+        }
+        res.status(409).json({
+          error:
+            "A newer care entry update already exists. Refresh before retrying.",
+          entry: UpdateCareEntryResponse.parse(current),
+        });
+        return;
+      }
+
+      res.json(UpdateCareEntryResponse.parse(updated));
+    },
+  );
 
   router.delete(
     "/care-entries/:id",
@@ -351,6 +388,7 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
         return;
       }
       const householdId = await getActiveHouseholdId(userId);
+      if (rejectMismatchedHouseholdRequestScope(req, res, householdId)) return;
       const member = await getHouseholdMemberAuthz(householdId, userId);
       const policy = assertCareEntryWriteAllowed({
         role: member?.role,

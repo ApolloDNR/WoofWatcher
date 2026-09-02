@@ -1,11 +1,16 @@
 # Quality Gates
 
-## 2026-09-02 Shared care-document client authorization gate
+## 2026-09-02 Care-state integrity continuation gate
 
-- PASS requires the API to derive `careStateWriteAllowed` from the same raw-plus-runtime allowlist enforced on every care-state write.
-- PASS requires signed-in clients to fail closed until that capability is identity-matched, prevent restricted optimistic edits, recover an authoritative `403` to server state, and expose an accessible read-only/retry status.
-- PASS requires account/household cache isolation, stale-session fencing, serialized durable mutations, and an owner-wipe barrier that cannot be overtaken by older queued snapshots.
-- Source/tests and dependency-complete CI can clear implementation gates; provider role/race evidence, native accessibility, store review, and Apollo approval remain separate release gates.
+- Auth/principal boundary: PASS at source scope when unresolved Clerk auth renders no data providers and each exact principal owns its token getter, query client, state cache, and cleanup ledger.
+- Household boundary: PASS at source scope when identity-matched `/me` verification precedes all remote care work, every care call sends `x-woofwatcher-household-id`, the server returns `409` on disagreement before care-table access, and invalidation schedules at most one outstanding two-second retry. Mismatches mask old data before awaits; exact-household restore includes durably replacing a failed pending archive before unmasking.
+- Sync boundary: PASS at source scope when busy refreshes coalesce and `409` recovery performs a three-way merge with explicit conflict recovery.
+- Storage/privacy boundary: PASS at source scope when critical cleanup intent cannot be silently discarded, snapshots are supersedable, avatar writes precede the serialized terminal local clear, stale work cannot recreate data-bearing keys, partial failure remains visible, retained provider data and cleanup identifiers are disclosed, and hydration checks the erase generation after drain/read before applying state.
+- Delete/provider boundary: PASS at source scope when in-flight deletes defer refresh and fence edits across temp/server aliases, delete generation rejects older list work, every acknowledged real id is tombstoned before optimistic hiding, failed tombstone clearing repairs deletion intent atomically, and list filtering plus post-DELETE removal suppresses stale ghosts; late restoration is session/erase fenced and provider requests are timeout-bounded.
+- Generated contract boundary: PASS when all seven care operations document the expected-household header and `409`, React/Zod outputs are current, and CI rejects regeneration drift.
+- UI boundary: PASS at source scope when all nullable `addEntry` callers reserve haptics, notices, resets, navigation, profile mutations, and dedupe markers for confirmed ids.
+- Verification: PASS/PARTIAL locally. Full `mobileReadiness.test.ts` passes `192/192`, and all beta-doctor source-backed checks are clear. The current integrity-focused file passes `12/12`; the loader-assisted care integrity/merge/writer suite passes `90/90`, with no combined total claimed because coverage overlaps. API readiness passes `20/20`, and the household-scope/OpenAPI contract passes `4/4`. The beta doctor remains non-green only for pinned pnpm CLI and mobile Expo resolution, plus Corepack and unsupported bundled-pnpm warnings. Dependency-complete CI remains pending.
+- Native/approval proof: PENDING configured-provider roles/RLS and multi-device timing, real-iPhone behavior, VoiceOver/TalkBack, store review, and Apollo signoff.
 
 ## 2026-09-02 Care-state authorization and atomic-write gate
 

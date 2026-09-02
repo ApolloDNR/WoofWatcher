@@ -77,3 +77,25 @@ test("supersede fences delayed writes from the prior epoch", async () => {
   await wipe;
   assert.deepEqual(writes, ["old-active", "wipe"]);
 });
+
+test("supersede retains critical cleanup before wiping private snapshots", async () => {
+  const firstWrite = deferred<void>();
+  const writes: string[] = [];
+  const writer = createSerializedCareSyncWriter<string>(async (value) => {
+    writes.push(value);
+    if (value === "old-active") await firstWrite.promise;
+  });
+  const oldEpoch = writer.currentEpoch();
+  const active = writer.enqueue("old-active", oldEpoch);
+  const cleanup = writer.enqueue("cleanup-ledger", oldEpoch, "critical");
+  const privateSnapshot = writer.enqueue("private-snapshot", oldEpoch);
+  const wipe = writer.supersede("wipe");
+
+  assert.equal(await privateSnapshot, "superseded");
+  firstWrite.resolve();
+  assert.equal(await active, "applied");
+  assert.equal(await cleanup, "applied");
+  assert.equal(await wipe, "applied");
+  assert.equal(await writer.enqueue("late-private", oldEpoch), "superseded");
+  assert.deepEqual(writes, ["old-active", "cleanup-ledger", "wipe"]);
+});

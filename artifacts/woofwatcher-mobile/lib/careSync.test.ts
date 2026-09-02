@@ -7,8 +7,11 @@ import {
   applyQueuedPatchToAcknowledgedEntry,
   CARE_ENTRY_PENDING_DELETE,
   CareEntryConflictRetryError,
+  CareSyncRequestTimeoutError,
   CareSyncMutationTimeoutError,
+  clearDiscardedServerEntryDurably,
   cleanupDiscardedServerEntryRows,
+  createCareEntryDeleteFence,
   createSerializedCareSyncWriter,
   createSerializedCareEntryMutationQueue,
   decideCareEntryEditSyncDisposition,
@@ -33,11 +36,100 @@ import {
   removeDiscardedServerEntryId,
   restoreEntryAfterDeleteFailure,
   retryCareEntryMutationAfterConflict,
+  runCareSyncRequestWithTimeout,
   requiresCareEntrySyncReview,
   sanitizeCareEntryDetailsForSync,
   selectWoofWatcherKeysForOwnerWipe,
   withSyncedStatus,
 } from "./careSync.ts";
+
+test("a failed durable tombstone clear restores and repairs the deletion intent", async () => {
+  let currentEntryIds = ["server_1", "server_2"];
+  const writes: string[][] = [];
+  let attempt = 0;
+
+  const cleared = await clearDiscardedServerEntryDurably({
+    entryId: "server_1",
+    readEntryIds: () => currentEntryIds,
+    applyEntryIds: (entryIds) => {
+      currentEntryIds = [...entryIds];
+    },
+    persistEntryIds: async (entryIds) => {
+      writes.push([...entryIds]);
+      attempt += 1;
+      if (attempt === 1) throw new Error("storage failed");
+    },
+  });
+
+  assert.equal(cleared, false);
+  assert.deepEqual(currentEntryIds, ["server_2", "server_1"]);
+  assert.deepEqual(writes, [["server_2"], ["server_2", "server_1"]]);
+});
+
+test("care-sync request timeout aborts a provider write deterministically", async () => {
+  let timeoutCallback: (() => void) | undefined;
+  let scheduledDelay = 0;
+  let aborted = false;
+
+  const request = runCareSyncRequestWithTimeout(
+    (signal) => {
+      signal.addEventListener("abort", () => {
+        aborted = true;
+      });
+      return new Promise<never>(() => {});
+    },
+    {
+      timeoutMs: 75,
+      timeoutScheduler: {
+        schedule: (callback, delayMs) => {
+          timeoutCallback = callback;
+          scheduledDelay = delayMs;
+          return "timeout-handle";
+        },
+        cancel: () => {},
+      },
+    },
+  );
+
+  assert.equal(scheduledDelay, 75);
+  assert.ok(timeoutCallback);
+  timeoutCallback();
+  await assert.rejects(
+    request,
+    (error) =>
+      error instanceof CareSyncRequestTimeoutError && error.timeoutMs === 75,
+  );
+  assert.equal(aborted, true);
+});
+
+test("care-entry delete fence blocks edits across temp and server aliases", () => {
+  const fence = createCareEntryDeleteFence();
+  const deletion = fence.tryAcquire(["temp_1", "server_1"]);
+
+  assert.ok(deletion);
+  assert.equal(fence.isDeleting("temp_1"), true);
+  assert.equal(fence.isDeleting("server_1"), true);
+  assert.equal(fence.tryAcquire(["server_1"]), null);
+
+  deletion.release();
+  assert.equal(fence.isDeleting("temp_1"), false);
+  assert.equal(fence.isDeleting("server_1"), false);
+});
+
+test("a stale care-entry delete release cannot unlock a newer generation", () => {
+  const fence = createCareEntryDeleteFence();
+  const staleDeletion = fence.tryAcquire(["server_1"]);
+  assert.ok(staleDeletion);
+
+  fence.clear();
+  const currentDeletion = fence.tryAcquire(["server_1"]);
+  assert.ok(currentDeletion);
+  staleDeletion.release();
+
+  assert.equal(fence.isDeleting("server_1"), true);
+  currentDeletion.release();
+  assert.equal(fence.isDeleting("server_1"), false);
+});
 
 test("marks server entries as synced", () => {
   const [entry] = withSyncedStatus([
@@ -510,11 +602,7 @@ test("merge migrates only the first duplicate server row for one temp client key
   );
 
   assert.deepEqual(
-    merged.map((entry) => [
-      entry.id,
-      entry.title,
-      entry.syncStatus,
-    ]),
+    merged.map((entry) => [entry.id, entry.title, entry.syncStatus]),
     [
       ["server_first", "Newest local walk", "failed"],
       ["server_duplicate", "Duplicate server copy", "synced"],
@@ -861,10 +949,9 @@ test("a signed-out edit cannot create a partial journal for a legacy row", () =>
     decideCareEntryEditSyncDisposition(legacyEntry, true),
     "review-required",
   );
-  const preserved = prepareCareEntryForOfflineEdit(
-    legacyEntry,
-    { mood: "great" },
-  );
+  const preserved = prepareCareEntryForOfflineEdit(legacyEntry, {
+    mood: "great",
+  });
 
   assert.equal(preserved.mood, "great");
   assert.equal(preserved.note, legacyEntry.note);
@@ -873,10 +960,9 @@ test("a signed-out edit cannot create a partial journal for a legacy row", () =>
 });
 
 test("a cleared top-level field survives JSON persistence and conflict rebase", () => {
-  const pendingSyncPatch = mergeCareEntryPendingSyncPatch(
-    undefined,
-    { note: undefined },
-  );
+  const pendingSyncPatch = mergeCareEntryPendingSyncPatch(undefined, {
+    note: undefined,
+  });
   assert.deepEqual(pendingSyncPatch.note, CARE_ENTRY_PENDING_DELETE);
 
   const persistedPatch = JSON.parse(
@@ -913,8 +999,7 @@ test("pre-protocol cached updates without a field journal require review", () =>
     title: "Older cached edit",
     occurredAt: "2026-07-30T18:00:00.000Z",
     syncStatus: "failed" as const,
-    syncError:
-      "This change predates conflict-safe field journaling.",
+    syncError: "This change predates conflict-safe field journaling.",
     details: { clientSyncRevision: 9 },
   };
 
@@ -959,8 +1044,7 @@ test("a 409 fetches the winning row and retries one rebased local patch", async 
   const result = await retryCareEntryMutationAfterConflict({
     error: { status: 409 },
     input,
-    isConflict: (error) =>
-      (error as { status?: number }).status === 409,
+    isConflict: (error) => (error as { status?: number }).status === 409,
     fetchCurrent: async () => server,
     rebase: (local, current) => {
       const rebased = rebaseCareEntryAfterConflict(
@@ -1242,14 +1326,8 @@ test("the latest timed-out mutation reports a stable retryable failure", async (
   await flushMutationQueue();
 
   assert.equal(failures.length, 1);
-  assert.equal(
-    failures[0] instanceof CareSyncMutationTimeoutError,
-    true,
-  );
-  assert.equal(
-    (failures[0] as CareSyncMutationTimeoutError).timeoutMs,
-    7,
-  );
+  assert.equal(failures[0] instanceof CareSyncMutationTimeoutError, true);
+  assert.equal((failures[0] as CareSyncMutationTimeoutError).timeoutMs, 7);
 
   queue.enqueue("server_walk", "retry");
   await flushMutationQueue();
@@ -1479,17 +1557,9 @@ test("hydration makes interrupted create and update mutations retryable", () => 
   ]);
 
   assert.deepEqual(
-    recovered.map((entry) => [
-      entry.id,
-      entry.syncStatus,
-      entry.syncError,
-    ]),
+    recovered.map((entry) => [entry.id, entry.syncStatus, entry.syncError]),
     [
-      [
-        "temp_walk",
-        "failed",
-        "Previous sync was interrupted. Ready to retry.",
-      ],
+      ["temp_walk", "failed", "Previous sync was interrupted. Ready to retry."],
       [
         "server_meal",
         "failed",
@@ -1718,12 +1788,7 @@ test("idempotent response to a recovered create keeps the edited temp snapshot r
 });
 
 test("the dedicated deletion ledger survives hydration and prevents restart resurrection", () => {
-  const raw = JSON.stringify([
-    "server_cancelled",
-    "server_cancelled",
-    "",
-    42,
-  ]);
+  const raw = JSON.stringify(["server_cancelled", "server_cancelled", "", 42]);
   const hydratedIds = normalizeDiscardedServerEntryIds(JSON.parse(raw));
 
   assert.deepEqual(hydratedIds, ["server_cancelled"]);
@@ -1742,16 +1807,10 @@ test("the dedicated deletion ledger survives hydration and prevents restart resu
 
 test("ledger hydration unions a cancellation recorded while storage is being read", () => {
   const cachedIds = normalizeDiscardedServerEntryIds(["server_old"]);
-  const cancelledDuringRead = addDiscardedServerEntryId(
-    [],
-    "server_new",
-  );
+  const cancelledDuringRead = addDiscardedServerEntryId([], "server_new");
 
   assert.deepEqual(
-    normalizeDiscardedServerEntryIds([
-      ...cachedIds,
-      ...cancelledDuringRead,
-    ]),
+    normalizeDiscardedServerEntryIds([...cachedIds, ...cancelledDuringRead]),
     ["server_old", "server_new"],
   );
 });
@@ -1847,11 +1906,7 @@ test("refresh filtering includes tombstones added while deletion retries are in 
 
   assert.deepEqual(
     filterDiscardedServerEntries(
-      [
-        { id: "server_old" },
-        { id: "server_new" },
-        { id: "server_safe" },
-      ],
+      [{ id: "server_old" }, { id: "server_new" }, { id: "server_safe" }],
       snapshotAtRefreshStart,
       currentAfterAwait,
       addedAndSuccessfullyDeletedDuringAwait,
@@ -1867,10 +1922,9 @@ test("successful server deletion removes only its durable tombstone", () => {
   );
 
   assert.deepEqual(withTwo, ["server_old", "server_new"]);
-  assert.deepEqual(
-    removeDiscardedServerEntryId(withTwo, "server_old"),
-    ["server_new"],
-  );
+  assert.deepEqual(removeDiscardedServerEntryId(withTwo, "server_old"), [
+    "server_new",
+  ]);
 });
 
 test("delete failure restoration replaces an existing row instead of duplicating it", () => {
@@ -1893,16 +1947,13 @@ test("delete failure restoration replaces an existing row instead of duplicating
 });
 
 test("delete failure restoration makes a cancelled pending edit retryable", () => {
-  const [restored] = restoreEntryAfterDeleteFailure(
-    [],
-    {
-      id: "server_walk",
-      title: "Edited walk",
-      syncStatus: "pending" as const,
-      syncError: undefined,
-      pendingSyncPatch: { title: "Edited walk" },
-    },
-  );
+  const [restored] = restoreEntryAfterDeleteFailure([], {
+    id: "server_walk",
+    title: "Edited walk",
+    syncStatus: "pending" as const,
+    syncError: undefined,
+    pendingSyncPatch: { title: "Edited walk" },
+  });
 
   assert.equal(restored.syncStatus, "failed");
   assert.match(restored.syncError ?? "", /retry/i);
@@ -1930,20 +1981,15 @@ test("serializes durable tombstone writes so a later clear cannot be overtaken",
 test("a rejected durable write does not stall the next queued write", async () => {
   const firstGate = deferred<void>();
   const writes: string[] = [];
-  const writer = createSerializedCareSyncWriter<string>(
-    async (value) => {
-      writes.push(value);
-      if (value === "first") {
-        await firstGate.promise;
-        throw new Error("storage failed");
-      }
-    },
-  );
+  const writer = createSerializedCareSyncWriter<string>(async (value) => {
+    writes.push(value);
+    if (value === "first") {
+      await firstGate.promise;
+      throw new Error("storage failed");
+    }
+  });
 
-  const firstResult = assert.rejects(
-    writer.enqueue("first"),
-    /storage failed/,
-  );
+  const firstResult = assert.rejects(writer.enqueue("first"), /storage failed/);
   const secondResult = writer.enqueue("second");
   firstGate.resolve();
 
@@ -1969,13 +2015,10 @@ test("owner wipe preserves opaque cleanup ids until final remote deletion remove
   // Remote absence/delete confirmation is the only event that removes it.
   await writer.enqueue(null);
 
-  assert.deepEqual(writes, [
-    ["server_orphan", "temp_cancelled"],
-    null,
-  ]);
+  assert.deepEqual(writes, [["server_orphan", "temp_cancelled"], null]);
 });
 
-test("owner wipe removes every WoofWatcher key except the remote cleanup ledger", () => {
+test("owner clear removes every data-bearing WoofWatcher key except the remote cleanup ledger", () => {
   assert.deepEqual(
     selectWoofWatcherKeysForOwnerWipe(
       [

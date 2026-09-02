@@ -6,9 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type CareEntryUpdateClientSyncProtocol = typeof CareEntryUpdateClientSyncProtocol[keyof typeof CareEntryUpdateClientSyncProtocol];
-
+export type CareEntryUpdateClientSyncProtocol =
+  (typeof CareEntryUpdateClientSyncProtocol)[keyof typeof CareEntryUpdateClientSyncProtocol];
 
 export const CareEntryUpdateClientSyncProtocol = {
-  'revision-v1': 'revision-v1',
+  "revision-v1": "revision-v1",
 } as const;

@@ -815,6 +815,8 @@ paths:
       operationId: getCareState
       tags: [care-state]
       summary: Get the household's synced care document
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       responses:
         "200":
           description: Care state document
@@ -834,10 +836,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The expected household no longer matches the active household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     put:
       operationId: putCareState
       tags: [care-state]
       summary: Replace the household's synced care document
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -876,17 +886,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
         "409":
-          description: Version conflict - refetch and retry
+          description: Version conflict or expected-household mismatch - refetch and retry
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CareStateEnvelope"
+                oneOf:
+                  - $ref: "#/components/schemas/CareStateEnvelope"
+                  - $ref: "#/components/schemas/ApiError"
   /care-entries:
     get:
       operationId: listCareEntries
       tags: [care-entries]
       summary: List the household's care log entries
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: since
           in: query
           required: false
@@ -928,10 +941,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The expected household no longer matches the active household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     post:
       operationId: createCareEntry
       tags: [care-entries]
       summary: Append a care log entry
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -963,12 +984,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The expected household no longer matches the active household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /care-entries/tombstones:
     get:
       operationId: listCareEntryTombstones
       tags: [care-entries]
       summary: List deleted care log tombstones for household sync
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: updatedSince
           in: query
           required: false
@@ -1004,12 +1032,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The expected household no longer matches the active household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /care-entries/{id}:
     patch:
       operationId: updateCareEntry
       tags: [care-entries]
       summary: Update a care log entry (e.g. add a quick note)
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: id
           in: path
           required: true
@@ -1053,16 +1088,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
         "409":
-          description: A newer care entry update already exists
+          description: A newer care entry exists or the expected household changed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CareEntryConflict"
+                oneOf:
+                  - $ref: "#/components/schemas/CareEntryConflict"
+                  - $ref: "#/components/schemas/ApiError"
     delete:
       operationId: deleteCareEntry
       tags: [care-entries]
       summary: Delete a care log entry
       parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
         - name: id
           in: path
           required: true
@@ -1095,7 +1133,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The expected household no longer matches the active household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 components:
+  parameters:
+    ExpectedHouseholdId:
+      name: x-woofwatcher-household-id
+      in: header
+      required: false
+      description: >-
+        Backward-compatible concurrency fence. Current clients send the exact
+        household id from their latest identity-matched /me response; the
+        server returns 409 if it no longer matches the active household.
+      schema:
+        type: string
+        minLength: 1
   schemas:
     HealthStatus:
       type: object
