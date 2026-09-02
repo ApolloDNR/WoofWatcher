@@ -1092,6 +1092,7 @@ export default function LogScreen() {
   const [expectedPortion, setExpectedPortion] = useState("");
   const [eatenAmount, setEatenAmount] = useState("");
   const [medicationDose, setMedicationDose] = useState("");
+  const expectedPortionRef = useRef<TextInput>(null);
   const eatenAmountRef = useRef<TextInput>(null);
   const medicationNoteRef = useRef<TextInput>(null);
   const aloneRecoveryMinutesRef = useRef<TextInput>(null);
@@ -3539,11 +3540,15 @@ export default function LogScreen() {
                   {config.numeric.label} ({numericUnit}{config.numeric.optional ? ", optional" : ""})
                 </Text>
                 <TextInput
+                  accessibilityLabel={selectedType === "meal" ? MEAL_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel : undefined}
                   placeholder={config.numeric.placeholder}
                   placeholderTextColor={colors.mutedForeground}
                   value={numeric}
                   onChangeText={setNumeric}
                   keyboardType="decimal-pad"
+                  returnKeyType={selectedType === "meal" ? MEAL_QUICK_LOG_FIELD_FLOW[0].returnKeyType : undefined}
+                  blurOnSubmit={selectedType === "meal" ? false : undefined}
+                  onSubmitEditing={selectedType === "meal" ? () => expectedPortionRef.current?.focus() : undefined}
                   style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                 />
               </View>
@@ -3946,12 +3951,13 @@ export default function LogScreen() {
                       Expected portion
                     </Text>
                     <TextInput
-                      accessibilityLabel={MEAL_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
+                      ref={expectedPortionRef}
+                      accessibilityLabel={MEAL_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel}
                       placeholder={state.dietProfile.normalPortion || "1 cup"}
                       placeholderTextColor={colors.mutedForeground}
                       value={expectedPortion}
                       onChangeText={setExpectedPortion}
-                      returnKeyType={MEAL_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                      returnKeyType={MEAL_QUICK_LOG_FIELD_FLOW[1].returnKeyType}
                       blurOnSubmit={false}
                       onSubmitEditing={() => {
                         if (
@@ -3973,7 +3979,7 @@ export default function LogScreen() {
                     </Text>
                     <TextInput
                       ref={eatenAmountRef}
-                      accessibilityLabel={MEAL_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel}
+                      accessibilityLabel={MEAL_QUICK_LOG_FIELD_FLOW[2].accessibilityLabel}
                       placeholder={
                         selectedMealCompletion === "skipped"
                           ? "0"
@@ -3985,7 +3991,7 @@ export default function LogScreen() {
                       value={eatenAmount}
                       onChangeText={setEatenAmount}
                       keyboardType="decimal-pad"
-                      returnKeyType={MEAL_QUICK_LOG_FIELD_FLOW[1].returnKeyType}
+                      returnKeyType={MEAL_QUICK_LOG_FIELD_FLOW[2].returnKeyType}
                       onSubmitEditing={Keyboard.dismiss}
                       editable={
                         selectedMealCompletion !== "skipped" &&

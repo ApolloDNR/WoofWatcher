@@ -1,5 +1,12 @@
 # QA Test Plan
 
+## 2026-09-01 Meal served-amount keyboard accessibility
+
+- Open Meal Quick Log and confirm Served amount, Expected portion, and Eaten amount announce explicit field names.
+- Submit Served amount and confirm focus advances to Expected portion. For complete or partial outcomes, submit Expected portion and confirm focus advances to Eaten amount; submit the final field and confirm the keyboard dismisses.
+- Repeat with skipped, served, and grazing outcomes and confirm Expected portion dismisses the keyboard because Eaten amount is disabled.
+- Native compact-height, decimal-keyboard, VoiceOver, TalkBack, and route-named screenshot evidence remains required.
+
 ## 2026-09-01 Medication Quick Log keyboard accessibility
 
 - PASS: Shared field-flow and readiness coverage require dose -> owner-reviewed context -> Done progression with explicit labels.

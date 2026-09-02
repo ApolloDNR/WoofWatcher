@@ -1,5 +1,5 @@
 export type QuickLogFieldFlowItem = {
-  id: "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "aloneTrigger" | "recoveryMinutes" | "calmingSupport" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
+  id: "servedAmount" | "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "aloneTrigger" | "recoveryMinutes" | "calmingSupport" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
   accessibilityLabel: string;
   returnKeyType: "next" | "done";
 };
@@ -24,6 +24,11 @@ const MEDICATION_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
 ];
 
 const MEAL_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
+  {
+    id: "servedAmount",
+    accessibilityLabel: "Meal served amount",
+    returnKeyType: "next",
+  },
   {
     id: "expectedPortion",
     accessibilityLabel: "Meal expected portion",

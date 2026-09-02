@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-09-01 — Keep served amount inside the Meal Quick Log keyboard path
+
+Decision: Treat served amount, expected portion, and eaten amount as one ordered accessibility contract. Served amount advances to expected portion; expected portion advances to eaten amount only when the selected meal outcome accepts an eaten value, otherwise it dismisses the keyboard.
+
+Reason: Served amount is part of the trusted meal lifecycle and cannot remain an unlabeled keyboard dead end while adjacent portion fields have deterministic focus behavior.
+
 ### 2026-09-01: Medication Logging Preserves Dose And Context As One Keyboard Flow
 
 Decision: Medication dose advances to an explicitly labeled, owner-reviewed context field for side effects, refill notes, or anything unusual, then ends with Done. This improves factual household handoff without confirming administration, diagnosing a reaction, or replacing native assistive-technology proof.

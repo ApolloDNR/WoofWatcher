@@ -45,8 +45,13 @@ test("medication quick log advances from dose to owner-reviewed context", () => 
   ]);
 });
 
-test("meal quick log advances from the expected portion to the eaten amount", () => {
+test("meal quick log advances from served amount through expected portion to eaten amount", () => {
   assert.deepEqual(getMealQuickLogFieldFlow(), [
+    {
+      id: "servedAmount",
+      accessibilityLabel: "Meal served amount",
+      returnKeyType: "next",
+    },
     {
       id: "expectedPortion",
       accessibilityLabel: "Meal expected portion",

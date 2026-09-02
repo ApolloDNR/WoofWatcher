@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-09-01 Meal served-amount native accessibility evidence
+
+The three-field Meal Quick Log keyboard path is source-covered. Release proof still requires compact real iOS and Android runs covering decimal keyboard behavior, VoiceOver/TalkBack focus, outcome-dependent disabled eaten amount, route-named screenshots, and Apollo visual approval.
+
 ## 2026-09-01 Medication Quick Log native accessibility evidence
 
 - Source/tests protect explicit dose and owner-reviewed context labels plus dose -> context -> Done keyboard progression.

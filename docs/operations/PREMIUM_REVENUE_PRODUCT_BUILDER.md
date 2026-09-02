@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-09-01 Meal served-amount keyboard accessibility slice
+
+Extended the Meal Quick Log accessibility contract to include served amount before expected portion and eaten amount. The keyboard path now follows the visible meal lifecycle and keeps skipped, served, and grazing outcomes on a truthful Done path because eaten amount is disabled for those states. Red-first field-flow coverage proves the contract locally; real compact-device, keyboard, screen-reader, screenshot, store, and Apollo evidence remains gated.
+
 ## 2026-09-01 Medication Quick Log keyboard accessibility slice
 
 The medication detail composer now treats dose and owner-reviewed side-effect/refill context as one labeled keyboard sequence: dose advances to context, and context ends with Done. Red-first shared field-flow coverage reproduced the missing contract before implementation. Dependency-complete `WoofWatcher Verify` run `33552538618`, job `100005236447`, passed implementation/docs commit `5e45376f`. Medication confirmation, diagnosis, native screen-reader proof, store readiness, and Apollo approval remain outside this source-backed slice.

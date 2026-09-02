@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-01 Meal served-amount keyboard accessibility gate
+
+- PASS at source level when Meal Quick Log exposes explicit served, expected, and eaten field labels and a deterministic keyboard sequence that respects outcomes where eaten amount is disabled.
+- NOT PROVEN until compact real-device layouts, decimal keyboards, VoiceOver/TalkBack traversal, route screenshots, store review, and Apollo approval are captured.
+
 ## 2026-09-01 Medication Quick Log keyboard accessibility gate
 
 - PASS (source): Dose and owner-reviewed medication context have explicit labels and deterministic Next/Done behavior.
