@@ -1,5 +1,14 @@
 # Autonomous Build Queue
 
+## 2026-09-02 Care-state authorization and atomic-write boundary
+
+- DONE: `PUT /care-state` now resolves the authenticated household member and requires an explicit owner/adult allowlist across both the raw stored role and the runtime Access Pass role. Youth, helper, vet-viewer, expired, missing, and unknown roles receive `403` before the care-state row is read or updated; authenticated `GET` access remains unchanged.
+- DONE: Care-document replacement now uses one database compare-and-swap predicate over household id plus version. A zero-row update refetches the winner and returns the existing `409` envelope, or `404` if the row disappeared, so racing devices cannot both report success at the same version.
+- VERIFIED LOCALLY: Security/API behavior passed `31/31`; adjacent Access Pass coverage passed `4/4`; root focused execution passed `906/909`, with only the established missing local `express` and two `@workspace/care-domain` entrypoints; PixelLab passed `150/150`; changed-source transpile reported zero syntax diagnostics; whitespace validation passed.
+- REVIEW: A fresh read-only security review found no remaining bypass in the role or compare-and-swap boundary and required dependency-complete production wiring proof before merge/release.
+- BOUNDARY: The partial checkout cannot typecheck/build the real Express/Zod wiring. Restricted-role mobile document editors can still retain a denied local edit without a clear `403` warning; provider deployment, native multi-device proof, store review, and Apollo approval also remain open.
+- NEXT: Prove the wrapper in dependency-complete CI, then give restricted roles an explicit read-only/shared-sync experience instead of silent local/cloud divergence.
+
 ## 2026-09-02 Pack persistence fail-safe boundary
 
 - DONE: Pack now hydrates Supplies and Travel Bag together; a failed read keeps editing and persistence paused instead of exposing starter defaults that could overwrite owner data.

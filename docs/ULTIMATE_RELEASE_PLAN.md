@@ -1,5 +1,13 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-09-02 Care-state integrity increment
+
+The shared care document now has a least-privilege server boundary: only owner/adult roles may replace it, both raw and runtime roles must pass the allowlist, and youth/helper/vet-viewer/expired/missing/unknown memberships stop before data access. Read-only household access remains intact. Writes compare household id and version atomically, refetching a concurrent winner into the established `409` response instead of allowing two version-equal devices to report success.
+
+Red-first contracts failed before the policy and injectable router existed. Security/API behavior now passes `31/31`, adjacent Access Pass behavior passes `4/4`, broad local execution passes `906/909` apart from the known partial-checkout dependency links, PixelLab passes `150/150`, changed-source transpile reports zero syntax diagnostics, and whitespace validation passes. A fresh independent security review found no remaining role or race bypass.
+
+This increment does not approve release. Dependency-complete typecheck/API build and final-tip CI remain required, followed by real provider multi-device proof. Restricted-role mobile editors also need an explicit read-only or denied-sync experience before shared-household launch; provider, native, store, and Apollo approval gates remain open.
+
 ## 2026-09-02 Pack persistence integrity increment
 
 Pack no longer substitutes editable defaults when either local store cannot be read. Supplies and Travel Bag hydrate together, writes complete in order per key, current failures remain visible and retryable, and delayed removal/redo actions derive from the latest in-memory state. The recovery card is an assertive alert with an independently focusable retry action.

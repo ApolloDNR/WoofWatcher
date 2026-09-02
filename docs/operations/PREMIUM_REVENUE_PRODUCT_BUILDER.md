@@ -1,5 +1,13 @@
 # Premium Revenue Product Builder
 
+## 2026-09-02 Care-state authorization and atomicity slice
+
+`PUT /care-state` now passes through an injectable, tested server boundary. It resolves the active member, validates the untouched database role together with the runtime Access Pass role, admits only explicit owner/adult aliases, and returns `403` before care-state access for youth, helpers, vet viewers, expired passes, missing members, and unknown values. GET remains readable for active household members.
+
+The same boundary replaces the household-only write with a household-and-version compare-and-swap. If another device wins after the precheck, the losing update matches zero rows, refetches the winner, and returns the existing full `409` envelope; concurrent deletion returns `404`. A stateful regression fake evaluates that predicate and would overwrite the winner if the version guard were removed.
+
+Local proof passes security/API `31/31`, Access Pass `4/4`, broad `906/909` with only the established partial-checkout dependency failures, PixelLab `150/150`, zero changed-source syntax diagnostics, and whitespace validation. Independent read-only security review found no remaining bypass. Dependency-complete Express/Zod typecheck/build and CI are still required; restricted-role read-only/error UX, real provider race proof, native QA, store review, and Apollo approval remain gated.
+
 ## 2026-09-02 Pack persistence integrity slice
 
 Pack now owns one guarded local persistence coordinator. Supplies and Travel Bag hydrate together; read failure pauses edits and writes; per-key queues preserve save order; failed keys stay visible and retry from current memory; delayed confirmations read current refs; and the recovery warning is announced while its retry control remains independently accessible.

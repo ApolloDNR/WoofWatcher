@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-09-02 Care-state authorization and concurrent-write proof
+
+- Source/tests now restrict whole-document replacement to owner/adult roles, validate raw and runtime membership roles, and atomically compare household id plus version before update. Active-household reads remain available to read-only members.
+- Local proof passes security/API `31/31`, adjacent Access Pass `4/4`, broad `906/909` apart from the established missing `express` and two `@workspace/care-domain` links, PixelLab `150/150`, zero changed-source syntax diagnostics, and whitespace validation. An independent security review found no remaining boundary bypass.
+- BLOCKED on dependency-complete Express/Zod typecheck and API build proof, then provider-backed multi-device race evidence.
+- REMAINS: Restricted-role mobile editors need a visible read-only/denied-sync experience; current non-`409` document failures can leave local edits looking current. Production provider/RLS evidence, native QA, store review, and Apollo approval remain required.
+
 ## 2026-09-02 Pack persistence native recovery evidence
 
 - Source tests now protect fail-closed hydration, ordered per-key writes, surfaced save failures, and retry without replacing unsaved memory with older disk state.

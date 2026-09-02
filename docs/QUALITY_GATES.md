@@ -1,5 +1,13 @@
 # Quality Gates
 
+## 2026-09-02 Care-state authorization and atomic-write gate
+
+- Server boundary: PASS. Whole-document PUT requires explicit raw/runtime owner or adult authority and denies youth, helpers, vet viewers, expired passes, missing members, and unknown roles before care-state access. GET compatibility is preserved.
+- Concurrency boundary: PASS. Household id and version are compared inside one UPDATE; zero-row recovery returns the winner as the existing `409` envelope or returns `404` after deletion.
+- Focused proof: PASS `31/31` security/API and `4/4` Access Pass; PixelLab PASS `150/150`; changed-source syntax PASS with `0` diagnostics; whitespace PASS; independent security review PASS with no remaining bypass.
+- Broad local proof: PARTIAL PASS `906/909`; only unresolved partial-checkout `express` and two `@workspace/care-domain` dependency links fail.
+- Dependency/native/approval proof: PENDING real Express/Zod typecheck and API build, final-tip CI, provider multi-device race evidence, restricted-role read-only/error UX, store review, and Apollo signoff.
+
 ## 2026-09-02 Pack persistence integrity gate
 
 - Source behavior: PASS. Pack loads both local stores as one fail-closed boundary, serializes per-key saves, surfaces current failures, and retries current state without rehydrating over unsaved edits.

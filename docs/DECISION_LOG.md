@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-09-02 — Whole care-document replacement is adult-only and compare-and-swap atomic
+
+Decision: Only an owner or adult household member may replace the opaque shared care document. Authorization validates both the stored role and the runtime Access Pass role with a fail-closed allowlist; youth, helper, vet-viewer, expired, missing, and unknown roles are denied before care-state access. Those roles retain authenticated reads and use the narrower care-entry trust policy for supported logging.
+
+Decision: A care-state write succeeds only when one `UPDATE` matches both the active household and the version read by the request. Zero matched rows are treated as a race: refetch and return the winning `409` envelope, or `404` after concurrent deletion.
+
+Reason: The document spans profile, routines, records, credentials, and launch metadata. Role authentication without authorization permits privilege escalation, while a JavaScript precheck followed by a household-only update lets two devices silently overwrite one another and both report success.
+
+Boundary: Source tests and independent security review do not prove the production Express/Zod wrapper or a real provider race. Restricted-role mobile edits still need explicit read-only and denied-sync UX; provider, native, store, and Apollo gates remain.
+
 ## 2026-09-02 — Pack persistence fails closed and reports recovery
 
 Decision: Pack must not expose editable starter defaults when either device store cannot be read. Supplies and Travel Bag hydrate as one boundary, writes serialize per key, and any current failed save remains visibly retryable from the latest in-memory value.

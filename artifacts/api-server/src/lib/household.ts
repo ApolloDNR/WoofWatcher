@@ -141,6 +141,7 @@ export interface HouseholdMemberAuthz {
   id: string;
   userId: string;
   householdId: string;
+  storedRole: string;
   role: string;
   displayName: string | null;
   accessPassExpiresAt: string | null;
@@ -177,6 +178,7 @@ export async function getHouseholdMemberAuthz(
 
   return {
     ...row,
+    storedRole: row.role,
     role: runtime.authorizationRole,
     accessPassExpiresAt: runtime.accessPassExpiresAt,
     accessPassExpired: runtime.accessPassExpired,

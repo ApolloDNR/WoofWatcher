@@ -1,5 +1,13 @@
 # QA Test Plan
 
+## 2026-09-02 Care-state role and race recovery
+
+- PASS automated: malformed bodies stop before household lookup; missing or restricted membership roles stop with `403` before care-state SELECT/UPDATE; owner and adult roles advance the document exactly one version.
+- PASS automated: raw unknown roles remain denied even when legacy runtime normalization yields `adult`; authenticated GET remains available to an active read-only household member.
+- PASS automated: stale prechecks return the current `409` envelope; an update that loses after precheck preserves and returns the winner; a row deleted during recovery returns `404`. The stateful fake evaluates the actual household-and-version predicate.
+- PENDING integration: Run dependency-complete typecheck, API build, generated-contract check, and focused suite against real Express/Zod wiring.
+- PENDING provider/native: Exercise two signed-in devices from the same version and prove exactly one `200` plus one winner-bearing `409`; verify restricted-role editors announce read-only/denied-sync state instead of leaving an apparently synced local edit.
+
 ## 2026-09-02 Pack persistence recovery
 
 - PASS automated: a failed read enables no writes; successful hydration loads both stores; rapid saves persist the newest snapshot last; a rejected save does not stall the next queued save or explicit retry; recovery copy is deterministic.

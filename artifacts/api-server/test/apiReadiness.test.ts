@@ -16,6 +16,13 @@ function readCareEntriesRouteSource(): string {
   ].join("\n");
 }
 
+function readCareStateRouteSource(): string {
+  return [
+    read("artifacts/api-server/src/routes/care-state.ts"),
+    read("artifacts/api-server/src/routes/care-state-router.ts"),
+  ].join("\n");
+}
+
 function section(source: string, start: string, end: string): string {
   const normalized = source.replace(/\r\n/g, "\n");
   const startIndex = normalized.indexOf(start);
@@ -162,7 +169,7 @@ test("care entry server cursor and tombstone contract stays source-backed", () =
 });
 
 test("care state write errors stay documented and typed", () => {
-  const route = read("artifacts/api-server/src/routes/care-state.ts");
+  const route = readCareStateRouteSource();
   const openapi = read("lib/api-spec/openapi.yaml");
   const reactClient = read("lib/api-client-react/src/generated/api.ts");
 
@@ -183,6 +190,68 @@ test("care state write errors stay documented and typed", () => {
     reactClient,
     /PutCareStateMutationError = ErrorType<ApiError \| CareStateEnvelope>/,
     "React API mutation error alias must preserve validation/not-found and conflict response shapes",
+  );
+});
+
+test("care state replacement is adult-authorized and atomically version guarded", () => {
+  const route = readCareStateRouteSource();
+  const rolePolicy = read(
+    "artifacts/api-server/src/lib/care-state-authorization.ts",
+  );
+  const household = read("artifacts/api-server/src/lib/household.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const putCareStateBlock = section(
+    openapi,
+    "    put:\n      operationId: putCareState",
+    "  /care-entries:",
+  );
+
+  assert.match(
+    route,
+    /getHouseholdMemberAuthz/,
+    "care-state writes must load the authenticated member role",
+  );
+  assert.match(
+    route,
+    /assertCareStateWriteAllowed/,
+    "care-state writes must enforce the dedicated role policy",
+  );
+  assert.match(
+    route,
+    /member\?\.storedRole,\s*member\?\.role/,
+    "care-state writes must validate raw and runtime roles",
+  );
+  assert.match(
+    household,
+    /storedRole:\s*row\.role/,
+    "member authorization must preserve the raw stored role",
+  );
+  assert.match(
+    route,
+    /res\.status\(403\)/,
+    "forbidden household roles must fail before update",
+  );
+  assert.match(rolePolicy, /owner/i, "the policy must name the owner role");
+  assert.match(rolePolicy, /adult/i, "the policy must name the adult role");
+  assert.match(
+    rolePolicy,
+    /expired access pass/i,
+    "the policy must explicitly cover expired access",
+  );
+  assert.match(
+    route,
+    /eq\(careStateTable\.version,\s*current\.version\)/,
+    "the UPDATE predicate must compare the version read by this request",
+  );
+  assert.match(
+    route,
+    /if \(!updated\)[\s\S]*?res\.status\(409\)/,
+    "a lost compare-and-swap race must return the winning conflict envelope",
+  );
+  assert.match(
+    putCareStateBlock,
+    /"403":/,
+    "OpenAPI must document forbidden care-state replacement",
   );
 });
 
@@ -513,7 +582,7 @@ test("WoofGuide provider actions keep auth, rate-limit, and local-fallback contr
 });
 
 test("care state and care entry routes keep household scoping documented and typed", () => {
-  const careStateRoute = read("artifacts/api-server/src/routes/care-state.ts");
+  const careStateRoute = readCareStateRouteSource();
   const careEntriesRoute = readCareEntriesRouteSource();
   const openapi = read("lib/api-spec/openapi.yaml");
   const reactClient = read("lib/api-client-react/src/generated/api.ts");
@@ -549,8 +618,16 @@ test("care state and care entry routes keep household scoping documented and typ
     "\ncomponents:",
   );
 
-  assert.match(careStateRoute, /router\.get\("\/care-state", requireAuth/, "care-state reads must stay authenticated");
-  assert.match(careStateRoute, /router\.put\("\/care-state", requireAuth/, "care-state writes must stay authenticated");
+  assert.match(
+    careStateRoute,
+    /router\.get\(\s*"\/care-state",\s*requireAuth/,
+    "care-state reads must stay authenticated",
+  );
+  assert.match(
+    careStateRoute,
+    /router\.put\(\s*"\/care-state",\s*requireAuth/,
+    "care-state writes must stay authenticated",
+  );
   assert.match(careStateRoute, /const householdId = await getActiveHouseholdId\(userId\)/, "care-state should resolve the active household from the authenticated user");
   assert.match(careStateRoute, /where\(eq\(careStateTable\.householdId, householdId\)\)/, "care-state reads and writes must stay scoped to the active household");
 
