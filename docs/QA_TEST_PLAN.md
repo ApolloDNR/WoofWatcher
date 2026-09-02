@@ -3,6 +3,7 @@
 ## 2026-09-02 Weight Quick Log keyboard accessibility
 
 - PASS: Shared field-flow coverage requires an explicit Dog weight label and final Done keyboard action.
+- PASS: Dependency-complete `WoofWatcher Verify` run `33639872864`, job `100279955632`, passed implementation/docs commit `98e5b936`.
 - PENDING DEVICE: Verify compact-height reach, configured weight-unit context, decimal keyboard dismissal, VoiceOver/TalkBack announcement, and route-named screenshots on iOS and Android.
 
 ## 2026-09-02 Mood Quick Log keyboard accessibility

@@ -5,6 +5,7 @@
 - DONE: The required weight measurement exposes an explicit native accessibility label instead of relying on its visible caption.
 - DONE: The single-field decimal entry path ends with a deterministic Done keyboard dismissal.
 - VERIFIED LOCALLY: Red-first field-flow coverage failed on the missing weight contract, then focused field-flow/readiness coverage passed `199/199`.
+- CI: Dependency-complete `WoofWatcher Verify` run `33639872864`, job `100279955632`, passed implementation/docs commit `98e5b936` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: Source coverage does not prove compact-height reach, decimal-keyboard behavior, unit clarity, VoiceOver/TalkBack focus, route screenshots, store review, or Apollo approval.
 - NEXT: Capture Weight Quick Log entry on compact real iOS and Android devices when native tooling is available.
 

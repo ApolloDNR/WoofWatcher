@@ -3,6 +3,7 @@
 ## 2026-09-02 Weight Quick Log keyboard accessibility gate
 
 - PASS (source): The required weight measurement has an explicit label and deterministic Done behavior.
+- PASS (dependency-complete): `WoofWatcher Verify` run `33639872864`, job `100279955632`, passed commit `98e5b936`.
 - OPEN (native): Compact-height reach, decimal keyboard behavior, weight-unit clarity, VoiceOver/TalkBack focus, route screenshots, store review, and Apollo approval remain required.
 
 ## 2026-09-02 Mood Quick Log keyboard accessibility gate

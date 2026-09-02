@@ -3,6 +3,7 @@
 ## 2026-09-02 Weight Quick Log native accessibility evidence
 
 - Source/tests protect the explicit Dog weight label and final Done keyboard action.
+- Dependency-complete `WoofWatcher Verify` run `33639872864`, job `100279955632`, passed implementation/docs commit `98e5b936`.
 - BLOCKED on runtime proof: compact-height iOS/Android reach, configured-unit clarity, decimal keyboard behavior, VoiceOver/TalkBack focus, route-named screenshots, store review, and Apollo approval remain required.
 
 ## 2026-09-02 Mood Quick Log native accessibility evidence
