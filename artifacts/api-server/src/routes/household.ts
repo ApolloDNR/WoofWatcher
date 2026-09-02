@@ -215,7 +215,7 @@ router.post("/household/invitations", requireAuth, async (req, res): Promise<voi
   }
 
   const expiresAt = normalizeHouseholdInvitationExpiry(
-    parsed.data.expiresAt ?? null,
+    parsed.data.expiresAt?.toISOString() ?? null,
   );
   if (parsed.data.expiresAt && !expiresAt) {
     res.status(400).json({ error: "Invitation expiration must be a valid ISO date." });

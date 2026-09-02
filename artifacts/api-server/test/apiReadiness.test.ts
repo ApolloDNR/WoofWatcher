@@ -1105,7 +1105,7 @@ test("household invite and Access Pass audit storage has provider-ready lifecycl
   );
   assert.match(
     reactSchemas,
-    /export type HouseholdAuditEventLifecycleState\s*=\s*\(?typeof HouseholdAuditEventLifecycleState\)?/,
+    /export type HouseholdAuditEventLifecycleState\s*=\s*\(\s*typeof\s+HouseholdAuditEventLifecycleState\s*\)\s*\[\s*keyof\s+typeof\s+HouseholdAuditEventLifecycleState\s*\]/,
     "React schemas must expose typed household audit lifecycle states",
   );
 });
