@@ -8,7 +8,33 @@ import {
   getMealQuickLogFieldFlow,
   getMedicationQuickLogFieldFlow,
   getTrainingQuickLogFieldFlow,
+  getWalkQuickLogFieldFlow,
 } from "./quickLogFieldFlow.ts";
+
+test("walk quick log advances through route details to a final social outcome", () => {
+  assert.deepEqual(getWalkQuickLogFieldFlow(), [
+    {
+      id: "walkRoute",
+      accessibilityLabel: "Walk route or place",
+      returnKeyType: "next",
+    },
+    {
+      id: "walkDistance",
+      accessibilityLabel: "Walk distance in miles",
+      returnKeyType: "next",
+    },
+    {
+      id: "walkDogInteractions",
+      accessibilityLabel: "Walk dog interactions",
+      returnKeyType: "next",
+    },
+    {
+      id: "walkSocialOutcome",
+      accessibilityLabel: "Walk social outcome",
+      returnKeyType: "done",
+    },
+  ]);
+});
 
 test("alone quick log fields expose a deterministic keyboard path", () => {
   assert.deepEqual(getAloneQuickLogFieldFlow(), [

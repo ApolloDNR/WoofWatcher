@@ -6148,3 +6148,9 @@ Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, p
 - Added explicit assistive labels and context -> recovery minutes -> calming support keyboard progression to the native Quick Log composer.
 - Keep native/device, store, provider, public-launch, and Apollo approval gates explicit.
 - Dependency-complete proof: `WoofWatcher Verify` run `33568887640`, job `100058260027`, passed commit `cc488985`.
+
+# 2026-09-01 Walk Quick Log keyboard accessibility slice
+
+- Changed: Walk logging now announces route, distance, dog interactions, and social outcome and provides a deterministic Next/Done keyboard path.
+- Local proof: red-first `quickLogFieldFlow.test.ts` failed on the missing walk flow; focused field-flow and mobile-readiness coverage passed after implementation.
+- Release boundary: source proof does not replace compact-height native, numeric-keyboard, VoiceOver/TalkBack, route screenshot, store, or Apollo approval evidence.

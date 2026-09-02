@@ -1,8 +1,15 @@
 export type QuickLogFieldFlowItem = {
-  id: "servedAmount" | "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "aloneTrigger" | "recoveryMinutes" | "calmingSupport" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue";
+  id: "servedAmount" | "expectedPortion" | "eatenAmount" | "dose" | "medicationNote" | "skill" | "nextPractice" | "aloneTrigger" | "recoveryMinutes" | "calmingSupport" | "trigger" | "exposure" | "injury" | "action" | "followUp" | "condition" | "products" | "nextDue" | "walkRoute" | "walkDistance" | "walkDogInteractions" | "walkSocialOutcome";
   accessibilityLabel: string;
   returnKeyType: "next" | "done";
 };
+
+const WALK_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
+  { id: "walkRoute", accessibilityLabel: "Walk route or place", returnKeyType: "next" },
+  { id: "walkDistance", accessibilityLabel: "Walk distance in miles", returnKeyType: "next" },
+  { id: "walkDogInteractions", accessibilityLabel: "Walk dog interactions", returnKeyType: "next" },
+  { id: "walkSocialOutcome", accessibilityLabel: "Walk social outcome", returnKeyType: "done" },
+];
 
 const ALONE_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
   { id: "aloneTrigger", accessibilityLabel: "Alone Time trigger or context", returnKeyType: "next" },
@@ -102,6 +109,10 @@ const INCIDENT_QUICK_LOG_FIELD_FLOW: QuickLogFieldFlowItem[] = [
 
 export function getTrainingQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
   return TRAINING_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
+}
+
+export function getWalkQuickLogFieldFlow(): QuickLogFieldFlowItem[] {
+  return WALK_QUICK_LOG_FIELD_FLOW.map((field) => ({ ...field }));
 }
 
 export function getAloneQuickLogFieldFlow(): QuickLogFieldFlowItem[] {

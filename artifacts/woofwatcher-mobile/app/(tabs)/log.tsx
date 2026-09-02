@@ -97,7 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { getAloneQuickLogFieldFlow, getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getTrainingQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
+import { getAloneQuickLogFieldFlow, getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getTrainingQuickLogFieldFlow, getWalkQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -125,6 +125,7 @@ const INCIDENT_QUICK_LOG_FIELD_FLOW = getIncidentQuickLogFieldFlow();
 const GROOMING_QUICK_LOG_FIELD_FLOW = getGroomingQuickLogFieldFlow();
 const MEAL_QUICK_LOG_FIELD_FLOW = getMealQuickLogFieldFlow();
 const MEDICATION_QUICK_LOG_FIELD_FLOW = getMedicationQuickLogFieldFlow();
+const WALK_QUICK_LOG_FIELD_FLOW = getWalkQuickLogFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -1101,6 +1102,9 @@ export default function LogScreen() {
   const [walkDistanceMiles, setWalkDistanceMiles] = useState("");
   const [walkDogInteractions, setWalkDogInteractions] = useState("");
   const [walkSocialOutcome, setWalkSocialOutcome] = useState("");
+  const walkDistanceRef = useRef<TextInput>(null);
+  const walkDogInteractionsRef = useRef<TextInput>(null);
+  const walkSocialOutcomeRef = useRef<TextInput>(null);
   const [walkFinishRouteName, setWalkFinishRouteName] = useState("");
   const [walkFinishDistanceMiles, setWalkFinishDistanceMiles] = useState("");
   const [walkFinishDogInteractions, setWalkFinishDogInteractions] = useState("");
@@ -3559,10 +3563,13 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Route or place</Text>
                   <TextInput
+                    accessibilityLabel={WALK_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
                     placeholder="Neighborhood Loop, Dog park, River trail..."
                     placeholderTextColor={colors.mutedForeground}
                     value={walkRouteName}
                     onChangeText={setWalkRouteName}
+                    returnKeyType={WALK_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                    onSubmitEditing={() => walkDistanceRef.current?.focus()}
                     style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
@@ -3570,22 +3577,30 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Distance mi</Text>
                     <TextInput
+                      ref={walkDistanceRef}
+                      accessibilityLabel={WALK_QUICK_LOG_FIELD_FLOW[1].accessibilityLabel}
                       placeholder="1.2"
                       placeholderTextColor={colors.mutedForeground}
                       value={walkDistanceMiles}
                       onChangeText={setWalkDistanceMiles}
                       keyboardType="decimal-pad"
+                      returnKeyType={WALK_QUICK_LOG_FIELD_FLOW[1].returnKeyType}
+                      onSubmitEditing={() => walkDogInteractionsRef.current?.focus()}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dog interactions</Text>
                     <TextInput
+                      ref={walkDogInteractionsRef}
+                      accessibilityLabel={WALK_QUICK_LOG_FIELD_FLOW[2].accessibilityLabel}
                       placeholder="0"
                       placeholderTextColor={colors.mutedForeground}
                       value={walkDogInteractions}
                       onChangeText={setWalkDogInteractions}
                       keyboardType="number-pad"
+                      returnKeyType={WALK_QUICK_LOG_FIELD_FLOW[2].returnKeyType}
+                      onSubmitEditing={() => walkSocialOutcomeRef.current?.focus()}
                       style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                     />
                   </View>
@@ -3593,11 +3608,16 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Social outcome</Text>
                   <TextInput
+                    ref={walkSocialOutcomeRef}
+                    accessibilityLabel={WALK_QUICK_LOG_FIELD_FLOW[3].accessibilityLabel}
                     placeholder="Calm greeting, no dogs seen, barked near the gate..."
                     placeholderTextColor={colors.mutedForeground}
                     value={walkSocialOutcome}
                     onChangeText={setWalkSocialOutcome}
                     multiline
+                    blurOnSubmit
+                    returnKeyType={WALK_QUICK_LOG_FIELD_FLOW[3].returnKeyType}
+                    onSubmitEditing={Keyboard.dismiss}
                     style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
                   />
                 </View>

@@ -3737,3 +3737,7 @@ Decision: Expected portion advances to eaten amount only when eaten amount is ed
 
 - Decision: treat departure context, recovery minutes, and calming support as one ordered keyboard/accessibility flow, ending with explicit dismissal.
 - Boundary: source and CI proof do not replace real-device or assistive-technology evidence.
+
+# 2026-09-01 — Walk Quick Log follows the care handoff order
+
+Decision: Treat route, distance, dog interactions, and social outcome as one ordered walk form. Each field advances deterministically and the final social outcome dismisses the keyboard. Keep real-device and assistive-technology proof separate from source verification.

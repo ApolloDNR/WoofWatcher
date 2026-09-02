@@ -3128,3 +3128,8 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 
 - Source test: verify context -> recovery minutes -> calming support focus progression, explicit accessibility labels, and final keyboard dismissal.
 - Native proof still required: compact-height iOS/Android, numeric completion toolbar, VoiceOver/TalkBack order and focus return, and route-named screenshots.
+
+# 2026-09-01 Walk Quick Log keyboard accessibility
+
+- Source test: verify route -> distance -> dog interactions -> social outcome focus progression, explicit accessibility labels, and final keyboard dismissal.
+- Native proof still required: compact-height iOS/Android, decimal/number keyboard completion, VoiceOver/TalkBack order and focus return, and route-named screenshots.

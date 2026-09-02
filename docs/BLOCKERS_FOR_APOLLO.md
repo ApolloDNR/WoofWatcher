@@ -1177,3 +1177,8 @@ Source coverage now protects labeled routine/event field progression and final d
 
 - Source keyboard/accessibility wiring can be completed autonomously.
 - Apollo/native-helper evidence is still required for compact-height iOS/Android, number-pad toolbar behavior, VoiceOver/TalkBack traversal, and route-named screenshots before native readiness claims.
+
+# 2026-09-01 Walk Quick Log native proof
+
+- Source-level field labels and keyboard progression are implemented.
+- Still blocked on route-named compact-height iPhone/Android, decimal/number keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.

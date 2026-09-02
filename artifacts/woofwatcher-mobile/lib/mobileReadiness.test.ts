@@ -6092,6 +6092,17 @@ test("gives Medication Quick Log an explicit dose-to-context keyboard path", () 
   );
 });
 
+test("gives Walk Quick Log an explicit route-to-social-outcome keyboard path", () => {
+  const log = readAppFile("(tabs)/log.tsx");
+
+  assert.match(log, /const WALK_QUICK_LOG_FIELD_FLOW = getWalkQuickLogFieldFlow\(\)/);
+  assert.match(
+    log,
+    /accessibilityLabel=\{WALK_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => walkDistanceRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{WALK_QUICK_LOG_FIELD_FLOW\[1\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => walkDogInteractionsRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{WALK_QUICK_LOG_FIELD_FLOW\[2\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => walkSocialOutcomeRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{WALK_QUICK_LOG_FIELD_FLOW\[3\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{Keyboard\.dismiss\}/,
+    "walk logging must advance through route, distance, interactions, and social outcome before dismissing",
+  );
+});
+
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

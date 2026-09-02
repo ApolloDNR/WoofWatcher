@@ -860,3 +860,8 @@ screen-reader traversal and route-named device proof remain open gates.
 
 - Source-level keyboard/accessibility contract is covered for context, recovery minutes, and calming support.
 - Native keyboard reach, assistive-technology traversal, screenshots, store review, and Apollo approval remain open.
+
+# 2026-09-01 Walk Quick Log form gate
+
+- Source gate: PASS when route, distance, dog interactions, and social outcome expose explicit labels, ordered Next actions, and final Done dismissal.
+- Native gate: OPEN until compact-height iOS/Android, numeric-keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.
