@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-09-02 Mood Quick Log native accessibility evidence
+
+- Source/tests protect the explicit Mood care context label and final Done keyboard action.
+- BLOCKED on runtime proof: compact-height iOS/Android reach, keyboard behavior, VoiceOver/TalkBack focus, route-named screenshots, store review, and Apollo approval remain required.
+
 ## 2026-09-01 Meal served-amount native accessibility evidence
 
 The three-field Meal Quick Log keyboard path is source-covered. Release proof still requires compact real iOS and Android runs covering decimal keyboard behavior, VoiceOver/TalkBack focus, outcome-dependent disabled eaten amount, route-named screenshots, and Apollo visual approval.

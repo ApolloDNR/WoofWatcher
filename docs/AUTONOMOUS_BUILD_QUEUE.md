@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-09-02 Mood Quick Log keyboard accessibility boundary
+
+- DONE: The owner-entered care context exposes an explicit native accessibility label instead of relying on its visible caption and placeholder.
+- DONE: The single-field mood detail path ends with a deterministic Done keyboard dismissal.
+- VERIFIED LOCALLY: Red-first field-flow coverage failed on the missing mood export, then focused field-flow/readiness coverage passed `198/198`.
+- BOUNDARY: Source coverage does not prove compact-height reach, multiline keyboard behavior, VoiceOver/TalkBack focus, route screenshots, store review, or Apollo approval.
+- NEXT: Capture Mood Quick Log context entry on compact real iOS and Android devices when native tooling is available.
+
 ## 2026-09-01 Meal served-amount keyboard accessibility boundary
 
 - DONE: Served amount now participates in the explicit Meal Quick Log field contract instead of relying on a nearby visual caption.

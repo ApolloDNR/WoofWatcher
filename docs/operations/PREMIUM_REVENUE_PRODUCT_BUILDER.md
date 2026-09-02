@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-09-02 Mood Quick Log keyboard accessibility slice
+
+Mood Quick Log now treats owner-entered care context as an explicitly labeled native field with a deterministic Done keyboard dismissal. Red-first field-flow coverage reproduced the missing contract before implementation, and focused field-flow/readiness coverage passes `198/198`. The copy remains factual and non-diagnostic; native compact-height, keyboard, screen-reader, screenshot, store, and Apollo evidence remains gated.
+
 ## 2026-09-01 Meal served-amount keyboard accessibility slice
 
 Extended the Meal Quick Log accessibility contract to include served amount before expected portion and eaten amount. The keyboard path now follows the visible meal lifecycle and keeps skipped, served, and grazing outcomes on a truthful Done path because eaten amount is disabled for those states. Red-first field-flow coverage proves the contract locally; real compact-device, keyboard, screen-reader, screenshot, store, and Apollo evidence remains gated.

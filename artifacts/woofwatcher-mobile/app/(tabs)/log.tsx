@@ -97,7 +97,7 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { getAloneQuickLogFieldFlow, getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getTrainingQuickLogFieldFlow, getWalkQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
+import { getAloneQuickLogFieldFlow, getGroomingQuickLogFieldFlow, getIncidentQuickLogFieldFlow, getMealQuickLogFieldFlow, getMedicationQuickLogFieldFlow, getMoodQuickLogFieldFlow, getTrainingQuickLogFieldFlow, getWalkQuickLogFieldFlow } from "@/lib/quickLogFieldFlow";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession, getWalkFinishFieldFlow } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
@@ -125,6 +125,7 @@ const INCIDENT_QUICK_LOG_FIELD_FLOW = getIncidentQuickLogFieldFlow();
 const GROOMING_QUICK_LOG_FIELD_FLOW = getGroomingQuickLogFieldFlow();
 const MEAL_QUICK_LOG_FIELD_FLOW = getMealQuickLogFieldFlow();
 const MEDICATION_QUICK_LOG_FIELD_FLOW = getMedicationQuickLogFieldFlow();
+const MOOD_QUICK_LOG_FIELD_FLOW = getMoodQuickLogFieldFlow();
 const WALK_QUICK_LOG_FIELD_FLOW = getWalkQuickLogFieldFlow();
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
@@ -3457,10 +3458,13 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Care context</Text>
                   <TextInput
+                    accessibilityLabel={MOOD_QUICK_LOG_FIELD_FLOW[0].accessibilityLabel}
                     placeholder="After breakfast, visitor came over, slept poorly, great walk..."
                     placeholderTextColor={colors.mutedForeground}
                     value={moodContext}
                     onChangeText={setMoodContext}
+                    returnKeyType={MOOD_QUICK_LOG_FIELD_FLOW[0].returnKeyType}
+                    onSubmitEditing={Keyboard.dismiss}
                     multiline
                     style={[
                       s.input,

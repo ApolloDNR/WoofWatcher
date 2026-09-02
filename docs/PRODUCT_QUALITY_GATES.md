@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-02 Mood Quick Log keyboard accessibility gate
+
+- PASS (source): Owner-entered mood context has an explicit label and deterministic Done behavior.
+- OPEN (native): Compact-height reach, keyboard behavior, VoiceOver/TalkBack focus, route screenshots, store review, and Apollo approval remain required.
+
 ## 2026-09-01 Meal served-amount keyboard accessibility gate
 
 - PASS at source level when Meal Quick Log exposes explicit served, expected, and eaten field labels and a deterministic keyboard sequence that respects outcomes where eaten amount is disabled.

@@ -7,9 +7,20 @@ import {
   getIncidentQuickLogFieldFlow,
   getMealQuickLogFieldFlow,
   getMedicationQuickLogFieldFlow,
+  getMoodQuickLogFieldFlow,
   getTrainingQuickLogFieldFlow,
   getWalkQuickLogFieldFlow,
 } from "./quickLogFieldFlow.ts";
+
+test("mood quick log exposes owner context as a final keyboard field", () => {
+  assert.deepEqual(getMoodQuickLogFieldFlow(), [
+    {
+      id: "moodContext",
+      accessibilityLabel: "Mood care context",
+      returnKeyType: "done",
+    },
+  ]);
+});
 
 test("walk quick log advances through route details to a final social outcome", () => {
   assert.deepEqual(getWalkQuickLogFieldFlow(), [

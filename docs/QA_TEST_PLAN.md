@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-09-02 Mood Quick Log keyboard accessibility
+
+- PASS: Shared field-flow coverage requires an explicit Mood care context label and final Done keyboard action.
+- PENDING DEVICE: Verify compact-height reach, keyboard dismissal, VoiceOver/TalkBack announcement, and route-named screenshots on iOS and Android.
+
 ## 2026-09-01 Meal served-amount keyboard accessibility
 
 - Open Meal Quick Log and confirm Served amount, Expected portion, and Eaten amount announce explicit field names.

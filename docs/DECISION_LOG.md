@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+## 2026-09-02 — Mood context owns an explicit keyboard boundary
+
+Decision: Treat the optional care context in Mood Quick Log as a real owner-entered field with its own native label and final Done action. The context remains factual household input; it is not an inferred cause, diagnosis, or medical conclusion.
+
 ## 2026-09-01 — Keep served amount inside the Meal Quick Log keyboard path
 
 Decision: Treat served amount, expected portion, and eaten amount as one ordered accessibility contract. Served amount advances to expected portion; expected portion advances to eaten amount only when the selected meal outcome accepts an eaten value, otherwise it dismisses the keyboard.
