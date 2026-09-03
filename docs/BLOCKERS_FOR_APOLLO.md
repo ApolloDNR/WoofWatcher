@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-09-03 Pack recovery-import native proof
+
+- Source/readiness coverage now keeps the recovery-copy multiline field and Restore action in one keyboard-aware route.
+- Still blocked: real iOS/Android share/paste/import, compact-height keyboard and dismissal, VoiceOver/TalkBack focus, process termination/relaunch, route-named screenshots, store review, and Apollo approval.
+
 ## 2026-09-03 Pack recovery-journal boundary
 
 - Source/tests now protect owner-confirmed corrupt Pack reset from a process interruption between its two primary writes: a durable redo journal is validated and replayed before Pack becomes editable.

@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-09-03 — Pack recovery import uses the shared keyboard-aware route
+
+- Decision: Keep the full Pack route, including the multiline recovery-copy field and Restore action, inside `KeyboardAwareScrollViewCompat`.
+- Reason: A long pasted JSON copy can open a compact native keyboard and otherwise strand the action below the visible viewport.
+- Boundary: This is source-backed reachability, not real-device keyboard, share/paste, screen-reader, lifecycle, store, or Apollo proof.
+
 ## 2026-09-03 — Corrupt Pack reset uses a redo journal
 
 - Decision: Before replacing either Pack primary key, persist a versioned journal containing the complete validated target pair. On hydration, replay both values idempotently and clear the journal only after both writes finish.

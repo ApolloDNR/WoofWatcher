@@ -1,5 +1,11 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-03 Pack recovery-import keyboard gate
+
+- PASS (source): The recovery-copy import no longer relies on a plain route scroller; its multiline field and Restore action remain in the shared keyboard-aware boundary.
+- PASS (deterministic): Red-first readiness coverage passes `193/193`.
+- OPEN: Real compact-height iOS/Android share/paste/import, keyboard dismissal, VoiceOver/TalkBack, relaunch durability, store review, and Apollo approval.
+
 ## 2026-09-03 Pack recovery-journal gate
 
 - PASS (source): Owner-confirmed corrupt Pack reset durably journals its complete two-key target before replacing either key; hydration validates and replays an interrupted pair before exposing state.

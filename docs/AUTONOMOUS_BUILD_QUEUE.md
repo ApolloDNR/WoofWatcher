@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-09-03 Pack recovery import keyboard reach
+
+- DONE: Pack's full route now uses the shared keyboard-aware scroller, keeping the multiline recovery-copy field and Restore action reachable on compact native keyboards.
+- VERIFIED LOCALLY: The red readiness contract failed on the plain route scroller, then passed `193/193` after the shared wrapper was installed.
+- BOUNDARY: Source coverage does not prove real iOS/Android compact-height behavior, share/paste round trips, VoiceOver/TalkBack focus, process termination, store review, or Apollo approval.
+- NEXT: Capture route-named real-device Pack recovery export/share, paste/import, keyboard dismissal, relaunch, and screen-reader evidence when native tooling is available.
+
 ## 2026-09-03 Pack recovery journal
 
 - DONE: Corrupt Pack reset now writes the complete intended Supplies and Travel Bag pair to a durable recovery journal before replacing either primary key.

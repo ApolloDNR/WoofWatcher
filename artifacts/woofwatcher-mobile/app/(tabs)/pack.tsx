@@ -42,6 +42,7 @@ import {
   BoardStatusPill,
 } from "@/components/board/BoardPrimitives";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import {
   BoardMedallion,
   type MedallionName,
@@ -1131,7 +1132,7 @@ export default function PackScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <ScrollView
+      <KeyboardAwareScrollViewCompat
         {...getFormKeyboardScrollProps(Platform.OS)}
         style={s.container}
         contentContainerStyle={{
@@ -2679,7 +2680,7 @@ export default function PackScreen() {
             {state.profile.vetBoundary}
           </Text>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </View>
   );
 }

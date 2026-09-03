@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-09-03 Pack recovery-import keyboard QA
+
+- PASS source: The multiline recovery-copy input and Restore action share the route-level `KeyboardAwareScrollViewCompat`, including the established web fallback and native keyboard insets.
+- PASS automated: Red-first mobile readiness failed on the plain scroller and then passed `193/193`.
+- OPEN native: Paste a complete recovery copy on compact iOS and Android, verify the Restore action remains reachable, dismiss the keyboard, relaunch, and capture VoiceOver/TalkBack plus route-named evidence.
+
 ## 2026-09-03 Pack recovery-journal QA
 
 - PASS automated: Recovery persists the full target pair before either primary write; a simulated failure between Supplies and Travel Bag leaves the journal durable, and a new persistence instance replays both defaults before returning `ready`.

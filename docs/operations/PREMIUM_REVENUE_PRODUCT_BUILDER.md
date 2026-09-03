@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-09-03 Pack recovery-import keyboard reach
+
+The Pack recovery-copy field and Restore action now live in the shared keyboard-aware route scroller, preventing the newly added multiline import from stranding its completion action below compact native keyboards. Red-first readiness coverage failed on the plain scroller and passes `193/193` after the change.
+
+This is source proof only. Real iOS/Android share/paste/import, compact-height keyboard dismissal, VoiceOver/TalkBack focus, process-kill/relaunch, store/provider/public-launch proof, and Apollo approval remain open.
+
 ## 2026-09-03 Pack recovery journal
 
 Corrupt Pack recovery now records a versioned redo journal containing the complete fresh Supplies and Travel Bag pair before replacing either primary AsyncStorage value. A later hydration validates and idempotently replays any interrupted journal before exposing Pack state, clears it only after both writes complete, and includes replay in the owner-wipe drain. Red-first focused persistence coverage passes `11/11`, including a simulated termination between keys and relaunch.

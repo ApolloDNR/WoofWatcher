@@ -5963,6 +5963,16 @@ test("keeps the primary Pack dog portrait decorative beside readable dog identit
 test("makes the preserved Pack recovery copy owner-accessible without overwriting live lists", () => {
   const pack = readAppFile(join("(tabs)", "pack.tsx"));
 
+  assert.match(
+    pack,
+    /import \{ KeyboardAwareScrollViewCompat \} from "@\/components\/KeyboardAwareScrollViewCompat"/,
+    "the multiline recovery-copy import must use the shared keyboard-aware route scroller",
+  );
+  assert.match(
+    pack,
+    /<KeyboardAwareScrollViewCompat[\s\S]*?accessibilityLabel="Pack recovery copy JSON"[\s\S]*?label="Restore recovery copy"[\s\S]*?<\/KeyboardAwareScrollViewCompat>/,
+    "the restore action must stay in the same keyboard-aware route as its multiline input",
+  );
   assert.match(pack, /packPersistence\.exportRecoveryCopy\(\)/);
   assert.match(pack, /shareTextPayload/);
   assert.match(pack, /Export recovery copy/);
