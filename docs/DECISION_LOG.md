@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-09-03 — Owner wipe must quiesce independent feature writers
+
+- Decision: Feature-owned persistence coordinators that can outlive navigation register with the terminal local-data wipe. The wipe seals them synchronously, waits for already-started platform work, and prevents queued or stale-generation work from recreating deleted keys.
+- Applied first to Pack because its Supplies and Travel Bag queues are independent of CareContext's serialized writer.
+- Boundary: This does not make AsyncStorage multi-key writes transactional. Pack still needs an explicit journaled commit/replay design for process termination between keys.
+
 ## 2026-09-03 — Corrupt Pack reset preserves the first raw recovery copy
 
 Decision: Keep ordinary hydration retry non-destructive. A separate owner-confirmed reset must first persist the exact raw Supplies and Travel Bag payloads under a dedicated recovery key, never replace an existing first backup, and only enable editing after both fresh defaults are written.

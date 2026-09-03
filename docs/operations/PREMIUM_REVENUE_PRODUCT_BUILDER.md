@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-09-03 Pack global-erase fencing
+
+Pack persistence now participates in the same terminal owner-wipe boundary as CareContext. The mounted Pack coordinator is sealed before Privacy removes WoofWatcher keys, drains any write already inside AsyncStorage, rejects queued pre-wipe snapshots, waits for active corrupt-data recovery, and generation-fences stale hydration/recovery results. Red-first Pack plus care-integrity coverage passes `22/22`.
+
+This is in-process source proof only. A journaled or atomic two-key protocol, interruption/relaunch recovery, recovery-copy export/restore, native lifecycle and accessibility evidence, store/provider/public-launch proof, and Apollo approval remain open.
+
 ## 2026-09-03 Pack owner-confirmed recovery
 
 Pack corruption now has an explicit owner-confirmed recovery action. It preserves the exact raw Supplies and Travel Bag payloads in a durable first-backup record before installing fresh defaults; normal retry remains read-only and recovery retries do not overwrite that first copy. Red-first persistence coverage passes `8/8`. Transactional two-key recovery, global wipe fencing, backup export/restore, native accessibility, store, provider, public-launch, and Apollo gates remain open.

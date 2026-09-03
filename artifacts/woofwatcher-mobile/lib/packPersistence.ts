@@ -51,7 +51,8 @@ export function getPackStorageWarningPresentation(
   if (warning === "corrupt-data") {
     return {
       title: "Pack data needs recovery",
-      message: "Changes are paused because saved Pack data could not be read safely.",
+      message:
+        "Changes are paused because saved Pack data could not be read safely.",
       retryLabel: "Retry loading Pack",
       recoveryLabel: "Back up and reset Pack",
     };
@@ -64,13 +65,39 @@ export function getPackStorageWarningPresentation(
   };
 }
 
+type PackPersistenceOwnerWipeParticipant = {
+  prepareForOwnerWipe(): Promise<void>;
+};
+
+const mountedPackPersistence = new Set<PackPersistenceOwnerWipeParticipant>();
+
+export function registerPackPersistenceForOwnerWipe(
+  participant: PackPersistenceOwnerWipeParticipant,
+): () => void {
+  mountedPackPersistence.add(participant);
+  return () => mountedPackPersistence.delete(participant);
+}
+
+export async function prepareMountedPackPersistenceForOwnerWipe(): Promise<void> {
+  await Promise.all(
+    [...mountedPackPersistence].map((participant) =>
+      participant.prepareForOwnerWipe(),
+    ),
+  );
+}
+
 function createSerializedWriter<T>(write: (value: T) => Promise<void>) {
   let tail: Promise<void> = Promise.resolve();
 
-  return (value: T): Promise<void> => {
-    const result = tail.then(() => write(value));
-    tail = result.catch(() => undefined);
-    return result;
+  return {
+    enqueue(value: T): Promise<void> {
+      const result = tail.then(() => write(value));
+      tail = result.catch(() => undefined);
+      return result;
+    },
+    drain(): Promise<void> {
+      return tail;
+    },
   };
 }
 
@@ -79,6 +106,8 @@ export function createPackPersistence(
   now: () => string = () => new Date().toISOString(),
 ) {
   let hydrated = false;
+  let lifecycleGeneration = 0;
+  let recoveryTail: Promise<void> = Promise.resolve();
   let corruptSnapshot: {
     supplies: string | null;
     travelBag: string | null;
@@ -106,11 +135,15 @@ export function createPackPersistence(
   return {
     async hydrate(): Promise<PackHydrationResult> {
       hydrated = false;
+      const generationAtStart = lifecycleGeneration;
       try {
         const [rawSupplies, rawTravelBag] = await Promise.all([
           storage.getItem(PACK_SUPPLIES_KEY),
           storage.getItem(TRAVEL_BAG_KEY),
         ]);
+        if (generationAtStart !== lifecycleGeneration) {
+          return { status: "read-failed" };
+        }
         const supplies = tryParseStoredSupplies(rawSupplies);
         const travelBag = tryParseStoredTravelBag(rawTravelBag);
         if (!supplies || !travelBag) {
@@ -135,9 +168,11 @@ export function createPackPersistence(
     async recoverCorruptData(): Promise<PackHydrationResult> {
       hydrated = false;
       if (!corruptSnapshot) return { status: "read-failed" };
-
-      try {
+      const generationAtStart = lifecycleGeneration;
+      let result: PackHydrationResult = { status: "read-failed" };
+      const operation = (async () => {
         const existingBackup = await storage.getItem(PACK_CORRUPT_BACKUP_KEY);
+        if (generationAtStart !== lifecycleGeneration) return;
         if (existingBackup === null) {
           await storage.setItem(
             PACK_CORRUPT_BACKUP_KEY,
@@ -149,17 +184,20 @@ export function createPackPersistence(
             }),
           );
         }
+        if (generationAtStart !== lifecycleGeneration) return;
 
         const supplies = DEFAULT_SUPPLIES.map((item) => ({ ...item }));
         const travelBag = defaultTravelBag();
         await storage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(supplies));
         await storage.setItem(TRAVEL_BAG_KEY, serializeTravelBag(travelBag));
+        if (generationAtStart !== lifecycleGeneration) return;
         corruptSnapshot = null;
         hydrated = true;
-        return { status: "ready", supplies, travelBag };
-      } catch {
-        return { status: "read-failed" };
-      }
+        result = { status: "ready", supplies, travelBag };
+      })();
+      recoveryTail = operation.catch(() => undefined);
+      await recoveryTail;
+      return result;
     },
 
     saveSupplies(items: readonly SupplyItem[]): Promise<void> {
@@ -168,7 +206,7 @@ export function createPackPersistence(
           new Error("Persistence is paused until Pack loads successfully."),
         );
       }
-      return writeSupplies(items.map((item) => ({ ...item })));
+      return writeSupplies.enqueue(items.map((item) => ({ ...item })));
     },
 
     saveTravelBag(session: TravelBagSession): Promise<void> {
@@ -177,7 +215,18 @@ export function createPackPersistence(
           new Error("Persistence is paused until Pack loads successfully."),
         );
       }
-      return writeTravelBag({ ...session });
+      return writeTravelBag.enqueue({ ...session });
+    },
+
+    async prepareForOwnerWipe(): Promise<void> {
+      lifecycleGeneration += 1;
+      hydrated = false;
+      corruptSnapshot = null;
+      await Promise.all([
+        recoveryTail,
+        writeSupplies.drain(),
+        writeTravelBag.drain(),
+      ]);
     },
   };
 }

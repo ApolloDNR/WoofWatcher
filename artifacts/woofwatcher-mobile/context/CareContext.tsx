@@ -64,6 +64,7 @@ import {
   type SerializedCareSyncWriter,
   type SerializedCareEntryMutationQueue,
 } from "@/lib/careSync";
+import { prepareMountedPackPersistenceForOwnerWipe } from "@/lib/packPersistence";
 import {
   CARE_ENTRY_SYNC_PROTOCOL,
   CARE_ENTRY_SYNC_REVISION_KEY,
@@ -3456,6 +3457,8 @@ function CareProviderSession({
       // a stale account-A callback must never supersede account B's writes.
       if (!eraseIsCurrent()) return;
       try {
+        await prepareMountedPackPersistenceForOwnerWipe();
+        if (!eraseIsCurrent()) return;
         await storageWriter.supersede({
           kind: "wipe",
           preserveLedgerPrefix: DISCARDED_SERVER_ENTRY_IDS_KEY,

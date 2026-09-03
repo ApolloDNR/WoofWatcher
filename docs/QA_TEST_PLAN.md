@@ -1,5 +1,12 @@
 # QA Test Plan
 
+## 2026-09-03 Pack owner-wipe race coverage
+
+- Deterministic storage tests hold one Supplies write inside the platform adapter, queue a newer snapshot, begin owner wipe, and prove the wipe waits for the active write while the queued snapshot is rejected before terminal key removal.
+- A second race holds corrupt-data backup persistence, begins owner wipe, and proves recovery cannot install fresh Pack defaults after the wipe generation changes.
+- Care-integrity source coverage requires the Pack quiescence barrier to run before the serialized terminal care-storage wipe.
+- Still required on real devices: erase during Pack save/recovery, terminate/relaunch, confirm no Pack resurrection, and verify VoiceOver/TalkBack announcements and focus.
+
 ## 2026-09-03 Pack corrupt-data recovery QA
 
 - PASS automated: After corruption, the exact two raw payloads are backed up before defaults are written, both stores become writable only after recovery completes, and an existing first backup is preserved.

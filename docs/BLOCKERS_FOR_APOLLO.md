@@ -1,9 +1,14 @@
 # Blockers For Apollo
 
+## 2026-09-03 Pack erase-race boundary
+
+- Privacy now quiesces mounted Pack persistence before its terminal local-data removal: active writes/recovery settle, queued snapshots are rejected, and stale hydration/recovery generations cannot re-enable Pack after the wipe begins.
+- Still blocked: process-termination-safe two-key recovery, owner-accessible recovery-copy export/restore, native lifecycle and VoiceOver/TalkBack proof, store review, and Apollo approval. Source tests do not establish those gates.
+
 ## 2026-09-03 Pack recovery-copy boundary
 
 - Owner-confirmed corrupt Pack reset now preserves the first exact raw recovery copy before installing defaults. This is local recovery safety, not proof of an atomic multi-key transaction or an owner-accessible export/restore path.
-- Still blocked: interrupted recovery handling, global erase fencing, native VoiceOver/TalkBack proof, store review, and Apollo approval.
+- Still blocked: interrupted recovery handling, native VoiceOver/TalkBack proof, store review, and Apollo approval. Global erase fencing is covered by the later 2026-09-03 slice above.
 
 ## 2026-09-02 Pack malformed-data boundary
 

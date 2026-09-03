@@ -1,5 +1,11 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-03 Pack erase-race quality gate
+
+- PASS (source): Privacy owner wipe seals mounted Pack persistence before terminal AsyncStorage removal, drains active storage work, rejects queued snapshots, and generation-fences stale hydration/recovery.
+- PASS (deterministic tests): Pack and care-integrity coverage passes `22/22` across queued-save and active-recovery wipe races.
+- OPEN: process termination between the two primary Pack writes, journal replay, recovery-copy export/restore, real-device lifecycle/accessibility, store review, and Apollo approval.
+
 ## 2026-09-03 Pack recovery-copy gate
 
 - PASS (source scope): Owner-confirmed recovery backs up exact corrupt Pack payloads before resetting both Pack stores and preserves the first backup across retries.

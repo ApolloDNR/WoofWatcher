@@ -473,6 +473,11 @@ test("serialized owner erase seals producers and propagates wipe failures", () =
   );
   assert.match(
     erase,
+    /await prepareMountedPackPersistenceForOwnerWipe\(\)[\s\S]*await storageWriter\.supersede/,
+    "owner wipe must quiesce Pack writes before its terminal key removal",
+  );
+  assert.match(
+    erase,
     /catch\s*\(error\)\s*\{[\s\S]*setStorageWarning\("save-failed"\);[\s\S]*throw error/,
   );
   assert.match(erase, /eraseInFlightRef\.current\s*=\s*operation/);

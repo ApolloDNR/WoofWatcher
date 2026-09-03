@@ -9,8 +9,10 @@ import {
 import {
   createPackPersistence,
   getPackStorageWarningPresentation,
+  prepareMountedPackPersistenceForOwnerWipe,
   PACK_CORRUPT_BACKUP_KEY,
   PACK_SUPPLIES_KEY,
+  registerPackPersistenceForOwnerWipe,
   TRAVEL_BAG_KEY,
   type PackKeyValueStorage,
 } from "./packPersistence.ts";
@@ -127,7 +129,10 @@ test("owner recovery preserves the exact corrupt Pack payloads before installing
   assert.deepEqual(parseSupplies(stored.get(PACK_SUPPLIES_KEY)), [
     ...DEFAULT_SUPPLIES,
   ]);
-  assert.deepEqual(parseTravelBag(stored.get(TRAVEL_BAG_KEY)), defaultTravelBag());
+  assert.deepEqual(
+    parseTravelBag(stored.get(TRAVEL_BAG_KEY)),
+    defaultTravelBag(),
+  );
 });
 
 test("a recovery retry never overwrites the first exact corrupt Pack backup", async () => {
@@ -233,6 +238,106 @@ test("a rejected write is reported but does not stall the next queued save or an
   await persistence.saveSupplies(current);
   assert.equal(attempts, 2);
   assert.deepEqual(parseSupplies(stored), current);
+});
+
+test("owner wipe drains the active Pack write and prevents a queued snapshot from restoring deleted data", async () => {
+  const firstWrite = deferred<void>();
+  const stored = new Map<string, string>();
+  const calls: string[] = [];
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      calls.push(key);
+      if (calls.length === 1) await firstWrite.promise;
+      stored.set(key, value);
+    },
+  };
+  const persistence = createPackPersistence(storage);
+  assert.equal((await persistence.hydrate()).status, "ready");
+  const unregister = registerPackPersistenceForOwnerWipe(persistence);
+
+  const activeSave = persistence.saveSupplies(changedSupplies("low"));
+  await Promise.resolve();
+  assert.equal(
+    calls.length,
+    1,
+    "the first save must already be inside AsyncStorage",
+  );
+  const queuedSave = persistence.saveSupplies(changedSupplies("out"));
+  const prepared = prepareMountedPackPersistenceForOwnerWipe();
+  let preparationFinished = false;
+  void prepared.then(() => {
+    preparationFinished = true;
+  });
+  await Promise.resolve();
+  assert.equal(
+    preparationFinished,
+    false,
+    "the wipe must wait for the active platform write",
+  );
+
+  firstWrite.resolve();
+  await activeSave;
+  await assert.rejects(queuedSave, /paused until Pack loads successfully/i);
+  await prepared;
+  stored.clear();
+  await Promise.resolve();
+
+  assert.equal(
+    calls.length,
+    1,
+    "a queued pre-wipe snapshot must never reach storage",
+  );
+  assert.equal(stored.size, 0);
+  await assert.rejects(
+    persistence.saveTravelBag(defaultTravelBag()),
+    /paused until Pack loads successfully/i,
+  );
+  unregister();
+});
+
+test("owner wipe waits for active corrupt-data recovery before deleting Pack keys", async () => {
+  const backupWrite = deferred<void>();
+  const stored = new Map<string, string>([
+    [PACK_SUPPLIES_KEY, '{"version":1,"items":"broken"}'],
+    [TRAVEL_BAG_KEY, '{"version":1,"phase":"broken"}'],
+  ]);
+  const writes: string[] = [];
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      writes.push(key);
+      if (key === PACK_CORRUPT_BACKUP_KEY) await backupWrite.promise;
+      stored.set(key, value);
+    },
+  };
+  const persistence = createPackPersistence(storage);
+  assert.equal((await persistence.hydrate()).status, "corrupt-data");
+  const unregister = registerPackPersistenceForOwnerWipe(persistence);
+
+  const recovery = persistence.recoverCorruptData();
+  await Promise.resolve();
+  const prepared = prepareMountedPackPersistenceForOwnerWipe();
+  let preparationFinished = false;
+  void prepared.then(() => {
+    preparationFinished = true;
+  });
+  await Promise.resolve();
+  assert.equal(
+    preparationFinished,
+    false,
+    "the wipe must wait for recovery storage work",
+  );
+
+  backupWrite.resolve();
+  assert.deepEqual(await recovery, { status: "read-failed" });
+  await prepared;
+  stored.clear();
+  await Promise.resolve();
+
+  assert.deepEqual(writes, [PACK_CORRUPT_BACKUP_KEY]);
+  assert.equal(stored.size, 0);
+  unregister();
 });
 
 test("storage warnings provide persistent owner-readable recovery copy", () => {

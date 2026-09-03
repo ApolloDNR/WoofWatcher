@@ -77,6 +77,7 @@ import {
 import {
   createPackPersistence,
   getPackStorageWarningPresentation,
+  registerPackPersistenceForOwnerWipe,
   type PackStorageWarning,
 } from "@/lib/packPersistence";
 import {
@@ -552,6 +553,11 @@ export default function PackScreen() {
   });
   suppliesRef.current = supplies;
   travelBagRef.current = travelBag;
+
+  useEffect(
+    () => registerPackPersistenceForOwnerWipe(packPersistence),
+    [packPersistence],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -1172,7 +1178,9 @@ export default function PackScreen() {
                 compact
                 disabled={packStorageRetrying}
                 onPress={recoverCorruptPack}
-                accessibilityLabel={packStorageWarningPresentation.recoveryLabel}
+                accessibilityLabel={
+                  packStorageWarningPresentation.recoveryLabel
+                }
                 style={s.packStorageRecoveryButton}
               />
             ) : null}
