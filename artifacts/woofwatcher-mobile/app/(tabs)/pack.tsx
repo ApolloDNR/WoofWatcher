@@ -1229,10 +1229,9 @@ export default function PackScreen() {
         {segment === "supplies" ? (
           <BoardCard style={s.packRecoveryCopyCard} tone="soft">
             <BoardSectionHeader
-              eyebrow="Recovery copy"
               title="Preserved Pack data"
-              description="Export the first unreadable Pack payload for safekeeping, or import a copy without changing your active lists. The export contains private raw Pack data."
             />
+            <Text style={[s.packRecoveryCopyBoundary, { color: colors.mutedForeground }]}>Export the first unreadable Pack payload for safekeeping, or import a copy without changing your active lists. The export contains private raw Pack data.</Text>
             <BoardActionButton
               label="Export recovery copy"
               icon="share-outline"
