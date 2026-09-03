@@ -941,3 +941,7 @@ screen-reader traversal and route-named device proof remain open gates.
 # 2026-09-03 Pack recovery-copy boundary
 
 Source tests now protect portable export/import of the preserved corrupt Pack copy. Import is evidence-only: it cannot replace live Supplies or Travel Bag lists, overwrite a different first backup, or escape owner-wipe fencing. Native lifecycle, share-sheet, accessibility, store, and Apollo proof remain open.
+
+## 2026-09-03 Pack recovery share-outcome gate
+
+Source PASS requires the generated private JSON to remain visible and failed sharing to disclose the manual-copy fallback. Native share/cancel, paste, lifecycle, accessibility, store, and Apollo proof remain open.

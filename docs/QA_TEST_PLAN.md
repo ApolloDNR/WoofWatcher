@@ -3215,3 +3215,9 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Verify export returns the exact first corrupt Supplies/Travel Bag payload in a versioned WoofWatcher JSON envelope.
 - Verify restore never changes the active lists, rejects malformed payloads, does not overwrite a different first backup, and resolves concurrent restores first-writer-wins.
 - Native proof remains required for share/paste, termination/relaunch, compact height, and VoiceOver/TalkBack announcements.
+
+## Pack recovery-copy share fallback — 2026-09-03
+
+- Verify export places the exact generated JSON in the visible recovery field before sharing.
+- Verify a failed share announces manual-copy availability and never claims share success.
+- Native cancellation, share-sheet, paste, and assistive-technology proof remain required.

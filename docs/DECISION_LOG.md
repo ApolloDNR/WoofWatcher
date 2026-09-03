@@ -3832,3 +3832,7 @@ Decision: Treat route, distance, dog interactions, and social outcome as one ord
 # 2026-09-03 — Pack recovery imports are non-destructive evidence
 
 Pack recovery-copy import stores only the first preserved corrupt payload. It never applies that raw payload to active lists. This keeps support evidence portable without turning malformed historical data into a silent restore path.
+
+# 2026-09-03 — Pack export keeps a manual private-data fallback
+
+Pack places generated recovery JSON in the visible field before sharing and reports the actual share outcome. This preserves owner access when the platform blocks sharing without claiming that private data left the device.

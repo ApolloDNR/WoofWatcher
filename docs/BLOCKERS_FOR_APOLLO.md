@@ -1249,3 +1249,7 @@ Source coverage now protects labeled routine/event field progression and final d
 
 Source coverage now proves versioned export/import, non-destructive active-list behavior, first-copy preservation, concurrent-restore serialization, and owner-wipe fencing. Real iOS/Android share/paste, process termination and relaunch, compact-height layout, VoiceOver/TalkBack, screenshots, store review, and Apollo approval remain required.
 Dependency-complete `WoofWatcher Verify` run `33772844958`, job `100707171498`, passed implementation commit `e6d6f987`; this does not clear those external gates.
+
+## 2026-09-03 Pack recovery share proof remains open
+
+Source handling now leaves a manual-copy fallback and avoids false share-success messaging. Real iOS/Android share/cancel, paste, relaunch, compact-height, VoiceOver/TalkBack, screenshot, store, and Apollo evidence remain required.

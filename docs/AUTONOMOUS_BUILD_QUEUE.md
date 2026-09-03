@@ -3141,3 +3141,10 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Restore rejects malformed input, preserves an existing different first backup, serializes concurrent imports, and drains through the owner-wipe boundary.
 - VERIFIED: Dependency-complete `WoofWatcher Verify` run `33772844958`, job `100707171498`, passed final implementation commit `e6d6f987` through generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds.
 - NEXT: Capture real iOS/Android share, paste, relaunch, compact-height, VoiceOver/TalkBack, and screenshot evidence. Provider, store, public-launch, and Apollo approval remain separate gates.
+
+## 2026-09-03 Pack recovery-copy share fallback
+
+- DONE: Export keeps the generated private recovery JSON visible before opening the share surface.
+- DONE: A blocked or cancelled share reports the manual-copy fallback instead of false share success.
+- BOUNDARY: Native share, paste, relaunch, VoiceOver/TalkBack, screenshots, provider, store, public-launch, and Apollo approval evidence remain open.
+- NEXT: Require dependency-complete branch CI, then capture the route-named native recovery loop when tooling is available.

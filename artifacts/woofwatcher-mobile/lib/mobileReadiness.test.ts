@@ -5975,6 +5975,16 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
   );
   assert.match(pack, /packPersistence\.exportRecoveryCopy\(\)/);
   assert.match(pack, /shareTextPayload/);
+  assert.match(
+    pack,
+    /setPackRecoveryCopy\(result\.serialized\)[\s\S]*const shareOutcome = await shareTextPayload/,
+    "the generated private recovery copy must remain visible when native or browser sharing is unavailable",
+  );
+  assert.match(
+    pack,
+    /shareOutcome === "failed"[\s\S]*Recovery copy is shown below for manual copy/,
+    "failed sharing must report the manual-copy fallback instead of claiming share success",
+  );
   assert.match(pack, /Export recovery copy/);
   assert.match(pack, /Restore recovery copy/);
   assert.match(pack, /accessibilityLabel="Pack recovery copy JSON"/);

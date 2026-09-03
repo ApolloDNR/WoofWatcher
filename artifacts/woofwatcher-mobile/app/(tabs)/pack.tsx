@@ -920,11 +920,16 @@ export default function PackScreen() {
   const exportPackRecoveryCopy = async () => {
     const result = await packPersistence.exportRecoveryCopy();
     if (result.status === "ready") {
-      await shareTextPayload({
+      setPackRecoveryCopy(result.serialized);
+      const shareOutcome = await shareTextPayload({
         message: result.serialized,
         title: "WoofWatcher Pack recovery copy",
       });
-      announce("Pack recovery copy ready to share. It contains private raw Pack data.");
+      announce(
+        shareOutcome === "failed"
+          ? "Sharing was unavailable. Recovery copy is shown below for manual copy. It contains private raw Pack data."
+          : "Pack recovery copy shared or saved. A manual copy remains shown below. It contains private raw Pack data.",
+      );
       return;
     }
     notifyDialog(
