@@ -11,6 +11,7 @@ import {
   getPackStorageWarningPresentation,
   prepareMountedPackPersistenceForOwnerWipe,
   PACK_CORRUPT_BACKUP_KEY,
+  PACK_RECOVERY_JOURNAL_KEY,
   PACK_SUPPLIES_KEY,
   registerPackPersistenceForOwnerWipe,
   TRAVEL_BAG_KEY,
@@ -63,16 +64,21 @@ test("a failed read pauses writes instead of exposing defaults that can overwrit
 test("a malformed stored payload pauses both Pack stores instead of exposing overwriteable defaults", async () => {
   const writes: Array<{ key: string; value: string }> = [];
   const storage: PackKeyValueStorage = {
-    getItem: async (key) =>
-      key === PACK_SUPPLIES_KEY
-        ? '{"version":1,"items":"not-a-list"}'
-        : JSON.stringify({
+    getItem: async (key) => {
+      if (key === PACK_SUPPLIES_KEY) {
+        return '{"version":1,"items":"not-a-list"}';
+      }
+      if (key === TRAVEL_BAG_KEY) {
+        return JSON.stringify({
             version: 1,
             label: "Weekend trip",
             phase: "active",
             activatedAt: "not-a-date",
             completedAt: null,
-          }),
+          });
+      }
+      return null;
+    },
     setItem: async (key, value) => {
       writes.push({ key, value });
     },
@@ -117,6 +123,7 @@ test("owner recovery preserves the exact corrupt Pack payloads before installing
   assert.equal(recovered.status, "ready");
   assert.deepEqual(writes, [
     PACK_CORRUPT_BACKUP_KEY,
+    PACK_RECOVERY_JOURNAL_KEY,
     PACK_SUPPLIES_KEY,
     TRAVEL_BAG_KEY,
   ]);
@@ -156,6 +163,46 @@ test("a recovery retry never overwrites the first exact corrupt Pack backup", as
   assert.deepEqual(await persistence.hydrate(), { status: "corrupt-data" });
   assert.equal((await persistence.recoverCorruptData()).status, "ready");
   assert.equal(stored.get(PACK_CORRUPT_BACKUP_KEY), firstBackup);
+});
+
+test("hydrate replays an interrupted two-key Pack recovery before exposing either store", async () => {
+  const stored = new Map<string, string>([
+    [PACK_SUPPLIES_KEY, '{"version":1,"items":"not-a-list"}'],
+    [TRAVEL_BAG_KEY, '{"version":1,"phase":"broken"}'],
+  ]);
+  let interruptTravelWrite = true;
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      if (key === TRAVEL_BAG_KEY && interruptTravelWrite) {
+        interruptTravelWrite = false;
+        throw new Error("process terminated between Pack writes");
+      }
+      stored.set(key, value);
+    },
+    removeItem: async (key) => {
+      stored.delete(key);
+    },
+  };
+
+  const interrupted = createPackPersistence(storage);
+  assert.deepEqual(await interrupted.hydrate(), { status: "corrupt-data" });
+  assert.deepEqual(await interrupted.recoverCorruptData(), {
+    status: "read-failed",
+  });
+  assert.equal(
+    stored.has(PACK_RECOVERY_JOURNAL_KEY),
+    true,
+    "the intended pair must remain durable after the first key is replaced",
+  );
+
+  const relaunched = createPackPersistence(storage);
+  const replayed = await relaunched.hydrate();
+  assert.equal(replayed.status, "ready");
+  if (replayed.status !== "ready") return;
+  assert.deepEqual(replayed.supplies, [...DEFAULT_SUPPLIES]);
+  assert.deepEqual(replayed.travelBag, defaultTravelBag());
+  assert.equal(stored.has(PACK_RECOVERY_JOURNAL_KEY), false);
 });
 
 test("a successful first load provides fresh defaults and enables both stores", async () => {

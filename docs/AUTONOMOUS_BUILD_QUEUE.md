@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-09-03 Pack recovery journal
+
+- DONE: Corrupt Pack reset now writes the complete intended Supplies and Travel Bag pair to a durable recovery journal before replacing either primary key.
+- DONE: Hydration detects and validates an interrupted journal, idempotently replays both payloads before exposing Pack state, removes the journal after both writes, and participates in the owner-wipe drain.
+- VERIFIED LOCALLY: The red test failed on the missing journal contract; focused Pack persistence then passed `11/11` including simulated termination between the two primary writes and relaunch replay.
+- BOUNDARY: This protects the owner-confirmed corrupt-data reset. Ordinary independent owner edits are still per-key writes; recovery-copy export/restore, real process-kill/device lifecycle proof, VoiceOver/TalkBack, store review, and Apollo approval remain open.
+- NEXT: Add an owner-accessible export/restore path for the preserved corrupt-data recovery copy, then capture real iOS/Android termination/relaunch evidence.
+
 ## 2026-09-03 Pack global-erase fence
 
 - DONE: Mounted Pack persistence registers with the app-wide owner-wipe boundary. Privacy seals Pack before the terminal care-storage removal, waits for an active platform write or corrupt-data recovery, and prevents queued pre-wipe snapshots from reaching AsyncStorage afterward.

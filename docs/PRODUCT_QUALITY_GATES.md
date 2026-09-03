@@ -1,5 +1,11 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-03 Pack recovery-journal gate
+
+- PASS (source): Owner-confirmed corrupt Pack reset durably journals its complete two-key target before replacing either key; hydration validates and replays an interrupted pair before exposing state.
+- PASS (deterministic): A simulated termination between primary writes relaunches to one consistent default pair and clears the journal; focused Pack persistence passes `11/11`.
+- OPEN: Real iOS/Android process-kill lifecycle proof, owner recovery-copy export/restore, VoiceOver/TalkBack, store review, and Apollo approval.
+
 ## 2026-09-03 Pack erase-race quality gate
 
 - PASS (source): Privacy owner wipe seals mounted Pack persistence before terminal AsyncStorage removal, drains active storage work, rejects queued snapshots, and generation-fences stale hydration/recovery.

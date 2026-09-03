@@ -1,5 +1,12 @@
 # QA Test Plan
 
+## 2026-09-03 Pack recovery-journal QA
+
+- PASS automated: Recovery persists the full target pair before either primary write; a simulated failure between Supplies and Travel Bag leaves the journal durable, and a new persistence instance replays both defaults before returning `ready`.
+- PASS safety: Journal payloads are schema-validated through the existing Pack parsers, replay is idempotent, and replay joins the owner-wipe drain.
+- LOCAL: Red-first focused coverage failed on the absent journal export and then passed `11/11`.
+- OPEN: Kill the native process during reset on iOS and Android, relaunch, verify both stores agree and the journal clears, then capture screen-reader and route-named evidence. Recovery-copy export/restore remains separate.
+
 ## 2026-09-03 Pack owner-wipe race coverage
 
 - Deterministic storage tests hold one Supplies write inside the platform adapter, queue a newer snapshot, begin owner wipe, and prove the wipe waits for the active write while the queued snapshot is rejected before terminal key removal.

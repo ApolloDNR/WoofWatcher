@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-09-03 — Corrupt Pack reset uses a redo journal
+
+- Decision: Before replacing either Pack primary key, persist a versioned journal containing the complete validated target pair. On hydration, replay both values idempotently and clear the journal only after both writes finish.
+- Reason: AsyncStorage has no cross-key transaction; durable redo intent prevents a process termination between writes from exposing a mixed Supplies/Travel Bag state.
+- Boundary: The journal covers owner-confirmed corrupt-data reset, not independent normal edits. Native kill/relaunch proof and recovery-copy export/restore remain open.
+
 ## 2026-09-03 — Owner wipe must quiesce independent feature writers
 
 - Decision: Feature-owned persistence coordinators that can outlive navigation register with the terminal local-data wipe. The wipe seals them synchronously, waits for already-started platform work, and prevents queued or stale-generation work from recreating deleted keys.

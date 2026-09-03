@@ -14,10 +14,12 @@ import {
 export const PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
 export const TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
 export const PACK_CORRUPT_BACKUP_KEY = "woofwatcher.packCorruptBackup.v1";
+export const PACK_RECOVERY_JOURNAL_KEY = "woofwatcher.packRecoveryJournal.v1";
 
 export interface PackKeyValueStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
+  removeItem?(key: string): Promise<void>;
 }
 
 export type PackHydrationResult =
@@ -113,6 +115,40 @@ export function createPackPersistence(
     travelBag: string | null;
   } | null = null;
 
+  const clearRecoveryJournal = async () => {
+    if (storage.removeItem) {
+      await storage.removeItem(PACK_RECOVERY_JOURNAL_KEY);
+    }
+  };
+
+  const replayRecoveryJournal = async (rawJournal: string) => {
+    const parsed: unknown = JSON.parse(rawJournal);
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      (parsed as { version?: unknown }).version !== 1 ||
+      typeof (parsed as { supplies?: unknown }).supplies !== "string" ||
+      typeof (parsed as { travelBag?: unknown }).travelBag !== "string"
+    ) {
+      throw new Error("Pack recovery journal is invalid.");
+    }
+    const journal = parsed as {
+      version: 1;
+      supplies: string;
+      travelBag: string;
+    };
+    if (
+      !tryParseStoredSupplies(journal.supplies) ||
+      !tryParseStoredTravelBag(journal.travelBag)
+    ) {
+      throw new Error("Pack recovery journal payload is invalid.");
+    }
+    await storage.setItem(PACK_SUPPLIES_KEY, journal.supplies);
+    await storage.setItem(TRAVEL_BAG_KEY, journal.travelBag);
+    await clearRecoveryJournal();
+    return journal;
+  };
+
   const assertHydrated = () => {
     if (!hydrated) {
       throw new Error("Persistence is paused until Pack loads successfully.");
@@ -137,15 +173,37 @@ export function createPackPersistence(
       hydrated = false;
       const generationAtStart = lifecycleGeneration;
       try {
-        const [rawSupplies, rawTravelBag] = await Promise.all([
+        const [rawJournal, rawSupplies, rawTravelBag] = await Promise.all([
+          storage.getItem(PACK_RECOVERY_JOURNAL_KEY),
           storage.getItem(PACK_SUPPLIES_KEY),
           storage.getItem(TRAVEL_BAG_KEY),
         ]);
         if (generationAtStart !== lifecycleGeneration) {
           return { status: "read-failed" };
         }
-        const supplies = tryParseStoredSupplies(rawSupplies);
-        const travelBag = tryParseStoredTravelBag(rawTravelBag);
+        const replayedJournal =
+          rawJournal === null
+            ? null
+            : await (async () => {
+                const replay = replayRecoveryJournal(rawJournal);
+                recoveryTail = replay.then(
+                  () => undefined,
+                  () => undefined,
+                );
+                const journal = await replay;
+                if (generationAtStart !== lifecycleGeneration) {
+                  throw new Error(
+                    "Pack lifecycle changed during journal replay.",
+                  );
+                }
+                return journal;
+              })();
+        const supplies = tryParseStoredSupplies(
+          replayedJournal?.supplies ?? rawSupplies,
+        );
+        const travelBag = tryParseStoredTravelBag(
+          replayedJournal?.travelBag ?? rawTravelBag,
+        );
         if (!supplies || !travelBag) {
           corruptSnapshot = {
             supplies: rawSupplies,
@@ -188,8 +246,19 @@ export function createPackPersistence(
 
         const supplies = DEFAULT_SUPPLIES.map((item) => ({ ...item }));
         const travelBag = defaultTravelBag();
-        await storage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(supplies));
-        await storage.setItem(TRAVEL_BAG_KEY, serializeTravelBag(travelBag));
+        const serializedSupplies = serializeSupplies(supplies);
+        const serializedTravelBag = serializeTravelBag(travelBag);
+        await storage.setItem(
+          PACK_RECOVERY_JOURNAL_KEY,
+          JSON.stringify({
+            version: 1,
+            supplies: serializedSupplies,
+            travelBag: serializedTravelBag,
+          }),
+        );
+        await storage.setItem(PACK_SUPPLIES_KEY, serializedSupplies);
+        await storage.setItem(TRAVEL_BAG_KEY, serializedTravelBag);
+        await clearRecoveryJournal();
         if (generationAtStart !== lifecycleGeneration) return;
         corruptSnapshot = null;
         hydrated = true;

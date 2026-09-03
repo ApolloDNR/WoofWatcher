@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-09-03 Pack recovery-journal boundary
+
+- Source/tests now protect owner-confirmed corrupt Pack reset from a process interruption between its two primary writes: a durable redo journal is validated and replayed before Pack becomes editable.
+- Still blocked: real iOS/Android kill-and-relaunch evidence, owner-accessible recovery-copy export/restore, VoiceOver/TalkBack proof, store review, and Apollo approval. Deterministic replay does not establish those runtime/release gates.
+
 ## 2026-09-03 Pack erase-race boundary
 
 - Privacy now quiesces mounted Pack persistence before its terminal local-data removal: active writes/recovery settle, queued snapshots are rejected, and stale hydration/recovery generations cannot re-enable Pack after the wipe begins.

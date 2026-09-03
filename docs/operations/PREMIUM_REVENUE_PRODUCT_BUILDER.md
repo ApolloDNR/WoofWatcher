@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-09-03 Pack recovery journal
+
+Corrupt Pack recovery now records a versioned redo journal containing the complete fresh Supplies and Travel Bag pair before replacing either primary AsyncStorage value. A later hydration validates and idempotently replays any interrupted journal before exposing Pack state, clears it only after both writes complete, and includes replay in the owner-wipe drain. Red-first focused persistence coverage passes `11/11`, including a simulated termination between keys and relaunch.
+
+This closes deterministic two-key reset interruption at the source boundary. Real native process-kill/relaunch, recovery-copy export/restore, VoiceOver/TalkBack, store/provider/public-launch proof, and Apollo approval remain open.
+
 ## 2026-09-03 Pack global-erase fencing
 
 Pack persistence now participates in the same terminal owner-wipe boundary as CareContext. The mounted Pack coordinator is sealed before Privacy removes WoofWatcher keys, drains any write already inside AsyncStorage, rejects queued pre-wipe snapshots, waits for active corrupt-data recovery, and generation-fences stale hydration/recovery results. Red-first Pack plus care-integrity coverage passes `22/22`.
