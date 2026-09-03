@@ -1239,3 +1239,6 @@ Source coverage now protects labeled routine/event field progression and final d
 - Source-level field labels and keyboard progression are implemented.
 - Dependency-complete source verification passed for commit `beaaee4b` in `WoofWatcher Verify` run `33593338283`, job `100131668442`.
 - Still blocked on route-named compact-height iPhone/Android, decimal/number keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.
+# 2026-09-03 Pack recovery-copy native proof remains open
+
+Source coverage now proves versioned export/import, non-destructive active-list behavior, first-copy preservation, concurrent-restore serialization, and owner-wipe fencing. Real iOS/Android share/paste, process termination and relaunch, compact-height layout, VoiceOver/TalkBack, screenshots, store review, and Apollo approval remain required.

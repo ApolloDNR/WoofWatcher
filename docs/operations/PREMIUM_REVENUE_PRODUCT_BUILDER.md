@@ -6224,3 +6224,6 @@ Dependency-complete `WoofWatcher Verify` run `33399323331`, job `99511466507`, p
 - Local proof: red-first `quickLogFieldFlow.test.ts` failed on the missing walk flow; focused field-flow and mobile-readiness coverage passed after implementation.
 - Dependency-complete proof: `WoofWatcher Verify` run `33593338283`, job `100131668442`, passed implementation/docs commit `beaaee4b` end to end. Rerun after this proof record before treating the final branch tip as current.
 - Release boundary: source proof does not replace compact-height native, numeric-keyboard, VoiceOver/TalkBack, route screenshot, store, or Apollo approval evidence.
+# 2026-09-03 Pack recovery-copy portability
+
+The preserved corrupt Pack backup now has an owner-accessible versioned JSON export/import path. Restore is non-destructive to live lists, first-copy preserving, serialized against concurrent imports, and included in the terminal owner-wipe drain. Focused source verification is complete; native share/paste, relaunch, accessibility, store, and Apollo evidence remain external gates.

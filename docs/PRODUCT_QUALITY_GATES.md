@@ -931,3 +931,6 @@ screen-reader traversal and route-named device proof remain open gates.
 - Source gate: PASS when route, distance, dog interactions, and social outcome expose explicit labels, ordered Next actions, and final Done dismissal.
 - Dependency gate: PASS for implementation commit `beaaee4b` in `WoofWatcher Verify` run `33593338283`, job `100131668442`.
 - Native gate: OPEN until compact-height iOS/Android, numeric-keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.
+# 2026-09-03 Pack recovery-copy boundary
+
+Source tests now protect portable export/import of the preserved corrupt Pack copy. Import is evidence-only: it cannot replace live Supplies or Travel Bag lists, overwrite a different first backup, or escape owner-wipe fencing. Native lifecycle, share-sheet, accessibility, store, and Apollo proof remain open.

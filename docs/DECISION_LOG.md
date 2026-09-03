@@ -3823,3 +3823,6 @@ Decision: Expected portion advances to eaten amount only when eaten amount is ed
 # 2026-09-01 — Walk Quick Log follows the care handoff order
 
 Decision: Treat route, distance, dog interactions, and social outcome as one ordered walk form. Each field advances deterministically and the final social outcome dismisses the keyboard. Keep real-device and assistive-technology proof separate from source verification.
+# 2026-09-03 — Pack recovery imports are non-destructive evidence
+
+Pack recovery-copy import stores only the first preserved corrupt payload. It never applies that raw payload to active lists. This keeps support evidence portable without turning malformed historical data into a silent restore path.

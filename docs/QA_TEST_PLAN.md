@@ -3203,3 +3203,8 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Source test: verify route -> distance -> dog interactions -> social outcome focus progression, explicit accessibility labels, and final keyboard dismissal.
 - CI proof: `WoofWatcher Verify` run `33593338283`, job `100131668442`, passed commit `beaaee4b` through dependency install, doctor, focused tests, typecheck, and CI-safe builds.
 - Native proof still required: compact-height iOS/Android, decimal/number keyboard completion, VoiceOver/TalkBack order and focus return, and route-named screenshots.
+# Pack recovery-copy portability — 2026-09-03
+
+- Verify export returns the exact first corrupt Supplies/Travel Bag payload in a versioned WoofWatcher JSON envelope.
+- Verify restore never changes the active lists, rejects malformed payloads, does not overwrite a different first backup, and resolves concurrent restores first-writer-wins.
+- Native proof remains required for share/paste, termination/relaunch, compact height, and VoiceOver/TalkBack announcements.

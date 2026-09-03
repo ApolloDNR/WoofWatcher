@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   DEFAULT_SUPPLIES,
   parseSupplies,
+  serializeSupplies,
   type SupplyItem,
 } from "./packSupplies.ts";
 import {
@@ -17,7 +18,11 @@ import {
   TRAVEL_BAG_KEY,
   type PackKeyValueStorage,
 } from "./packPersistence.ts";
-import { defaultTravelBag, parseTravelBag } from "./travelBag.ts";
+import {
+  defaultTravelBag,
+  parseTravelBag,
+  serializeTravelBag,
+} from "./travelBag.ts";
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -385,6 +390,213 @@ test("owner wipe waits for active corrupt-data recovery before deleting Pack key
   assert.deepEqual(writes, [PACK_CORRUPT_BACKUP_KEY]);
   assert.equal(stored.size, 0);
   unregister();
+});
+
+test("exports the first preserved Pack backup as a portable versioned recovery copy", async () => {
+  const backup = {
+    version: 1,
+    capturedAt: "2026-09-03T04:00:00.000Z",
+    supplies: '{"version":1,"items":"not-a-list"}',
+    travelBag: '{"version":1,"phase":"broken"}',
+  };
+  const stored = new Map<string, string>([
+    [PACK_CORRUPT_BACKUP_KEY, JSON.stringify(backup)],
+  ]);
+  const persistence = createPackPersistence(
+    {
+      getItem: async (key) => stored.get(key) ?? null,
+      setItem: async (key, value) => stored.set(key, value),
+    },
+    () => "2026-09-03T06:30:00.000Z",
+  );
+
+  const exported = await persistence.exportRecoveryCopy();
+  assert.equal(exported.status, "ready");
+  if (exported.status !== "ready") return;
+  assert.equal(exported.capturedAt, backup.capturedAt);
+  assert.deepEqual(JSON.parse(exported.serialized), {
+    app: "WoofWatcher",
+    formatVersion: 1,
+    scope: "pack_recovery_copy",
+    exportedAt: "2026-09-03T06:30:00.000Z",
+    recovery: backup,
+  });
+});
+
+test("restores a recovery copy without replacing active Pack data and is idempotent", async () => {
+  const activeSupplies = serializeSupplies(changedSupplies("low"));
+  const activeTravelBag = serializeTravelBag({
+    ...defaultTravelBag(),
+    label: "Current trip",
+  });
+  const stored = new Map<string, string>([
+    [PACK_SUPPLIES_KEY, activeSupplies],
+    [TRAVEL_BAG_KEY, activeTravelBag],
+  ]);
+  const writes: string[] = [];
+  const persistence = createPackPersistence({
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      writes.push(key);
+      stored.set(key, value);
+    },
+  });
+  const recovery = {
+    version: 1,
+    capturedAt: "2026-09-01T10:00:00.000Z",
+    supplies: "old unreadable supplies",
+    travelBag: "old unreadable travel bag",
+  };
+  const serialized = JSON.stringify({
+    app: "WoofWatcher",
+    formatVersion: 1,
+    scope: "pack_recovery_copy",
+    exportedAt: "2026-09-02T10:00:00.000Z",
+    recovery,
+  });
+
+  assert.deepEqual(await persistence.restoreRecoveryCopy(serialized), {
+    status: "restored",
+    capturedAt: recovery.capturedAt,
+  });
+  assert.equal(stored.get(PACK_SUPPLIES_KEY), activeSupplies);
+  assert.equal(stored.get(TRAVEL_BAG_KEY), activeTravelBag);
+  assert.deepEqual(JSON.parse(stored.get(PACK_CORRUPT_BACKUP_KEY)!), recovery);
+  assert.deepEqual(writes, [PACK_CORRUPT_BACKUP_KEY]);
+
+  assert.deepEqual(await persistence.restoreRecoveryCopy(serialized), {
+    status: "already-present",
+    capturedAt: recovery.capturedAt,
+  });
+  assert.deepEqual(writes, [PACK_CORRUPT_BACKUP_KEY]);
+});
+
+test("recovery copy restore rejects malformed input and preserves a different first backup", async () => {
+  const firstBackup = JSON.stringify({
+    version: 1,
+    capturedAt: "2026-09-01T10:00:00.000Z",
+    supplies: "first supplies",
+    travelBag: "first bag",
+  });
+  const stored = new Map<string, string>([
+    [PACK_CORRUPT_BACKUP_KEY, firstBackup],
+  ]);
+  const writes: string[] = [];
+  const persistence = createPackPersistence({
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      writes.push(key);
+      stored.set(key, value);
+    },
+  });
+
+  assert.deepEqual(await persistence.restoreRecoveryCopy("not json"), {
+    status: "invalid",
+  });
+  assert.deepEqual(
+    await persistence.restoreRecoveryCopy(
+      JSON.stringify({
+        app: "WoofWatcher",
+        formatVersion: 1,
+        scope: "pack_recovery_copy",
+        exportedAt: "2026-09-03T10:00:00.000Z",
+        recovery: {
+          version: 1,
+          capturedAt: "2026-09-02T10:00:00.000Z",
+          supplies: "different supplies",
+          travelBag: "different bag",
+        },
+      }),
+    ),
+    { status: "conflict", capturedAt: "2026-09-01T10:00:00.000Z" },
+  );
+  assert.equal(stored.get(PACK_CORRUPT_BACKUP_KEY), firstBackup);
+  assert.deepEqual(writes, []);
+});
+
+test("owner wipe waits for recovery-copy restore before its terminal key removal", async () => {
+  const backupWrite = deferred<void>();
+  const stored = new Map<string, string>();
+  const persistence = createPackPersistence({
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      if (key === PACK_CORRUPT_BACKUP_KEY) await backupWrite.promise;
+      stored.set(key, value);
+    },
+  });
+  const unregister = registerPackPersistenceForOwnerWipe(persistence);
+  const serialized = JSON.stringify({
+    app: "WoofWatcher",
+    formatVersion: 1,
+    scope: "pack_recovery_copy",
+    exportedAt: "2026-09-03T10:00:00.000Z",
+    recovery: {
+      version: 1,
+      capturedAt: "2026-09-02T10:00:00.000Z",
+      supplies: "unreadable supplies",
+      travelBag: "unreadable bag",
+    },
+  });
+
+  const restore = persistence.restoreRecoveryCopy(serialized);
+  await Promise.resolve();
+  const prepared = prepareMountedPackPersistenceForOwnerWipe();
+  let preparationFinished = false;
+  void prepared.then(() => {
+    preparationFinished = true;
+  });
+  await Promise.resolve();
+  assert.equal(preparationFinished, false);
+
+  backupWrite.resolve();
+  assert.deepEqual(await restore, { status: "paused" });
+  await prepared;
+  stored.clear();
+  await Promise.resolve();
+  assert.equal(stored.size, 0);
+  unregister();
+});
+
+test("concurrent recovery-copy restores preserve the first accepted copy", async () => {
+  const firstWrite = deferred<void>();
+  const stored = new Map<string, string>();
+  let writeCount = 0;
+  const persistence = createPackPersistence({
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      writeCount += 1;
+      if (writeCount === 1) await firstWrite.promise;
+      stored.set(key, value);
+    },
+  });
+  const copy = (capturedAt: string) =>
+    JSON.stringify({
+      app: "WoofWatcher",
+      formatVersion: 1,
+      scope: "pack_recovery_copy",
+      exportedAt: "2026-09-03T10:00:00.000Z",
+      recovery: {
+        version: 1,
+        capturedAt,
+        supplies: `supplies ${capturedAt}`,
+        travelBag: `bag ${capturedAt}`,
+      },
+    });
+
+  const first = persistence.restoreRecoveryCopy(copy("2026-09-01T10:00:00.000Z"));
+  await Promise.resolve();
+  const second = persistence.restoreRecoveryCopy(copy("2026-09-02T10:00:00.000Z"));
+  firstWrite.resolve();
+
+  assert.deepEqual(await first, {
+    status: "restored",
+    capturedAt: "2026-09-01T10:00:00.000Z",
+  });
+  assert.deepEqual(await second, {
+    status: "conflict",
+    capturedAt: "2026-09-01T10:00:00.000Z",
+  });
+  assert.equal(writeCount, 1);
 });
 
 test("storage warnings provide persistent owner-readable recovery copy", () => {

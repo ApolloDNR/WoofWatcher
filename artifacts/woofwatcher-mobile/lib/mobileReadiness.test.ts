@@ -5960,6 +5960,27 @@ test("keeps the primary Pack dog portrait decorative beside readable dog identit
   );
 });
 
+test("makes the preserved Pack recovery copy owner-accessible without overwriting live lists", () => {
+  const pack = readAppFile(join("(tabs)", "pack.tsx"));
+
+  assert.match(pack, /packPersistence\.exportRecoveryCopy\(\)/);
+  assert.match(pack, /shareTextPayload/);
+  assert.match(pack, /Export recovery copy/);
+  assert.match(pack, /Restore recovery copy/);
+  assert.match(pack, /accessibilityLabel="Pack recovery copy JSON"/);
+  assert.match(pack, /packPersistence\.restoreRecoveryCopy\(/);
+  assert.match(
+    pack,
+    /does not replace your active Supplies or Travel Bag/i,
+    "restore copy must truthfully describe its non-destructive live-data boundary",
+  );
+  assert.match(
+    pack,
+    /private raw Pack data/i,
+    "export copy must warn owners that the portable payload is sensitive",
+  );
+});
+
 test("keeps the living Story trail map out of accessibility traversal", () => {
   const dayTrail = readAppFile("../components/DayTrailScene.tsx");
 

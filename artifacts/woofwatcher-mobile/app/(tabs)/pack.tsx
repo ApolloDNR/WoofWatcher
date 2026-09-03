@@ -92,6 +92,7 @@ import {
 } from "@/lib/travelBag";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { resolvePetName } from "@/lib/petIdentity";
+import { shareTextPayload } from "@/lib/shareText";
 import { relativeTime } from "@/lib/time";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -543,6 +544,7 @@ export default function PackScreen() {
   const [packStorageWarning, setPackStorageWarning] =
     useState<PackStorageWarning | null>(null);
   const [packStorageRetrying, setPackStorageRetrying] = useState(false);
+  const [packRecoveryCopy, setPackRecoveryCopy] = useState("");
   const [packPersistence] = useState(() => createPackPersistence(AsyncStorage));
   const suppliesRef = useRef<SupplyItem[] | null>(null);
   const travelBagRef = useRef(travelBag);
@@ -914,6 +916,43 @@ export default function PackScreen() {
     );
   };
 
+  const exportPackRecoveryCopy = async () => {
+    const result = await packPersistence.exportRecoveryCopy();
+    if (result.status === "ready") {
+      await shareTextPayload({
+        message: result.serialized,
+        title: "WoofWatcher Pack recovery copy",
+      });
+      announce("Pack recovery copy ready to share. It contains private raw Pack data.");
+      return;
+    }
+    notifyDialog(
+      "Recovery copy unavailable",
+      result.status === "none"
+        ? "There is no preserved corrupt Pack recovery copy on this device."
+        : "WoofWatcher could not safely read the preserved recovery copy.",
+    );
+  };
+
+  const restorePackRecoveryCopy = async () => {
+    const result = await packPersistence.restoreRecoveryCopy(packRecoveryCopy);
+    if (result.status === "restored" || result.status === "already-present") {
+      setPackRecoveryCopy("");
+      announce("Pack recovery copy preserved on this device.");
+      notifyDialog(
+        "Recovery copy preserved",
+        "The imported copy is available for support or later export. It does not replace your active Supplies or Travel Bag.",
+      );
+      return;
+    }
+    notifyDialog(
+      result.status === "conflict" ? "Recovery copy already exists" : "Recovery copy not restored",
+      result.status === "conflict"
+        ? "This device already has a different first recovery copy. WoofWatcher kept that original copy unchanged."
+        : "Paste a complete WoofWatcher Pack recovery copy and try again.",
+    );
+  };
+
   const activateBag = () => {
     const currentSupplies = suppliesRef.current ?? [];
     const currentPackedCount = currentSupplies.filter(
@@ -1184,6 +1223,52 @@ export default function PackScreen() {
                 style={s.packStorageRecoveryButton}
               />
             ) : null}
+          </BoardCard>
+        ) : null}
+
+        {segment === "supplies" ? (
+          <BoardCard style={s.packRecoveryCopyCard} tone="soft">
+            <BoardSectionHeader
+              eyebrow="Recovery copy"
+              title="Preserved Pack data"
+              description="Export the first unreadable Pack payload for safekeeping, or import a copy without changing your active lists. The export contains private raw Pack data."
+            />
+            <BoardActionButton
+              label="Export recovery copy"
+              icon="share-outline"
+              variant="outline"
+              compact
+              onPress={() => void exportPackRecoveryCopy()}
+              accessibilityLabel="Export recovery copy"
+            />
+            <TextInput
+              value={packRecoveryCopy}
+              onChangeText={setPackRecoveryCopy}
+              placeholder="Paste Pack recovery copy JSON"
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              textAlignVertical="top"
+              accessibilityLabel="Pack recovery copy JSON"
+              style={[
+                s.packRecoveryCopyInput,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.foreground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            />
+            <BoardActionButton
+              label="Restore recovery copy"
+              icon="download-outline"
+              variant="outline"
+              compact
+              disabled={!packRecoveryCopy.trim()}
+              onPress={() => void restorePackRecoveryCopy()}
+              accessibilityLabel="Restore recovery copy"
+            />
+            <Text style={[s.packRecoveryCopyBoundary, { color: colors.mutedForeground }]}>This preserves support evidence only and does not replace your active Supplies or Travel Bag.</Text>
           </BoardCard>
         ) : null}
 
@@ -2638,6 +2723,22 @@ const s = StyleSheet.create({
   packStorageRecoveryButton: {
     alignSelf: "flex-start",
     marginTop: 8,
+  },
+  packRecoveryCopyCard: {
+    gap: 10,
+  },
+  packRecoveryCopyInput: {
+    minHeight: 112,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  packRecoveryCopyBoundary: {
+    fontSize: 11,
+    lineHeight: 16,
   },
   packStorageLoadingText: {
     fontSize: 12.5,

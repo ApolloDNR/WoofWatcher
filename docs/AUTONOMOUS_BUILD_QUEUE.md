@@ -3127,3 +3127,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Alone Time departure proof when native tooling is available.
 - CI: `WoofWatcher Verify` run `33568887640`, job `100058260027`, passed implementation/docs commit `cc488985` through pinned install, JSON doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+# 2026-09-03 Pack recovery-copy portability
+
+- DONE: Pack can export the first preserved corrupt payload as a versioned JSON recovery copy and import it as support evidence without replacing active Supplies or Travel Bag data.
+- DONE: Restore rejects malformed input, preserves an existing different first backup, serializes concurrent imports, and drains through the owner-wipe boundary.
+- NEXT: Capture real iOS/Android share, paste, relaunch, compact-height, VoiceOver/TalkBack, and screenshot evidence. Provider, store, public-launch, and Apollo approval remain separate gates.

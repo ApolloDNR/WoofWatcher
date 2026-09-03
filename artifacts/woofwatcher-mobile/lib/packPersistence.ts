@@ -39,6 +39,104 @@ export type PackStorageWarningPresentation = {
   recoveryLabel?: string;
 };
 
+type PackCorruptBackup = {
+  version: 1;
+  capturedAt: string;
+  supplies: string | null;
+  travelBag: string | null;
+};
+
+type PackRecoveryCopy = {
+  app: "WoofWatcher";
+  formatVersion: 1;
+  scope: "pack_recovery_copy";
+  exportedAt: string;
+  recovery: PackCorruptBackup;
+};
+
+export type PackRecoveryCopyExportResult =
+  | { status: "ready"; capturedAt: string; serialized: string }
+  | { status: "none" | "invalid" | "paused" };
+
+export type PackRecoveryCopyRestoreResult =
+  | { status: "restored" | "already-present"; capturedAt: string }
+  | { status: "conflict"; capturedAt: string | null }
+  | { status: "invalid" | "paused" };
+
+const MAX_PACK_RECOVERY_COPY_LENGTH = 1_000_000;
+
+function isIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
+}
+
+function parseStoredCorruptBackup(raw: string | null): PackCorruptBackup | null {
+  if (raw === null || raw.length > MAX_PACK_RECOVERY_COPY_LENGTH) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const candidate = parsed as Partial<PackCorruptBackup>;
+    if (
+      candidate.version !== 1 ||
+      !isIsoTimestamp(candidate.capturedAt) ||
+      (candidate.supplies !== null &&
+        typeof candidate.supplies !== "string") ||
+      (candidate.travelBag !== null &&
+        typeof candidate.travelBag !== "string")
+    ) {
+      return null;
+    }
+    return {
+      version: 1,
+      capturedAt: candidate.capturedAt,
+      supplies: candidate.supplies,
+      travelBag: candidate.travelBag,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseRecoveryCopy(serialized: string): PackRecoveryCopy | null {
+  if (
+    typeof serialized !== "string" ||
+    serialized.length > MAX_PACK_RECOVERY_COPY_LENGTH
+  ) {
+    return null;
+  }
+  const trimmed = serialized.trim();
+  const jsonStart = trimmed.indexOf("{");
+  if (jsonStart < 0) return null;
+  try {
+    const parsed: unknown = JSON.parse(trimmed.slice(jsonStart));
+    if (!parsed || typeof parsed !== "object") return null;
+    const candidate = parsed as Partial<PackRecoveryCopy>;
+    if (
+      candidate.app !== "WoofWatcher" ||
+      candidate.formatVersion !== 1 ||
+      candidate.scope !== "pack_recovery_copy" ||
+      !isIsoTimestamp(candidate.exportedAt) ||
+      !candidate.recovery
+    ) {
+      return null;
+    }
+    const recovery = parseStoredCorruptBackup(
+      JSON.stringify(candidate.recovery),
+    );
+    if (!recovery) return null;
+    return {
+      app: "WoofWatcher",
+      formatVersion: 1,
+      scope: "pack_recovery_copy",
+      exportedAt: candidate.exportedAt,
+      recovery,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function getPackStorageWarningPresentation(
   warning: PackStorageWarning,
 ): PackStorageWarningPresentation {
@@ -169,6 +267,79 @@ export function createPackPersistence(
   );
 
   return {
+    async exportRecoveryCopy(): Promise<PackRecoveryCopyExportResult> {
+      const generationAtStart = lifecycleGeneration;
+      await recoveryTail;
+      if (generationAtStart !== lifecycleGeneration) {
+        return { status: "paused" };
+      }
+      const rawBackup = await storage.getItem(PACK_CORRUPT_BACKUP_KEY);
+      if (generationAtStart !== lifecycleGeneration) {
+        return { status: "paused" };
+      }
+      if (rawBackup === null) return { status: "none" };
+      const recovery = parseStoredCorruptBackup(rawBackup);
+      if (!recovery) return { status: "invalid" };
+      const copy: PackRecoveryCopy = {
+        app: "WoofWatcher",
+        formatVersion: 1,
+        scope: "pack_recovery_copy",
+        exportedAt: now(),
+        recovery,
+      };
+      return {
+        status: "ready",
+        capturedAt: recovery.capturedAt,
+        serialized: JSON.stringify(copy, null, 2),
+      };
+    },
+
+    async restoreRecoveryCopy(
+      serialized: string,
+    ): Promise<PackRecoveryCopyRestoreResult> {
+      const copy = parseRecoveryCopy(serialized);
+      if (!copy) return { status: "invalid" };
+      const generationAtStart = lifecycleGeneration;
+      let result: PackRecoveryCopyRestoreResult = { status: "paused" };
+      const priorRecovery = recoveryTail;
+      const operation = (async () => {
+        await priorRecovery;
+        if (generationAtStart !== lifecycleGeneration) return;
+        const existingRaw = await storage.getItem(PACK_CORRUPT_BACKUP_KEY);
+        if (generationAtStart !== lifecycleGeneration) return;
+        if (existingRaw !== null) {
+          const existing = parseStoredCorruptBackup(existingRaw);
+          if (
+            existing &&
+            JSON.stringify(existing) === JSON.stringify(copy.recovery)
+          ) {
+            result = {
+              status: "already-present",
+              capturedAt: existing.capturedAt,
+            };
+            return;
+          }
+          result = {
+            status: "conflict",
+            capturedAt: existing?.capturedAt ?? null,
+          };
+          return;
+        }
+        await storage.setItem(
+          PACK_CORRUPT_BACKUP_KEY,
+          JSON.stringify(copy.recovery),
+        );
+        if (generationAtStart !== lifecycleGeneration) return;
+        result = {
+          status: "restored",
+          capturedAt: copy.recovery.capturedAt,
+        };
+      })();
+      recoveryTail = operation.catch(() => undefined);
+      await operation;
+      return result;
+    },
+
     async hydrate(): Promise<PackHydrationResult> {
       hydrated = false;
       const generationAtStart = lifecycleGeneration;
