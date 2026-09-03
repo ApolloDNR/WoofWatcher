@@ -3,6 +3,7 @@
 ## 2026-09-02 Pack malformed-data QA
 
 - PASS automated: Missing Pack keys hydrate defaults, but malformed Supplies or Travel Bag data returns `corrupt-data`, pauses both stores, rejects writes, and uses dedicated retry copy.
+- PASS CI: `WoofWatcher Verify` run `33711363166`, job `100511363481`, passed commit `1dfa8b6d` end to end.
 - OPEN: Prove owner-confirmed corrupt-data reset/backup, atomic two-key redo, and erase-all-data races; capture native recovery and screen-reader evidence.
 
 ## 2026-09-02 Care-state integrity continuation QA

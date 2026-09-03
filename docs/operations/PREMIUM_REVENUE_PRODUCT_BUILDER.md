@@ -4,6 +4,8 @@
 
 Pack hydration now treats invalid stored Supplies or Travel Bag JSON as a fail-closed recovery state. Both editors and stores remain paused, retry re-runs hydration, and the UI no longer silently replaces malformed owner data with editable defaults. Local red-first Pack coverage passes; destructive recovery, wipe-race, native, store, provider, and Apollo proof remain open.
 
+Dependency-complete `WoofWatcher Verify` run `33711363166`, job `100511363481`, passed implementation/docs commit `1dfa8b6d` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, and completion.
+
 ## 2026-09-02 care-state integrity continuation
 
 - Extended the restricted-role recovery boundary through the full local lifecycle: unresolved Clerk auth is inert, and each exact principal receives isolated token transport, query state, durable care state, and opaque cleanup intent.

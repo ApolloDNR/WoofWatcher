@@ -3,6 +3,7 @@
 ## 2026-09-02 Pack malformed-data boundary
 
 - Pack malformed-data detection is source-backed and fail-closed. Owner-confirmed destructive recovery/backup, atomic reset, global wipe-race protection, and real-device accessibility evidence remain open; do not treat starter defaults as recovered owner data.
+- Dependency-complete source/build proof is green in `WoofWatcher Verify` run `33711363166`, job `100511363481`; this does not close the remaining recovery or device gates.
 
 ## 2026-09-02 Care-state integrity runtime proof
 

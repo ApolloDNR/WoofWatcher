@@ -5,6 +5,7 @@
 - DONE: Missing Pack keys still produce honest starter defaults, while malformed-but-readable Supplies or Travel Bag payloads now fail closed as `corrupt-data` instead of becoming editable defaults.
 - DONE: Either malformed store pauses both Pack editors and all writes, presents dedicated recovery copy, and keeps retry routed through hydration so a retry cannot be misreported as a successful save.
 - VERIFIED LOCALLY: Red-first persistence coverage failed on the silent fallback, then Pack persistence/model coverage passed `30/30` after implementation.
+- CI: Dependency-complete `WoofWatcher Verify` run `33711363166`, job `100511363481`, passed implementation/docs commit `1dfa8b6d` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: Retry can recover after storage becomes readable/valid; destructive reset, atomic two-key redo, global erase races, real-device recovery/accessibility, store review, and Apollo approval remain separate gates.
 - NEXT: Add an owner-confirmed corrupt Pack reset with recoverable backup semantics, then fence global erase against queued Pack writes.
 
