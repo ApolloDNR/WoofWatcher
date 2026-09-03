@@ -4,6 +4,7 @@
 
 - PASS (source): Owner-confirmed corrupt Pack reset durably journals its complete two-key target before replacing either key; hydration validates and replays an interrupted pair before exposing state.
 - PASS (deterministic): A simulated termination between primary writes relaunches to one consistent default pair and clears the journal; focused Pack persistence passes `11/11`.
+- PASS (dependency-complete): `WoofWatcher Verify` run `33755328937`, job `100648281933`, passed implementation/docs commit `36aa0c6d` through typecheck and CI-safe builds.
 - OPEN: Real iOS/Android process-kill lifecycle proof, owner recovery-copy export/restore, VoiceOver/TalkBack, store review, and Apollo approval.
 
 ## 2026-09-03 Pack erase-race quality gate

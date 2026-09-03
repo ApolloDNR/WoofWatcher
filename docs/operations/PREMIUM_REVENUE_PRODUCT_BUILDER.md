@@ -4,6 +4,8 @@
 
 Corrupt Pack recovery now records a versioned redo journal containing the complete fresh Supplies and Travel Bag pair before replacing either primary AsyncStorage value. A later hydration validates and idempotently replays any interrupted journal before exposing Pack state, clears it only after both writes complete, and includes replay in the owner-wipe drain. Red-first focused persistence coverage passes `11/11`, including a simulated termination between keys and relaunch.
 
+Dependency-complete `WoofWatcher Verify` run `33755328937`, job `100648281933`, passed implementation/docs commit `36aa0c6d` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
+
 This closes deterministic two-key reset interruption at the source boundary. Real native process-kill/relaunch, recovery-copy export/restore, VoiceOver/TalkBack, store/provider/public-launch proof, and Apollo approval remain open.
 
 ## 2026-09-03 Pack global-erase fencing

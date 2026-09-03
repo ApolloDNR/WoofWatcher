@@ -5,6 +5,7 @@
 - DONE: Corrupt Pack reset now writes the complete intended Supplies and Travel Bag pair to a durable recovery journal before replacing either primary key.
 - DONE: Hydration detects and validates an interrupted journal, idempotently replays both payloads before exposing Pack state, removes the journal after both writes, and participates in the owner-wipe drain.
 - VERIFIED LOCALLY: The red test failed on the missing journal contract; focused Pack persistence then passed `11/11` including simulated termination between the two primary writes and relaunch replay.
+- CI: Dependency-complete `WoofWatcher Verify` run `33755328937`, job `100648281933`, passed implementation/docs commit `36aa0c6d` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
 - BOUNDARY: This protects the owner-confirmed corrupt-data reset. Ordinary independent owner edits are still per-key writes; recovery-copy export/restore, real process-kill/device lifecycle proof, VoiceOver/TalkBack, store review, and Apollo approval remain open.
 - NEXT: Add an owner-accessible export/restore path for the preserved corrupt-data recovery copy, then capture real iOS/Android termination/relaunch evidence.
 

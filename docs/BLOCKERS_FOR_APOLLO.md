@@ -3,6 +3,7 @@
 ## 2026-09-03 Pack recovery-journal boundary
 
 - Source/tests now protect owner-confirmed corrupt Pack reset from a process interruption between its two primary writes: a durable redo journal is validated and replayed before Pack becomes editable.
+- Dependency-complete `WoofWatcher Verify` run `33755328937`, job `100648281933`, passed implementation/docs commit `36aa0c6d`; this is source/build proof, not native lifecycle evidence.
 - Still blocked: real iOS/Android kill-and-relaunch evidence, owner-accessible recovery-copy export/restore, VoiceOver/TalkBack proof, store review, and Apollo approval. Deterministic replay does not establish those runtime/release gates.
 
 ## 2026-09-03 Pack erase-race boundary

@@ -5,6 +5,7 @@
 - PASS automated: Recovery persists the full target pair before either primary write; a simulated failure between Supplies and Travel Bag leaves the journal durable, and a new persistence instance replays both defaults before returning `ready`.
 - PASS safety: Journal payloads are schema-validated through the existing Pack parsers, replay is idempotent, and replay joins the owner-wipe drain.
 - LOCAL: Red-first focused coverage failed on the absent journal export and then passed `11/11`.
+- CI: Dependency-complete `WoofWatcher Verify` run `33755328937`, job `100648281933`, passed implementation/docs commit `36aa0c6d` end to end.
 - OPEN: Kill the native process during reset on iOS and Android, relaunch, verify both stores agree and the journal clears, then capture screen-reader and route-named evidence. Recovery-copy export/restore remains separate.
 
 ## 2026-09-03 Pack owner-wipe race coverage
