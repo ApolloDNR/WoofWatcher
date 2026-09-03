@@ -118,28 +118,34 @@ function parseStamp(value: unknown): string | null | undefined {
  * already-packed checklist is NEVER auto-activated, only the owner's tap does
  * that.
  */
-export function parseTravelBag(raw: string | null | undefined): TravelBagSession {
+export function tryParseStoredTravelBag(
+  raw: string | null | undefined,
+): TravelBagSession | null {
   if (typeof raw !== "string" || !raw.trim()) return defaultTravelBag();
   let payload: unknown;
   try {
     payload = JSON.parse(raw);
   } catch {
-    return defaultTravelBag();
+    return null;
   }
   if (payload == null || typeof payload !== "object" || Array.isArray(payload)) {
-    return defaultTravelBag();
+    return null;
   }
   const value = payload as { [key: string]: unknown };
-  if (value.version !== STORAGE_VERSION) return defaultTravelBag();
+  if (value.version !== STORAGE_VERSION) return null;
 
   const phase = value.phase;
   if (typeof phase !== "string" || !PHASES.includes(phase as TravelBagPhase)) {
-    return defaultTravelBag();
+    return null;
   }
   const label = typeof value.label === "string" && value.label.trim() ? value.label.trim() : DEFAULT_LABEL;
   const activatedAt = parseStamp(value.activatedAt);
   const completedAt = parseStamp(value.completedAt);
-  if (activatedAt === undefined || completedAt === undefined) return defaultTravelBag();
+  if (activatedAt === undefined || completedAt === undefined) return null;
 
   return { label, phase: phase as TravelBagPhase, activatedAt, completedAt };
+}
+
+export function parseTravelBag(raw: string | null | undefined): TravelBagSession {
+  return tryParseStoredTravelBag(raw) ?? defaultTravelBag();
 }

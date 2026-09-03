@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-09-02 Pack malformed-payload boundary
+
+- DONE: Missing Pack keys still produce honest starter defaults, while malformed-but-readable Supplies or Travel Bag payloads now fail closed as `corrupt-data` instead of becoming editable defaults.
+- DONE: Either malformed store pauses both Pack editors and all writes, presents dedicated recovery copy, and keeps retry routed through hydration so a retry cannot be misreported as a successful save.
+- VERIFIED LOCALLY: Red-first persistence coverage failed on the silent fallback, then Pack persistence/model coverage passed `30/30` after implementation.
+- BOUNDARY: Retry can recover after storage becomes readable/valid; destructive reset, atomic two-key redo, global erase races, real-device recovery/accessibility, store review, and Apollo approval remain separate gates.
+- NEXT: Add an owner-confirmed corrupt Pack reset with recoverable backup semantics, then fence global erase against queued Pack writes.
+
 ## 2026-09-02 Care-state integrity continuation
 
 - DONE: Auth startup, query state, and durable care caches now share one exact-principal boundary. Unresolved Clerk identity renders no provider children or data queries; each resolved principal receives a newly installed token transport, a fresh query client, and owner-tagged state plus cleanup-ledger keys.

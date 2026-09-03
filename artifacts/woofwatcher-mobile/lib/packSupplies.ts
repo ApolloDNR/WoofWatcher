@@ -213,35 +213,41 @@ function parseItem(raw: unknown): SupplyItem | null {
  * so a corrupted key can never crash the Pack tab. A well-formed empty list
  * is a legitimate user state and parses to [].
  */
-export function parseSupplies(raw: string | null | undefined): SupplyItem[] {
+export function tryParseStoredSupplies(
+  raw: string | null | undefined,
+): SupplyItem[] | null {
   if (typeof raw !== "string" || !raw.trim()) return freshDefaults();
   let payload: unknown;
   try {
     payload = JSON.parse(raw);
   } catch {
-    return freshDefaults();
+    return null;
   }
   if (payload == null || typeof payload !== "object" || Array.isArray(payload)) {
-    return freshDefaults();
+    return null;
   }
   const { version, items } = payload as { version?: unknown; items?: unknown };
-  if (version !== STORAGE_VERSION || !Array.isArray(items)) return freshDefaults();
+  if (version !== STORAGE_VERSION || !Array.isArray(items)) return null;
 
   const parsed: SupplyItem[] = [];
   for (const entry of items) {
     const item = parseItem(entry);
-    if (!item) return freshDefaults();
+    if (!item) return null;
     parsed.push(item);
   }
   // Enforce the same invariants addItem/renameItem maintain, so every list
   // the app holds obeys one contract regardless of where it came from.
   const seenIds = new Set<string>();
   for (const item of parsed) {
-    if (seenIds.has(item.id)) return freshDefaults();
+    if (seenIds.has(item.id)) return null;
     seenIds.add(item.id);
-    if (hasDuplicateName(parsed, item.group, item.name, item.id)) return freshDefaults();
+    if (hasDuplicateName(parsed, item.group, item.name, item.id)) return null;
   }
   return parsed;
+}
+
+export function parseSupplies(raw: string | null | undefined): SupplyItem[] {
+  return tryParseStoredSupplies(raw) ?? freshDefaults();
 }
 
 /**

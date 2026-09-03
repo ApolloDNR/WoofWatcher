@@ -560,10 +560,10 @@ export default function PackScreen() {
       packWriteRevisionRef.current.supplies += 1;
       packWriteRevisionRef.current.travelBag += 1;
       failedPackWritesRef.current.clear();
-      if (result.status === "read-failed") {
+      if (result.status !== "ready") {
         suppliesRef.current = null;
         setSupplies(null);
-        setPackStorageWarning("read-failed");
+        setPackStorageWarning(result.status);
         return;
       }
       suppliesRef.current = result.supplies;
@@ -787,7 +787,9 @@ export default function PackScreen() {
         if (packWriteRevisionRef.current[kind] === revision) {
           failedPackWritesRef.current.add(kind);
           setPackStorageWarning((current) =>
-            current === "read-failed" ? current : "save-failed",
+            current === "read-failed" || current === "corrupt-data"
+              ? current
+              : "save-failed",
           );
         }
         return false;
@@ -813,16 +815,20 @@ export default function PackScreen() {
     if (packStorageRetrying || !packStorageWarning) return;
     setPackStorageRetrying(true);
     try {
-      if (packStorageWarning === "read-failed") {
+      if (packStorageWarning !== "save-failed") {
         const result = await packPersistence.hydrate();
         packWriteRevisionRef.current.supplies += 1;
         packWriteRevisionRef.current.travelBag += 1;
         failedPackWritesRef.current.clear();
-        if (result.status === "read-failed") {
+        if (result.status !== "ready") {
           suppliesRef.current = null;
           setSupplies(null);
-          setPackStorageWarning("read-failed");
-          announce("Pack still couldn't load safely. Changes remain paused.");
+          setPackStorageWarning(result.status);
+          announce(
+            result.status === "corrupt-data"
+              ? "Pack data still needs recovery. Changes remain paused."
+              : "Pack still couldn't load safely. Changes remain paused.",
+          );
           return;
         }
         suppliesRef.current = result.supplies;

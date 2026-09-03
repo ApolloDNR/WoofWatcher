@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-02 Pack malformed-data gate
+
+- PASS (source scope): Pack distinguishes first-run missing keys from malformed owner data; corruption pauses both editors and persistence rather than exposing overwriteable defaults.
+- OPEN: Owner-confirmed corrupt-data reset/backup, atomic two-key redo, global wipe fencing, native recovery/accessibility, store review, and Apollo approval.
+
 ## 2026-09-02 Care-state integrity gate
 
 - PASS (source scope): Unresolved auth mounts no data providers; each exact principal receives isolated token transport, query state, care cache, and cleanup ledger. Verified `/me` household identity gates every remote reconciliation/retry, each care request carries `x-woofwatcher-household-id`, and the server returns `409` on disagreement before care-table access. Scope invalidation uses one outstanding two-second retry timer.

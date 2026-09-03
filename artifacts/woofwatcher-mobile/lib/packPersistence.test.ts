@@ -57,6 +57,37 @@ test("a failed read pauses writes instead of exposing defaults that can overwrit
   assert.deepEqual(writes, []);
 });
 
+test("a malformed stored payload pauses both Pack stores instead of exposing overwriteable defaults", async () => {
+  const writes: Array<{ key: string; value: string }> = [];
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) =>
+      key === PACK_SUPPLIES_KEY
+        ? '{"version":1,"items":"not-a-list"}'
+        : JSON.stringify({
+            version: 1,
+            label: "Weekend trip",
+            phase: "active",
+            activatedAt: "not-a-date",
+            completedAt: null,
+          }),
+    setItem: async (key, value) => {
+      writes.push({ key, value });
+    },
+  };
+  const persistence = createPackPersistence(storage);
+
+  assert.deepEqual(await persistence.hydrate(), { status: "corrupt-data" });
+  await assert.rejects(
+    persistence.saveSupplies(changedSupplies("low")),
+    /paused until Pack loads successfully/i,
+  );
+  await assert.rejects(
+    persistence.saveTravelBag(defaultTravelBag()),
+    /paused until Pack loads successfully/i,
+  );
+  assert.deepEqual(writes, []);
+});
+
 test("a successful first load provides fresh defaults and enables both stores", async () => {
   const stored = new Map<string, string>();
   const storage: PackKeyValueStorage = {
@@ -149,5 +180,11 @@ test("storage warnings provide persistent owner-readable recovery copy", () => {
     title: "Pack changes aren't saved yet",
     message: "Keep the app open and retry before leaving Pack.",
     retryLabel: "Retry saving Pack",
+  });
+  assert.deepEqual(getPackStorageWarningPresentation("corrupt-data"), {
+    title: "Pack data needs recovery",
+    message:
+      "Changes are paused because saved Pack data could not be read safely.",
+    retryLabel: "Retry loading Pack",
   });
 });

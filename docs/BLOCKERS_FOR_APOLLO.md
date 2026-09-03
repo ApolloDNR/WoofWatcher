@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-09-02 Pack malformed-data boundary
+
+- Pack malformed-data detection is source-backed and fail-closed. Owner-confirmed destructive recovery/backup, atomic reset, global wipe-race protection, and real-device accessibility evidence remain open; do not treat starter defaults as recovered owner data.
+
 ## 2026-09-02 Care-state integrity runtime proof
 
 - Source/tests now cover exact-principal auth transport, query-client and cache isolation; verified-household `/me` gating; the `x-woofwatcher-household-id` request header and server pre-care-table `409` fence; generated React/Zod contract parity plus a CI drift gate; one outstanding two-second scope retry; bounded provider requests; household archive masking plus durable same-household pending restore; coalesced refresh; three-way `409` recovery; erase-generation-fenced hydration; critical-versus-discardable storage ordering; a truthful terminal local-data clear; serialized/generation-fenced deletion with delete/edit exclusion, failure-atomic tombstone repair, durable real-id tombstones, and ghost suppression; and nullable-add success guards.

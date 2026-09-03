@@ -1,5 +1,13 @@
 # WoofWatcher Decision Log
 
+## 2026-09-02 — Fail closed on malformed Pack storage
+
+Decision: Treat a present but invalid Supplies or Travel Bag payload as corruption, pause both Pack stores, and require hydration retry instead of silently exposing editable starter defaults.
+
+Reason: Missing keys are a legitimate first-run state; malformed owner storage is not. Conflating them can overwrite the only remaining record with untouched defaults.
+
+Boundary: Owner-confirmed destructive recovery, atomic two-key redo, global erase races, and native evidence remain open.
+
 ## 2026-09-02 — Care state is principal-scoped, household-verified, and recoverable
 
 Decision: Treat whole-document care-plan editing as a server-derived capability, not a display-role inference. Authenticated clients may optimistically edit only after one exact self membership grants `careStateWriteAllowed`; unresolved auth mounts no data providers, each exact principal owns a fresh token/query/cache boundary, and a known denial remains read-only.

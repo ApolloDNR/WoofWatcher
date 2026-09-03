@@ -1,10 +1,10 @@
 import {
-  parseSupplies,
+  tryParseStoredSupplies,
   serializeSupplies,
   type SupplyItem,
 } from "./packSupplies.ts";
 import {
-  parseTravelBag,
+  tryParseStoredTravelBag,
   serializeTravelBag,
   type TravelBagSession,
 } from "./travelBag.ts";
@@ -23,9 +23,9 @@ export type PackHydrationResult =
       supplies: SupplyItem[];
       travelBag: TravelBagSession;
     }
-  | { status: "read-failed" };
+  | { status: "read-failed" | "corrupt-data" };
 
-export type PackStorageWarning = "read-failed" | "save-failed";
+export type PackStorageWarning = "read-failed" | "save-failed" | "corrupt-data";
 
 export type PackStorageWarningPresentation = {
   title: string;
@@ -40,6 +40,14 @@ export function getPackStorageWarningPresentation(
     return {
       title: "Pack couldn't load safely",
       message: "Changes are paused so your saved Pack data isn't overwritten.",
+      retryLabel: "Retry loading Pack",
+    };
+  }
+
+  if (warning === "corrupt-data") {
+    return {
+      title: "Pack data needs recovery",
+      message: "Changes are paused because saved Pack data could not be read safely.",
       retryLabel: "Retry loading Pack",
     };
   }
@@ -91,11 +99,14 @@ export function createPackPersistence(storage: PackKeyValueStorage) {
           storage.getItem(PACK_SUPPLIES_KEY),
           storage.getItem(TRAVEL_BAG_KEY),
         ]);
+        const supplies = tryParseStoredSupplies(rawSupplies);
+        const travelBag = tryParseStoredTravelBag(rawTravelBag);
+        if (!supplies || !travelBag) return { status: "corrupt-data" };
         hydrated = true;
         return {
           status: "ready",
-          supplies: parseSupplies(rawSupplies),
-          travelBag: parseTravelBag(rawTravelBag),
+          supplies,
+          travelBag,
         };
       } catch {
         return { status: "read-failed" };
