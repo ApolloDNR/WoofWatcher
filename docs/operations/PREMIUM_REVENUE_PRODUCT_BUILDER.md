@@ -4,6 +4,8 @@
 
 Pack corruption now has an explicit owner-confirmed recovery action. It preserves the exact raw Supplies and Travel Bag payloads in a durable first-backup record before installing fresh defaults; normal retry remains read-only and recovery retries do not overwrite that first copy. Red-first persistence coverage passes `8/8`. Transactional two-key recovery, global wipe fencing, backup export/restore, native accessibility, store, provider, public-launch, and Apollo gates remain open.
 
+Dependency-complete `WoofWatcher Verify` run `33723252898`, job `100546654096`, passed implementation/docs commit `423103ac` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, and completion.
+
 ## 2026-09-02 Pack malformed-data hardening
 
 Pack hydration now treats invalid stored Supplies or Travel Bag JSON as a fail-closed recovery state. Both editors and stores remain paused, retry re-runs hydration, and the UI no longer silently replaces malformed owner data with editable defaults. Local red-first Pack coverage passes; destructive recovery, wipe-race, native, store, provider, and Apollo proof remain open.
