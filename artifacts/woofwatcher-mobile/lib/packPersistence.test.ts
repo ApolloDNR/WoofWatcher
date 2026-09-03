@@ -9,6 +9,7 @@ import {
 import {
   createPackPersistence,
   getPackStorageWarningPresentation,
+  PACK_CORRUPT_BACKUP_KEY,
   PACK_SUPPLIES_KEY,
   TRAVEL_BAG_KEY,
   type PackKeyValueStorage,
@@ -86,6 +87,70 @@ test("a malformed stored payload pauses both Pack stores instead of exposing ove
     /paused until Pack loads successfully/i,
   );
   assert.deepEqual(writes, []);
+});
+
+test("owner recovery preserves the exact corrupt Pack payloads before installing fresh defaults", async () => {
+  const rawSupplies = '{"version":1,"items":"not-a-list"}';
+  const rawTravelBag = '{"version":1,"label":"Old trip","phase":"broken"}';
+  const stored = new Map<string, string>([
+    [PACK_SUPPLIES_KEY, rawSupplies],
+    [TRAVEL_BAG_KEY, rawTravelBag],
+  ]);
+  const writes: string[] = [];
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      writes.push(key);
+      stored.set(key, value);
+    },
+  };
+  const persistence = createPackPersistence(
+    storage,
+    () => "2026-09-03T04:00:00.000Z",
+  );
+
+  assert.deepEqual(await persistence.hydrate(), { status: "corrupt-data" });
+  const recovered = await persistence.recoverCorruptData();
+
+  assert.equal(recovered.status, "ready");
+  assert.deepEqual(writes, [
+    PACK_CORRUPT_BACKUP_KEY,
+    PACK_SUPPLIES_KEY,
+    TRAVEL_BAG_KEY,
+  ]);
+  assert.deepEqual(JSON.parse(stored.get(PACK_CORRUPT_BACKUP_KEY)!), {
+    version: 1,
+    capturedAt: "2026-09-03T04:00:00.000Z",
+    supplies: rawSupplies,
+    travelBag: rawTravelBag,
+  });
+  assert.deepEqual(parseSupplies(stored.get(PACK_SUPPLIES_KEY)), [
+    ...DEFAULT_SUPPLIES,
+  ]);
+  assert.deepEqual(parseTravelBag(stored.get(TRAVEL_BAG_KEY)), defaultTravelBag());
+});
+
+test("a recovery retry never overwrites the first exact corrupt Pack backup", async () => {
+  const firstBackup = JSON.stringify({
+    version: 1,
+    capturedAt: "2026-09-02T00:00:00.000Z",
+    supplies: "first corrupt supplies",
+    travelBag: "first corrupt bag",
+  });
+  const stored = new Map<string, string>([
+    [PACK_SUPPLIES_KEY, "later corrupt supplies"],
+    [TRAVEL_BAG_KEY, "later corrupt bag"],
+    [PACK_CORRUPT_BACKUP_KEY, firstBackup],
+  ]);
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => stored.set(key, value),
+  };
+  const persistence = createPackPersistence(storage);
+
+  assert.deepEqual(await persistence.hydrate(), { status: "corrupt-data" });
+  assert.equal((await persistence.recoverCorruptData()).status, "ready");
+  assert.equal(stored.get(PACK_CORRUPT_BACKUP_KEY), firstBackup);
 });
 
 test("a successful first load provides fresh defaults and enables both stores", async () => {
@@ -186,5 +251,6 @@ test("storage warnings provide persistent owner-readable recovery copy", () => {
     message:
       "Changes are paused because saved Pack data could not be read safely.",
     retryLabel: "Retry loading Pack",
+    recoveryLabel: "Back up and reset Pack",
   });
 });

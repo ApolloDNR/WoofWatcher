@@ -1,5 +1,13 @@
 # WoofWatcher Decision Log
 
+## 2026-09-03 — Corrupt Pack reset preserves the first raw recovery copy
+
+Decision: Keep ordinary hydration retry non-destructive. A separate owner-confirmed reset must first persist the exact raw Supplies and Travel Bag payloads under a dedicated recovery key, never replace an existing first backup, and only enable editing after both fresh defaults are written.
+
+Reason: Owners need a safe way out of a permanently malformed local store without silently destroying the only evidence that could support later recovery.
+
+Boundary: AsyncStorage has no multi-key transaction here. Interrupted partial reset, backup export/restore, queued-write/global-erase races, and native evidence remain open.
+
 ## 2026-09-02 — Fail closed on malformed Pack storage
 
 Decision: Treat a present but invalid Supplies or Travel Bag payload as corruption, pause both Pack stores, and require hydration retry instead of silently exposing editable starter defaults.

@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-09-03 Pack recovery-copy boundary
+
+- Owner-confirmed corrupt Pack reset now preserves the first exact raw recovery copy before installing defaults. This is local recovery safety, not proof of an atomic multi-key transaction or an owner-accessible export/restore path.
+- Still blocked: interrupted recovery handling, global erase fencing, native VoiceOver/TalkBack proof, store review, and Apollo approval.
+
 ## 2026-09-02 Pack malformed-data boundary
 
 - Pack malformed-data detection is source-backed and fail-closed. Owner-confirmed destructive recovery/backup, atomic reset, global wipe-race protection, and real-device accessibility evidence remain open; do not treat starter defaults as recovered owner data.

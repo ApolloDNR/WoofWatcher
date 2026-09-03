@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-09-03 Pack owner recovery boundary
+
+- DONE: Corrupt Pack recovery is a separate owner-confirmed destructive action; ordinary retry remains non-destructive.
+- DONE: Recovery preserves the exact raw Supplies and Travel Bag payloads under a dedicated durable backup key before installing fresh defaults, and a retry never overwrites the first recovery copy.
+- VERIFIED LOCALLY: Red-first Pack persistence coverage failed on the missing backup/recovery contract and then passed `8/8` after implementation.
+- BOUNDARY: AsyncStorage cannot transactionally replace both primary Pack keys; interrupted partial recovery, global erase/write races, user-facing recovery-copy export, native accessibility, store review, and Apollo approval remain open.
+- NEXT: Fence queued Pack writes and recovery against global erase, then design atomic two-key redo/recovery or an explicit journaled commit protocol.
+
 ## 2026-09-02 Pack malformed-payload boundary
 
 - DONE: Missing Pack keys still produce honest starter defaults, while malformed-but-readable Supplies or Travel Bag payloads now fail closed as `corrupt-data` instead of becoming editable defaults.
@@ -7,7 +15,7 @@
 - VERIFIED LOCALLY: Red-first persistence coverage failed on the silent fallback, then Pack persistence/model coverage passed `30/30` after implementation.
 - CI: Dependency-complete `WoofWatcher Verify` run `33711363166`, job `100511363481`, passed implementation/docs commit `1dfa8b6d` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: Retry can recover after storage becomes readable/valid; destructive reset, atomic two-key redo, global erase races, real-device recovery/accessibility, store review, and Apollo approval remain separate gates.
-- NEXT: Add an owner-confirmed corrupt Pack reset with recoverable backup semantics, then fence global erase against queued Pack writes.
+- NEXT: Completed by the 2026-09-03 owner recovery slice; continue with global erase fencing and an atomic/journaled two-key protocol.
 
 ## 2026-09-02 Care-state integrity continuation
 

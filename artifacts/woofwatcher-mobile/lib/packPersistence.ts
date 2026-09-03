@@ -1,9 +1,11 @@
 import {
+  DEFAULT_SUPPLIES,
   tryParseStoredSupplies,
   serializeSupplies,
   type SupplyItem,
 } from "./packSupplies.ts";
 import {
+  defaultTravelBag,
   tryParseStoredTravelBag,
   serializeTravelBag,
   type TravelBagSession,
@@ -11,6 +13,7 @@ import {
 
 export const PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
 export const TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
+export const PACK_CORRUPT_BACKUP_KEY = "woofwatcher.packCorruptBackup.v1";
 
 export interface PackKeyValueStorage {
   getItem(key: string): Promise<string | null>;
@@ -31,6 +34,7 @@ export type PackStorageWarningPresentation = {
   title: string;
   message: string;
   retryLabel: string;
+  recoveryLabel?: string;
 };
 
 export function getPackStorageWarningPresentation(
@@ -49,6 +53,7 @@ export function getPackStorageWarningPresentation(
       title: "Pack data needs recovery",
       message: "Changes are paused because saved Pack data could not be read safely.",
       retryLabel: "Retry loading Pack",
+      recoveryLabel: "Back up and reset Pack",
     };
   }
 
@@ -69,8 +74,15 @@ function createSerializedWriter<T>(write: (value: T) => Promise<void>) {
   };
 }
 
-export function createPackPersistence(storage: PackKeyValueStorage) {
+export function createPackPersistence(
+  storage: PackKeyValueStorage,
+  now: () => string = () => new Date().toISOString(),
+) {
   let hydrated = false;
+  let corruptSnapshot: {
+    supplies: string | null;
+    travelBag: string | null;
+  } | null = null;
 
   const assertHydrated = () => {
     if (!hydrated) {
@@ -101,13 +113,50 @@ export function createPackPersistence(storage: PackKeyValueStorage) {
         ]);
         const supplies = tryParseStoredSupplies(rawSupplies);
         const travelBag = tryParseStoredTravelBag(rawTravelBag);
-        if (!supplies || !travelBag) return { status: "corrupt-data" };
+        if (!supplies || !travelBag) {
+          corruptSnapshot = {
+            supplies: rawSupplies,
+            travelBag: rawTravelBag,
+          };
+          return { status: "corrupt-data" };
+        }
+        corruptSnapshot = null;
         hydrated = true;
         return {
           status: "ready",
           supplies,
           travelBag,
         };
+      } catch {
+        return { status: "read-failed" };
+      }
+    },
+
+    async recoverCorruptData(): Promise<PackHydrationResult> {
+      hydrated = false;
+      if (!corruptSnapshot) return { status: "read-failed" };
+
+      try {
+        const existingBackup = await storage.getItem(PACK_CORRUPT_BACKUP_KEY);
+        if (existingBackup === null) {
+          await storage.setItem(
+            PACK_CORRUPT_BACKUP_KEY,
+            JSON.stringify({
+              version: 1,
+              capturedAt: now(),
+              supplies: corruptSnapshot.supplies,
+              travelBag: corruptSnapshot.travelBag,
+            }),
+          );
+        }
+
+        const supplies = DEFAULT_SUPPLIES.map((item) => ({ ...item }));
+        const travelBag = defaultTravelBag();
+        await storage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(supplies));
+        await storage.setItem(TRAVEL_BAG_KEY, serializeTravelBag(travelBag));
+        corruptSnapshot = null;
+        hydrated = true;
+        return { status: "ready", supplies, travelBag };
       } catch {
         return { status: "read-failed" };
       }

@@ -867,6 +867,47 @@ export default function PackScreen() {
     }
   };
 
+  const recoverCorruptPack = () => {
+    if (packStorageRetrying || packStorageWarning !== "corrupt-data") return;
+    confirmThroughSteps(
+      [
+        {
+          title: "Back up and reset Pack?",
+          message:
+            "WoofWatcher will preserve the unreadable Pack payloads in a recovery copy on this device, then replace Supplies and Travel Bag with fresh starter lists. This cannot restore the old checklist in the app.",
+          confirmLabel: "Back up and reset",
+          destructive: true,
+        },
+      ],
+      () => {
+        setPackStorageRetrying(true);
+        void packPersistence
+          .recoverCorruptData()
+          .then((result) => {
+            packWriteRevisionRef.current.supplies += 1;
+            packWriteRevisionRef.current.travelBag += 1;
+            failedPackWritesRef.current.clear();
+            if (result.status !== "ready") {
+              setPackStorageWarning("corrupt-data");
+              announce(
+                "Pack recovery could not finish. Changes remain paused; retry recovery before editing.",
+              );
+              return;
+            }
+            suppliesRef.current = result.supplies;
+            travelBagRef.current = result.travelBag;
+            setSupplies(result.supplies);
+            setTravelBag(result.travelBag);
+            setPackStorageWarning(null);
+            announce(
+              "Pack reset with fresh starter lists. The unreadable data was kept in a recovery copy on this device.",
+            );
+          })
+          .finally(() => setPackStorageRetrying(false));
+      },
+    );
+  };
+
   const activateBag = () => {
     const currentSupplies = suppliesRef.current ?? [];
     const currentPackedCount = currentSupplies.filter(
@@ -1123,6 +1164,18 @@ export default function PackScreen() {
               }
               style={s.packStorageRetryButton}
             />
+            {packStorageWarningPresentation.recoveryLabel ? (
+              <BoardActionButton
+                label={packStorageWarningPresentation.recoveryLabel}
+                icon="archive-outline"
+                variant="outline"
+                compact
+                disabled={packStorageRetrying}
+                onPress={recoverCorruptPack}
+                accessibilityLabel={packStorageWarningPresentation.recoveryLabel}
+                style={s.packStorageRecoveryButton}
+              />
+            ) : null}
           </BoardCard>
         ) : null}
 
@@ -2573,6 +2626,10 @@ const s = StyleSheet.create({
   packStorageRetryButton: {
     alignSelf: "flex-start",
     marginTop: 10,
+  },
+  packStorageRecoveryButton: {
+    alignSelf: "flex-start",
+    marginTop: 8,
   },
   packStorageLoadingText: {
     fontSize: 12.5,

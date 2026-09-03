@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-09-03 Pack corrupt-data recovery QA
+
+- PASS automated: After corruption, the exact two raw payloads are backed up before defaults are written, both stores become writable only after recovery completes, and an existing first backup is preserved.
+- PASS source/UI: Corrupt-data warning offers both non-destructive retry and an explicit destructive `Back up and reset Pack` confirmation with accessible labels and outcome announcements.
+- OPEN: Simulate interruption between the two primary-key writes, erase-all-data races, backup export/restore, and real iOS/Android screen-reader recovery.
+
 ## 2026-09-02 Pack malformed-data QA
 
 - PASS automated: Missing Pack keys hydrate defaults, but malformed Supplies or Travel Bag data returns `corrupt-data`, pauses both stores, rejects writes, and uses dedicated retry copy.
