@@ -4,6 +4,7 @@
 
 - DONE: Pack's full route now uses the shared keyboard-aware scroller, keeping the multiline recovery-copy field and Restore action reachable on compact native keyboards.
 - VERIFIED LOCALLY: The red readiness contract failed on the plain route scroller, then passed `193/193` after the shared wrapper was installed.
+- CI: Dependency-complete `WoofWatcher Verify` run `33790526420`, job `100765756553`, passed implementation/docs commit `608458ea` through generated-client drift, doctor, focused tests, typecheck, and CI-safe builds.
 - BOUNDARY: Source coverage does not prove real iOS/Android compact-height behavior, share/paste round trips, VoiceOver/TalkBack focus, process termination, store review, or Apollo approval.
 - NEXT: Capture route-named real-device Pack recovery export/share, paste/import, keyboard dismissal, relaunch, and screen-reader evidence when native tooling is available.
 

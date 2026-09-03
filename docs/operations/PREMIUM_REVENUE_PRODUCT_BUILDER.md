@@ -4,6 +4,8 @@
 
 The Pack recovery-copy field and Restore action now live in the shared keyboard-aware route scroller, preventing the newly added multiline import from stranding its completion action below compact native keyboards. Red-first readiness coverage failed on the plain scroller and passes `193/193` after the change.
 
+Dependency-complete `WoofWatcher Verify` run `33790526420`, job `100765756553`, passed implementation/docs commit `608458ea` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, and completion.
+
 This is source proof only. Real iOS/Android share/paste/import, compact-height keyboard dismissal, VoiceOver/TalkBack focus, process-kill/relaunch, store/provider/public-launch proof, and Apollo approval remain open.
 
 ## 2026-09-03 Pack recovery journal

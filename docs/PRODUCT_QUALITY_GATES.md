@@ -4,6 +4,7 @@
 
 - PASS (source): The recovery-copy import no longer relies on a plain route scroller; its multiline field and Restore action remain in the shared keyboard-aware boundary.
 - PASS (deterministic): Red-first readiness coverage passes `193/193`.
+- PASS (dependency-complete): `WoofWatcher Verify` run `33790526420`, job `100765756553`, passed commit `608458ea` through typecheck and CI-safe builds.
 - OPEN: Real compact-height iOS/Android share/paste/import, keyboard dismissal, VoiceOver/TalkBack, relaunch durability, store review, and Apollo approval.
 
 ## 2026-09-03 Pack recovery-journal gate

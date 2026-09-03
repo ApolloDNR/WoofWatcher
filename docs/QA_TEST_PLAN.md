@@ -4,6 +4,7 @@
 
 - PASS source: The multiline recovery-copy input and Restore action share the route-level `KeyboardAwareScrollViewCompat`, including the established web fallback and native keyboard insets.
 - PASS automated: Red-first mobile readiness failed on the plain scroller and then passed `193/193`.
+- PASS CI: `WoofWatcher Verify` run `33790526420`, job `100765756553`, passed implementation/docs commit `608458ea` end to end.
 - OPEN native: Paste a complete recovery copy on compact iOS and Android, verify the Restore action remains reachable, dismiss the keyboard, relaunch, and capture VoiceOver/TalkBack plus route-named evidence.
 
 ## 2026-09-03 Pack recovery-journal QA

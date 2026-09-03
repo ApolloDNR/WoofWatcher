@@ -3,6 +3,7 @@
 ## 2026-09-03 Pack recovery-import native proof
 
 - Source/readiness coverage now keeps the recovery-copy multiline field and Restore action in one keyboard-aware route.
+- Dependency-complete `WoofWatcher Verify` run `33790526420`, job `100765756553`, passed implementation/docs commit `608458ea`; this remains source/build proof only.
 - Still blocked: real iOS/Android share/paste/import, compact-height keyboard and dismissal, VoiceOver/TalkBack focus, process termination/relaunch, route-named screenshots, store review, and Apollo approval.
 
 ## 2026-09-03 Pack recovery-journal boundary
