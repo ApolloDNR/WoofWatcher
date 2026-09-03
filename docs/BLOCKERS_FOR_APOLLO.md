@@ -3,6 +3,7 @@
 ## 2026-09-03 Pack erase-race boundary
 
 - Privacy now quiesces mounted Pack persistence before its terminal local-data removal: active writes/recovery settle, queued snapshots are rejected, and stale hydration/recovery generations cannot re-enable Pack after the wipe begins.
+- Dependency-complete `WoofWatcher Verify` run `33739095387`, job `100596557142`, passed implementation/docs commit `71851be7`; this is source/build proof, not native lifecycle evidence.
 - Still blocked: process-termination-safe two-key recovery, owner-accessible recovery-copy export/restore, native lifecycle and VoiceOver/TalkBack proof, store review, and Apollo approval. Source tests do not establish those gates.
 
 ## 2026-09-03 Pack recovery-copy boundary

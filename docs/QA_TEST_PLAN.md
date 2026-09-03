@@ -5,6 +5,7 @@
 - Deterministic storage tests hold one Supplies write inside the platform adapter, queue a newer snapshot, begin owner wipe, and prove the wipe waits for the active write while the queued snapshot is rejected before terminal key removal.
 - A second race holds corrupt-data backup persistence, begins owner wipe, and proves recovery cannot install fresh Pack defaults after the wipe generation changes.
 - Care-integrity source coverage requires the Pack quiescence barrier to run before the serialized terminal care-storage wipe.
+- Dependency-complete `WoofWatcher Verify` run `33739095387`, job `100596557142`, passed implementation/docs commit `71851be7`, including generated-client drift, doctor, focused tests, typecheck, and CI-safe builds.
 - Still required on real devices: erase during Pack save/recovery, terminate/relaunch, confirm no Pack resurrection, and verify VoiceOver/TalkBack announcements and focus.
 
 ## 2026-09-03 Pack corrupt-data recovery QA
