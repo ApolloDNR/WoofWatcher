@@ -5,7 +5,7 @@
 - DONE: Cross-platform text sharing now distinguishes an iOS completion or dismissal, an Android result whose completion cannot be confirmed, and a browser abort that can mean either owner cancellation or no available share target. Unknown native results fail closed.
 - DONE: Pack recovery export keeps the private manual copy visible after every uncertain or unsuccessful result and explains each platform boundary without claiming that the recovery payload was sent or saved.
 - VERIFIED LOCALLY: The red-first share-outcome regression plus mobile readiness pass `197/197`; the full focused matrix passes `1052/1052`; mobile TypeScript validation is green; exact-source Expo export bundles `1926` modules and `258` assets; runtime smoke passes all `13` required routes.
-- CI: Pending for the implementation/docs commit.
+- CI: Dependency-complete `WoofWatcher Verify` run `33900154351`, job `101112076816`, passed implementation/docs commit `5594a126` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
 - BOUNDARY: React Native always reports Android share results as `sharedAction`, so WoofWatcher maps that result to `unconfirmed`. Browser `AbortError` does not identify whether the owner cancelled or the browser had no share target, so WoofWatcher maps it to `not-completed`. Real route-named iOS/Android share, cancel, VoiceOver/TalkBack, store review, and Apollo approval remain open.
 - NEXT: Capture the Pack recovery export share/cancel/manual-copy/clear flow on a real iPhone, then retain Android share-sheet behavior as platform-limited evidence rather than a cancellation claim.
 

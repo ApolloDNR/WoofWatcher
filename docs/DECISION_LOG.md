@@ -4,6 +4,7 @@
 
 - Decision: Model `dismissed`, `unconfirmed`, and `not-completed` as first-class text-share outcomes. Inspect the resolved native share action and platform; map Android `sharedAction` to `unconfirmed`, and browser `AbortError` to `not-completed`.
 - Reason: iOS can confirm `sharedAction` or `dismissedAction`, while React Native always reports `sharedAction` on Android. The Web Share contract uses `AbortError` for both owner cancellation and the absence of share targets. Treating those ambiguous outcomes as success would give owners false confirmation, especially for private Pack recovery evidence.
+- Evidence: Dependency-complete `WoofWatcher Verify` run `33900154351`, job `101112076816`, passed implementation/docs commit `5594a126` end to end.
 - Boundary: Source logic cannot confirm Android delivery or identify the cause of a browser abort. Native and browser route evidence remains required.
 
 ## 2026-09-04 — Recovery evidence import must not promise active-list restoration
