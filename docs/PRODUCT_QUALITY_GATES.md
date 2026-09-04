@@ -950,3 +950,9 @@ Source PASS requires the generated private JSON to remain visible and failed sha
 
 - PASS (source): Private recovery JSON has an accessible owner-controlled clear action and raw JSON entry disables text correction features.
 - OPEN (native): Verify clear behavior, share cancellation, clipboard lifecycle, compact-height reach, and VoiceOver/TalkBack on route-named iOS/Android captures.
+
+## 2026-09-03 Pack recovery-copy mounted-state privacy
+
+- PASS (source): Private recovery JSON is removed from Pack UI state when Supplies is no longer selected or the app becomes inactive/backgrounded.
+- PASS (truth): The durable first recovery backup is not deleted by this screen-state boundary.
+- OPEN: System clipboard behavior, native lifecycle timing, assistive-technology traversal, screenshots, store review, and Apollo approval.

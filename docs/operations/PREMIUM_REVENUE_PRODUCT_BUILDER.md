@@ -6246,3 +6246,7 @@ Dependency-complete `WoofWatcher Verify` run `33808014822`, job `100823014945`, 
 
 Pack now gives owners an accessible way to remove private recovery JSON from the mounted route after export, manual copy, cancelled sharing, or paste. Raw JSON entry disables capitalization, autocorrect, and spellcheck. The durable first recovery backup remains unchanged; native share/clipboard, device accessibility, provider, store, public-launch, and Apollo proof remain separate gates.
 Dependency-complete `WoofWatcher Verify` run `33821839206`, job `100865984253`, passed implementation/docs commit `7fabca40` through generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds.
+
+## 2026-09-03 Pack recovery-copy mounted-state privacy
+
+Pack now clears private recovery JSON from mounted UI state when Supplies is left or the app becomes inactive/backgrounded. The durable first corrupt-data backup remains available for later export; this does not claim system clipboard clearing. Red-first readiness coverage protects both lifecycle boundaries, while native lifecycle/accessibility/screenshot proof remains open.

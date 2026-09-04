@@ -6006,6 +6006,22 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
   );
 });
 
+test("clears private Pack recovery JSON when it leaves the active screen", () => {
+  const pack = readAppFile(join("(tabs)", "pack.tsx"));
+
+  assert.match(pack, /AppState/);
+  assert.match(
+    pack,
+    /AppState\.addEventListener\("change",[\s\S]*?nextState !== "active"[\s\S]*?setPackRecoveryCopy\(""\)/,
+    "backgrounding the app must remove the private recovery payload from mounted UI state",
+  );
+  assert.match(
+    pack,
+    /segment !== "supplies"[\s\S]*?setPackRecoveryCopy\(""\)/,
+    "leaving the Supplies segment must not retain hidden private recovery JSON",
+  );
+});
+
 test("keeps the living Story trail map out of accessibility traversal", () => {
   const dayTrail = readAppFile("../components/DayTrailScene.tsx");
 

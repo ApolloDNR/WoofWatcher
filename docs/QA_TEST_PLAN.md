@@ -3227,3 +3227,9 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Export or paste a Pack recovery copy, cancel sharing, then activate `Clear recovery copy`; confirm the private JSON disappears and Restore disables without deleting the durable preserved backup.
 - Verify the JSON input does not capitalize, autocorrect, or spellcheck raw payloads.
 - Native evidence remains required for share/cancel, clipboard lifecycle, relaunch, compact height, VoiceOver/TalkBack, and route-named screenshots.
+
+## 2026-09-03 Pack recovery-copy mounted-state privacy
+
+- Show or paste recovery JSON, leave Supplies, and confirm the mounted field clears and Restore disables without deleting the durable backup.
+- Show or paste recovery JSON, background the app, and confirm the mounted field clears before return.
+- Native lifecycle timing, system clipboard behavior, VoiceOver/TalkBack, and route-named screenshots remain required.

@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AppState,
   Image,
   type ImageSourcePropType,
   Platform,
@@ -561,6 +562,17 @@ export default function PackScreen() {
     () => registerPackPersistenceForOwnerWipe(packPersistence),
     [packPersistence],
   );
+
+  useEffect(() => {
+    if (segment !== "supplies") setPackRecoveryCopy("");
+  }, [segment]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState !== "active") setPackRecoveryCopy("");
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

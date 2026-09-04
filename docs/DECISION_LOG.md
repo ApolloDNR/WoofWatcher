@@ -3842,3 +3842,8 @@ Pack places generated recovery JSON in the visible field before sharing and repo
 - Decision: The Pack recovery-copy field retains exported/pasted JSON until the owner restores it or explicitly clears it, and exposes a dedicated accessible clear action.
 - Why: The payload is private raw Pack data and the Pack tab can remain mounted after a cancelled share. Owners need a truthful manual-copy fallback without leaving sensitive JSON visible indefinitely.
 - Boundary: Clearing the field changes UI state only; it does not delete the first preserved corrupt backup or claim clipboard, device-share, provider, store, or launch proof.
+
+## 2026-09-03 - Clear Pack recovery JSON at mounted privacy boundaries
+
+- Decision: Treat portable Pack recovery JSON as transient sensitive UI state and clear it when the owner leaves Supplies or the app stops being active.
+- Boundary: Preserve the durable first corrupt-data backup; mounted-state clearing is not a delete-backup or system-clipboard-clear action.

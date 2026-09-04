@@ -2833,6 +2833,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
+## 2026-09-03 Pack recovery-copy mounted-state privacy
+
+- DONE: Private Pack recovery JSON clears when the app leaves the active state or the owner leaves Supplies, while the durable first corrupt-data backup remains unchanged.
+- VERIFIED LOCALLY: Red-first readiness coverage failed on the missing lifecycle contract, then passed after AppState and segment boundaries were wired.
+- BOUNDARY: This reduces mounted-screen exposure only; it does not clear a system clipboard or shared destination and does not prove native lifecycle, accessibility, store, or Apollo evidence.
+- NEXT: Run aggregate verification and dependency-complete branch CI, then capture the route-named native recovery privacy loop when tooling is available.
+
 ## 2026-09-03 Pack recovery-copy screen privacy
 
 - DONE: Owners can explicitly clear private recovery JSON from the mounted Pack screen after export, manual copy, share cancellation, or paste; the raw JSON field also disables capitalization, autocorrect, and spellcheck.
