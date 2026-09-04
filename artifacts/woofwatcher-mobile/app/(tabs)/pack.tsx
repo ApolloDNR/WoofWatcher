@@ -977,6 +977,11 @@ export default function PackScreen() {
     );
   };
 
+  const clearPackRecoveryCopy = () => {
+    setPackRecoveryCopy("");
+    announce("Private Pack recovery copy cleared from this screen.");
+  };
+
   const activateBag = () => {
     const currentSupplies = suppliesRef.current ?? [];
     const currentPackedCount = currentSupplies.filter(
@@ -1291,7 +1296,7 @@ export default function PackScreen() {
                 icon="close-circle-outline"
                 variant="soft"
                 compact
-                onPress={() => setPackRecoveryCopy("")}
+                onPress={clearPackRecoveryCopy}
                 accessibilityLabel="Clear private Pack recovery copy from this screen"
               />
             ) : null}

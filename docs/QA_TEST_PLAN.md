@@ -3234,3 +3234,8 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Show or paste recovery JSON, switch to another tab while Pack remains mounted, return, and confirm the field is empty and Restore remains disabled.
 - Show or paste recovery JSON, background the app, and confirm the mounted field clears before return.
 - Native lifecycle timing, system clipboard behavior, VoiceOver/TalkBack, and route-named screenshots remain required.
+
+## 2026-09-04 Pack recovery-copy clear announcement
+
+- Export or paste a recovery copy, focus `Clear recovery copy`, activate it, and confirm the field empties, Restore disables, and assistive technology announces that the private copy was cleared from this screen.
+- Confirm the durable first recovery backup can still be exported afterward; native VoiceOver/TalkBack timing remains required.

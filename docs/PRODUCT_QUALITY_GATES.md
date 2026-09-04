@@ -958,3 +958,9 @@ Source PASS requires the generated private JSON to remain visible and failed sha
 - OPEN: System clipboard behavior, native lifecycle timing, assistive-technology traversal, screenshots, store review, and Apollo approval.
 - CI: `WoofWatcher Verify` run `33833355785`, job `100900786070`, passed commit `50f7226a` with dependency-complete focused tests, typecheck, and CI-safe builds.
 - CI: `WoofWatcher Verify` run `33844534832`, job `100933470929`, passed route-blur implementation commit `aed9e003` with generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds green.
+
+## 2026-09-04 Pack recovery-copy clear feedback
+
+- PASS (source): The explicit clear action removes private recovery JSON and announces the result through the shared accessibility announcement path.
+- PASS (truth): Clearing mounted UI state does not delete the durable first corrupt-data backup.
+- OPEN: Native VoiceOver/TalkBack timing, system clipboard behavior, screenshots, store review, and Apollo approval.

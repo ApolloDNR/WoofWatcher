@@ -2833,6 +2833,12 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
+## 2026-09-04 Pack recovery-copy clear announcement
+
+- DONE: The explicit `Clear recovery copy` action now announces that private Pack JSON was removed from the current screen, so screen-reader owners receive the same result as sighted owners.
+- BOUNDARY: The action clears mounted UI state only. It preserves the durable first corrupt-data backup and does not claim system clipboard, native share, provider, store, or launch proof.
+- NEXT: Require dependency-complete branch CI, then capture route-named VoiceOver/TalkBack and native share/cancel/manual-copy/clear evidence when tooling is available.
+
 ## 2026-09-03 Pack recovery-copy mounted-state privacy
 
 - DONE: Private Pack recovery JSON clears when the Pack route loses focus, the app leaves the active state, or the owner leaves Supplies, while the durable first corrupt-data backup remains unchanged.

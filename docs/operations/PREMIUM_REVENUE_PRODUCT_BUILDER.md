@@ -6252,3 +6252,7 @@ Dependency-complete `WoofWatcher Verify` run `33821839206`, job `100865984253`, 
 Pack now clears private recovery JSON from mounted UI state when the Pack route loses focus, Supplies is left, or the app becomes inactive/backgrounded. Route blur is explicit because tab routes can remain mounted. The durable first corrupt-data backup remains available for later export; this does not claim system clipboard clearing. Red-first readiness coverage protects all three privacy boundaries, while native lifecycle/accessibility/screenshot proof remains open.
 Dependency-complete `WoofWatcher Verify` run `33833355785`, job `100900786070`, passed implementation/docs commit `50f7226a` through generated-client drift, doctor, focused tests, workspace typecheck, CI-safe builds, and completion.
 Dependency-complete `WoofWatcher Verify` run `33844534832`, job `100933470929`, passed route-blur privacy commit `aed9e003` through generated-client drift, doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
+
+## 2026-09-04 Pack recovery-copy clear announcement
+
+The owner-triggered `Clear recovery copy` action now announces that private Pack JSON was removed from the current screen. Red-first readiness coverage caught the missing result feedback and protects the named clear handler. Automatic lifecycle cleanup remains silent, the durable first corrupt-data backup remains intact, and native VoiceOver/TalkBack, clipboard, share-destination, screenshot, store, and Apollo proof remain open.
