@@ -4,7 +4,7 @@
 
 - DONE: The owner-facing action now says `Import recovery copy` and its accessibility label identifies support evidence, matching the non-destructive behavior that preserves a copy without restoring active Supplies or Travel Bag.
 - VERIFIED LOCALLY: Red-first readiness coverage rejected the misleading `Restore recovery copy` label before the implementation.
-- CI: Dependency-complete `WoofWatcher Verify` run `33858689174`, job `100977839345`, passed the preceding clear-feedback commit `78f945f9`; rerun branch CI for this language slice before treating its dependency proof as current.
+- CI: Dependency-complete `WoofWatcher Verify` run `33873193485`, job `101023845235`, passed implementation/docs commit `bf495bc9` through generated-client drift, doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
 - BOUNDARY: This improves truthful source copy only. Real iOS/Android paste/import, VoiceOver/TalkBack announcement and focus, route screenshots, store review, and Apollo approval remain open.
 - NEXT: Capture route-named native Pack recovery export/share-cancel/manual-copy/clear/paste/import/background/relaunch and accessibility evidence when tooling is available.
 
