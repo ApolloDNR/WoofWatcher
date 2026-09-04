@@ -6,9 +6,9 @@
 - DONE: Save/share is single-flight. Rapid taps cannot create duplicate history items or overlapping share sheets; after the first save, the same report is reused by an explicit `Share again` action. Records owns one unified result, so helper fallback dialogs cannot compete with its announcement.
 - DONE: The Care Pass and Add Record modal backdrop/sheet containers no longer swallow their child controls. Each sheet exposes a modal accessibility boundary, while close, share, record-type, attachment, cancel, and save controls expose explicit roles, labels, and selected state where applicable.
 - VERIFIED LOCALLY: The targeted Records truth/accessibility coverage passes `5/5`; the share/readiness matrix passes `202/202`; the broader focused matrix passes `1057/1057`; mobile TypeScript and formatting checks are green; and the exact-source Expo web export completes at 1,927 modules / 258 assets with all 13 runtime routes passing.
-- PENDING: Dependency-complete CI is not yet recorded for this slice.
+- CI: Dependency-complete `WoofWatcher Verify` run `33904022481`, job `101124560571`, passed exact implementation commit `55039355d9a728c51ff0a7d25d03c9f59b0346cc` in `2m18s`; checkout, pnpm/Node setup, dependency install, generated clients, beta doctor, focused tests, workspace typecheck and CI-safe builds, post steps, and completion were all green.
 - BOUNDARY: Real VoiceOver/TalkBack focus and announcements, iOS/Android device sharing, configured-provider behavior, store review, and Apollo approval remain open.
-- NEXT: Record dependency-complete CI, then capture route-named Records save/share/dismiss/failure and modal navigation on real iOS and Android devices.
+- NEXT: Rerun dependency-complete CI after the evidence commit for final-tip freshness, then capture route-named Records save/share/dismiss/failure and modal navigation on real iOS and Android devices.
 
 ## 2026-09-04 Share cancellation truth boundary
 
