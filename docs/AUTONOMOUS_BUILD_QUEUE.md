@@ -3186,4 +3186,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - DONE: Export and import now share an immediate ref-backed transfer lock, disable both actions, and show `Working…` while storage or sharing is in flight, preventing rapid taps from opening overlapping share sheets, writes, or result dialogs.
 - VERIFIED LOCALLY: Red-first readiness coverage failed before the transfer boundary and passes after implementation.
+- VERIFIED IN CI: `WoofWatcher Verify` run `33890168897`, job `101079628933`, passed implementation/docs commit `63031984` through generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds.
 - NEXT: Capture route-named real-device export/share-cancel/manual-copy/clear/paste/import and VoiceOver/TalkBack evidence when native tooling is available.
