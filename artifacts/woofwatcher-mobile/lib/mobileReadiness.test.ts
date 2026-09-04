@@ -5970,7 +5970,7 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
   );
   assert.match(
     pack,
-    /<KeyboardAwareScrollViewCompat[\s\S]*?accessibilityLabel="Pack recovery copy JSON"[\s\S]*?label="Import recovery copy"[\s\S]*?<\/KeyboardAwareScrollViewCompat>/,
+    /<KeyboardAwareScrollViewCompat[\s\S]*?accessibilityLabel="Pack recovery copy JSON"[\s\S]*?Import recovery copy[\s\S]*?<\/KeyboardAwareScrollViewCompat>/,
     "the import action must stay in the same keyboard-aware route as its multiline input",
   );
   assert.match(pack, /packPersistence\.exportRecoveryCopy\(\)/);
@@ -6004,6 +6004,31 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
   );
   assert.match(pack, /accessibilityLabel="Pack recovery copy JSON"/);
   assert.match(pack, /packPersistence\.restoreRecoveryCopy\(/);
+  assert.match(
+    pack,
+    /const \[packRecoveryTransferBusy, setPackRecoveryTransferBusy\] = useState\(false\)/,
+    "Pack recovery transfers must expose one mounted busy boundary",
+  );
+  assert.match(
+    pack,
+    /const exportPackRecoveryCopy = async \(\) => \{[\s\S]*?if \(packRecoveryTransferBusyRef\.current\) return;[\s\S]*?packRecoveryTransferBusyRef\.current = true[\s\S]*?finally \{[\s\S]*?packRecoveryTransferBusyRef\.current = false[\s\S]*?setPackRecoveryTransferBusy\(false\)/,
+    "repeated export taps must not start overlapping storage reads or share requests",
+  );
+  assert.match(
+    pack,
+    /const importPackRecoveryCopy = async \(\) => \{[\s\S]*?if \(packRecoveryTransferBusyRef\.current\) return;[\s\S]*?packRecoveryTransferBusyRef\.current = true[\s\S]*?finally \{[\s\S]*?packRecoveryTransferBusyRef\.current = false[\s\S]*?setPackRecoveryTransferBusy\(false\)/,
+    "repeated import taps must not start overlapping recovery writes or dialogs",
+  );
+  assert.match(
+    pack,
+    /label=\{packRecoveryTransferBusy \? "Working…" : "Export recovery copy"\}[\s\S]*?disabled=\{packRecoveryTransferBusy\}/,
+    "the export action must disclose and enforce its busy state",
+  );
+  assert.match(
+    pack,
+    /label=\{packRecoveryTransferBusy \? "Working…" : "Import recovery copy"\}[\s\S]*?disabled=\{packRecoveryTransferBusy \|\| !packRecoveryCopy\.trim\(\)\}/,
+    "the import action must disclose and enforce its busy state",
+  );
   assert.match(
     pack,
     /does not replace your active Supplies or Travel Bag/i,

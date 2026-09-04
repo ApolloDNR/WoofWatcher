@@ -970,3 +970,7 @@ Source PASS requires the generated private JSON to remain visible and failed sha
 - PASS (source): The explicit clear action removes private recovery JSON and announces the result through the shared accessibility announcement path.
 - PASS (truth): Clearing mounted UI state does not delete the durable first corrupt-data backup.
 - OPEN: Native VoiceOver/TalkBack timing, system clipboard behavior, screenshots, store review, and Apollo approval.
+## 2026-09-04 Pack recovery transfer tap safety
+
+- PASS (source): Pack recovery export/import has one immediate transfer fence plus visible disabled-state feedback, so duplicate taps cannot start overlapping private-data transfers.
+- OPEN (native): Real iOS/Android share-sheet timing, cancellation, lifecycle, and VoiceOver/TalkBack behavior remain unproved.

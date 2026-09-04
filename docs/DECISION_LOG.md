@@ -3856,3 +3856,6 @@ Pack places generated recovery JSON in the visible field before sharing and repo
 
 - Decision: Route the owner-triggered clear action through a named handler that clears mounted private JSON and announces completion. Automatic blur/background cleanup stays silent to avoid unsolicited screen-reader chatter.
 - Boundary: The announcement confirms only current-screen state; it does not claim deletion of the durable backup or system clipboard.
+## 2026-09-04 - Fence Pack recovery transfers at the event boundary
+
+Decision: Use a synchronous ref as the authority for recovery export/import admission and mirrored React state for owner-visible disabled/working feedback. State alone is not the lock because two taps can arrive before React commits a render.

@@ -6262,3 +6262,6 @@ Dependency-complete `WoofWatcher Verify` run `33844534832`, job `100933470929`, 
 ## 2026-09-04 Pack recovery-copy clear announcement
 
 The owner-triggered `Clear recovery copy` action now announces that private Pack JSON was removed from the current screen. Red-first readiness coverage caught the missing result feedback and protects the named clear handler. Automatic lifecycle cleanup remains silent, the durable first corrupt-data backup remains intact, and native VoiceOver/TalkBack, clipboard, share-destination, screenshot, store, and Apollo proof remain open.
+## 2026-09-04 Pack recovery transfer tap safety
+
+Pack recovery export/import now uses one synchronous transfer fence, mirrored into disabled `Working…` controls, so repeated taps cannot overlap private storage reads/writes, native share requests, or result dialogs. Red-first readiness coverage protects the ref-backed lock and `finally` release. Real-device share-sheet, lifecycle, and screen-reader proof remains open.

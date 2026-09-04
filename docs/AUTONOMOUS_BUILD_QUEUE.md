@@ -3182,3 +3182,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI, then capture the route-named native recovery loop when tooling is available.
 - CI PROOF: `WoofWatcher Verify` run `33808014822`, job `100823014945`, passed implementation/docs commit `e042065e` through generated-client drift, doctor, focused tests, workspace typecheck, CI-safe builds, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+## 2026-09-04 Pack recovery transfer tap safety
+
+- DONE: Export and import now share an immediate ref-backed transfer lock, disable both actions, and show `Working…` while storage or sharing is in flight, preventing rapid taps from opening overlapping share sheets, writes, or result dialogs.
+- VERIFIED LOCALLY: Red-first readiness coverage failed before the transfer boundary and passes after implementation.
+- NEXT: Capture route-named real-device export/share-cancel/manual-copy/clear/paste/import and VoiceOver/TalkBack evidence when native tooling is available.

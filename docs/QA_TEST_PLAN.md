@@ -3239,3 +3239,7 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 
 - Export or paste a recovery copy, focus `Clear recovery copy`, activate it, and confirm the field empties, Restore disables, and assistive technology announces that the private copy was cleared from this screen.
 - Confirm the durable first recovery backup can still be exported afterward; native VoiceOver/TalkBack timing remains required.
+## 2026-09-04 Pack recovery transfer tap safety
+
+- Source/readiness proof: rapid repeated export or import taps are fenced synchronously, both transfer actions remain disabled with visible `Working…` feedback until completion, and the lock releases through `finally` on every result path.
+- Native proof still required: exercise rapid taps, share cancellation, screen-reader feedback, and interrupted/backgrounded transfers on real iOS and Android devices.

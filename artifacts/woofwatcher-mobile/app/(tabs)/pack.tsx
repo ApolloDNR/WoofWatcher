@@ -547,6 +547,8 @@ export default function PackScreen() {
     useState<PackStorageWarning | null>(null);
   const [packStorageRetrying, setPackStorageRetrying] = useState(false);
   const [packRecoveryCopy, setPackRecoveryCopy] = useState("");
+  const [packRecoveryTransferBusy, setPackRecoveryTransferBusy] = useState(false);
+  const packRecoveryTransferBusyRef = useRef(false);
   const [packPersistence] = useState(() => createPackPersistence(AsyncStorage));
   const suppliesRef = useRef<SupplyItem[] | null>(null);
   const travelBagRef = useRef(travelBag);
@@ -936,45 +938,61 @@ export default function PackScreen() {
   };
 
   const exportPackRecoveryCopy = async () => {
-    const result = await packPersistence.exportRecoveryCopy();
-    if (result.status === "ready") {
-      setPackRecoveryCopy(result.serialized);
-      const shareOutcome = await shareTextPayload({
-        message: result.serialized,
-        title: "WoofWatcher Pack recovery copy",
-      });
-      announce(
-        shareOutcome === "failed"
-          ? "Sharing was unavailable. Recovery copy is shown below for manual copy. It contains private raw Pack data."
-          : "Pack recovery copy shared or saved. A manual copy remains shown below. It contains private raw Pack data.",
+    if (packRecoveryTransferBusyRef.current) return;
+    packRecoveryTransferBusyRef.current = true;
+    setPackRecoveryTransferBusy(true);
+    try {
+      const result = await packPersistence.exportRecoveryCopy();
+      if (result.status === "ready") {
+        setPackRecoveryCopy(result.serialized);
+        const shareOutcome = await shareTextPayload({
+          message: result.serialized,
+          title: "WoofWatcher Pack recovery copy",
+        });
+        announce(
+          shareOutcome === "failed"
+            ? "Sharing was unavailable. Recovery copy is shown below for manual copy. It contains private raw Pack data."
+            : "Pack recovery copy shared or saved. A manual copy remains shown below. It contains private raw Pack data.",
+        );
+        return;
+      }
+      notifyDialog(
+        "Recovery copy unavailable",
+        result.status === "none"
+          ? "There is no preserved corrupt Pack recovery copy on this device."
+          : "WoofWatcher could not safely read the preserved recovery copy.",
       );
-      return;
+    } finally {
+      packRecoveryTransferBusyRef.current = false;
+      setPackRecoveryTransferBusy(false);
     }
-    notifyDialog(
-      "Recovery copy unavailable",
-      result.status === "none"
-        ? "There is no preserved corrupt Pack recovery copy on this device."
-        : "WoofWatcher could not safely read the preserved recovery copy.",
-    );
   };
 
   const importPackRecoveryCopy = async () => {
-    const result = await packPersistence.restoreRecoveryCopy(packRecoveryCopy);
-    if (result.status === "restored" || result.status === "already-present") {
-      setPackRecoveryCopy("");
-      announce("Pack recovery copy preserved on this device.");
+    if (packRecoveryTransferBusyRef.current) return;
+    packRecoveryTransferBusyRef.current = true;
+    setPackRecoveryTransferBusy(true);
+    try {
+      const result = await packPersistence.restoreRecoveryCopy(packRecoveryCopy);
+      if (result.status === "restored" || result.status === "already-present") {
+        setPackRecoveryCopy("");
+        announce("Pack recovery copy preserved on this device.");
+        notifyDialog(
+          "Recovery copy preserved",
+          "The imported copy is available for support or later export. It does not replace your active Supplies or Travel Bag.",
+        );
+        return;
+      }
       notifyDialog(
-        "Recovery copy preserved",
-        "The imported copy is available for support or later export. It does not replace your active Supplies or Travel Bag.",
+        result.status === "conflict" ? "Recovery copy already exists" : "Recovery copy not restored",
+        result.status === "conflict"
+          ? "This device already has a different first recovery copy. WoofWatcher kept that original copy unchanged."
+          : "Paste a complete WoofWatcher Pack recovery copy and try again.",
       );
-      return;
+    } finally {
+      packRecoveryTransferBusyRef.current = false;
+      setPackRecoveryTransferBusy(false);
     }
-    notifyDialog(
-      result.status === "conflict" ? "Recovery copy already exists" : "Recovery copy not restored",
-      result.status === "conflict"
-        ? "This device already has a different first recovery copy. WoofWatcher kept that original copy unchanged."
-        : "Paste a complete WoofWatcher Pack recovery copy and try again.",
-    );
   };
 
   const clearPackRecoveryCopy = () => {
@@ -1262,11 +1280,12 @@ export default function PackScreen() {
             />
             <Text style={[s.packRecoveryCopyBoundary, { color: colors.mutedForeground }]}>Export the first unreadable Pack payload for safekeeping, or import a copy without changing your active lists. The export contains private raw Pack data.</Text>
             <BoardActionButton
-              label="Export recovery copy"
+              label={packRecoveryTransferBusy ? "Working…" : "Export recovery copy"}
               icon="share-outline"
               variant="outline"
               compact
               onPress={() => void exportPackRecoveryCopy()}
+              disabled={packRecoveryTransferBusy}
               accessibilityLabel="Export recovery copy"
             />
             <TextInput
@@ -1301,11 +1320,11 @@ export default function PackScreen() {
               />
             ) : null}
             <BoardActionButton
-              label="Import recovery copy"
+              label={packRecoveryTransferBusy ? "Working…" : "Import recovery copy"}
               icon="download-outline"
               variant="outline"
               compact
-              disabled={!packRecoveryCopy.trim()}
+              disabled={packRecoveryTransferBusy || !packRecoveryCopy.trim()}
               onPress={() => void importPackRecoveryCopy()}
               accessibilityLabel="Import recovery copy as support evidence"
             />
