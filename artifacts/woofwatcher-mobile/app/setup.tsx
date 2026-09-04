@@ -330,7 +330,7 @@ export default function SetupScreen() {
           </BoardCard>
 
           <Section title="Dog profile" icon="paw-outline">
-            <Field label="Name" value={draft.dogName} placeholder="Phoenix" onChangeText={(value) => setField("dogName", value)} />
+            <Field accessibilityLabel="Dog name" label="Name" value={draft.dogName} placeholder="Phoenix" onChangeText={(value) => setField("dogName", value)} />
             <Field label="Breed or mix" value={draft.breed} placeholder="German Shepherd mix" onChangeText={(value) => setField("breed", value)} />
             <View style={s.twinPreview}>
               <View style={s.twinLineRow}>
@@ -493,7 +493,7 @@ export default function SetupScreen() {
           )}
 
           <Section title="Household caregiver" icon="people-outline">
-            <Field label="Name" value={draft.caregiverName} placeholder="Apollo" onChangeText={(value) => setField("caregiverName", value)} />
+            <Field accessibilityLabel="Caregiver name" label="Name" value={draft.caregiverName} placeholder="Apollo" onChangeText={(value) => setField("caregiverName", value)} />
             <Field label="Role" value={draft.caregiverRole} placeholder="Primary caregiver" onChangeText={(value) => setField("caregiverRole", value)} />
           </Section>
 
@@ -702,6 +702,7 @@ function Section({
 }
 
 function Field({
+  accessibilityLabel,
   label,
   value,
   placeholder,
@@ -710,6 +711,7 @@ function Field({
   keyboardType = "default",
   autoCapitalize = "sentences",
 }: {
+  accessibilityLabel?: string;
   label: string;
   value: string;
   placeholder: string;
@@ -723,6 +725,7 @@ function Field({
     <View style={{ flex: 1 }}>
       <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{label.toUpperCase()}</Text>
       <TextInput
+        accessibilityLabel={accessibilityLabel ?? label}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

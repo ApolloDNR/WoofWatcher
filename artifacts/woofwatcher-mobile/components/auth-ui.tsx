@@ -231,6 +231,7 @@ export function AuthShell({
 export function Field({
   label,
   error,
+  accessibilityLabel,
   ...props
 }: TextInputProps & { label: string; error?: string }) {
   const colors = useColors();
@@ -245,6 +246,7 @@ export function Field({
         {label}
       </Text>
       <TextInput
+        accessibilityLabel={accessibilityLabel ?? label}
         placeholderTextColor={colors.mutedForeground}
         style={[
           styles.input,

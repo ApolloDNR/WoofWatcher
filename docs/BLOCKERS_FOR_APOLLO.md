@@ -1,5 +1,11 @@
 # Blockers For Apollo
 
+## 2026-09-04 Auth and Setup input-label native proof
+
+- Source behavior now gives provider sign-in, sign-up, verification-code, and every Setup input a programmatic accessible name through the shared `accessibilityLabel={accessibilityLabel ?? label}` contract. `Dog name` and `Caregiver name` explicitly distinguish the two visible `Name` fields.
+- Red-first scoped coverage exposed the former false-positive assertion before passing `1/1`; mobile readiness passes `198/198`, the Auth/Setup focused matrix passes `223/223`, the full focused matrix passes `1058/1058`, mobile TypeScript and diff validation are green, exact-source Expo web export completes at `1,927` modules / `258` assets, and all `13` runtime routes pass.
+- Still blocked: dependency-complete CI, real VoiceOver/TalkBack field naming and focus, real Clerk/provider authentication, route-named native screenshots, store review, public launch, and Apollo approval.
+
 ## 2026-09-04 Records saved-share and modal native proof
 
 - Source behavior now keeps local Care Pass persistence separate from external share evidence and visibly presents plus announces all seven share outcomes without turning a saved history item into a delivery claim. The flow is single-flight, prevents rapid-tap duplicates, reuses the saved report for `Share again`, and emits one unified result instead of competing dialogs.

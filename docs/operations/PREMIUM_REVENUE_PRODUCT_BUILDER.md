@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-09-04 Auth and Setup programmatic input labels
+
+The launch-critical Auth and Setup forms now name inputs at the `TextInput` boundary through `accessibilityLabel={accessibilityLabel ?? label}`. Provider sign-in, sign-up, and verification code inherit their visible labels, every Setup field receives the same programmatic contract, and explicit `Dog name` plus `Caregiver name` overrides keep the duplicate visual `Name` captions unambiguous.
+
+A scoped red-first readiness test exposed the former false positive, where a broad assertion matched a button label instead of the shared Auth field, and now passes `1/1`. Mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; the full focused matrix passes `1058/1058`; mobile TypeScript and diff validation are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass. Dependency-complete CI remains pending. Real VoiceOver/TalkBack behavior, Clerk/provider authentication, route-named native screenshots, store review, public launch, and Apollo approval remain separate gates.
+
 ## 2026-09-04 Records saved-share truth and accessible sheets
 
 Records now treats a saved Care Pass and an external share as two separate facts. Report History confirms only local persistence, while the owner sees and hears one precise post-save result for each `shared`, `copied`, `downloaded`, `dismissed`, `unconfirmed`, `not-completed`, or `failed` outcome. Save/share is single-flight, rapid taps cannot duplicate history or overlap share sheets, and `Share again` reuses the first saved artifact without competing helper dialogs.

@@ -724,7 +724,6 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   assert.match(authUi, /authSetupProofManifest\.rows\.map/);
   assert.match(authUi, /authSetupProofManifest\.blockers\.map/);
   assert.match(authUi, /Native proof blocked/);
-  assert.match(authUi, /accessibilityLabel=\{label\}/);
   assert.match(signIn, /buildAuthAccountIdentityCopy/);
   assert.match(signIn, /buildAuthAccountIdentityCopy\(state\.profile\.name\)/);
   assert.match(signIn, /subtitle=\{identityCopy\.previewSignIn\}/);
@@ -6488,6 +6487,45 @@ test("keeps AuthShell fields and submit actions reachable above compact native k
     authUi,
     /<ScrollView[\s\S]*?styles\.form[\s\S]*?\{children\}[\s\S]*?<\/ScrollView>/,
     "AuthShell must not use a plain ScrollView that can strand provider fields behind a compact-height keyboard",
+  );
+});
+
+test("programmatically names every Auth and Setup text field", () => {
+  const authUi = readAppFile("../components/auth-ui.tsx");
+  const setup = readAppFile("setup.tsx");
+  const authFieldStart = authUi.indexOf("export function Field");
+  const authFieldEnd = authUi.indexOf("export function PrimaryButton");
+  const setupFieldStart = setup.indexOf("function Field({");
+  const setupFieldEnd = setup.indexOf("const s = StyleSheet.create");
+
+  assert.ok(authFieldStart >= 0 && authFieldEnd > authFieldStart);
+  assert.ok(setupFieldStart >= 0 && setupFieldEnd > setupFieldStart);
+
+  const authField = authUi.slice(
+    authFieldStart,
+    authFieldEnd,
+  );
+  const setupField = setup.slice(setupFieldStart, setupFieldEnd);
+
+  assert.match(
+    authField,
+    /<TextInput[\s\S]*?accessibilityLabel=\{accessibilityLabel \?\? label\}/,
+    "the shared Auth field must give its TextInput a durable accessibility name while preserving explicit overrides",
+  );
+  assert.match(
+    setupField,
+    /<TextInput[\s\S]*?accessibilityLabel=\{accessibilityLabel \?\? label\}/,
+    "the Setup field must give its TextInput a durable accessibility name while preserving explicit overrides",
+  );
+  assert.match(
+    setup,
+    /<Field\s+accessibilityLabel="Dog name"\s+label="Name"/,
+    "the dog name field must be distinct from the caregiver name field",
+  );
+  assert.match(
+    setup,
+    /<Field\s+accessibilityLabel="Caregiver name"\s+label="Name"/,
+    "the caregiver name field must be distinct from the dog name field",
   );
 });
 
