@@ -3231,5 +3231,6 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 ## 2026-09-03 Pack recovery-copy mounted-state privacy
 
 - Show or paste recovery JSON, leave Supplies, and confirm the mounted field clears and Restore disables without deleting the durable backup.
+- Show or paste recovery JSON, switch to another tab while Pack remains mounted, return, and confirm the field is empty and Restore remains disabled.
 - Show or paste recovery JSON, background the app, and confirm the mounted field clears before return.
 - Native lifecycle timing, system clipboard behavior, VoiceOver/TalkBack, and route-named screenshots remain required.

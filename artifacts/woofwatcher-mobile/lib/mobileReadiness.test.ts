@@ -6010,6 +6010,12 @@ test("clears private Pack recovery JSON when it leaves the active screen", () =>
   const pack = readAppFile(join("(tabs)", "pack.tsx"));
 
   assert.match(pack, /AppState/);
+  assert.match(pack, /useFocusEffect/);
+  assert.match(
+    pack,
+    /useFocusEffect\([\s\S]*?return \(\) => setPackRecoveryCopy\(""\)/,
+    "switching away from the still-mounted Pack tab must remove private recovery JSON",
+  );
   assert.match(
     pack,
     /AppState\.addEventListener\("change",[\s\S]*?nextState !== "active"[\s\S]*?setPackRecoveryCopy\(""\)/,

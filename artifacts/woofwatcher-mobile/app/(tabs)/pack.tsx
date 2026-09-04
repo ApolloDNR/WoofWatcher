@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
@@ -566,6 +566,12 @@ export default function PackScreen() {
   useEffect(() => {
     if (segment !== "supplies") setPackRecoveryCopy("");
   }, [segment]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => setPackRecoveryCopy("");
+    }, []),
+  );
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {

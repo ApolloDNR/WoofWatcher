@@ -3845,5 +3845,5 @@ Pack places generated recovery JSON in the visible field before sharing and repo
 
 ## 2026-09-03 - Clear Pack recovery JSON at mounted privacy boundaries
 
-- Decision: Treat portable Pack recovery JSON as transient sensitive UI state and clear it when the owner leaves Supplies or the app stops being active.
+- Decision: Treat portable Pack recovery JSON as transient sensitive UI state and clear it when the Pack route loses focus, the owner leaves Supplies, or the app stops being active. Tab routes can remain mounted, so route blur is a distinct privacy boundary.
 - Boundary: Preserve the durable first corrupt-data backup; mounted-state clearing is not a delete-backup or system-clipboard-clear action.

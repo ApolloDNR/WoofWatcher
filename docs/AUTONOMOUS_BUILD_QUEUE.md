@@ -2835,8 +2835,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 ## 2026-09-03 Pack recovery-copy mounted-state privacy
 
-- DONE: Private Pack recovery JSON clears when the app leaves the active state or the owner leaves Supplies, while the durable first corrupt-data backup remains unchanged.
-- VERIFIED LOCALLY: Red-first readiness coverage failed on the missing lifecycle contract, then passed after AppState and segment boundaries were wired.
+- DONE: Private Pack recovery JSON clears when the Pack route loses focus, the app leaves the active state, or the owner leaves Supplies, while the durable first corrupt-data backup remains unchanged.
+- VERIFIED LOCALLY: Red-first readiness coverage exposed that a still-mounted Pack tab retained the payload after tab navigation, then passed `194/194` after route-focus cleanup joined the AppState and segment boundaries.
 - BOUNDARY: This reduces mounted-screen exposure only; it does not clear a system clipboard or shared destination and does not prove native lifecycle, accessibility, store, or Apollo evidence.
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture the route-named native recovery privacy loop when tooling is available.
 - CI PROOF: `WoofWatcher Verify` run `33833355785`, job `100900786070`, passed implementation/docs commit `50f7226a` through generated-client drift, doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
