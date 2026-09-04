@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+## 2026-09-04 — Recovery evidence import must not promise active-list restoration
+
+The Pack recovery envelope is retained only as private support evidence and does not replace Supplies or Travel Bag. The owner-facing action and accessibility label therefore use `Import recovery copy`, not `Restore`, while the persistence API keeps its internal compatibility name.
+
 ## 2026-09-03 — Pack recovery import uses the shared keyboard-aware route
 
 - Decision: Keep the full Pack route, including the multiline recovery-copy field and Restore action, inside `KeyboardAwareScrollViewCompat`.

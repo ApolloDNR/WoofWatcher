@@ -958,7 +958,7 @@ export default function PackScreen() {
     );
   };
 
-  const restorePackRecoveryCopy = async () => {
+  const importPackRecoveryCopy = async () => {
     const result = await packPersistence.restoreRecoveryCopy(packRecoveryCopy);
     if (result.status === "restored" || result.status === "already-present") {
       setPackRecoveryCopy("");
@@ -1301,13 +1301,13 @@ export default function PackScreen() {
               />
             ) : null}
             <BoardActionButton
-              label="Restore recovery copy"
+              label="Import recovery copy"
               icon="download-outline"
               variant="outline"
               compact
               disabled={!packRecoveryCopy.trim()}
-              onPress={() => void restorePackRecoveryCopy()}
-              accessibilityLabel="Restore recovery copy"
+              onPress={() => void importPackRecoveryCopy()}
+              accessibilityLabel="Import recovery copy as support evidence"
             />
             <Text style={[s.packRecoveryCopyBoundary, { color: colors.mutedForeground }]}>This preserves support evidence only and does not replace your active Supplies or Travel Bag.</Text>
           </BoardCard>

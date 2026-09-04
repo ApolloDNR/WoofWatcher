@@ -1,5 +1,11 @@
 # Blockers For Apollo
 
+## 2026-09-04 Pack recovery-import truthfulness proof
+
+- Source/readiness coverage now calls the non-destructive operation `Import recovery copy` and explicitly labels it as support evidence instead of implying that active Pack lists will be restored.
+- Dependency-complete `WoofWatcher Verify` run `33858689174`, job `100977839345`, passed the preceding clear-feedback commit `78f945f9`; this language slice still needs final-tip branch CI.
+- Still blocked: real iOS/Android paste/import, VoiceOver/TalkBack focus and feedback, route-named screenshots, store review, and Apollo approval.
+
 ## 2026-09-03 Pack recovery-import native proof
 
 - Source/readiness coverage now keeps the recovery-copy multiline field and Restore action in one keyboard-aware route.

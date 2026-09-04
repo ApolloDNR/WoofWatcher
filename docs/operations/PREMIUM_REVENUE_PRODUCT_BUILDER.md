@@ -1,8 +1,12 @@
 # Premium Revenue Product Builder
 
+## 2026-09-04 Pack recovery evidence language
+
+The Pack recovery-copy action now says `Import recovery copy`, with an accessibility label that identifies support evidence. This matches the real non-destructive behavior: importing preserves the private payload for support or later export and never replaces active Supplies or Travel Bag. Red-first readiness coverage rejects the former misleading restore label. Native paste/import, VoiceOver/TalkBack, route screenshots, store review, and Apollo approval remain open.
+
 ## 2026-09-03 Pack recovery-import keyboard reach
 
-The Pack recovery-copy field and Restore action now live in the shared keyboard-aware route scroller, preventing the newly added multiline import from stranding its completion action below compact native keyboards. Red-first readiness coverage failed on the plain scroller and passes `193/193` after the change.
+The Pack recovery-copy field and import action now live in the shared keyboard-aware route scroller, preventing the newly added multiline import from stranding its completion action below compact native keyboards. Red-first readiness coverage failed on the plain scroller and passes `193/193` after the change.
 
 Dependency-complete `WoofWatcher Verify` run `33790526420`, job `100765756553`, passed implementation/docs commit `608458ea` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, and completion.
 

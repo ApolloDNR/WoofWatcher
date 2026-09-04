@@ -5970,8 +5970,8 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
   );
   assert.match(
     pack,
-    /<KeyboardAwareScrollViewCompat[\s\S]*?accessibilityLabel="Pack recovery copy JSON"[\s\S]*?label="Restore recovery copy"[\s\S]*?<\/KeyboardAwareScrollViewCompat>/,
-    "the restore action must stay in the same keyboard-aware route as its multiline input",
+    /<KeyboardAwareScrollViewCompat[\s\S]*?accessibilityLabel="Pack recovery copy JSON"[\s\S]*?label="Import recovery copy"[\s\S]*?<\/KeyboardAwareScrollViewCompat>/,
+    "the import action must stay in the same keyboard-aware route as its multiline input",
   );
   assert.match(pack, /packPersistence\.exportRecoveryCopy\(\)/);
   assert.match(pack, /shareTextPayload/);
@@ -5986,7 +5986,12 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
     "failed sharing must report the manual-copy fallback instead of claiming share success",
   );
   assert.match(pack, /Export recovery copy/);
-  assert.match(pack, /Restore recovery copy/);
+  assert.match(pack, /Import recovery copy/);
+  assert.doesNotMatch(
+    pack,
+    /label="Restore recovery copy"|accessibilityLabel="Restore recovery copy"/,
+    "support-evidence import must not imply that active Pack lists will be restored",
+  );
   assert.match(
     pack,
     /const clearPackRecoveryCopy = \(\) => \{[\s\S]*setPackRecoveryCopy\(""\)[\s\S]*announce\("Private Pack recovery copy cleared from this screen\."\)/,

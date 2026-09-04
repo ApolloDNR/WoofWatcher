@@ -1,8 +1,16 @@
 # Autonomous Build Queue
 
+## 2026-09-04 Pack recovery evidence language
+
+- DONE: The owner-facing action now says `Import recovery copy` and its accessibility label identifies support evidence, matching the non-destructive behavior that preserves a copy without restoring active Supplies or Travel Bag.
+- VERIFIED LOCALLY: Red-first readiness coverage rejected the misleading `Restore recovery copy` label before the implementation.
+- CI: Dependency-complete `WoofWatcher Verify` run `33858689174`, job `100977839345`, passed the preceding clear-feedback commit `78f945f9`; rerun branch CI for this language slice before treating its dependency proof as current.
+- BOUNDARY: This improves truthful source copy only. Real iOS/Android paste/import, VoiceOver/TalkBack announcement and focus, route screenshots, store review, and Apollo approval remain open.
+- NEXT: Capture route-named native Pack recovery export/share-cancel/manual-copy/clear/paste/import/background/relaunch and accessibility evidence when tooling is available.
+
 ## 2026-09-03 Pack recovery import keyboard reach
 
-- DONE: Pack's full route now uses the shared keyboard-aware scroller, keeping the multiline recovery-copy field and Restore action reachable on compact native keyboards.
+- DONE: Pack's full route now uses the shared keyboard-aware scroller, keeping the multiline recovery-copy field and import action reachable on compact native keyboards.
 - VERIFIED LOCALLY: The red readiness contract failed on the plain route scroller, then passed `193/193` after the shared wrapper was installed.
 - CI: Dependency-complete `WoofWatcher Verify` run `33790526420`, job `100765756553`, passed implementation/docs commit `608458ea` through generated-client drift, doctor, focused tests, typecheck, and CI-safe builds.
 - BOUNDARY: Source coverage does not prove real iOS/Android compact-height behavior, share/paste round trips, VoiceOver/TalkBack focus, process termination, store review, or Apollo approval.
@@ -15,7 +23,7 @@
 - VERIFIED LOCALLY: The red test failed on the missing journal contract; focused Pack persistence then passed `11/11` including simulated termination between the two primary writes and relaunch replay.
 - CI: Dependency-complete `WoofWatcher Verify` run `33755328937`, job `100648281933`, passed implementation/docs commit `36aa0c6d` through generated-client drift, doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
 - BOUNDARY: This protects the owner-confirmed corrupt-data reset. Ordinary independent owner edits are still per-key writes; recovery-copy export/restore, real process-kill/device lifecycle proof, VoiceOver/TalkBack, store review, and Apollo approval remain open.
-- NEXT: Add an owner-accessible export/restore path for the preserved corrupt-data recovery copy, then capture real iOS/Android termination/relaunch evidence.
+- NEXT: The owner-accessible recovery-copy export/import path is complete; capture real iOS/Android termination/relaunch and accessibility evidence.
 
 ## 2026-09-03 Pack global-erase fence
 
