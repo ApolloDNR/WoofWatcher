@@ -2838,6 +2838,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Owners can explicitly clear private recovery JSON from the mounted Pack screen after export, manual copy, share cancellation, or paste; the raw JSON field also disables capitalization, autocorrect, and spellcheck.
 - BOUNDARY: This removes sensitive text from the current UI state only. It does not erase the preserved on-device recovery backup, prove clipboard clearing, native share behavior, provider storage, store review, or Apollo approval.
 - NEXT: Run dependency-complete branch CI, then capture the route-named native recovery loop when device tooling is available.
+- CI PROOF: `WoofWatcher Verify` run `33821839206`, job `100865984253`, passed implementation/docs commit `7fabca40` through generated-client drift, mobile doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
 # 2026-09-01 Walk Quick Log keyboard accessibility
 

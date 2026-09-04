@@ -6245,3 +6245,4 @@ Dependency-complete `WoofWatcher Verify` run `33808014822`, job `100823014945`, 
 ## 2026-09-03 Pack recovery-copy screen privacy
 
 Pack now gives owners an accessible way to remove private recovery JSON from the mounted route after export, manual copy, cancelled sharing, or paste. Raw JSON entry disables capitalization, autocorrect, and spellcheck. The durable first recovery backup remains unchanged; native share/clipboard, device accessibility, provider, store, public-launch, and Apollo proof remain separate gates.
+Dependency-complete `WoofWatcher Verify` run `33821839206`, job `100865984253`, passed implementation/docs commit `7fabca40` through generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds.
