@@ -957,3 +957,4 @@ Source PASS requires the generated private JSON to remain visible and failed sha
 - PASS (truth): The durable first recovery backup is not deleted by this screen-state boundary.
 - OPEN: System clipboard behavior, native lifecycle timing, assistive-technology traversal, screenshots, store review, and Apollo approval.
 - CI: `WoofWatcher Verify` run `33833355785`, job `100900786070`, passed commit `50f7226a` with dependency-complete focused tests, typecheck, and CI-safe builds.
+- CI: `WoofWatcher Verify` run `33844534832`, job `100933470929`, passed route-blur implementation commit `aed9e003` with generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds green.

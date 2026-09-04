@@ -2840,6 +2840,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - BOUNDARY: This reduces mounted-screen exposure only; it does not clear a system clipboard or shared destination and does not prove native lifecycle, accessibility, store, or Apollo evidence.
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture the route-named native recovery privacy loop when tooling is available.
 - CI PROOF: `WoofWatcher Verify` run `33833355785`, job `100900786070`, passed implementation/docs commit `50f7226a` through generated-client drift, doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
+- CI PROOF: `WoofWatcher Verify` run `33844534832`, job `100933470929`, passed the route-blur privacy fix at `aed9e003` through generated-client drift, doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
 ## 2026-09-03 Pack recovery-copy screen privacy
