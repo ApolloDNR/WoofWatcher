@@ -82,7 +82,12 @@ import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/co
 import { PressScale } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { announce } from "@/lib/announce";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import {
+  createSavedCarePassShareSession,
+  runSavedCarePassShare,
+} from "@/lib/carePassShareOutcome";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { homeImmersiveRoomIsNight } from "./index";
@@ -272,6 +277,12 @@ export default function RecordsScreen() {
   const recordNoteRef = useRef<TextInput>(null);
   const [recordAttachmentUri, setRecordAttachmentUri] = useState("");
   const [carePassPreview, setCarePassPreview] = useState<CarePass | null>(null);
+  const carePassShareSessionRef = useRef(createSavedCarePassShareSession());
+  const [carePassSaved, setCarePassSaved] = useState(false);
+  const [carePassSharePending, setCarePassSharePending] = useState(false);
+  const [carePassShareStatus, setCarePassShareStatus] = useState<string | null>(
+    null,
+  );
   const [medicationSearch, setMedicationSearch] = useState("");
   const [medicationOutcomeFilter, setMedicationOutcomeFilter] = useState<MedicationHistoryOutcomeFilter>("all");
 
@@ -751,12 +762,25 @@ export default function RecordsScreen() {
 
   const openCarePassPreview = (audience: CarePassAudience) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    carePassShareSessionRef.current = createSavedCarePassShareSession();
+    setCarePassSaved(false);
+    setCarePassShareStatus(null);
     setCarePassPreview(buildCarePassFor(audience));
+  };
+
+  const closeCarePassPreview = () => {
+    if (carePassShareSessionRef.current.pending) return;
+    setCarePassPreview(null);
+    setCarePassSaved(false);
+    setCarePassShareStatus(null);
   };
 
   const openIncidentFollowUp = (route: "log-incident" | "review-latest" | "trainer-care-pass") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (route === "trainer-care-pass") {
+      carePassShareSessionRef.current = createSavedCarePassShareSession();
+      setCarePassSaved(false);
+      setCarePassShareStatus(null);
       setCarePassPreview(buildCarePassFor("trainer"));
       return;
     }
@@ -775,18 +799,40 @@ export default function RecordsScreen() {
     [state.reportArtifacts],
   );
 
-  const shareCarePass = (pass: CarePass) => {
-    const artifact = createCarePassArtifact(pass);
-    const saved = updateCareDoc((doc) => ({
-      ...doc,
-      reportArtifacts: [
-        artifact,
-        ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
-      ].slice(0, 12),
-    }));
-    if (!saved) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    void shareTextPayload({ message: pass.message, title: pass.title });
+  const shareCarePass = async (pass: CarePass) => {
+    if (carePassShareSessionRef.current.pending) return;
+
+    setCarePassSharePending(true);
+    setCarePassShareStatus(null);
+    try {
+      await runSavedCarePassShare(carePassShareSessionRef.current, {
+        save: () => {
+          const artifact = createCarePassArtifact(pass);
+          const saved = updateCareDoc((doc) => ({
+            ...doc,
+            reportArtifacts: [
+              artifact,
+              ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
+            ].slice(0, 12),
+          }));
+          if (saved) setCarePassSaved(true);
+          return saved;
+        },
+        share: () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          return shareTextPayload(
+            { message: pass.message, title: pass.title },
+            { presentResultDialogs: false },
+          );
+        },
+        present: (message) => {
+          setCarePassShareStatus(message);
+          announce(message);
+        },
+      });
+    } finally {
+      setCarePassSharePending(false);
+    }
   };
 
   const shareReportArtifact = (artifact: CarePassArtifact) => {
@@ -2590,7 +2636,7 @@ export default function RecordsScreen() {
             />
             {reportArtifacts.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Shared Care Passes will appear here for quick resend.
+                Saved Care Passes will appear here for quick resend.
               </Text>
             ) : (
               reportArtifacts.map((artifact, index) => {
@@ -2981,10 +3027,15 @@ export default function RecordsScreen() {
         </Animated.View>
       </ScrollView>
 
-      <Modal visible={carePassPreview !== null} transparent animationType="slide" onRequestClose={() => setCarePassPreview(null)}>
-        <Pressable style={s.modalBackdrop} onPress={() => setCarePassPreview(null)}>
+      <Modal visible={carePassPreview !== null} transparent animationType="slide" onRequestClose={closeCarePassPreview}>
+        <Pressable accessible={false} style={s.modalBackdrop} onPress={closeCarePassPreview}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
-            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+            <Pressable
+              accessible={false}
+              accessibilityViewIsModal
+              style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+              onPress={(e) => e.stopPropagation()}
+            >
               <View style={s.sheetHandle} />
               {carePassPreview ? (
                 <>
@@ -3012,16 +3063,73 @@ export default function RecordsScreen() {
                     ))}
                   </ScrollView>
                   <View style={s.sheetActions}>
-                    <Pressable onPress={() => setCarePassPreview(null)} style={s.sheetCancel}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Close Care Pass preview"
+                      accessibilityState={{ disabled: carePassSharePending }}
+                      disabled={carePassSharePending}
+                      onPress={closeCarePassPreview}
+                      style={s.sheetCancel}
+                    >
                       <Text style={[s.sheetCancelText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Close</Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => shareCarePass(carePassPreview)}
-                      style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        carePassSharePending
+                          ? "Saving and sharing Care Pass"
+                          : carePassSaved
+                            ? "Share Care Pass again"
+                            : "Save and share Care Pass"
+                      }
+                      accessibilityState={{
+                        disabled: carePassSharePending,
+                        busy: carePassSharePending,
+                      }}
+                      disabled={carePassSharePending}
+                      onPress={() => void shareCarePass(carePassPreview)}
+                      style={({ pressed }) => [
+                        s.sheetSave,
+                        {
+                          backgroundColor: colors.primary,
+                          opacity: pressed || carePassSharePending ? 0.72 : 1,
+                        },
+                      ]}
                     >
-                      <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save & share</Text>
+                      <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                        {carePassSharePending
+                          ? carePassSaved
+                            ? "Sharing..."
+                            : "Saving & sharing..."
+                          : carePassSaved
+                            ? "Share again"
+                            : "Save & share"}
+                      </Text>
                     </Pressable>
                   </View>
+                  {carePassShareStatus ? (
+                    <View
+                      style={[
+                        s.carePassShareStatus,
+                        {
+                          backgroundColor: colors.primary + "12",
+                          borderColor: colors.primary + "44",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.carePassShareStatusText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {carePassShareStatus}
+                      </Text>
+                    </View>
+                  ) : null}
                 </>
               ) : null}
             </Pressable>
@@ -3030,9 +3138,14 @@ export default function RecordsScreen() {
       </Modal>
 
       <Modal visible={recordOpen} transparent animationType="slide" onRequestClose={() => setRecordOpen(false)}>
-        <Pressable style={s.modalBackdrop} onPress={() => setRecordOpen(false)}>
+        <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setRecordOpen(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
-            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={() => {}}>
+            <Pressable
+              accessible={false}
+              accessibilityViewIsModal
+              style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+              onPress={(event) => event.stopPropagation()}
+            >
               <KeyboardAwareScrollViewCompat
                 style={s.recordSheetFormScroll}
                 showsVerticalScrollIndicator={false}
@@ -3054,6 +3167,9 @@ export default function RecordsScreen() {
                   return (
                     <Pressable
                       key={option.kind}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Select ${option.label} record type`}
+                      accessibilityState={{ selected: active }}
                       onPress={() => {
                         Haptics.selectionAsync();
                         setRecordType(option.kind);
@@ -3111,6 +3227,12 @@ export default function RecordsScreen() {
                 style={[s.recordInput, s.recordInputMulti, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, fontFamily: "Inter_400Regular" }]}
               />
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  recordAttachmentUri
+                    ? "Replace record attachment"
+                    : "Attach photo or receipt"
+                }
                 onPress={pickRecordAttachment}
                 style={({ pressed }) => [
                   s.attachmentBtn,
@@ -3123,10 +3245,17 @@ export default function RecordsScreen() {
                 </Text>
               </Pressable>
               <View style={s.sheetActions}>
-                <Pressable onPress={() => setRecordOpen(false)} style={s.sheetCancel}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel adding record"
+                  onPress={() => setRecordOpen(false)}
+                  style={s.sheetCancel}
+                >
                   <Text style={[s.sheetCancelText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Save record"
                   onPress={saveRecord}
                   style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
@@ -3761,6 +3890,8 @@ const s = StyleSheet.create({
   },
   attachmentText: { fontSize: 13.5 },
   sheetActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
+  carePassShareStatus: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, marginTop: 12 },
+  carePassShareStatusText: { fontSize: 13, lineHeight: 19 },
   sheetCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   sheetCancelText: { fontSize: 15 },
   sheetSave: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },

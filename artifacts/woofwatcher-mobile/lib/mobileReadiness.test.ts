@@ -4977,6 +4977,84 @@ test("keeps Records and Care Pass actions on shared mobile touch targets", () =>
   }
 });
 
+test("keeps saved Care Pass history truthful across share outcomes", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /const shareCarePass = async \(pass: CarePass\)/);
+  assert.match(
+    records,
+    /runSavedCarePassShare\(carePassShareSessionRef\.current,[\s\S]*presentResultDialogs: false[\s\S]*setCarePassShareStatus\(message\)[\s\S]*announce\(message\)/,
+    "Records must present one visible and announced result without duplicate helper dialogs",
+  );
+  assert.match(
+    records,
+    /const carePassShareSessionRef = useRef\(createSavedCarePassShareSession\(\)\)/,
+  );
+  assert.match(records, /Saved Care Passes will appear here for quick resend/);
+  assert.doesNotMatch(
+    records,
+    /Shared Care Passes will appear here/,
+    "saved history must not claim a dismissed, failed, or uncertain share succeeded",
+  );
+});
+
+test("keeps Records modal sheets and controls exposed to assistive technology", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const carePassStart = records.indexOf(
+    "<Modal visible={carePassPreview !== null}",
+  );
+  const recordStart = records.indexOf("<Modal visible={recordOpen}");
+
+  assert.ok(carePassStart >= 0 && recordStart > carePassStart);
+
+  const carePassModal = records.slice(carePassStart, recordStart);
+  const recordModal = records.slice(recordStart);
+
+  assert.equal(
+    [...carePassModal.matchAll(/<Pressable\s+accessible=\{false\}/g)].length,
+    2,
+    "the Care Pass backdrop and sheet must remain containers instead of swallowing child controls",
+  );
+  assert.match(carePassModal, /accessibilityViewIsModal/);
+  assert.match(
+    carePassModal,
+    /<Pressable\s+accessibilityRole="button"\s+accessibilityLabel="Close Care Pass preview"\s+accessibilityState=\{\{ disabled: carePassSharePending \}\}\s+disabled=\{carePassSharePending\}/,
+  );
+  assert.match(
+    carePassModal,
+    /\{carePassShareStatus \? \([\s\S]*?\{carePassShareStatus\}[\s\S]*?\) : null\}/,
+    "every share result must remain visibly available in the Care Pass sheet",
+  );
+  assert.match(
+    carePassModal,
+    /<Pressable\s+accessibilityRole="button"\s+accessibilityLabel=\{[\s\S]*?carePassSaved[\s\S]*?Share Care Pass again[\s\S]*?Save and share Care Pass[\s\S]*?\}\s+accessibilityState=\{\{[\s\S]*?disabled: carePassSharePending,[\s\S]*?busy: carePassSharePending[\s\S]*?\}\}\s+disabled=\{carePassSharePending\}/,
+    "Save and share must be single-flight and become an explicit retry after persistence",
+  );
+
+  assert.equal(
+    [...recordModal.matchAll(/<Pressable\s+accessible=\{false\}/g)].length,
+    2,
+    "the Add Record backdrop and sheet must remain containers instead of swallowing child controls",
+  );
+  assert.match(recordModal, /accessibilityViewIsModal/);
+  assert.match(
+    recordModal,
+    /<Pressable\s+key=\{option\.kind\}\s+accessibilityRole="radio"\s+accessibilityLabel=\{\`Select \$\{option\.label\} record type\`\}\s+accessibilityState=\{\{\s*selected: active\s*\}\}\s+onPress=/,
+  );
+  assert.match(
+    recordModal,
+    /<Pressable\s+accessibilityRole="button"\s+accessibilityLabel=\{\s*recordAttachmentUri[\s\S]*?Replace record attachment[\s\S]*?Attach photo or receipt[\s\S]*?\}\s+onPress=\{pickRecordAttachment\}/,
+  );
+  assert.match(
+    recordModal,
+    /<Pressable\s+accessibilityRole="button"\s+accessibilityLabel="Cancel adding record"\s+onPress=/,
+  );
+  assert.match(
+    recordModal,
+    /<Pressable\s+accessibilityRole="button"\s+accessibilityLabel="Save record"\s+onPress=\{saveRecord\}/,
+  );
+});
+
 test("keeps Records vault, diet, and cabinet on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

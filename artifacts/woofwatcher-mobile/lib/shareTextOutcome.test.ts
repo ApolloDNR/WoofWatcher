@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   classifyNativeShareAction,
   classifyWebShareError,
+  presentShareResultDialog,
 } from "./shareTextOutcome.ts";
 
 test("classifies native share results without overstating Android completion", () => {
@@ -31,4 +32,26 @@ test("classifies an aborted web share without claiming why it stopped", () => {
     "failed",
   );
   assert.equal(classifyWebShareError(null), "failed");
+});
+
+test("suppresses helper result dialogs when the owning flow presents one unified result", () => {
+  const presented: string[] = [];
+  const notify = (title: string, message: string) => {
+    presented.push(`${title}: ${message}`);
+  };
+
+  presentShareResultDialog(
+    {},
+    notify,
+    "Copied to clipboard",
+    "Ready to paste.",
+  );
+  presentShareResultDialog(
+    { presentResultDialogs: false },
+    notify,
+    "Sharing unavailable",
+    "Could not open.",
+  );
+
+  assert.deepEqual(presented, ["Copied to clipboard: Ready to paste."]);
 });

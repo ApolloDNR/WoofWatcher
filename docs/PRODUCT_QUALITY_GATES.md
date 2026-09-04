@@ -1,5 +1,15 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-04 Records saved-share and modal accessibility gate
+
+- PASS source truth: Report History records a locally saved Care Pass, not a successful external share. Records visibly presents and announces the precise result for `shared`, `copied`, `downloaded`, `dismissed`, `unconfirmed`, `not-completed`, and `failed`.
+- PASS interaction integrity: Save/share is single-flight, rapid taps cannot duplicate saved reports or open overlapping shares, `Share again` reuses the saved artifact, pending controls expose disabled/busy state, and Records owns one unified result without competing helper dialogs.
+- PASS source accessibility: Care Pass and Add Record layout Pressables are non-accessible containers, each sheet exposes a modal boundary, and actionable children expose roles, labels, and selected state where applicable.
+- PASS local: Targeted Records truth/accessibility coverage passes `5/5`; the share/readiness matrix passes `202/202`; the broader focused matrix passes `1057/1057`; mobile TypeScript and formatting checks are green.
+- PASS export/runtime: The exact-source Expo web export completes at 1,927 modules / 258 assets, and all 13 runtime routes pass.
+- PENDING build: Record dependency-complete CI for this slice.
+- OPEN native/release: Verify VoiceOver/TalkBack traversal and announcements, iOS/Android sharing, configured-provider behavior, store review, and Apollo approval.
+
 ## 2026-09-04 Share cancellation truth gate
 
 - PASS behavior: Confirmed iOS share and dismissal, Android's unconfirmed `sharedAction`, browser abort ambiguity, unknown native results, and provider failure have explicit deterministic outcomes.

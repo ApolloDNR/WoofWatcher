@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-09-04 — Saved Care Passes and share results are separate evidence
+
+- Decision: Persist the Care Pass to Report History before sharing, but never use that saved item as proof of external delivery. Visibly present and announce the exact `shared`, `copied`, `downloaded`, `dismissed`, `unconfirmed`, `not-completed`, or `failed` outcome after the local save.
+- Decision: Serialize Save/share as one in-flight operation, reuse the first saved artifact for `Share again`, disable close/share controls while pending, and suppress helper-owned result dialogs so sighted and assistive-technology users receive one consistent result.
+- Decision: Treat the Care Pass and Add Record modal backdrop/sheet Pressables as non-accessible layout containers, mark each sheet as a modal accessibility boundary, and put explicit roles, labels, and selected state on the actionable children.
+- Reason: Owners must be able to resend a locally saved report after an incomplete share, and assistive technology must reach the sheet's real controls instead of collapsing onto container Pressables.
+- Evidence: Targeted truth/accessibility coverage passes `5/5`; the share/readiness matrix passes `202/202`; the broader focused matrix passes `1057/1057`; mobile TypeScript and formatting checks are green; and the exact-source Expo web export completes at 1,927 modules / 258 assets with all 13 runtime routes passing. Dependency-complete CI remains pending.
+- Boundary: Source semantics do not establish real VoiceOver/TalkBack behavior, platform sharing, provider delivery, store readiness, or Apollo approval.
+
 ## 2026-09-04 — Share results must reflect platform evidence
 
 - Decision: Model `dismissed`, `unconfirmed`, and `not-completed` as first-class text-share outcomes. Inspect the resolved native share action and platform; map Android `sharedAction` to `unconfirmed`, and browser `AbortError` to `not-completed`.

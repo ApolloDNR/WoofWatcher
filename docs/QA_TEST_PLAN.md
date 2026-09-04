@@ -1,5 +1,13 @@
 # QA Test Plan
 
+## 2026-09-04 Records saved-share and modal accessibility QA
+
+- PASS automated: Saving a Care Pass produces distinct visible and announced results for all seven share outcomes, and the empty Report History state says saved, not shared. A concurrency test proves a second in-flight request is ignored and a later retry reuses the first saved report. Targeted coverage passes `5/5`; the share/readiness matrix passes `202/202`; the broader focused matrix passes `1057/1057`; and mobile TypeScript and formatting checks are green.
+- PASS source accessibility: Care Pass and Add Record backdrops/sheets are non-accessible containers with a modal boundary; close, save/share, record-type, attachment, cancel, and save-record controls expose explicit roles/labels, and record type exposes selected state.
+- PASS export/runtime: The exact-source Expo web export completes at 1,927 modules / 258 assets, and all 13 runtime routes pass.
+- PENDING build: Record dependency-complete CI.
+- OPEN native: With VoiceOver and TalkBack, traverse both sheets in order, verify focus stays inside while open, confirm the selected record type, operate attachment replacement and every close/cancel/save action, confirm pending controls expose disabled/busy state, and verify the visible result plus one saved-share announcement for success, dismissal, uncertainty, incompletion, and failure. Rapid-tap Save/share and confirm only one saved item/share sheet, then use `Share again` and confirm it reuses the item. Capture route-named iOS/Android evidence; configured-provider, store, and Apollo gates remain open.
+
 ## 2026-09-04 Share cancellation QA
 
 - PASS automated: iOS `sharedAction` maps to `shared`, iOS `dismissedAction` maps to `dismissed`, Android `sharedAction` maps to `unconfirmed`, unknown native actions fail closed, browser `AbortError` maps to `not-completed`, and other browser errors remain eligible for fallback routing.

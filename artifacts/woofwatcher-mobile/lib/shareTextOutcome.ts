@@ -7,6 +7,21 @@ export type ShareTextOutcome =
   | "downloaded"
   | "failed";
 
+export interface ShareResultDialogOptions {
+  presentResultDialogs?: boolean;
+}
+
+export function presentShareResultDialog(
+  options: ShareResultDialogOptions,
+  notify: (title: string, message: string) => void,
+  title: string,
+  message: string,
+): void {
+  if (options.presentResultDialogs !== false) {
+    notify(title, message);
+  }
+}
+
 export function classifyNativeShareAction(
   action: unknown,
   platform: string,

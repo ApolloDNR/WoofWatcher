@@ -4,6 +4,8 @@ import { notifyDialog } from "./confirmDialog.ts";
 import {
   classifyNativeShareAction,
   classifyWebShareError,
+  presentShareResultDialog,
+  type ShareResultDialogOptions,
   type ShareTextOutcome,
 } from "./shareTextOutcome.ts";
 
@@ -20,6 +22,14 @@ export type { ShareTextOutcome } from "./shareTextOutcome.ts";
 export interface ShareTextPayload {
   title: string;
   message: string;
+}
+
+export interface ShareTextOptions extends ShareResultDialogOptions {
+  /**
+   * Keep enabled for ordinary fire-and-forget callers. A flow that renders and
+   * announces one unified result can disable these helper-owned dialogs.
+   */
+  presentResultDialogs?: boolean;
 }
 
 interface WebShareGlobals {
@@ -52,6 +62,7 @@ export function shareFileNameForTitle(title: string): string {
 
 async function shareOnWeb(
   payload: ShareTextPayload,
+  options: ShareTextOptions,
 ): Promise<ShareTextOutcome> {
   const g = globalThis as WebShareGlobals;
 
@@ -74,7 +85,9 @@ async function shareOnWeb(
       await g.navigator.clipboard.writeText(
         `${payload.title}\n\n${payload.message}`,
       );
-      notifyDialog(
+      presentShareResultDialog(
+        options,
+        notifyDialog,
         "Copied to clipboard",
         `${payload.title} is ready to paste.`,
       );
@@ -101,7 +114,9 @@ async function shareOnWeb(
     // Nothing else to try on this platform.
   }
 
-  notifyDialog(
+  presentShareResultDialog(
+    options,
+    notifyDialog,
     "Sharing unavailable",
     "This browser blocked sharing, clipboard, and downloads.",
   );
@@ -110,9 +125,10 @@ async function shareOnWeb(
 
 export async function shareTextPayload(
   payload: ShareTextPayload,
+  options: ShareTextOptions = {},
 ): Promise<ShareTextOutcome> {
   if (Platform.OS === "web") {
-    return shareOnWeb(payload);
+    return shareOnWeb(payload, options);
   }
   try {
     const result = await Share.share({
@@ -121,14 +137,18 @@ export async function shareTextPayload(
     });
     const outcome = classifyNativeShareAction(result.action, Platform.OS);
     if (outcome === "failed") {
-      notifyDialog(
+      presentShareResultDialog(
+        options,
+        notifyDialog,
         "Sharing unavailable",
         "The device share sheet returned an unknown result.",
       );
     }
     return outcome;
   } catch {
-    notifyDialog(
+    presentShareResultDialog(
+      options,
+      notifyDialog,
       "Sharing unavailable",
       "The device share sheet could not open.",
     );

@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-09-04 Records saved-share truth and accessible sheets
+
+Records now treats a saved Care Pass and an external share as two separate facts. Report History confirms only local persistence, while the owner sees and hears one precise post-save result for each `shared`, `copied`, `downloaded`, `dismissed`, `unconfirmed`, `not-completed`, or `failed` outcome. Save/share is single-flight, rapid taps cannot duplicate history or overlap share sheets, and `Share again` reuses the first saved artifact without competing helper dialogs.
+
+The Care Pass and Add Record modal backdrop/sheet Pressables are non-accessible layout containers with a modal accessibility boundary. Their actionable children expose explicit roles, labels, disabled/busy state, and record-type selected state so container semantics do not swallow the real controls. Targeted coverage passes `5/5`; the share/readiness matrix passes `202/202`; the broader focused matrix passes `1057/1057`; mobile TypeScript and formatting checks are green; and the exact-source Expo web export completes at 1,927 modules / 258 assets with all 13 runtime routes passing. Dependency-complete CI remains pending; real VoiceOver/TalkBack, iOS/Android share behavior, configured-provider proof, store review, public launch, and Apollo approval remain separate gates.
+
 ## 2026-09-04 Share cancellation truth boundary
 
 Text sharing now inspects the native share result and platform instead of treating every resolved promise as success. iOS `sharedAction` and `dismissedAction` remain confirmed outcomes; Android's always-`sharedAction` result becomes `unconfirmed`; browser `AbortError` becomes `not-completed` because it can mean either owner cancellation or no available share target; and unknown native results fail closed. Pack recovery export keeps the private manual copy visible after every uncertain or unsuccessful result and announces the exact evidence boundary without claiming the payload was shared or saved.
