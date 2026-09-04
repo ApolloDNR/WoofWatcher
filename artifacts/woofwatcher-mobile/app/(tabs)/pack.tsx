@@ -547,7 +547,8 @@ export default function PackScreen() {
     useState<PackStorageWarning | null>(null);
   const [packStorageRetrying, setPackStorageRetrying] = useState(false);
   const [packRecoveryCopy, setPackRecoveryCopy] = useState("");
-  const [packRecoveryTransferBusy, setPackRecoveryTransferBusy] = useState(false);
+  const [packRecoveryTransferBusy, setPackRecoveryTransferBusy] =
+    useState(false);
   const packRecoveryTransferBusyRef = useRef(false);
   const [packPersistence] = useState(() => createPackPersistence(AsyncStorage));
   const suppliesRef = useRef<SupplyItem[] | null>(null);
@@ -950,9 +951,19 @@ export default function PackScreen() {
           title: "WoofWatcher Pack recovery copy",
         });
         announce(
-          shareOutcome === "failed"
-            ? "Sharing was unavailable. Recovery copy is shown below for manual copy. It contains private raw Pack data."
-            : "Pack recovery copy shared or saved. A manual copy remains shown below. It contains private raw Pack data.",
+          shareOutcome === "dismissed"
+            ? "Share sheet closed. Recovery copy remains shown below for manual copy. It contains private raw Pack data."
+            : shareOutcome === "not-completed"
+              ? "Sharing was not completed. The share sheet may have been closed, or no share target was available. Recovery copy remains shown below for manual copy. It contains private raw Pack data."
+              : shareOutcome === "unconfirmed"
+                ? "Share flow returned. Android cannot confirm whether the recovery copy was sent or saved. A manual copy remains shown below. It contains private raw Pack data."
+                : shareOutcome === "copied"
+                  ? "Recovery copy copied to the clipboard. Paste it only into a trusted destination. A manual copy remains shown below. It contains private raw Pack data."
+                  : shareOutcome === "downloaded"
+                    ? "Recovery copy download started. Store the file only in a trusted location. A manual copy remains shown below. It contains private raw Pack data."
+                    : shareOutcome === "failed"
+                      ? "Sharing was unavailable. Recovery copy is shown below for manual copy. It contains private raw Pack data."
+                      : "Recovery copy shared. A manual copy remains shown below. It contains private raw Pack data.",
         );
         return;
       }
@@ -973,7 +984,8 @@ export default function PackScreen() {
     packRecoveryTransferBusyRef.current = true;
     setPackRecoveryTransferBusy(true);
     try {
-      const result = await packPersistence.restoreRecoveryCopy(packRecoveryCopy);
+      const result =
+        await packPersistence.restoreRecoveryCopy(packRecoveryCopy);
       if (result.status === "restored" || result.status === "already-present") {
         setPackRecoveryCopy("");
         announce("Pack recovery copy preserved on this device.");
@@ -984,7 +996,9 @@ export default function PackScreen() {
         return;
       }
       notifyDialog(
-        result.status === "conflict" ? "Recovery copy already exists" : "Recovery copy not restored",
+        result.status === "conflict"
+          ? "Recovery copy already exists"
+          : "Recovery copy not restored",
         result.status === "conflict"
           ? "This device already has a different first recovery copy. WoofWatcher kept that original copy unchanged."
           : "Paste a complete WoofWatcher Pack recovery copy and try again.",
@@ -1275,12 +1289,21 @@ export default function PackScreen() {
 
         {segment === "supplies" ? (
           <BoardCard style={s.packRecoveryCopyCard} tone="soft">
-            <BoardSectionHeader
-              title="Preserved Pack data"
-            />
-            <Text style={[s.packRecoveryCopyBoundary, { color: colors.mutedForeground }]}>Export the first unreadable Pack payload for safekeeping, or import a copy without changing your active lists. The export contains private raw Pack data.</Text>
+            <BoardSectionHeader title="Preserved Pack data" />
+            <Text
+              style={[
+                s.packRecoveryCopyBoundary,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              Export the first unreadable Pack payload for safekeeping, or
+              import a copy without changing your active lists. The export
+              contains private raw Pack data.
+            </Text>
             <BoardActionButton
-              label={packRecoveryTransferBusy ? "Working…" : "Export recovery copy"}
+              label={
+                packRecoveryTransferBusy ? "Working…" : "Export recovery copy"
+              }
               icon="share-outline"
               variant="outline"
               compact
@@ -1320,7 +1343,9 @@ export default function PackScreen() {
               />
             ) : null}
             <BoardActionButton
-              label={packRecoveryTransferBusy ? "Working…" : "Import recovery copy"}
+              label={
+                packRecoveryTransferBusy ? "Working…" : "Import recovery copy"
+              }
               icon="download-outline"
               variant="outline"
               compact
@@ -1328,7 +1353,15 @@ export default function PackScreen() {
               onPress={() => void importPackRecoveryCopy()}
               accessibilityLabel="Import recovery copy as support evidence"
             />
-            <Text style={[s.packRecoveryCopyBoundary, { color: colors.mutedForeground }]}>This preserves support evidence only and does not replace your active Supplies or Travel Bag.</Text>
+            <Text
+              style={[
+                s.packRecoveryCopyBoundary,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              This preserves support evidence only and does not replace your
+              active Supplies or Travel Bag.
+            </Text>
           </BoardCard>
         ) : null}
 

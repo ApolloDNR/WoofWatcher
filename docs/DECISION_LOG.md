@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-09-04 — Share results must reflect platform evidence
+
+- Decision: Model `dismissed`, `unconfirmed`, and `not-completed` as first-class text-share outcomes. Inspect the resolved native share action and platform; map Android `sharedAction` to `unconfirmed`, and browser `AbortError` to `not-completed`.
+- Reason: iOS can confirm `sharedAction` or `dismissedAction`, while React Native always reports `sharedAction` on Android. The Web Share contract uses `AbortError` for both owner cancellation and the absence of share targets. Treating those ambiguous outcomes as success would give owners false confirmation, especially for private Pack recovery evidence.
+- Boundary: Source logic cannot confirm Android delivery or identify the cause of a browser abort. Native and browser route evidence remains required.
+
 ## 2026-09-04 — Recovery evidence import must not promise active-list restoration
 
 The Pack recovery envelope is retained only as private support evidence and does not replace Supplies or Travel Bag. The owner-facing action and accessibility label therefore use `Import recovery copy`, not `Restore`, while the persistence API keeps its internal compatibility name.

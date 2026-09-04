@@ -1,6 +1,13 @@
 import { Platform, Share } from "react-native";
 
 import { notifyDialog } from "./confirmDialog.ts";
+import {
+  classifyNativeShareAction,
+  classifyWebShareError,
+  type ShareTextOutcome,
+} from "./shareTextOutcome.ts";
+
+export type { ShareTextOutcome } from "./shareTextOutcome.ts";
 
 /**
  * Cross-platform text sharing: native uses the OS share sheet; web tries
@@ -9,8 +16,6 @@ import { notifyDialog } from "./confirmDialog.ts";
  * navigator.share is missing, which silently killed every share/export
  * button in web builds — this helper guarantees a real outcome everywhere.
  */
-
-export type ShareTextOutcome = "shared" | "copied" | "downloaded" | "failed";
 
 export interface ShareTextPayload {
   title: string;
@@ -45,7 +50,9 @@ export function shareFileNameForTitle(title: string): string {
   return `${slug || "woofwatcher-share"}.txt`;
 }
 
-async function shareOnWeb(payload: ShareTextPayload): Promise<ShareTextOutcome> {
+async function shareOnWeb(
+  payload: ShareTextPayload,
+): Promise<ShareTextOutcome> {
   const g = globalThis as WebShareGlobals;
 
   if (typeof g.navigator?.share === "function") {
@@ -53,10 +60,11 @@ async function shareOnWeb(payload: ShareTextPayload): Promise<ShareTextOutcome> 
       await g.navigator.share({ title: payload.title, text: payload.message });
       return "shared";
     } catch (error) {
-      // A deliberate cancel is a completed decision, not a failure to
-      // route around — only unsupported payloads fall through.
-      if ((error as { name?: string })?.name === "AbortError") {
-        return "failed";
+      // AbortError can mean either owner cancellation or no available share
+      // target. Do not route private data into a fallback after either case,
+      // and do not claim which one occurred.
+      if (classifyWebShareError(error) === "not-completed") {
+        return "not-completed";
       }
     }
   }
@@ -66,7 +74,10 @@ async function shareOnWeb(payload: ShareTextPayload): Promise<ShareTextOutcome> 
       await g.navigator.clipboard.writeText(
         `${payload.title}\n\n${payload.message}`,
       );
-      notifyDialog("Copied to clipboard", `${payload.title} is ready to paste.`);
+      notifyDialog(
+        "Copied to clipboard",
+        `${payload.title} is ready to paste.`,
+      );
       return "copied";
     } catch {
       // Clipboard can be blocked; fall through to the download.
@@ -90,7 +101,10 @@ async function shareOnWeb(payload: ShareTextPayload): Promise<ShareTextOutcome> 
     // Nothing else to try on this platform.
   }
 
-  notifyDialog("Sharing unavailable", "This browser blocked sharing, clipboard, and downloads.");
+  notifyDialog(
+    "Sharing unavailable",
+    "This browser blocked sharing, clipboard, and downloads.",
+  );
   return "failed";
 }
 
@@ -101,10 +115,23 @@ export async function shareTextPayload(
     return shareOnWeb(payload);
   }
   try {
-    await Share.share({ title: payload.title, message: payload.message });
-    return "shared";
+    const result = await Share.share({
+      title: payload.title,
+      message: payload.message,
+    });
+    const outcome = classifyNativeShareAction(result.action, Platform.OS);
+    if (outcome === "failed") {
+      notifyDialog(
+        "Sharing unavailable",
+        "The device share sheet returned an unknown result.",
+      );
+    }
+    return outcome;
   } catch {
-    notifyDialog("Sharing unavailable", "The device share sheet could not open.");
+    notifyDialog(
+      "Sharing unavailable",
+      "The device share sheet could not open.",
+    );
     return "failed";
   }
 }

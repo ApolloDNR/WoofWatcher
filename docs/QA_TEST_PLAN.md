@@ -1,5 +1,12 @@
 # QA Test Plan
 
+## 2026-09-04 Share cancellation QA
+
+- PASS automated: iOS `sharedAction` maps to `shared`, iOS `dismissedAction` maps to `dismissed`, Android `sharedAction` maps to `unconfirmed`, unknown native actions fail closed, browser `AbortError` maps to `not-completed`, and other browser errors remain eligible for fallback routing.
+- PASS integration: Pack retains the generated recovery JSON before opening share, announces confirmed, dismissed, unconfirmed, incomplete, and failed results without overstating platform evidence, and keeps Clear recovery copy available. Share/readiness coverage passes `197/197`; the full focused matrix passes `1052/1052`; mobile TypeScript validation is green; exact-source Expo export bundles `1926` modules and `258` assets; runtime smoke passes all `13` required routes.
+- PENDING CI: Require dependency-complete `WoofWatcher Verify` for the implementation/docs commit.
+- OPEN native: On a real iPhone, export a Pack recovery copy, dismiss the share sheet, verify the private manual copy remains, verify VoiceOver announces the closed-sheet result, clear it, and background/relaunch. On Android, verify the unconfirmed announcement with TalkBack without inferring delivery or cancellation. In a browser, exercise successful share, owner abort, and no-target conditions while accepting that `AbortError` cannot distinguish the latter two.
+
 ## 2026-09-03 Pack recovery-import keyboard QA
 
 - PASS source: The multiline recovery-copy input and import action share the route-level `KeyboardAwareScrollViewCompat`, including the established web fallback and native keyboard insets.

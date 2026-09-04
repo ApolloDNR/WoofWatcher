@@ -5985,6 +5985,41 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
     /shareOutcome === "failed"[\s\S]*Recovery copy is shown below for manual copy/,
     "failed sharing must report the manual-copy fallback instead of claiming share success",
   );
+  assert.match(
+    pack,
+    /shareOutcome === "dismissed"[\s\S]*Share sheet closed[\s\S]*Recovery copy remains shown below for manual copy/,
+    "closing the iOS share sheet must not be announced as a successful share",
+  );
+  assert.match(
+    pack,
+    /shareOutcome === "not-completed"[\s\S]*Sharing was not completed[\s\S]*no share target was available[\s\S]*Recovery copy remains shown below for manual copy/,
+    "a browser abort must preserve the copy without claiming why sharing stopped",
+  );
+  assert.match(
+    pack,
+    /shareOutcome === "unconfirmed"[\s\S]*Android cannot confirm whether the recovery copy was sent or saved[\s\S]*manual copy remains shown below/,
+    "Android must not announce a share result it cannot confirm",
+  );
+  assert.match(
+    pack,
+    /shareOutcome === "copied"[\s\S]*Recovery copy copied to the clipboard/,
+    "clipboard fallback must name the private-data destination",
+  );
+  assert.match(
+    pack,
+    /shareOutcome === "downloaded"[\s\S]*Recovery copy download started/,
+    "download fallback must name its actual result",
+  );
+  assert.match(
+    pack,
+    /Recovery copy shared\. A manual copy remains shown below/,
+    "confirmed sharing must use a precise success announcement",
+  );
+  assert.doesNotMatch(
+    pack,
+    /recovery copy shared or saved/i,
+    "Pack must not collapse confirmed share, clipboard, and download outcomes into one vague message",
+  );
   assert.match(pack, /Export recovery copy/);
   assert.match(pack, /Import recovery copy/);
   assert.doesNotMatch(
@@ -6006,7 +6041,7 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
   assert.match(pack, /packPersistence\.restoreRecoveryCopy\(/);
   assert.match(
     pack,
-    /const \[packRecoveryTransferBusy, setPackRecoveryTransferBusy\] = useState\(false\)/,
+    /const \[packRecoveryTransferBusy, setPackRecoveryTransferBusy\] =\s*useState\(\s*false\s*\)/,
     "Pack recovery transfers must expose one mounted busy boundary",
   );
   assert.match(
@@ -6021,12 +6056,12 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
   );
   assert.match(
     pack,
-    /label=\{packRecoveryTransferBusy \? "Working…" : "Export recovery copy"\}[\s\S]*?disabled=\{packRecoveryTransferBusy\}/,
+    /label=\{\s*packRecoveryTransferBusy\s*\?\s*"Working…"\s*:\s*"Export recovery copy"\s*\}[\s\S]*?disabled=\{packRecoveryTransferBusy\}/,
     "the export action must disclose and enforce its busy state",
   );
   assert.match(
     pack,
-    /label=\{packRecoveryTransferBusy \? "Working…" : "Import recovery copy"\}[\s\S]*?disabled=\{packRecoveryTransferBusy \|\| !packRecoveryCopy\.trim\(\)\}/,
+    /label=\{\s*packRecoveryTransferBusy\s*\?\s*"Working…"\s*:\s*"Import recovery copy"\s*\}[\s\S]*?disabled=\{packRecoveryTransferBusy \|\| !packRecoveryCopy\.trim\(\)\}/,
     "the import action must disclose and enforce its busy state",
   );
   assert.match(
@@ -6038,6 +6073,21 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
     pack,
     /private raw Pack data/i,
     "export copy must warn owners that the portable payload is sensitive",
+  );
+});
+
+test("keeps native and browser share uncertainty distinct from success", () => {
+  const sharing = readMobileLibFile("shareText.ts");
+
+  assert.match(
+    sharing,
+    /const result = await Share\.share\([\s\S]*classifyNativeShareAction\(result\.action, Platform\.OS\)/,
+    "native share results must inspect the action and platform so iOS dismissal and Android uncertainty cannot be reported as shared",
+  );
+  assert.match(
+    sharing,
+    /classifyWebShareError\(error\) === "not-completed"[\s\S]*return "not-completed"/,
+    "an ambiguous browser abort must stop fallback routing without becoming a success or cancellation claim",
   );
 });
 
