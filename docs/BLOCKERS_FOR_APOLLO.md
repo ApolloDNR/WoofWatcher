@@ -1254,3 +1254,7 @@ Dependency-complete `WoofWatcher Verify` run `33772844958`, job `100707171498`, 
 
 Source handling now leaves a manual-copy fallback and avoids false share-success messaging. Real iOS/Android share/cancel, paste, relaunch, compact-height, VoiceOver/TalkBack, screenshot, store, and Apollo evidence remain required.
 Dependency-complete `WoofWatcher Verify` run `33808014822`, job `100823014945`, passed implementation/docs commit `e042065e`; it does not clear those external gates.
+
+## 2026-09-03 Pack recovery screen-privacy proof remains open
+
+Source coverage now protects an explicit owner action for clearing private recovery JSON from the mounted Pack screen. Real iOS/Android share/cancel, clipboard lifecycle, process relaunch, VoiceOver/TalkBack, screenshots, store review, and Apollo evidence remain required.

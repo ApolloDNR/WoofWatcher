@@ -5987,6 +5987,11 @@ test("makes the preserved Pack recovery copy owner-accessible without overwritin
   );
   assert.match(pack, /Export recovery copy/);
   assert.match(pack, /Restore recovery copy/);
+  assert.match(
+    pack,
+    /label="Clear recovery copy"[\s\S]*setPackRecoveryCopy\(""\)/,
+    "owners must be able to remove private recovery JSON from the mounted Pack screen after copying or cancelling share",
+  );
   assert.match(pack, /accessibilityLabel="Pack recovery copy JSON"/);
   assert.match(pack, /packPersistence\.restoreRecoveryCopy\(/);
   assert.match(

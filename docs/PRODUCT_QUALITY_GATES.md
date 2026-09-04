@@ -945,3 +945,8 @@ Source tests now protect portable export/import of the preserved corrupt Pack co
 ## 2026-09-03 Pack recovery share-outcome gate
 
 Source PASS requires the generated private JSON to remain visible and failed sharing to disclose the manual-copy fallback. Native share/cancel, paste, lifecycle, accessibility, store, and Apollo proof remain open.
+
+## 2026-09-03 Pack recovery-copy screen privacy
+
+- PASS (source): Private recovery JSON has an accessible owner-controlled clear action and raw JSON entry disables text correction features.
+- OPEN (native): Verify clear behavior, share cancellation, clipboard lifecycle, compact-height reach, and VoiceOver/TalkBack on route-named iOS/Android captures.

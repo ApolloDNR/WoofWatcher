@@ -1253,6 +1253,9 @@ export default function PackScreen() {
               placeholderTextColor={colors.mutedForeground}
               multiline
               textAlignVertical="top"
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
               accessibilityLabel="Pack recovery copy JSON"
               style={[
                 s.packRecoveryCopyInput,
@@ -1264,6 +1267,16 @@ export default function PackScreen() {
                 },
               ]}
             />
+            {packRecoveryCopy ? (
+              <BoardActionButton
+                label="Clear recovery copy"
+                icon="close-circle-outline"
+                variant="soft"
+                compact
+                onPress={() => setPackRecoveryCopy("")}
+                accessibilityLabel="Clear private Pack recovery copy from this screen"
+              />
+            ) : null}
             <BoardActionButton
               label="Restore recovery copy"
               icon="download-outline"

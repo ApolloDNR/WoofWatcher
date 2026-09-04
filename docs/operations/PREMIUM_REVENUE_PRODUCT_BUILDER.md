@@ -6241,3 +6241,7 @@ Dependency-complete `WoofWatcher Verify` run `33772844958`, job `100707171498`, 
 
 Pack now keeps generated private recovery JSON visible before sharing and reports a blocked/cancelled share as a manual-copy fallback instead of success. Source verification is required before commit; native share, paste, lifecycle, accessibility, store, and Apollo proof remain external gates.
 Dependency-complete `WoofWatcher Verify` run `33808014822`, job `100823014945`, passed implementation/docs commit `e042065e` end to end.
+
+## 2026-09-03 Pack recovery-copy screen privacy
+
+Pack now gives owners an accessible way to remove private recovery JSON from the mounted route after export, manual copy, cancelled sharing, or paste. Raw JSON entry disables capitalization, autocorrect, and spellcheck. The durable first recovery backup remains unchanged; native share/clipboard, device accessibility, provider, store, public-launch, and Apollo proof remain separate gates.

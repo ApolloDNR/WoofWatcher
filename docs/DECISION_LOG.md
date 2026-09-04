@@ -3836,3 +3836,9 @@ Pack recovery-copy import stores only the first preserved corrupt payload. It ne
 # 2026-09-03 — Pack export keeps a manual private-data fallback
 
 Pack places generated recovery JSON in the visible field before sharing and reports the actual share outcome. This preserves owner access when the platform blocks sharing without claiming that private data left the device.
+
+## 2026-09-03 - Keep Pack recovery evidence durable but owner-clearable on screen
+
+- Decision: The Pack recovery-copy field retains exported/pasted JSON until the owner restores it or explicitly clears it, and exposes a dedicated accessible clear action.
+- Why: The payload is private raw Pack data and the Pack tab can remain mounted after a cancelled share. Owners need a truthful manual-copy fallback without leaving sensitive JSON visible indefinitely.
+- Boundary: Clearing the field changes UI state only; it does not delete the first preserved corrupt backup or claim clipboard, device-share, provider, store, or launch proof.

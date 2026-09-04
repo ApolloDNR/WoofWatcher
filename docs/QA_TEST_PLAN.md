@@ -3221,3 +3221,9 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Verify export places the exact generated JSON in the visible recovery field before sharing.
 - Verify a failed share announces manual-copy availability and never claims share success.
 - Native cancellation, share-sheet, paste, and assistive-technology proof remain required.
+
+## 2026-09-03 Pack recovery-copy screen privacy
+
+- Export or paste a Pack recovery copy, cancel sharing, then activate `Clear recovery copy`; confirm the private JSON disappears and Restore disables without deleting the durable preserved backup.
+- Verify the JSON input does not capitalize, autocorrect, or spellcheck raw payloads.
+- Native evidence remains required for share/cancel, clipboard lifecycle, relaunch, compact height, VoiceOver/TalkBack, and route-named screenshots.
