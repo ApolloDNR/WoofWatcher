@@ -6,7 +6,7 @@
 - PASS disambiguation: The duplicate visible `Name` captions expose `Dog name` and `Caregiver name` as their distinct accessible names.
 - PASS regression: A scoped red-first readiness test rejected the former global false positive and now passes `1/1`; mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; and the full focused matrix passes `1058/1058`.
 - PASS source/build: Mobile TypeScript and diff validation are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass.
-- PENDING dependency-complete: Record branch CI for this slice.
+- PASS dependency-complete: `WoofWatcher Verify` run `33906155259`, job `101131461214`, passed exact implementation/docs commit `b919cc04` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
 - OPEN native/release: Verify field naming, focus, and error behavior with VoiceOver/TalkBack; prove real Clerk/provider auth; capture route-named iOS/Android screenshots; and retain store, public-launch, and Apollo approval gates.
 
 ## 2026-09-04 Records saved-share and modal accessibility gate

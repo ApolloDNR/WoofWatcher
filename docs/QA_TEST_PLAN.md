@@ -5,7 +5,7 @@
 - PASS red/green: The new readiness assertion scopes itself to the shared Auth and Setup `Field` bodies, failed against the formerly unnamed inputs, and passes `1/1` after implementation instead of matching the unrelated primary-button label.
 - PASS source: Both shared fields apply `accessibilityLabel={accessibilityLabel ?? label}`. Provider sign-in, sign-up, and verification code inherit truthful labels; Setup covers every field and overrides the duplicate visual `Name` captions with `Dog name` and `Caregiver name`.
 - PASS local: Mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; the full focused matrix passes `1058/1058`; mobile TypeScript and `git diff --check` are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass.
-- PENDING CI: Run dependency-complete branch verification.
+- PASS CI: Dependency-complete `WoofWatcher Verify` run `33906155259`, job `101131461214`, passed exact implementation/docs commit `b919cc04` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
 - OPEN native: On real iOS and Android, traverse sign-in email/password, sign-up email/password, verification code, and the complete Setup form with VoiceOver/TalkBack; confirm `Dog name` and `Caregiver name` are distinct; capture route-named screenshots. Real Clerk/provider auth, store review, public launch, and Apollo approval remain open.
 
 ## 2026-09-04 Records saved-share and modal accessibility QA

@@ -5,9 +5,9 @@
 - DONE: A red-first readiness test scoped directly to both shared field implementations exposed the old false positive, where a broad Auth assertion matched a button label while provider inputs remained unnamed.
 - DONE: The shared Auth `Field` and Setup `Field` now apply `accessibilityLabel={accessibilityLabel ?? label}`. Explicit `Dog name` and `Caregiver name` overrides disambiguate their duplicate visible `Name` labels; the contract covers provider sign-in, sign-up, verification code, and every Setup field.
 - VERIFIED LOCALLY: The scoped regression failed red and passes green `1/1`; mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; the full focused matrix passes `1058/1058`; mobile TypeScript and `git diff --check` are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass.
-- PENDING: Dependency-complete CI is not yet recorded for this slice.
+- VERIFIED CI: Dependency-complete `WoofWatcher Verify` run `33906155259`, job `101131461214`, passed implementation/docs commit `b919cc04` through checkout, pinned dependency install, generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
 - BOUNDARY: Source-level accessible names do not prove real VoiceOver/TalkBack announcements or focus, real Clerk/provider authentication, native screenshots, store readiness, public launch, or Apollo approval.
-- NEXT: Require dependency-complete branch CI, then capture route-named Auth sign-in/sign-up/code and Setup field traversal with VoiceOver and TalkBack on real iOS and Android devices.
+- NEXT: Capture route-named Auth sign-in/sign-up/code and Setup field traversal with VoiceOver and TalkBack on real iOS and Android devices.
 
 ## 2026-09-04 Records saved-share truth and modal accessibility
 
