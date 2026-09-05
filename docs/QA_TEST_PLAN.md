@@ -8,7 +8,7 @@
 - PASS interaction/accessibility: Versioned Avatar authority captures same-frame edits and rejects stale picker/save/reset work. Privacy settles every local erase participant. WoofGuide, Calendar, Log, More, Privacy, Setup, and fallback modal wrappers preserve child traversal, named close actions, truthful pending state, and non-committing backdrops.
 - PASS local/build: The More scope and provider-bound rename regression passes `4/4`; the server household-scope regression passes `5/5`; the mobile matrix passes `880/880`; the full focused matrix passes `1149/1149`; mobile and API-server TypeScript are green; PixelLab reports `150` valid, `0` missing, `0` invalid.
 - PASS export/runtime: Exact-source Expo web export completes at `1,934` modules / `258` assets; all `13` required routes pass runtime smoke.
-- PENDING CI: Record dependency-complete branch CI.
+- PASS CI: Dependency-complete `WoofWatcher Verify` [run `33943583316`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33943583316), job `101245492334`, passed exact final implementation tip `7f457f89e11eb8b81b0eeea3585d2c67be72270a` through generated-client drift, beta doctor, focused tests, workspace typecheck, and CI-safe builds.
 - OPEN native: Reproduce deferred hydration, malformed storage, rejected writes, owner erase, same-dog provider updates, conflicts, fast household/dog changes, and Care-versus-Avatar partial failure on real iOS and Android. Confirm VoiceOver/TalkBack focus, announcements, busy state, and recovery controls; capture route-named screenshots. Provider, store, public-launch, and Apollo approval remain open.
 
 ## 2026-09-04 Auth and Setup programmatic input-label QA

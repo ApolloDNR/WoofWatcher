@@ -8,7 +8,7 @@
 - PASS interaction/accessibility: Versioned Avatar drafts prevent same-frame loss; Privacy deletion settles every local participant; storage failures are visible; modal wrappers do not swallow child semantics; named close actions are present; pending controls are truthful; and backdrop taps never save.
 - PASS behavioral/source: The More scope and provider-bound rename regression passes `4/4`; the server household-scope regression passes `5/5`; the mobile matrix passes `880/880`; the full focused matrix passes `1149/1149`; mobile and API-server TypeScript are green.
 - PASS export/runtime/assets: PixelLab passes `150/150`; exact-source Expo export completes at `1,934` modules / `258` assets; all `13` runtime routes pass.
-- PENDING dependency-complete: Record branch CI for this slice.
+- PASS dependency-complete: `WoofWatcher Verify` [run `33943583316`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33943583316), job `101245492334`, passed exact final implementation tip `7f457f89e11eb8b81b0eeea3585d2c67be72270a` through generated-client drift, beta doctor, focused tests, workspace typecheck, and CI-safe builds.
 - OPEN native/release: Verify slow hydration, corruption recovery, failed writes, scope changes, partial retries, modal focus, fast household/dog switching, and announcements on real iOS/Android with VoiceOver/TalkBack. Provider acknowledgement, native screenshots, store review, public launch, and Apollo approval remain separate gates.
 
 ## 2026-09-04 Auth and Setup programmatic input-label gate
