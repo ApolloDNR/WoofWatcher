@@ -3,7 +3,7 @@
 ## 2026-09-05 Android Records attachment QA
 
 - PASS source: Android Records file actions use `Sharing.shareAsync` with the saved file URI, MIME type, and dialog title; unavailable or failed sharing uses the existing reviewed-text fallback.
-- PASS focused: report file-plan coverage protects generated PDF/PNG MIME and dialog metadata.
+- PASS verification: report file-plan coverage protects generated PDF/PNG MIME and dialog metadata; the full mobile/domain suite, mobile TypeScript, and PixelLab `150/150` pass locally. Dependency-complete run `33966966178`, job `101308689576`, passed implementation commit `39c5ef4c` end to end.
 - OPEN device: rebuild Android, attach and reopen Care Pass HTML/PDF plus Dog ID HTML/PNG, exercise cancel/unavailable paths, and capture route-named evidence.
 
 ## 2026-09-04 Local state-integrity and staged-save QA

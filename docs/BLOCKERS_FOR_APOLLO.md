@@ -3,6 +3,7 @@
 ## 2026-09-05 Android Records attachment proof
 
 - Source blocker closed: Records now uses `expo-sharing` for Android HTML/PDF/PNG file attachments and retains a truthful reviewed-text fallback.
+- Dependency proof: `WoofWatcher Verify` run `33966966178`, job `101308689576`, passed implementation commit `39c5ef4c` end to end.
 - Still blocked: a rebuilt Android app must prove share-sheet attachment, cancellation behavior, receiving-app reopen, MIME/file-name integrity, TalkBack traversal, and route-named screenshots.
 
 ## 2026-09-04 Local state-integrity native proof

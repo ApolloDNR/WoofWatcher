@@ -3,7 +3,7 @@
 ## 2026-09-05 Android Records file attachments
 
 - DONE source: Records sends saved HTML, PDF, and PNG files through `expo-sharing` on Android with their MIME type and dialog title; unavailable or failed native sharing still falls back to reviewed text.
-- VERIFIED focused: report export behavior passes locally; dependency, typecheck, full-suite, and CI proof follow this implementation commit.
+- VERIFIED: report export behavior, the full mobile/domain suite, mobile TypeScript, and PixelLab `150/150` pass locally. Dependency-complete `WoofWatcher Verify` run `33966966178`, job `101308689576`, passed implementation commit `39c5ef4c` through generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds.
 - OPEN native: rebuild and capture Android share-sheet attachment plus reopen evidence for Care Pass HTML/PDF and Dog ID HTML/PNG. Do not claim native proof from source wiring alone.
 
 ## 2026-09-04 Local state integrity, staged saves, and editor scope safety

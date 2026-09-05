@@ -2,7 +2,7 @@
 
 ## 2026-09-05 Android Records file attachments
 
-Records now routes saved Care Pass and Dog ID HTML/PDF/PNG files through `expo-sharing` on Android, supplying the saved file URI, MIME type, and dialog title. Native sharing that is unavailable or throws returns to the reviewed-text fallback instead of claiming an attachment. Focused file-plan behavior is covered locally; Android rebuild, share-sheet, reopen, cancellation, TalkBack, and screenshot evidence remain open and must not be inferred from source proof.
+Records now routes saved Care Pass and Dog ID HTML/PDF/PNG files through `expo-sharing` on Android, supplying the saved file URI, MIME type, and dialog title. Native sharing that is unavailable or throws returns to the reviewed-text fallback instead of claiming an attachment. Focused file-plan behavior, the full mobile/domain suite, mobile TypeScript, and PixelLab `150/150` pass locally. Dependency-complete `WoofWatcher Verify` run `33966966178`, job `101308689576`, passed exact implementation commit `39c5ef4c` through install, generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds. Android rebuild, share-sheet, reopen, cancellation, TalkBack, and screenshot evidence remain open and must not be inferred from source or CI proof.
 
 ## 2026-09-04 Local state integrity, staged saves, and editor scope safety
 

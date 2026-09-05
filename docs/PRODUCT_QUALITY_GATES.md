@@ -3,6 +3,7 @@
 ## 2026-09-05 Android Records attachment gate
 
 - PASS source: Android no longer relies on React Native's text-only `Share.share` file behavior; Records uses `expo-sharing` for local HTML/PDF/PNG attachments with truthful fallback.
+- PASS dependency-complete: `WoofWatcher Verify` run `33966966178`, job `101308689576`, passed exact implementation commit `39c5ef4c` through install, generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds.
 - OPEN native: Android attachment visibility, receiving-app reopen, cancellation, and accessibility evidence remain required before the native Records handoff gate can pass.
 
 ## 2026-09-04 Local state-integrity and staged-save gate
