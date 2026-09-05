@@ -3939,3 +3939,11 @@ Decision: Use a synchronous ref as the authority for recovery export/import admi
 ## 2026-09-05 - Fence Records file shares at admission
 
 Decision: Use one synchronous session lock across all Records local-file share helpers and mirror it into React disabled/busy state. React state alone is not the admission authority because rapid taps can arrive before a render commits.
+## 2026-09-05 - Home fallback speech follows the local room clock
+
+- Decision: Upbeat Phoenix fallback speech derives its greeting from the same
+  local hour that drives the immersive Home scene. Anxious and unwell speech
+  remains care-aware and non-diagnostic instead of being replaced by a greeting.
+- Boundary: Source tests cover deterministic hour bands. Native locale, device
+  clock changes, VoiceOver/TalkBack, screenshots, and Apollo approval remain
+  separate evidence gates.

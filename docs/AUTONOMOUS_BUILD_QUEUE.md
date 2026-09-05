@@ -3284,3 +3284,13 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Require dependency-complete branch CI, then capture the rebuilt-device Records share matrix when native tooling is available.
 - CI PROOF: `WoofWatcher Verify` run `33975549241`, job `101331485463`, passed implementation/docs commit `9c79785f` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+## 2026-09-05 Home room time-aware speech
+
+- DONE: The immersive Home fallback speech now uses the same local clock as the
+  day/night room, so upbeat Phoenix copy says morning, afternoon, or evening
+  instead of showing a night room with a morning greeting.
+- DONE: Concern states keep their bounded care-aware language and do not get
+  hidden behind a generic greeting.
+- NEXT: Capture route-named real-device Home evidence across a local day/night
+  transition, including VoiceOver/TalkBack. Source tests do not clear native,
+  provider, store, public-launch, or Apollo approval gates.

@@ -3320,3 +3320,12 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 
 - Automated: confirm only the first file-share task is admitted, overlapping requests are rejected, pending state is reported, and both success and error release the lock.
 - Device still required: rapid-tap HTML/SVG/PDF/PNG actions on Android and iOS; verify one share sheet, cancellation recovery, recipient reopen, and TalkBack/VoiceOver state.
+## 2026-09-05 Home room time-of-day speech coverage
+
+- Verify upbeat Home fallback speech says good morning before noon, good
+  afternoon before 6 PM, and good evening thereafter using the owner's local
+  device hour.
+- Verify anxious and unwell states retain their safer care-aware copy at every
+  hour, and invalid clock input falls back to a neutral greeting.
+- Real-device clock changes, localization, and screen-reader delivery remain
+  part of native QA rather than source-level proof.

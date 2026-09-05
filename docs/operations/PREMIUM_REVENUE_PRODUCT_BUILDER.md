@@ -6345,3 +6345,12 @@ Doctor source checks pass, but the overall local doctor remains `BLOCKED` solely
 Records local HTML, SVG, PDF, and PNG shares now share a synchronous admission fence with disabled/busy UI state. Rapid taps cannot overlap file writes or native share requests, and the fence releases after success or failure. Real-device cancellation, recipient reopen, TalkBack/VoiceOver, and route-named screenshots remain open.
 
 Dependency-complete `WoofWatcher Verify` run `33975549241`, job `101331485463`, passed implementation/docs commit `9c79785f` end to end.
+## 2026-09-05 Home room time-aware speech slice
+
+- Replaced the fixed morning fallback in the immersive Home room with a tested
+  local-hour speech policy covering morning, afternoon, evening, concern states,
+  and invalid clock input.
+- The policy uses real device time only; it does not invent care state or weaken
+  the non-diagnostic anxious/unwell language.
+- Pending: dependency-complete branch CI plus real iOS/Android clock-transition,
+  accessibility, screenshot, provider, store, public-launch, and Apollo proof.

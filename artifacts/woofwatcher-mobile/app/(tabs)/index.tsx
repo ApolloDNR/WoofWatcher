@@ -81,6 +81,7 @@ import {
   type HomeMissionTone,
 } from "@/lib/homeMissionDeck";
 import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
+import { getHomeRoomSpeech } from "@/lib/homeRoomSpeech";
 import { isHomeSceneReady } from "@/lib/homeSceneReady";
 import {
   createHomeWelcomePreference,
@@ -207,14 +208,6 @@ const HOME_QUICK_LOG: QuickItem[] = [
     forceDetail: true,
   },
 ];
-
-const SPEECH_BY_MOOD: Record<Mood, string> = {
-  happy: "Good morning!\nWalk time soon?\nI'm ready!",
-  excited: "Good morning!\nWalk time soon?\nI'm ready!",
-  calm: "Good morning!\nWalk time soon?\nI'm ready!",
-  anxious: "Stay close today.\nA calm plan helps.",
-  unwell: "Tummy feels off.\nLet's watch gently.",
-};
 
 const MOOD_ICON: Record<Mood, PixelIconName> = {
   happy: "mood_great",
@@ -1668,7 +1661,8 @@ export default function HomeScreen() {
             motion={avatarMotion}
             speech={
               roomSpeechOverride ??
-              (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
+              (avatarMotion.speech ||
+                getHomeRoomSpeech(status.mood, new Date(now).getHours()))
             }
             energy={status.energy}
             presenceLabel={presenceLabel}

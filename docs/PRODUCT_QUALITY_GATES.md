@@ -1055,3 +1055,9 @@ Source PASS requires the generated private JSON to remain visible and failed sha
 - PASS (source): A synchronous session fence prevents overlapping Records HTML, SVG, PDF, and PNG file-share work and releases after success or failure.
 - PASS (accessibility source): File actions expose disabled and busy state while a request is active.
 - OPEN (native): Share cancellation, receiving-app reopen, TalkBack/VoiceOver, and route-named iOS/Android evidence remain unproved.
+## 2026-09-05 Home scene and speech consistency
+
+- PASS at source level when the immersive room's local time-of-day state and
+  upbeat Phoenix greeting cannot contradict one another.
+- BLOCKED at native proof until route-named iOS/Android captures verify local
+  clock transitions, room art, speech presentation, and assistive technology.

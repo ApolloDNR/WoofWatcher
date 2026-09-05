@@ -1353,3 +1353,9 @@ The explicit Pack recovery-copy clear action now has source-backed screen-reader
 
 - Source coverage now prevents overlapping Records HTML/SVG/PDF/PNG file writes and share requests and exposes busy state.
 - Still blocked externally: real iOS/Android rapid taps, share cancellation, receiving-app reopen, TalkBack/VoiceOver, and route-screenshot evidence.
+## 2026-09-05 Home room time-aware speech status
+
+The source-level day/night contradiction is closed: upbeat Phoenix fallback
+speech now follows the owner's local morning, afternoon, or evening. Real-device
+clock-transition, localization, VoiceOver/TalkBack, and route-named screenshot
+evidence remains blocked on native tooling and Apollo review.
