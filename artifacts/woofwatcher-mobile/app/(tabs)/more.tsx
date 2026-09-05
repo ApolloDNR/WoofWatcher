@@ -54,6 +54,7 @@ import {
   isSameMoreEditorScope,
   type MoreEditorScope,
 } from "@/lib/moreEditorScope";
+import { getMorePrimarySectionOrder } from "@/lib/morePrimarySections";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
@@ -1972,6 +1973,9 @@ export default function MoreScreen() {
           </BoardCard>
           ) : null}
 
+          {getMorePrimarySectionOrder(ownerOps).map((section) =>
+            section === "career" ? (
+              <React.Fragment key={section}>
           <View collapsable={false} onLayout={registerSectionAnchor("career")} />
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader
@@ -2029,8 +2033,9 @@ export default function MoreScreen() {
               />
             </View>
           </BoardCard>
-
-          <BoardCard style={s.moreDirectoryCard}>
+              </React.Fragment>
+            ) : (
+          <BoardCard key={section} style={s.moreDirectoryCard}>
             <BoardSectionHeader
               title="Command Directory"
               accessory={<BoardPill label={`${moreDirectoryItems.length} hubs`} tone={colors.sage} />}
@@ -2085,6 +2090,8 @@ export default function MoreScreen() {
               ))}
             </View>
           </BoardCard>
+            ),
+          )}
 
           {householdFocus && (
             <BoardCard style={[s.moreBoardCard, { borderColor: colors.sage + "66", backgroundColor: colors.sage + "10" }]}>

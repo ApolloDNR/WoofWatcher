@@ -9,6 +9,10 @@ export interface HomeFirstScreenLayoutInput {
 
 export interface HomeFirstScreenLayout {
   density: HomeFirstScreenDensity;
+  backdropWidth: number;
+  backdropHeight: number;
+  scenePlacement: "fixed";
+  sceneTransparent: true;
   routeHorizontalPadding: number;
   heroStageWidth: number;
   contentMinHeight: number;
@@ -36,6 +40,10 @@ export function getHomeFirstScreenLayout(
 
   return {
     density,
+    backdropWidth: width,
+    backdropHeight: height,
+    scenePlacement: "fixed",
+    sceneTransparent: true,
     routeHorizontalPadding,
     heroStageWidth: Math.max(0, width - routeHorizontalPadding * 2),
     contentMinHeight: height,

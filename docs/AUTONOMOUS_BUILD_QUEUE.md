@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-09-05 Consumer Home visual recovery and preview boundary
+
+- DONE: Restored the approved full-phone day/night room and active-walk park artwork behind Home, separated the transparent living Phoenix layer from the scrolling care console, and kept focus/scroll motion pausing so the scene resumes without snapping or doing hidden background work.
+- DONE: Production More now leads with the consumer Command Directory while the existing internal owner profile retains launch and QA operations. A new `preview:consumer` command always rebuilds with the production profile and writes an explicit preview identity before serving, so the internal QA surface is no longer mistaken for the consumer app.
+- VERIFIED LOCALLY: The complete mobile library matrix passes `952/952`; the combined Home, More, consumer-preview, accessibility, and motion slice passes `228/228`; the production consumer Expo export bundles `1,943` modules and `258` assets into `266` files; the served shell returns the matching content-hashed bundle with `no-store`, PWA registration, and the consumer identity marker. Visual inspection confirms the room fills the phone and the live Phoenix advances between frames.
+- BOUNDARY: The local standalone TypeScript command remains blocked by the partial Windows dependency graph missing `expo-modules-core`; the dependency-complete CI typecheck is still authoritative. Browser proof does not replace real iPhone safe-area, touch, VoiceOver, thermal, or animation-cadence review, and it does not establish store or provider readiness.
+- NEXT: Run dependency-complete branch CI at the final implementation tip, then capture Home scroll/pause/resume and the core route loop on a real iPhone before calling native polish final.
+
 ## 2026-09-05 Android Records file attachments
 
 - DONE source: Records sends saved HTML, PDF, and PNG files through `expo-sharing` on Android with their MIME type and dialog title; unavailable or failed native sharing still falls back to reviewed text.

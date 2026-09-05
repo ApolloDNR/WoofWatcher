@@ -5,6 +5,9 @@ const { spawnSync } = require("child_process");
 const projectRoot = path.resolve(__dirname, "..");
 const outputDirName = ".expo-smoke";
 const outputDir = path.join(projectRoot, outputDirName);
+const consumerPreview =
+  process.argv.includes("--consumer") ||
+  process.env.EXPO_PUBLIC_CONSUMER_PREVIEW === "1";
 
 function removeOutput() {
   fs.rmSync(outputDir, { recursive: true, force: true });
@@ -30,9 +33,21 @@ const env = {
   ...process.env,
   CI: "1",
   EXPO_NO_TELEMETRY: "1",
+  ...(consumerPreview
+    ? {
+        EXPO_PUBLIC_BUILD_PROFILE: "production",
+        NODE_ENV: "production",
+      }
+    : {}),
   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY:
     process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_woofwatcher_smoke",
 };
+
+if (consumerPreview) {
+  console.log(
+    "[smoke-web-export] Rebuilding the consumer profile; owner and QA tooling stays hidden.",
+  );
+}
 
 const result = spawnSync(
   "pnpm",
@@ -109,6 +124,21 @@ const hasJavaScript = files.some((file) => file.endsWith(".js"));
 if (!hasHtml || !hasJavaScript) {
   fail(
     `Expo web export smoke did not emit expected assets. html=${hasHtml} js=${hasJavaScript}`,
+  );
+}
+
+if (consumerPreview) {
+  fs.writeFileSync(
+    path.join(outputDir, "consumer-preview-identity.json"),
+    `${JSON.stringify(
+      {
+        kind: "woofwatcher-consumer-preview",
+        buildProfile: "production",
+        ownerOpsVisible: false,
+      },
+      null,
+      2,
+    )}\n`,
   );
 }
 

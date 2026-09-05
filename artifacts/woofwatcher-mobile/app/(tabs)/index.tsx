@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, {
@@ -154,6 +155,14 @@ const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
   meals: "meal",
   potty: "potty",
 };
+
+// Full-phone, dogless rooms from the approved consumer boards. The living
+// Phoenix layer is rendered separately so motion stays crisp and the room can
+// switch to the park for a real active walk without baking state into art.
+const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/home-fullbleed-day.png");
+const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-night.png");
+const HOME_IMMERSIVE_PARK_DAY = require("@/assets/avatar/rooms/home-fullbleed-park-day.png");
+const HOME_IMMERSIVE_PARK_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-park-night.png");
 
 export function homeImmersiveRoomIsNight(hour: number): boolean {
   return hour >= 20 || hour < 6;
@@ -404,6 +413,7 @@ export default function HomeScreen() {
   const homeHasBlurredRef = useRef(false);
   const [isHomeFocused, setIsHomeFocused] = useState(true);
   const [homeScrolling, setHomeScrolling] = useState(false);
+  const [fixedHeroTop, setFixedHeroTop] = useState<number | null>(null);
   const homeScrollPauseReleaseTimerRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
@@ -1623,6 +1633,66 @@ export default function HomeScreen() {
   const heroStageHeight = Math.round(
     heroStageWidth / homeFirstScreenLayout.heroAspectRatio,
   );
+  const roomIsNight =
+    colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
+  const fixedBackdropSource = openWalkSession
+    ? roomIsNight
+      ? HOME_IMMERSIVE_PARK_NIGHT
+      : HOME_IMMERSIVE_PARK_DAY
+    : roomIsNight
+      ? HOME_IMMERSIVE_ROOM_NIGHT
+      : HOME_IMMERSIVE_ROOM_DAY;
+  const fixedHero =
+    fixedHeroTop === null ? null : (
+      <View
+        accessibilityElementsHidden
+        aria-hidden
+        importantForAccessibility="no-hide-descendants"
+        pointerEvents="none"
+        testID="home-fixed-hero"
+        style={[
+          homeFirstScreenLayout.scenePlacement === "fixed"
+            ? s.fixedHeroLayer
+            : null,
+          {
+            top: fixedHeroTop,
+            left: routeHorizontalPadding,
+            width: heroStageWidth,
+            height: heroStageHeight,
+          },
+        ]}
+      >
+        <View style={[s.heroWrap, { height: heroStageHeight }]}>
+          <LivingPhoenixRoom
+            mood={avatarMotion.avatarMood}
+            motion={avatarMotion}
+            speech={
+              roomSpeechOverride ??
+              (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
+            }
+            energy={status.energy}
+            presenceLabel={presenceLabel}
+            nextLabel={
+              openWalkSession
+                ? "Walk active"
+                : openAloneSession
+                  ? "Home alone"
+                  : avatarMotion.label
+            }
+            reaction={roomReaction}
+            statusReadouts={roomStats}
+            avatarConfig={avatarConfig}
+            petName={petName}
+            awayOnWalk={Boolean(openWalkSession)}
+            awayMinutes={openWalkMinutes}
+            presentation="home"
+            chromeDensity="compact"
+            transparentScene={homeFirstScreenLayout.sceneTransparent}
+            active={isHomeFocused && !homeScrolling}
+          />
+        </View>
+      </View>
+    );
 
   if (!isHomeSceneReady(isLoaded, welcomeDismissed, storageWarning)) {
     return (
@@ -1632,6 +1702,19 @@ export default function HomeScreen() {
         aria-busy
         style={[s.root, { backgroundColor: colors.background }]}
       >
+        <Image
+          accessible={false}
+          source={fixedBackdropSource}
+          resizeMode="cover"
+          style={[
+            s.fullBleedArt,
+            {
+              width: homeFirstScreenLayout.backdropWidth,
+              height: homeFirstScreenLayout.backdropHeight,
+            },
+          ]}
+          fadeDuration={0}
+        />
         <ActivityIndicator color={colors.forest} style={s.homeLoading} />
       </View>
     );
@@ -1639,10 +1722,44 @@ export default function HomeScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
+      <Image
+        accessible={false}
+        source={fixedBackdropSource}
+        resizeMode="cover"
+        style={[
+          s.fullBleedArt,
+          {
+            width: homeFirstScreenLayout.backdropWidth,
+            height: homeFirstScreenLayout.backdropHeight,
+          },
+        ]}
+        fadeDuration={0}
+        testID="home-fixed-backdrop"
+      />
+      {colors.isDark ? (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(9,17,32,0.16)" },
+          ]}
+        />
+      ) : null}
+      <LinearGradient
+        colors={[
+          "rgba(0,0,0,0)",
+          colors.background + "55",
+          colors.background + "E8",
+        ]}
+        locations={[0.42, 0.64, 0.96]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {fixedHero}
       <Reanimated.ScrollView
         ref={homeScrollRef}
         contentInsetAdjustmentBehavior="never"
-        style={[s.container, { backgroundColor: colors.background }]}
+        style={s.container}
         testID="home-scrolling-console"
         onScrollBeginDrag={holdHomeScrollPause}
         onScrollEndDrag={scheduleHomeScrollPauseRelease}
@@ -1657,12 +1774,7 @@ export default function HomeScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={[
-            s.homeContentSurface,
-            { backgroundColor: colors.background },
-          ]}
-        >
+        <View style={s.homeContentSurface}>
           <View
             style={[s.header, { backgroundColor: colors.card }]}
             testID="home-header"
@@ -1768,45 +1880,23 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          <View
-            testID="home-room-stage"
-            style={[
-              s.heroBackdrop,
-              {
-                height: heroStageHeight,
-                borderColor: colors.border,
-                backgroundColor: colors.brandNavy,
-              },
-            ]}
+          <Reanimated.View
+            testID="home-scrolling-hero-spacer"
+            onLayout={(event) => {
+              const top = Math.round(
+                topPadding + event.nativeEvent.layout.y,
+              );
+              setFixedHeroTop((current) => (current === top ? current : top));
+            }}
+            style={[s.heroBackdrop, { height: heroStageHeight }]}
           >
-            <LivingPhoenixRoom
-              mood={avatarMotion.avatarMood}
-              motion={avatarMotion}
-              speech={
-                roomSpeechOverride ??
-                (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
-              }
-              energy={status.energy}
-              presenceLabel={presenceLabel}
-              nextLabel={
-                openWalkSession
-                  ? "Walk active"
-                  : openAloneSession
-                    ? "Home alone"
-                    : avatarMotion.label
-              }
-              reaction={roomReaction}
-              statusReadouts={roomStats}
-              avatarConfig={avatarConfig}
-              petName={petName}
-              awayOnWalk={Boolean(openWalkSession)}
-              awayMinutes={openWalkMinutes}
-              presentation="home"
-              chromeDensity="compact"
-              active={isHomeFocused && !homeScrolling}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${petName}. ${avatarTemplate.label} care twin. ${avatarMotion.label}`}
+              accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               onPress={tapPhoenixRoom}
               onLongPress={openAvatarStudio}
-              accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
+              style={StyleSheet.absoluteFill}
             />
             <Pressable
               accessibilityRole="button"
@@ -1829,7 +1919,7 @@ export default function HomeScreen() {
                 color={colors.brandNavy}
               />
             </Pressable>
-          </View>
+          </Reanimated.View>
 
           {welcomeShouldShow ? (
             <View
@@ -3666,6 +3756,18 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1, zIndex: 2 },
   homeContentSurface: { width: "100%", alignSelf: "stretch" },
+  fixedHeroLayer: {
+    position: "absolute",
+    zIndex: 1,
+    overflow: "hidden",
+  },
+  fullBleedArt: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   homeLoading: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -3735,8 +3837,6 @@ const s = StyleSheet.create({
     width: "100%",
     position: "relative",
     overflow: "hidden",
-    borderRadius: 12,
-    borderWidth: 1,
     marginBottom: 8,
   },
   heroStudioChip: {

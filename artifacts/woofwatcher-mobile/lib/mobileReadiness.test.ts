@@ -2121,10 +2121,48 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
     "utf8",
   );
 
+  const fixedBackdropMarker = home.indexOf('testID="home-fixed-backdrop"');
+  const fixedBackdropStart = home.lastIndexOf("<Image", fixedBackdropMarker);
+  const fixedBackdropEnd = home.indexOf("/>", fixedBackdropMarker);
+  assert.ok(
+    fixedBackdropMarker >= 0 &&
+      fixedBackdropStart >= 0 &&
+      fixedBackdropEnd > fixedBackdropMarker,
+    "Home should render one identifiable fixed full-phone backdrop",
+  );
+  const fixedBackdrop = home.slice(fixedBackdropStart, fixedBackdropEnd);
+  assert.match(fixedBackdrop, /source=\{fixedBackdropSource\}/);
+  assert.match(fixedBackdrop, /resizeMode="cover"/);
+  assert.match(fixedBackdrop, /s\.fullBleedArt/);
+  assert.match(
+    fixedBackdrop,
+    /width: homeFirstScreenLayout\.backdropWidth/,
+  );
+  assert.match(
+    fixedBackdrop,
+    /height: homeFirstScreenLayout\.backdropHeight/,
+  );
+
   assert.match(
     home,
-    /testID="home-room-stage"[\s\S]*?<LivingPhoenixRoom[\s\S]*?petName=\{petName\}[\s\S]*?active=\{isHomeFocused && !homeScrolling\}/,
-    "the compact Home stage should keep the active dog and motion lifecycle wired into its living room",
+    /testID="home-fixed-hero"[\s\S]*?s\.fixedHeroLayer[\s\S]*?<LivingPhoenixRoom[\s\S]*?petName=\{petName\}[\s\S]*?transparentScene=\{homeFirstScreenLayout\.sceneTransparent\}[\s\S]*?active=\{isHomeFocused && !homeScrolling\}/,
+    "the fixed transparent Phoenix layer should keep the active dog and focus/scroll motion lifecycle wired into its living room",
+  );
+
+  const spacerStart = home.indexOf('testID="home-scrolling-hero-spacer"');
+  const spacerEnd = home.indexOf("</Reanimated.View>", spacerStart);
+  assert.ok(
+    spacerStart >= 0 && spacerEnd > spacerStart,
+    "Home should reserve the fixed Phoenix layer's place in the scrolling care console",
+  );
+  const scrollingSpacer = home.slice(spacerStart, spacerEnd);
+  assert.match(scrollingSpacer, /onLayout=\{\(event\) =>/);
+  assert.match(scrollingSpacer, /setFixedHeroTop/);
+  assert.match(scrollingSpacer, /onPress=\{tapPhoenixRoom\}/);
+  assert.doesNotMatch(
+    scrollingSpacer,
+    /<LivingPhoenixRoom/,
+    "the scrolling spacer should own interaction without duplicating the animated Phoenix layer",
   );
   assert.doesNotMatch(
     home,
@@ -6322,7 +6360,45 @@ test("keeps the Home room backdrop out of accessibility traversal", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const room = readAppFile(join("..", "components", "LivingPhoenixRoom.tsx"));
 
-  assert.match(home, /testID="home-room-stage"[\s\S]*?<LivingPhoenixRoom/);
+  const loadingHomeStart = home.indexOf('accessibilityLabel="Loading Home"');
+  const loadingBackdropStart = home.indexOf("<Image", loadingHomeStart);
+  const loadingBackdropEnd = home.indexOf("/>", loadingBackdropStart);
+  assert.ok(
+    loadingHomeStart >= 0 &&
+      loadingBackdropStart > loadingHomeStart &&
+      loadingBackdropEnd > loadingBackdropStart,
+    "the loading state should retain its full-phone room backdrop",
+  );
+  assert.match(
+    home.slice(loadingBackdropStart, loadingBackdropEnd),
+    /<Image\s+accessible=\{false\}\s+source=\{fixedBackdropSource\}/,
+    "the loading backdrop must stay decorative while the named progress state remains accessible",
+  );
+
+  const fixedBackdropMarker = home.indexOf('testID="home-fixed-backdrop"');
+  const fixedBackdropStart = home.lastIndexOf("<Image", fixedBackdropMarker);
+  const fixedBackdropEnd = home.indexOf("/>", fixedBackdropMarker);
+  assert.ok(
+    fixedBackdropMarker >= 0 &&
+      fixedBackdropStart >= 0 &&
+      fixedBackdropEnd > fixedBackdropMarker,
+    "the ready Home state should retain its fixed full-phone room backdrop",
+  );
+  assert.match(
+    home.slice(fixedBackdropStart, fixedBackdropEnd),
+    /<Image\s+accessible=\{false\}\s+source=\{fixedBackdropSource\}/,
+    "the fixed full-phone backdrop must stay decorative behind the readable care console",
+  );
+  assert.match(
+    home,
+    /accessibilityElementsHidden[\s\S]*?aria-hidden[\s\S]*?importantForAccessibility="no-hide-descendants"[\s\S]*?testID="home-fixed-hero"[\s\S]*?<LivingPhoenixRoom/,
+    "the non-interactive fixed Phoenix art must be excluded while the scrolling spacer owns its labeled controls",
+  );
+  assert.match(
+    home,
+    /testID="home-scrolling-hero-spacer"[\s\S]*?accessibilityLabel=\{`\$\{petName\}\. \$\{avatarTemplate\.label\} care twin\./,
+    "the scrolling spacer must preserve the readable care-twin action after the art layer is hidden",
+  );
   assert.match(
     room,
     /<Animated\.Image\s+accessible=\{false\}\s+source=\{stageSource\}/,

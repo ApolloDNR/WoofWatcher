@@ -68,3 +68,18 @@ test("keeps the Home room inside the full phone surface at every supported width
     assert.equal(layout.contentMinHeight, 844);
   }
 });
+
+test("gives immersive Home art the full phone while the care console keeps safe gutters", () => {
+  const layout = getHomeFirstScreenLayout({
+    width: 390,
+    height: 844,
+    topPadding: 32,
+    bottomChromeClearance: 102,
+  });
+
+  assert.equal(layout.backdropWidth, 390);
+  assert.equal(layout.backdropHeight, 844);
+  assert.equal(layout.scenePlacement, "fixed");
+  assert.equal(layout.sceneTransparent, true);
+  assert.equal(layout.routeHorizontalPadding, 16);
+});

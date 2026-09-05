@@ -12,14 +12,14 @@ function readMobileFile(...parts: string[]): string {
 test("keeps Phoenix Home focused on the five-second owner promise", () => {
   const home = readMobileFile("app", "(tabs)", "index.tsx");
 
-  assert.doesNotMatch(home, /home-fixed-hero/);
-  assert.doesNotMatch(home, /home-scrolling-hero-spacer/);
-  assert.doesNotMatch(home, /fullBleedArt/);
-  assert.doesNotMatch(home, /<LinearGradient/);
-  assert.match(home, /testID="home-room-stage"[\s\S]*<LivingPhoenixRoom/);
-  assert.doesNotMatch(home, /transparentScene/);
+  assert.match(home, /testID="home-fixed-backdrop"/);
+  assert.match(home, /testID="home-fixed-hero"/);
+  assert.match(home, /testID="home-scrolling-hero-spacer"/);
+  assert.match(home, /fullBleedArt/);
+  assert.match(home, /<LinearGradient/);
+  assert.match(home, /<LivingPhoenixRoom[\s\S]*transparentScene/);
 
-  const heroIndex = home.indexOf('testID="home-room-stage"');
+  const heroIndex = home.indexOf('testID="home-scrolling-hero-spacer"');
   const presenceIndex = home.indexOf("Presence panel: the first-screen");
   const careSenseIndex = home.indexOf(
     "Care Sense stays one scroll below the primary care actions",
@@ -144,7 +144,12 @@ test("returns Home to a clean full-phone surface only after the route has blurre
   );
   assert.match(
     home,
-    /<Reanimated\.ScrollView[\s\S]*?ref=\{homeScrollRef\}[\s\S]*?contentInsetAdjustmentBehavior="never"[\s\S]*?backgroundColor: colors\.background/,
+    /<Reanimated\.ScrollView[\s\S]*?ref=\{homeScrollRef\}[\s\S]*?contentInsetAdjustmentBehavior="never"[\s\S]*?style=\{s\.container\}/,
+    "the scrolling console must stay transparent so the full-phone room remains visible",
+  );
+  assert.doesNotMatch(
+    home,
+    /style=\{\[s\.container, \{ backgroundColor: colors\.background \}\]\}/,
   );
   assert.match(
     home,
