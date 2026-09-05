@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-09-05 Consumer Home native proof
+
+The restored production consumer Home and explicit consumer-preview boundary passed dependency-complete `WoofWatcher Verify` [run `33980516066`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33980516066), job `101344792628`, on exact implementation commit `4806bd1e278b12d280e38041b9985a816cffaaca`. This clears source, test, typecheck, and build proof only. A real iPhone or native helper is still required for safe-area, touch, scroll/pause/resume, background recovery, animation cadence and thermal behavior, VoiceOver, and route-named screenshot evidence; provider, signing/store, public-launch, and Apollo approval remain open.
+
 ## 2026-09-05 Android Records attachment proof
 
 - Source blocker closed: Records now uses `expo-sharing` for Android HTML/PDF/PNG file attachments and retains a truthful reviewed-text fallback.

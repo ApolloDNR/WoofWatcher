@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-09-05 Consumer Home visual recovery and preview proof
+
+Production Home again uses the approved full-phone day/night room and active-walk park behind a separately animated Phoenix layer and scrolling care console. Scene work pauses while the route is unfocused or scrolling and resumes without snapping. Production More leads with the consumer Command Directory, while internal launch/QA operations remain confined to the owner profile. The `preview:consumer` command rebuilds with the production profile and writes an explicit consumer identity before serving.
+
+Local mobile, focused Home/More/preview, export, runtime, and browser checks are recorded at the implementation tip. Dependency-complete `WoofWatcher Verify` [run `33980516066`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33980516066), job `101344792628`, passed exact commit `4806bd1e278b12d280e38041b9985a816cffaaca` through dependency install, generated-client drift, beta doctor, focused behavior, workspace typecheck, and CI-safe builds. Real-iPhone safe-area, touch, scroll/pause/resume, background recovery, animation cadence and thermal behavior, VoiceOver, and route-named screenshots remain open, as do provider, store, public-launch, and Apollo approval gates.
+
 ## 2026-09-05 Android Records file attachments
 
 Records now routes saved Care Pass and Dog ID HTML/PDF/PNG files through `expo-sharing` on Android, supplying the saved file URI, MIME type, and dialog title. Native sharing that is unavailable or throws returns to the reviewed-text fallback instead of claiming an attachment. Focused file-plan behavior, the full mobile/domain suite, mobile TypeScript, and PixelLab `150/150` pass locally. Dependency-complete `WoofWatcher Verify` run `33966966178`, job `101308689576`, passed exact implementation commit `39c5ef4c` through install, generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds. Android rebuild, share-sheet, reopen, cancellation, TalkBack, and screenshot evidence remain open and must not be inferred from source or CI proof.

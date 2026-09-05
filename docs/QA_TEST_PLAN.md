@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-09-05 Consumer Home preview QA
+
+- PASS local/browser: The production-profile consumer preview rebuilds before serving, records its consumer identity, fills the phone with the day/night room or active-walk park, keeps the living Phoenix separate from the scrolling console, and pauses scene work during blur or scroll without snapping on resume.
+- PASS CI: Dependency-complete `WoofWatcher Verify` [run `33980516066`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33980516066), job `101344792628`, passed exact implementation commit `4806bd1e278b12d280e38041b9985a816cffaaca` through dependency install, generated-client verification, beta doctor, focused behavior, workspace typecheck, and CI-safe builds.
+- OPEN native: On a real iPhone, verify safe areas, touch targets, scroll/pause/resume, background/foreground recovery, route-loop navigation, animation cadence and thermal behavior, then capture VoiceOver and route-named evidence. Provider, store, public-launch, and Apollo approval remain separate gates.
+
 ## 2026-09-05 Android Records attachment QA
 
 - PASS source: Android Records file actions use `Sharing.shareAsync` with the saved file URI, MIME type, and dialog title; unavailable or failed sharing uses the existing reviewed-text fallback.

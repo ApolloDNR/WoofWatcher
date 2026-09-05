@@ -1,5 +1,11 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-05 Consumer Home preview gate
+
+- PASS source/browser: Production Home restores the approved immersive room and walk artwork, layers the living Phoenix independently from the care console, pauses hidden or scrolling scene work, and exposes a production-profile consumer preview that cannot silently serve the internal QA profile.
+- PASS CI: Dependency-complete `WoofWatcher Verify` [run `33980516066`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33980516066), job `101344792628`, passed exact implementation commit `4806bd1e278b12d280e38041b9985a816cffaaca` end to end.
+- OPEN native/release: Real-iPhone safe-area, touch, VoiceOver, animation cadence, thermal behavior, background recovery, and route-named screenshots remain required. Source, browser, and CI proof do not clear provider, store, public-launch, or Apollo approval.
+
 ## 2026-09-05 Android Records attachment gate
 
 - PASS source: Android no longer relies on React Native's text-only `Share.share` file behavior; Records uses `expo-sharing` for local HTML/PDF/PNG attachments with truthful fallback.
