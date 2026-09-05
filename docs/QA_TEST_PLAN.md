@@ -3329,3 +3329,5 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
   hour, and invalid clock input falls back to a neutral greeting.
 - Real-device clock changes, localization, and screen-reader delivery remain
   part of native QA rather than source-level proof.
+- Dependency-complete proof: `WoofWatcher Verify` run `33993721164`, job
+  `101380365630`, passed implementation/docs commit `35bce4d5` end to end.

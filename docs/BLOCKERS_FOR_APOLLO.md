@@ -1359,3 +1359,6 @@ The source-level day/night contradiction is closed: upbeat Phoenix fallback
 speech now follows the owner's local morning, afternoon, or evening. Real-device
 clock-transition, localization, VoiceOver/TalkBack, and route-named screenshot
 evidence remains blocked on native tooling and Apollo review.
+
+Dependency-complete source proof passed in `WoofWatcher Verify` run
+`33993721164`, job `101380365630`, on commit `35bce4d5`.

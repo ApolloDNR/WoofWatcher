@@ -3294,3 +3294,6 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Capture route-named real-device Home evidence across a local day/night
   transition, including VoiceOver/TalkBack. Source tests do not clear native,
   provider, store, public-launch, or Apollo approval gates.
+- CI PROOF: `WoofWatcher Verify` run `33993721164`, job `101380365630`,
+  passed implementation/docs commit `35bce4d5` through generated-client drift,
+  beta doctor, focused tests, workspace typecheck, CI-safe builds, and completion.
