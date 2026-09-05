@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as Sharing from "expo-sharing";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -656,11 +657,18 @@ export default function RecordsScreen() {
       try {
         await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
         await FileSystem.writeAsStringAsync(plan.fileUri, printable.html, { encoding: FileSystem.EncodingType.UTF8 });
-        const shareUri =
-          Platform.OS === "android"
-            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
-            : plan.fileUri;
-        await Share.share(buildReportArtifactShareContent(plan, { shareUri }));
+        if (Platform.OS === "android") {
+          if (!(await Sharing.isAvailableAsync())) {
+            await shareFallback();
+            return;
+          }
+          await Sharing.shareAsync(plan.fileUri, {
+            dialogTitle: plan.shareTitle,
+            mimeType: plan.mimeType,
+          });
+        } else {
+          await Share.share(buildReportArtifactShareContent(plan));
+        }
         return;
       } catch {
         await shareFallback();
@@ -697,11 +705,19 @@ export default function RecordsScreen() {
         await FileSystem.writeAsStringAsync(plan.fileUri, plan.contentBase64, {
           encoding: FileSystem.EncodingType.Base64,
         });
-        const shareUri =
-          Platform.OS === "android"
-            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
-            : plan.fileUri;
-        await Share.share(buildGeneratedBinaryArtifactShareContent(plan, { shareUri }));
+        const shareContent = buildGeneratedBinaryArtifactShareContent(plan);
+        if (Platform.OS === "android") {
+          if (!(await Sharing.isAvailableAsync())) {
+            await shareFallback();
+            return;
+          }
+          await Sharing.shareAsync(plan.fileUri, {
+            dialogTitle: shareContent.dialogTitle,
+            mimeType: shareContent.mimeType,
+          });
+        } else {
+          await Share.share(shareContent);
+        }
         return;
       } catch {
         await shareFallback();

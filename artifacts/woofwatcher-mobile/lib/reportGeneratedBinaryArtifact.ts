@@ -51,6 +51,8 @@ export interface GeneratedBinaryArtifactShareContent {
   title: string;
   message: string;
   url?: string;
+  mimeType?: GeneratedBinaryArtifactMimeType;
+  dialogTitle?: string;
 }
 
 const REPORT_EXPORT_DIRECTORY_NAME = WOOFWATCHER_REPORTS_DIRECTORY_NAME;
@@ -431,9 +433,8 @@ export function buildGeneratedBinaryArtifactFilePlan(
     ? null
     : "Local file export is unavailable because this runtime does not expose a document directory.";
   const format = source.mimeType === "application/pdf" ? "PDF" : "PNG";
-  // "Saved to your device", not "attached": RN Share.share attaches the
-  // url file only on iOS; on Android it shares text, so the honest claim is
-  // the local file write (which always succeeds on native).
+  // The local write is the durable guarantee. Android attaches this file
+  // through expo-sharing; native share/reopen evidence remains a separate gate.
   const baseMessage = `WoofWatcher local generated ${format} is saved to your device as ${source.fileName} (${source.mimeType}, ${formatBytes(source.byteSize)}). ${source.boundary}`;
 
   return {
@@ -462,6 +463,8 @@ export function buildGeneratedBinaryArtifactShareContent(
       title: plan.shareTitle,
       message: plan.message,
       url: shareUri,
+      mimeType: plan.mimeType,
+      dialogTitle: plan.shareTitle,
     };
   }
   return {

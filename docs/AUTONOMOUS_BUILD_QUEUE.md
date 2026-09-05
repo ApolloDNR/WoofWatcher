@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-09-05 Android Records file attachments
+
+- DONE source: Records sends saved HTML, PDF, and PNG files through `expo-sharing` on Android with their MIME type and dialog title; unavailable or failed native sharing still falls back to reviewed text.
+- VERIFIED focused: report export behavior passes locally; dependency, typecheck, full-suite, and CI proof follow this implementation commit.
+- OPEN native: rebuild and capture Android share-sheet attachment plus reopen evidence for Care Pass HTML/PDF and Dog ID HTML/PNG. Do not claim native proof from source wiring alone.
+
 ## 2026-09-04 Local state integrity, staged saves, and editor scope safety
 
 - DONE: CareContext and AvatarContext expose explicit `loading`, `ready`, and `failed` states with retry. Avatar data is scoped to the exact owner, verified household, and active dog; malformed slots fail closed; migrations and writes are ordered; local legacy claims are failure-atomic; and failed erase leaves a tombstone that prevents old data from being reclaimed.

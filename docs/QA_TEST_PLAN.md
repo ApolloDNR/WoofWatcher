@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-09-05 Android Records attachment QA
+
+- PASS source: Android Records file actions use `Sharing.shareAsync` with the saved file URI, MIME type, and dialog title; unavailable or failed sharing uses the existing reviewed-text fallback.
+- PASS focused: report file-plan coverage protects generated PDF/PNG MIME and dialog metadata.
+- OPEN device: rebuild Android, attach and reopen Care Pass HTML/PDF plus Dog ID HTML/PNG, exercise cancel/unavailable paths, and capture route-named evidence.
+
 ## 2026-09-04 Local state-integrity and staged-save QA
 
 - PASS failure matrix: Care and Avatar loading/read/corruption/recovery/write/erase paths fail closed with retry. Malformed Avatar slots preserve valid siblings; stale reads, migrations, queued writes, and duplicate erases cannot republish removed data; failed local legacy copy or erase cannot be claimed by another dog.

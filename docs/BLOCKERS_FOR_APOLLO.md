@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-09-05 Android Records attachment proof
+
+- Source blocker closed: Records now uses `expo-sharing` for Android HTML/PDF/PNG file attachments and retains a truthful reviewed-text fallback.
+- Still blocked: a rebuilt Android app must prove share-sheet attachment, cancellation behavior, receiving-app reopen, MIME/file-name integrity, TalkBack traversal, and route-named screenshots.
+
 ## 2026-09-04 Local state-integrity native proof
 
 - Care and Avatar now fail closed with explicit retry, exact owner/verified-household/dog scoping, ordered writes, failure-atomic local migration claims, and an erase tombstone that survives a failed delete. Setup and Avatar Studio stay sealed until both stores match the current Care scope and dog identity.

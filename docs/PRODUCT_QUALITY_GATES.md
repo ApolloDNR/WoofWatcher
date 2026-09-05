@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-05 Android Records attachment gate
+
+- PASS source: Android no longer relies on React Native's text-only `Share.share` file behavior; Records uses `expo-sharing` for local HTML/PDF/PNG attachments with truthful fallback.
+- OPEN native: Android attachment visibility, receiving-app reopen, cancellation, and accessibility evidence remain required before the native Records handoff gate can pass.
+
 ## 2026-09-04 Local state-integrity and staged-save gate
 
 - PASS context boundary: Care and Avatar expose `loading`, `ready`, and `failed` plus retry. Avatar persistence is exact-owner/verified-household/dog scoped; corruption recovery is slot-specific; legacy claims are failure-atomic; writes are ordered; and failed erase preserves a non-reclaimable tombstone.

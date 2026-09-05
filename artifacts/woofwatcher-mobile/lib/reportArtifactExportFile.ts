@@ -327,10 +327,8 @@ export function buildReportArtifactExportFilePlan(
     canWriteLocalFile,
     fallbackReason,
     message: canWriteLocalFile
-      ? // "Saved to your device", not "attached": the file write always
-        // succeeds on native, but RN Share.share only attaches the url file
-        // on iOS - on Android it shares text only, so "attached" would
-        // over-claim there. The saved local file is the honest guarantee.
+      ? // The file write is the durable guarantee. Android attaches it through
+        // expo-sharing; native share/reopen evidence remains a separate gate.
         `WoofWatcher printable ${printableLabel} is saved to your device as a local ${formatLabel}. ${boundary}`
       : `WoofWatcher printable ${printableLabel} is included below because local file export is unavailable in this runtime. ${boundary}`,
   };

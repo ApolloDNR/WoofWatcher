@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-09-05 Android Records file attachments
+
+Records now routes saved Care Pass and Dog ID HTML/PDF/PNG files through `expo-sharing` on Android, supplying the saved file URI, MIME type, and dialog title. Native sharing that is unavailable or throws returns to the reviewed-text fallback instead of claiming an attachment. Focused file-plan behavior is covered locally; Android rebuild, share-sheet, reopen, cancellation, TalkBack, and screenshot evidence remain open and must not be inferred from source proof.
+
 ## 2026-09-04 Local state integrity, staged saves, and editor scope safety
 
 Care and Avatar now expose explicit hydration failure/retry boundaries. Avatar persistence independently quarantines malformed slots, serializes recovery and ordinary writes, suppresses stale reads and migrations, scopes data to the exact owner/verified household/dog, reserves local legacy claims before copying, and leaves a non-reclaimable tombstone after failed erase. Privacy can invoke that boundary without a successful read and preserves its fence while clearing broader Care storage.

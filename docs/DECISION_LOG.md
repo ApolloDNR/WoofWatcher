@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-09-05 — Android Records files use native attachment sharing
+
+- Decision: route Android Records HTML, PDF, and PNG files through `expo-sharing`; retain `Share.share` on iOS and reviewed text as the failure/unavailable fallback.
+- Reason: React Native ignores the `url` attachment on Android, so the prior flow saved the file but opened a text-only share sheet.
+- Boundary: source wiring and focused tests do not prove Android attachment or receiving-app reopen behavior; a native rebuild and device evidence remain mandatory.
+
 ## 2026-09-04 — Mutable state requires current durable and scope evidence
 
 - Decision: Care and Avatar expose explicit hydration/retry states. Avatar persistence is keyed to the exact owner, verified household, and dog; migrations reserve legacy data before copying; failed erase retains a claim tombstone; and reads, recovery, writes, and erases reject stale sessions.

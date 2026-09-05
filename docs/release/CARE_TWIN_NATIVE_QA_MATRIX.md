@@ -203,23 +203,18 @@ the one part of the app the web sweeps cannot reach.
   ledger so a canceled provider upload cannot reappear; provider-held account
   data is a separate deletion workflow and can return on a later sync.
 
-### Known platform limitation (verify + remedy)
+### Android file attachment (implemented; verify on device)
 
-React Native's `Share.share` attaches the `url` file **only on iOS**; on Android
-it shares the message text and drops `url`. Therefore:
+React Native's `Share.share` attaches the `url` file **only on iOS**. Records now
+routes Android local-file actions through `expo-sharing` instead. Therefore:
 
 - **iOS:** the report/PDF/PNG file is attached to the share sheet.
-- **Android:** the file is written to the device (findable in Files, re-openable
-  from its saved URI) and the share sheet carries the summary text — but the file
-  is not attached to that particular share.
+- **Android:** the file is written locally and passed to
+  `Sharing.shareAsync(fileUri, { mimeType, dialogTitle })` for attachment.
 - Share copy reads **"saved to your device"**, not "attached", so it is true on
-  both platforms (the local file write always succeeds; only the iOS share adds
-  an attachment on top).
-- **Remedy for true Android file attachment (post-launch):** add `expo-sharing`
-  and route native file shares through
-  `Sharing.shareAsync(fileUri, { mimeType, dialogTitle })`, which attaches on
-  both platforms. Deferred here because it needs a native rebuild and on-device
-  verification, not a web-testable change.
+  both platforms even if an owner cancels the share sheet.
+- Source and dependency wiring do not replace a native rebuild and the device
+  attachment/reopen evidence required below.
 
 ### Device checklist
 
@@ -227,8 +222,8 @@ it shares the message text and drops `url`. Therefore:
 | --- | --- | --- |
 | Records → Add record → attach photo → save | thumbnail shows on the saved record | same |
 | Kill app, relaunch, reopen that record | attachment still loads (durable copy survived cache purge) | same |
-| Care Pass → share printable HTML | share sheet opens with the HTML file attached | file saved; share carries summary; saved file opens from Files |
-| Dog ID → share PNG | PNG attached to the share sheet | PNG saved to device; opens from Files |
+| Care Pass → share printable HTML | share sheet opens with the HTML file attached | HTML file attached through `expo-sharing`; saved file opens from Files |
+| Dog ID → share PNG | PNG attached to the share sheet | PNG attached through `expo-sharing`; saved file opens from Files |
 | Care Pass → share PDF | PDF attached | PDF saved; opens from Files |
 | Privacy → Clear local care data | reports + attachments directories gone; app resets to a fresh household | same |
 

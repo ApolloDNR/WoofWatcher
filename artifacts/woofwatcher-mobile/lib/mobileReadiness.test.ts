@@ -4875,7 +4875,10 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /FileSystem\.makeDirectoryAsync/);
   assert.match(records, /FileSystem\.writeAsStringAsync/);
   assert.match(records, /FileSystem\.EncodingType\.Base64/);
-  assert.match(records, /FileSystem\.getContentUriAsync/);
+  assert.match(records, /import \* as Sharing from "expo-sharing"/);
+  assert.match(records, /Sharing\.isAvailableAsync\(\)/);
+  assert.match(records, /Sharing\.shareAsync\(plan\.fileUri/);
+  assert.match(records, /mimeType: (?:plan\.mimeType|shareContent\.mimeType)/);
   assert.match(records, /const storage = exportView\.storage/);
   assert.doesNotMatch(
     records,

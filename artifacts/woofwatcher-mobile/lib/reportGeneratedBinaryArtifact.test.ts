@@ -78,6 +78,8 @@ test("builds a local generated binary file plan for native sharing and web fallb
     shareUri: "content://reports/vet-care-pass.pdf",
   });
   assert.equal(shareContent.url, "content://reports/vet-care-pass.pdf");
+  assert.equal(shareContent.mimeType, "application/pdf");
+  assert.equal(shareContent.dialogTitle, "Vet Care Pass generated pdf");
   assert.match(shareContent.message, /application\/pdf/);
 
   const fallback = buildGeneratedBinaryArtifactFilePlan(source, {
