@@ -803,6 +803,7 @@ export const getUpdateHouseholdUrl = () => {
 };
 
 /**
+ * Owner/admin-only update of the authenticated active household name.
  * @summary Rename the current household
  */
 export const updateHousehold = async (

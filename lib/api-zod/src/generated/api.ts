@@ -210,6 +210,7 @@ export const UpdateMeResponse = zod.object({
 });
 
 /**
+ * Owner/admin-only update of the authenticated active household name.
  * @summary Rename the current household
  */
 
