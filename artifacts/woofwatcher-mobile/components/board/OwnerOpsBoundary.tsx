@@ -52,12 +52,12 @@ export function OwnerOpsUnavailableScreen({
           ]}
         >
           This area holds internal owner tooling and is not included in the
-          store release. Everything for your dog's day lives in Today, Log,
-          Plan, Pack, and Story.
+          store release. Everything for your dog's day lives in Home, Log,
+          Plans, Health, and More.
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back to Today"
+          accessibilityLabel="Back to Home"
           onPress={() => {
             if (router.canGoBack()) {
               router.back();
@@ -78,7 +78,7 @@ export function OwnerOpsUnavailableScreen({
               { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
             ]}
           >
-            Back to Today
+            Back to Home
           </Text>
         </Pressable>
       </View>

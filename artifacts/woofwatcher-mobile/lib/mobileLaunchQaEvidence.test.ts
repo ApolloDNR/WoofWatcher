@@ -527,31 +527,31 @@ test("preserves owner preview route-loop details in the capture plan and share s
   assert.deepEqual(
     target?.routeChecklist?.map((item) => `${item.label}:${item.route}`),
     [
+      "Home:/",
       "Log:/log",
-      "Plan:/calendar",
-      "Today:/",
-      "Pack:/pack",
-      "Story:/story",
+      "Plans:/calendar",
       "Health:/health",
       "More:/more",
+      "Pack:/pack",
+      "Story:/story",
       "Adventure:/adventure",
       "Records:/records",
       "Avatar Studio:/portrait",
       "Care Pass:/records",
     ],
   );
-  assert.match(target?.routeChecklist?.[0]?.expected ?? "", /Quick-log one safe care event/);
-  assert.match(target?.routeChecklist?.[6]?.proof ?? "", /Android Launch Readiness screenshot/);
+  assert.match(target?.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
+  assert.match(target?.routeChecklist?.[4]?.proof ?? "", /Android Launch Readiness screenshot/);
   assert.match(target?.routeChecklist?.[7]?.expected ?? "", /private care quests/);
 
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-25T09:30:00.000Z");
 
   assert.match(text, /Route loop:/);
-  assert.match(text, /Today \(\/\): Confirm Phoenix status/);
+  assert.match(text, /Home \(\/\): Confirm Phoenix status/);
   assert.match(text, /Log \(\/log\): Quick-log one safe care event/);
   assert.match(text, /Pack \(\/pack\): Confirm pets, people, household access/);
   assert.match(text, /Story \(\/story\): Confirm care career, adventure trail/);
-  assert.match(text, /More \(\/more\): Open More from Today's header menu or the Pack links/);
+  assert.match(text, /More \(\/more\): Open More from the canonical bottom navigation/);
   assert.match(text, /Adventure \(\/adventure\): Confirm private care quests/);
   assert.match(text, /Care Pass \(\/records\): Confirm sitter\/vet\/trainer handoff/);
 });
@@ -578,7 +578,7 @@ test("expands route visual consistency into route-by-route native screenshot pro
   assert.match(text, /Route Visual Consistency/);
   assert.match(text, /Missing: Attach 8 iOS screenshots for Route Visual Consistency\./);
   assert.match(text, /Attach 8 Android screenshots for Route Visual Consistency\./);
-  assert.match(text, /Today \(\/\): Phoenix Room/);
+  assert.match(text, /Home \(\/\): The compact Phoenix room/);
   assert.match(text, /Pack \(\/pack\): Pack keeps pets, people, household access/);
   assert.match(text, /Story \(\/story\): Story keeps care career, adventure trail/);
   assert.match(text, /Proof: iOS \+ Android native screenshot required\./);

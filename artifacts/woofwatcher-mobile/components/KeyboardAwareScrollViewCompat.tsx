@@ -2,18 +2,23 @@ import {
   KeyboardAwareScrollView,
   KeyboardAwareScrollViewProps,
 } from "react-native-keyboard-controller";
+import { forwardRef } from "react";
 import { Platform, ScrollView, ScrollViewProps } from "react-native";
 import { getKeyboardAwareFormScrollProps } from "@/lib/mobileLayout";
 
 type Props = KeyboardAwareScrollViewProps & ScrollViewProps;
 
-export function KeyboardAwareScrollViewCompat({
-  bottomOffset,
-  children,
-  keyboardDismissMode,
-  keyboardShouldPersistTaps,
-  ...props
-}: Props) {
+export const KeyboardAwareScrollViewCompat = forwardRef<ScrollView, Props>(
+  function KeyboardAwareScrollViewCompat(
+    {
+      bottomOffset,
+      children,
+      keyboardDismissMode,
+      keyboardShouldPersistTaps,
+      ...props
+    },
+    ref,
+  ) {
   const defaults = getKeyboardAwareFormScrollProps(Platform.OS);
   const resolvedKeyboardDismissMode = keyboardDismissMode ?? defaults.keyboardDismissMode;
   const resolvedKeyboardShouldPersistTaps = keyboardShouldPersistTaps ?? defaults.keyboardShouldPersistTaps;
@@ -21,6 +26,7 @@ export function KeyboardAwareScrollViewCompat({
   if (Platform.OS === "web") {
     return (
       <ScrollView
+        ref={ref}
         keyboardDismissMode={resolvedKeyboardDismissMode}
         keyboardShouldPersistTaps={resolvedKeyboardShouldPersistTaps}
         {...props}
@@ -31,6 +37,7 @@ export function KeyboardAwareScrollViewCompat({
   }
   return (
     <KeyboardAwareScrollView
+      ref={ref}
       bottomOffset={bottomOffset ?? defaults.bottomOffset}
       keyboardDismissMode={resolvedKeyboardDismissMode}
       keyboardShouldPersistTaps={resolvedKeyboardShouldPersistTaps}
@@ -39,4 +46,5 @@ export function KeyboardAwareScrollViewCompat({
       {children}
     </KeyboardAwareScrollView>
   );
-}
+  },
+);

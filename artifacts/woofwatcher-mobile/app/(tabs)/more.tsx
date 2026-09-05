@@ -19,17 +19,19 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  updateHousehold as updateHouseholdRequest,
   useGetMe,
-  useUpdateHousehold,
   useJoinHousehold,
   useUpdateMe,
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
 import {
   buildAccessPassDraft,
+  canCurrentMemberManageHouseholdSettings,
   deriveCareIntelligence,
   deriveAccessPassPlan,
   deriveHouseholdAccessPlan,
@@ -46,6 +48,12 @@ import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { buildCareTwinQaIdentityCopy, resolvePetName } from "@/lib/petIdentity";
 import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
+import {
+  createMoreEditorSourceFingerprint,
+  isHouseholdScopeConflict,
+  isSameMoreEditorScope,
+  type MoreEditorScope,
+} from "@/lib/moreEditorScope";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
@@ -119,8 +127,19 @@ const MORE_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 type HouseholdMemberSummary = {
   displayName?: string | null;
   email?: string | null;
+  isSelf?: boolean | null;
   role?: string | null;
 };
+
+type MoreEditorId =
+  | "future-pet"
+  | "access-pass"
+  | "join"
+  | "rename"
+  | "display-name"
+  | "profile"
+  | "diet"
+  | "provider";
 
 interface MoreDirectoryItem {
   id: string;
@@ -369,6 +388,7 @@ export default function MoreScreen() {
   const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
   const householdFocus = sectionParam === "household";
   const {
+    careScopeRevision,
     state,
     refresh,
     updateCareDoc,
@@ -392,15 +412,40 @@ export default function MoreScreen() {
         Boolean(isSignedIn),
     },
   });
-  const updateHousehold = useUpdateHousehold();
+  const updateHousehold = useMutation({
+    mutationKey: ["updateHousehold", "household-scoped"],
+    mutationFn: ({
+      data,
+      expectedHouseholdId,
+    }: {
+      data: { name: string };
+      expectedHouseholdId: string;
+    }) =>
+      updateHouseholdRequest(data, {
+        headers: {
+          "x-woofwatcher-household-id": expectedHouseholdId,
+        },
+      }),
+  });
   const joinHousehold = useJoinHousehold();
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
+  const canRenameHousehold = canCurrentMemberManageHouseholdSettings(members);
   const myName = me.data?.user?.displayName?.trim() || "";
   const currentHuman = myName || caregivers[0]?.name || "Apollo";
-
+  const currentMoreEditorScopeRef = useRef<MoreEditorScope>({
+    careScopeRevision,
+    activePetId: state.activePetId.trim() || "primary",
+    providerHouseholdId: household?.id ?? null,
+    careReady: isLoaded,
+    sourceFingerprint: "",
+  });
+  const activeMoreEditorScopeRef = useRef<{
+    editorId: MoreEditorId;
+    scope: MoreEditorScope;
+  } | null>(null);
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const moreCareCareer = useMemo(
@@ -798,6 +843,142 @@ export default function MoreScreen() {
     normalizeLaunchProviderProfile(state.launchProviderProfile),
   );
 
+  const getMoreEditorSourceValue = (editorId: MoreEditorId | null): unknown => {
+    switch (editorId) {
+      case "profile":
+        return profile;
+      case "diet":
+        return dietProfile;
+      case "provider":
+        return state.launchProviderProfile;
+      case "rename":
+        return household?.name ?? null;
+      case "display-name":
+        return myName;
+      default:
+        // Future-dog and Access Pass saves append to the latest collection;
+        // Join uses only the newly entered invite code. Their identity fence
+        // is sufficient because they do not replace an opened source record.
+        return null;
+    }
+  };
+
+  const buildCurrentMoreEditorScope = (
+    editorId: MoreEditorId | null,
+  ): MoreEditorScope => ({
+    careScopeRevision,
+    activePetId: state.activePetId.trim() || "primary",
+    providerHouseholdId: household?.id ?? null,
+    careReady: isLoaded,
+    sourceFingerprint: createMoreEditorSourceFingerprint(
+      getMoreEditorSourceValue(editorId),
+    ),
+  });
+
+  currentMoreEditorScopeRef.current = buildCurrentMoreEditorScope(
+    activeMoreEditorScopeRef.current?.editorId ?? null,
+  );
+
+  const captureMoreEditorScope = (editorId: MoreEditorId) => {
+    if (!isLoaded) {
+      activeMoreEditorScopeRef.current = null;
+      notifyDialog(
+        "Care is still loading",
+        "Wait for the current household and dog record to finish loading, then reopen this editor.",
+      );
+      return false;
+    }
+    const scope = buildCurrentMoreEditorScope(editorId);
+    currentMoreEditorScopeRef.current = scope;
+    activeMoreEditorScopeRef.current = {
+      editorId,
+      scope,
+    };
+    return true;
+  };
+
+  const dismissAllMoreEditors = () => {
+    setJoinOpen(false);
+    setRenameOpen(false);
+    setNameOpen(false);
+    setProfileOpen(false);
+    setPetRosterOpen(false);
+    setAccessPassOpen(false);
+    setDietEditOpen(false);
+    setProviderSetupOpen(false);
+  };
+
+  const moreEditorScopeIsCurrent = (editorId: MoreEditorId) => {
+    const activeEditor = activeMoreEditorScopeRef.current;
+    if (
+      activeEditor?.editorId === editorId &&
+      isSameMoreEditorScope(activeEditor.scope, currentMoreEditorScopeRef.current)
+    ) {
+      return true;
+    }
+
+    activeMoreEditorScopeRef.current = null;
+    dismissAllMoreEditors();
+    notifyDialog(
+      "Care home changed",
+      "This editor was closed without saving because the active household or dog changed. Reopen it to review the current care record.",
+    );
+    return false;
+  };
+
+  useEffect(() => {
+    const activeEditor = activeMoreEditorScopeRef.current;
+    if (
+      !activeEditor ||
+      isSameMoreEditorScope(activeEditor.scope, currentMoreEditorScopeRef.current)
+    ) {
+      return;
+    }
+
+    const staleEditorWasOpen =
+      (activeEditor.editorId === "join" && joinOpen) ||
+      (activeEditor.editorId === "rename" && renameOpen) ||
+      (activeEditor.editorId === "display-name" && nameOpen) ||
+      (activeEditor.editorId === "profile" && profileOpen) ||
+      (activeEditor.editorId === "future-pet" && petRosterOpen) ||
+      (activeEditor.editorId === "access-pass" && accessPassOpen) ||
+      (activeEditor.editorId === "diet" && dietEditOpen) ||
+      (activeEditor.editorId === "provider" && providerSetupOpen);
+    activeMoreEditorScopeRef.current = null;
+    setJoinOpen(false);
+    setRenameOpen(false);
+    setNameOpen(false);
+    setProfileOpen(false);
+    setPetRosterOpen(false);
+    setAccessPassOpen(false);
+    setDietEditOpen(false);
+    setProviderSetupOpen(false);
+    if (staleEditorWasOpen) {
+      notifyDialog(
+        "Care record changed",
+        "This editor was closed without saving because its household or dog record changed. Reopen it to review the latest information.",
+      );
+    }
+  }, [
+    accessPassOpen,
+    careScopeRevision,
+    dietEditOpen,
+    dietProfile,
+    household?.id,
+    household?.name,
+    isLoaded,
+    joinOpen,
+    myName,
+    nameOpen,
+    petRosterOpen,
+    profile,
+    profileOpen,
+    providerSetupOpen,
+    renameOpen,
+    state.activePetId,
+    state.launchProviderProfile,
+  ]);
+
   useFocusEffect(
     React.useCallback(() => {
       let cancelled = false;
@@ -845,12 +1026,14 @@ export default function MoreScreen() {
   };
 
   const openFuturePetSheet = () => {
+    if (!captureMoreEditorScope("future-pet")) return;
     setPetRosterName("");
     setPetRosterBreed("");
     setPetRosterOpen(true);
   };
 
   const saveFuturePet = () => {
+    if (!moreEditorScopeIsCurrent("future-pet")) return;
     const draft = buildCareTwinRosterDraft({
       name: petRosterName,
       breed: petRosterBreed,
@@ -864,17 +1047,20 @@ export default function MoreScreen() {
       ],
     }));
     if (!saved) return;
+    activeMoreEditorScopeRef.current = null;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPetRosterOpen(false);
   };
 
   const openAccessPassSheet = () => {
+    if (!captureMoreEditorScope("access-pass")) return;
     setAccessPassName("");
     setAccessPassKind("sitter");
     setAccessPassOpen(true);
   };
 
   const saveAccessPassDraft = () => {
+    if (!moreEditorScopeIsCurrent("access-pass")) return;
     const draft = buildAccessPassDraft({
       holderName: accessPassName,
       kind: accessPassKind,
@@ -888,6 +1074,7 @@ export default function MoreScreen() {
       ],
     }));
     if (!saved) return;
+    activeMoreEditorScopeRef.current = null;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAccessPassOpen(false);
   };
@@ -919,13 +1106,37 @@ export default function MoreScreen() {
     void shareTextPayload({ message, title: `WoofWatcher Access Pass - ${pass.holderName}` });
   };
 
+  const openJoinHousehold = () => {
+    if (!captureMoreEditorScope("join")) return;
+    void Haptics.selectionAsync().catch(() => {});
+    setJoinCode("");
+    setJoinOpen(true);
+  };
+
+  const openRenameHousehold = () => {
+    if (!household || !canRenameHousehold) return;
+    if (!captureMoreEditorScope("rename")) return;
+    void Haptics.selectionAsync().catch(() => {});
+    setRenameValue(household.name);
+    setRenameOpen(true);
+  };
+
+  const openDisplayName = () => {
+    if (!captureMoreEditorScope("display-name")) return;
+    void Haptics.selectionAsync().catch(() => {});
+    setNameValue(myName);
+    setNameOpen(true);
+  };
+
   const submitJoin = () => {
+    if (!moreEditorScopeIsCurrent("join")) return;
     const code = joinCode.trim();
     if (!code) return;
     joinHousehold.mutate(
       { data: { inviteCode: code } },
       {
         onSuccess: () => {
+          activeMoreEditorScopeRef.current = null;
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setJoinOpen(false);
           setJoinCode("");
@@ -938,28 +1149,71 @@ export default function MoreScreen() {
   };
 
   const submitRename = () => {
+    if (!moreEditorScopeIsCurrent("rename")) return;
     const name = renameValue.trim();
     if (!name) return;
+    const expectedHouseholdId =
+      activeMoreEditorScopeRef.current?.scope.providerHouseholdId;
+    if (!expectedHouseholdId) {
+      activeMoreEditorScopeRef.current = null;
+      setRenameOpen(false);
+      notifyDialog(
+        "Household changed",
+        "Rename was cancelled because the current household could not be verified. Reopen it and try again.",
+      );
+      return;
+    }
+    const renameRequestIsCurrent = () => {
+      const activeEditor = activeMoreEditorScopeRef.current;
+      if (
+        currentMoreEditorScopeRef.current.providerHouseholdId !== expectedHouseholdId
+      ) {
+        return false;
+      }
+      return (
+        activeEditor?.editorId === "rename" &&
+        activeEditor.scope.providerHouseholdId === expectedHouseholdId &&
+        isSameMoreEditorScope(activeEditor.scope, currentMoreEditorScopeRef.current)
+      );
+    };
     updateHousehold.mutate(
-      { data: { name } },
+      { data: { name }, expectedHouseholdId },
       {
         onSuccess: () => {
+          if (!renameRequestIsCurrent()) return;
+          activeMoreEditorScopeRef.current = null;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setRenameOpen(false);
           refreshMe();
         },
-        onError: () => notifyDialog("Couldn't rename", "Please try again."),
+        onError: (error) => {
+          if (!renameRequestIsCurrent()) return;
+          if (isHouseholdScopeConflict(error)) {
+            activeMoreEditorScopeRef.current = null;
+            setRenameOpen(false);
+            void refreshMe();
+            refresh();
+            notifyDialog(
+              "Household changed",
+              "Rename was cancelled because your household changed. WoofWatcher is refreshing the current household now.",
+            );
+            return;
+          }
+          notifyDialog("Couldn't rename", "Please try again.");
+        },
       },
     );
   };
 
   const submitName = () => {
+    if (!moreEditorScopeIsCurrent("display-name")) return;
     const name = nameValue.trim();
     if (!name) return;
     updateMe.mutate(
       { data: { displayName: name } },
       {
         onSuccess: () => {
+          activeMoreEditorScopeRef.current = null;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setNameOpen(false);
           refreshMe();
@@ -970,6 +1224,7 @@ export default function MoreScreen() {
   };
 
   const openProfileEdit = () => {
+    if (!captureMoreEditorScope("profile")) return;
     setPName(profile.name === "My Dog" ? "" : profile.name);
     setPBreed(profile.breed);
     setPWeight(profile.weight.current > 0 ? String(profile.weight.current) : "");
@@ -984,6 +1239,7 @@ export default function MoreScreen() {
   };
 
   const saveProfile = () => {
+    if (!moreEditorScopeIsCurrent("profile")) return;
     const name = resolvePetName(pName);
     const w = parseFloat(pWeight);
     const saved = updateCareDoc((doc) => ({
@@ -1007,11 +1263,13 @@ export default function MoreScreen() {
       },
     }));
     if (!saved) return;
+    activeMoreEditorScopeRef.current = null;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setProfileOpen(false);
   };
 
   const openDietEdit = () => {
+    if (!captureMoreEditorScope("diet")) return;
     setDPrimaryFood(dietProfile.primaryFood);
     setDNormalPortion(dietProfile.normalPortion);
     setDMealSchedule(dietProfile.mealSchedule);
@@ -1027,6 +1285,7 @@ export default function MoreScreen() {
   };
 
   const saveDiet = () => {
+    if (!moreEditorScopeIsCurrent("diet")) return;
     const saved = updateCareDoc((doc) => ({
       ...doc,
       dietProfile: {
@@ -1045,6 +1304,7 @@ export default function MoreScreen() {
       },
     }));
     if (!saved) return;
+    activeMoreEditorScopeRef.current = null;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDietEditOpen(false);
   };
@@ -1333,6 +1593,7 @@ export default function MoreScreen() {
   }, [launchProviderSetupPlan.rows]);
 
   const openProviderSetup = () => {
+    if (!captureMoreEditorScope("provider")) return;
     setProviderDraft(normalizeLaunchProviderProfile(state.launchProviderProfile));
     setProviderSetupOpen(true);
   };
@@ -1343,6 +1604,7 @@ export default function MoreScreen() {
   };
 
   const saveProviderSetup = () => {
+    if (!moreEditorScopeIsCurrent("provider")) return;
     const reviewedAt = new Date(now).toISOString();
     const normalized = normalizeLaunchProviderProfile(providerDraft);
     const allProviderGatesReady = PROVIDER_SETUP_FIELDS.every(
@@ -1361,6 +1623,7 @@ export default function MoreScreen() {
       },
     }));
     if (!saved) return;
+    activeMoreEditorScopeRef.current = null;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setProviderSetupOpen(false);
   };
@@ -1615,8 +1878,6 @@ export default function MoreScreen() {
             kicker="WOOFWATCHER"
             title="More"
             subtitle={`${petName}'s care tools, records, household, and settings.`}
-            back
-            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
             plain
             style={s.moreRouteHeader}
           />
@@ -2914,13 +3175,9 @@ export default function MoreScreen() {
             <BoardSectionHeader
               title="Care Team"
               accessory={
-                consumerSurfacePolicy.householdProviderActions ? (
+                consumerSurfacePolicy.householdProviderActions && canRenameHousehold ? (
                   <Pressable
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setRenameValue(household?.name ?? "");
-                      setRenameOpen(true);
-                    }}
+                    onPress={openRenameHousehold}
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                     disabled={!household}
                   >
@@ -3394,11 +3651,7 @@ export default function MoreScreen() {
           {consumerSurfacePolicy.householdProviderActions ? (
           <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
             <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                setNameValue(myName);
-                setNameOpen(true);
-              }}
+              onPress={openDisplayName}
               style={({ pressed }) => [s.linkRow, { borderBottomWidth: 1, borderBottomColor: colors.border, opacity: pressed ? 0.6 : 1 }]}
             >
               <View style={[s.linkIconWrap, { backgroundColor: colors.copper + "16" }]}>
@@ -3413,11 +3666,7 @@ export default function MoreScreen() {
               <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
             </Pressable>
             <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                setJoinCode("");
-                setJoinOpen(true);
-              }}
+              onPress={openJoinHousehold}
               style={({ pressed }) => [s.linkRow, { opacity: pressed ? 0.6 : 1 }]}
             >
               <View style={[s.linkIconWrap, { backgroundColor: colors.sage + "16" }]}>
@@ -3539,16 +3788,20 @@ export default function MoreScreen() {
 
       {/* Diet profile edit modal */}
       <Modal visible={dietEditOpen} transparent animationType="slide" onRequestClose={() => setDietEditOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDietEditOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <ScrollView
-              {...getFormKeyboardScrollProps(Platform.OS)}
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDietEditOpen(false)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <KeyboardAwareScrollViewCompat
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Diet Profile</Text>
+              <ModalSheetHeader
+                title="Diet Profile"
+                accessibilityLabel="Close diet profile editor"
+                onClose={() => setDietEditOpen(false)}
+                colors={colors}
+              />
 
               {[
                 { label: "PRIMARY FOOD", value: dPrimaryFood, set: setDPrimaryFood, placeholder: "e.g. Royal Canin GI dry kibble" },
@@ -3581,7 +3834,7 @@ export default function MoreScreen() {
               >
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save diet profile</Text>
               </Pressable>
-            </ScrollView>
+            </KeyboardAwareScrollViewCompat>
           </Pressable>
         </Pressable>
       </Modal>
@@ -3606,20 +3859,22 @@ export default function MoreScreen() {
           />
 
           {/* Rename household modal */}
-          <PromptModal
-            visible={renameOpen}
-            colors={colors}
-            icon="home-outline"
-            title="Rename household"
-            subtitle="Give your care team a name everyone recognizes."
-            placeholder={`The ${petName} Pack`}
-            value={renameValue}
-            onChangeText={setRenameValue}
-            confirmLabel="Save"
-            loading={updateHousehold.isPending}
-            onCancel={() => setRenameOpen(false)}
-            onConfirm={submitRename}
-          />
+          {canRenameHousehold ? (
+            <PromptModal
+              visible={renameOpen}
+              colors={colors}
+              icon="home-outline"
+              title="Rename household"
+              subtitle="Give your care team a name everyone recognizes."
+              placeholder={`The ${petName} Pack`}
+              value={renameValue}
+              onChangeText={setRenameValue}
+              confirmLabel="Save"
+              loading={updateHousehold.isPending}
+              onCancel={() => setRenameOpen(false)}
+              onConfirm={submitRename}
+            />
+          ) : null}
 
           {/* Display name modal */}
           <PromptModal
@@ -3641,11 +3896,16 @@ export default function MoreScreen() {
 
       {consumerSurfacePolicy.futureDogPlanning ? (
       <Modal visible={petRosterOpen} transparent animationType="slide" onRequestClose={() => setPetRosterOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
+              <ModalSheetHeader
+                title="Add future dog"
+                accessibilityLabel="Close future dog editor"
+                onClose={() => setPetRosterOpen(false)}
+                colors={colors}
+              />
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 This saves a planned slot for a future dog. Multi-dog logs, routines, and records are coming soon - everything stays on this device for now.
               </Text>
@@ -3684,11 +3944,16 @@ export default function MoreScreen() {
 
       {consumerSurfacePolicy.householdProviderActions ? (
       <Modal visible={accessPassOpen} transparent animationType="slide" onRequestClose={() => setAccessPassOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
+              <ModalSheetHeader
+                title="Create Access Pass"
+                accessibilityLabel="Close Access Pass editor"
+                onClose={() => setAccessPassOpen(false)}
+                colors={colors}
+              />
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Save helper permissions as a local draft. Remote sharing is coming soon - passes stay on this device for now.
               </Text>
@@ -3748,16 +4013,20 @@ export default function MoreScreen() {
       ) : null}
 
       <Modal visible={providerSetupOpen} transparent animationType="slide" onRequestClose={() => setProviderSetupOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <ScrollView
-              {...getFormKeyboardScrollProps(Platform.OS)}
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <KeyboardAwareScrollViewCompat
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Provider Launch Setup</Text>
+              <ModalSheetHeader
+                title="Provider Launch Setup"
+                accessibilityLabel="Close provider launch setup"
+                onClose={() => setProviderSetupOpen(false)}
+                colors={colors}
+              />
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Mark only production providers you have actually configured. This updates Launch Readiness but does not approve App Store or Play Store submission.
               </Text>
@@ -3855,26 +4124,32 @@ export default function MoreScreen() {
               >
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
               </Pressable>
-            </ScrollView>
+            </KeyboardAwareScrollViewCompat>
           </Pressable>
         </Pressable>
       </Modal>
 
       {/* Dog profile edit modal */}
       <Modal visible={profileOpen} transparent animationType="slide" onRequestClose={() => setProfileOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
           <Pressable
+            accessible={false}
+            accessibilityViewIsModal
             style={[s.profileModal, { backgroundColor: colors.card }]}
             onPress={(e) => e.stopPropagation()}
           >
-            <ScrollView
-              {...getFormKeyboardScrollProps(Platform.OS)}
+            <KeyboardAwareScrollViewCompat
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
             <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-            <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Dog Profile</Text>
+            <ModalSheetHeader
+              title="Dog Profile"
+              accessibilityLabel="Close dog profile editor"
+              onClose={() => setProfileOpen(false)}
+              colors={colors}
+            />
 
             <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
             <TextInput
@@ -3991,10 +4266,48 @@ export default function MoreScreen() {
             >
               <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save profile</Text>
             </Pressable>
-            </ScrollView>
+            </KeyboardAwareScrollViewCompat>
           </Pressable>
         </Pressable>
       </Modal>
+    </View>
+  );
+}
+
+function ModalSheetHeader({
+  title,
+  accessibilityLabel,
+  onClose,
+  colors,
+}: {
+  title: string;
+  accessibilityLabel: string;
+  onClose: () => void;
+  colors: ReturnType<typeof useColors>;
+}) {
+  return (
+    <View style={s.sheetHeader}>
+      <Text
+        accessibilityRole="header"
+        style={[
+          s.sheetTitle,
+          { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+        ]}
+      >
+        {title}
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        hitSlop={MOBILE_INLINE_HIT_SLOP}
+        onPress={onClose}
+        style={({ pressed }) => [
+          s.sheetCloseButton,
+          { opacity: pressed ? 0.62 : 1 },
+        ]}
+      >
+        <Ionicons name="close" size={22} color={colors.mutedForeground} />
+      </Pressable>
     </View>
   );
 }
@@ -4028,10 +4341,18 @@ function PromptModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const requestDismiss = () => {
+    if (!loading) onCancel();
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={s.modalBackdrop} onPress={onCancel}>
-        <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={requestDismiss}>
+      <Pressable accessible={false} style={s.modalBackdrop} onPress={requestDismiss}>
+        <Pressable accessible={false} accessibilityViewIsModal style={[s.modalCard, { backgroundColor: colors.card }]} onPress={(event) => event.stopPropagation()}>
+          <KeyboardAwareScrollViewCompat
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
           <View style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}>
             <Ionicons name={icon} size={22} color={colors.primary} />
           </View>
@@ -4042,24 +4363,39 @@ function PromptModal({
             placeholderTextColor={colors.mutedForeground}
             value={value}
             onChangeText={onChangeText}
+            editable={!loading}
+            accessibilityState={{ disabled: loading }}
             autoCapitalize={autoCapitalize}
             autoCorrect={false}
             style={[s.modalInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
             returnKeyType="done"
-            onSubmitEditing={onConfirm}
+            onSubmitEditing={() => {
+              if (!loading) onConfirm();
+            }}
           />
           <View style={s.modalActions}>
-            <Pressable onPress={onCancel} style={({ pressed }) => [s.modalCancel, { opacity: pressed ? 0.6 : 1 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Cancel ${title}`}
+              accessibilityState={{ disabled: loading }}
+              disabled={loading}
+              onPress={requestDismiss}
+              style={({ pressed }) => [s.modalCancel, { opacity: pressed || loading ? 0.6 : 1 }]}
+            >
               <Text style={[s.modalCancelText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Cancel</Text>
             </Pressable>
             <Pressable
               onPress={onConfirm}
+              accessibilityRole="button"
+              accessibilityLabel={loading ? `${confirmLabel} in progress` : confirmLabel}
+              accessibilityState={{ disabled: loading, busy: loading }}
               disabled={loading}
               style={({ pressed }) => [s.modalConfirm, { backgroundColor: colors.primary, opacity: pressed || loading ? 0.7 : 1 }]}
             >
               <Text style={[s.modalConfirmText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{loading ? "…" : confirmLabel}</Text>
             </Pressable>
           </View>
+          </KeyboardAwareScrollViewCompat>
         </Pressable>
       </Pressable>
     </Modal>
@@ -4849,7 +5185,9 @@ const s = StyleSheet.create({
   },
   profileModal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", paddingTop: 14 },
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, marginBottom: 16 },
-  sheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
+  sheetHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 },
+  sheetTitle: { flex: 1, fontSize: 20, letterSpacing: -0.2 },
+  sheetCloseButton: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   sheetSubtitle: { fontSize: 12.5, lineHeight: 18, marginBottom: 2 },
   providerStatusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
   providerStatusPill: {

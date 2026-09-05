@@ -465,6 +465,7 @@ test("care entry revision protocol stays documented, validated, and emitted by t
 
 test("household provisioning and auth errors stay documented and typed", () => {
   const route = read("artifacts/api-server/src/routes/household.ts");
+  const updateHouseholdRoute = read("artifacts/api-server/src/routes/household-update-router.ts");
   const auth = read("artifacts/api-server/src/lib/auth.ts");
   const household = read("artifacts/api-server/src/lib/household.ts");
   const openapi = read("lib/api-spec/openapi.yaml");
@@ -483,7 +484,7 @@ test("household provisioning and auth errors stay documented and typed", () => {
   const updateHouseholdBlock = section(
     openapi,
     "    patch:\n      operationId: updateHousehold",
-    "  /household/join:",
+    "  /household/invitations:",
   );
   const joinHouseholdBlock = section(
     openapi,
@@ -495,10 +496,11 @@ test("household provisioning and auth errors stay documented and typed", () => {
   assert.match(household, /default household \+ membership \+ care state/, "household provisioning should keep first-login care-state bootstrap documented");
   assert.match(route, /router\.get\("\/me", requireAuth/, "getMe must stay authenticated");
   assert.match(route, /router\.patch\("\/me", requireAuth/, "updateMe must stay authenticated");
-  assert.match(route, /router\.patch\("\/household", requireAuth/, "updateHousehold must stay authenticated");
+  assert.match(route, /createHouseholdUpdateRouter\(\{[\s\S]*?requireAuth/, "updateHousehold must receive the authenticated middleware");
+  assert.match(updateHouseholdRoute, /router\.patch\([\s\S]*?"\/household",[\s\S]*?dependencies\.requireAuth/, "updateHousehold must stay authenticated");
   assert.match(route, /router\.post\("\/household\/join", requireAuth/, "joinHousehold must stay authenticated");
   assert.match(route, /UpdateMeBody\.safeParse/, "updateMe should still validate profile payloads");
-  assert.match(route, /UpdateHouseholdBody\.safeParse/, "updateHousehold should still validate household payloads");
+  assert.match(updateHouseholdRoute, /UpdateHouseholdBody\.safeParse/, "updateHousehold should still validate household payloads");
   assert.match(route, /JoinHouseholdBody\.safeParse/, "joinHousehold should still validate invite payloads");
   assert.match(route, /Invite code not found/, "joinHousehold must keep the owner-readable missing-invite error");
   assert.match(getMeBlock, /"401":/, "OpenAPI must document unauthenticated getMe errors");
@@ -506,6 +508,7 @@ test("household provisioning and auth errors stay documented and typed", () => {
   assert.match(updateMeBlock, /"401":/, "OpenAPI must document unauthenticated profile update errors");
   assert.match(updateHouseholdBlock, /"400":/, "OpenAPI must document invalid household update payload errors");
   assert.match(updateHouseholdBlock, /"401":/, "OpenAPI must document unauthenticated household update errors");
+  assert.match(updateHouseholdBlock, /"403":/, "OpenAPI must document household rename authorization errors");
   assert.match(joinHouseholdBlock, /"400":/, "OpenAPI must document invalid invite payload errors");
   assert.match(joinHouseholdBlock, /"401":/, "OpenAPI must document unauthenticated join errors");
   assert.match(joinHouseholdBlock, /"404":/, "OpenAPI must keep documenting missing invite errors");

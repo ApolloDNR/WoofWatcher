@@ -4,8 +4,15 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   Platform,
@@ -32,6 +39,10 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
+import {
+  createAvatarStudioDraftAuthority,
+  createAvatarStudioOperationGate,
+} from "@/lib/avatarStudioOperation";
 import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
@@ -77,7 +88,10 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { buildAvatarStudioIdentityCopy, resolvePetName } from "@/lib/petIdentity";
+import {
+  buildAvatarStudioIdentityCopy,
+  resolvePetName,
+} from "@/lib/petIdentity";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
@@ -87,6 +101,20 @@ const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main
 
 type Phase = "idle" | "working" | "result";
 type StudioTab = "scan" | "template" | "customize" | "emotes";
+type AvatarMutation = "save" | "reset";
+type AvatarPhotoMutationError = {
+  kind: "photo";
+  camera: boolean;
+  reason: "permission" | "unavailable";
+};
+type AvatarMutationError = AvatarMutation | AvatarPhotoMutationError;
+type AvatarStudioOperation = AvatarMutation | "photo-camera" | "photo-library";
+type AvatarStudioSession = {
+  id: number;
+  careScopeRevision: number;
+  activePetId: string;
+  petName: string;
+};
 
 const SCAN_LINES = [
   "Opening your photo as a reference...",
@@ -179,15 +207,23 @@ export default function PortraitScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const ownerOps = isOwnerOpsBuild();
-  const { state } = useCare();
+  const {
+    careScopeRevision,
+    hydrationStatus: careHydrationStatus,
+    retryHydration: retryCareHydration,
+    state,
+  } = useCare();
   const {
     avatarConfig,
     hasCustomAvatar,
     hasConfiguredAvatar,
+    hydrationStatus: avatarHydrationStatus,
+    retryHydration: retryAvatarHydration,
     saveAvatarConfig,
     resetAvatarConfig,
   } = useAvatar();
 
+  const activePetId = state.activePetId.trim() || "primary";
   const petName = resolvePetName(state.profile.name);
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -202,6 +238,16 @@ export default function PortraitScreen() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [activeTab, setActiveTab] = useState<StudioTab>("scan");
   const [draft, setDraft] = useState<PetAvatarConfig>(() => avatarConfig);
+  const [avatarDraftReady, setAvatarDraftReady] = useState(false);
+  const [boundCareScopeRevision, setBoundCareScopeRevision] = useState<
+    number | null
+  >(null);
+  const [boundActivePetId, setBoundActivePetId] = useState<string | null>(null);
+  const [boundPetName, setBoundPetName] = useState<string | null>(null);
+  const [avatarMutationError, setAvatarMutationError] =
+    useState<AvatarMutationError | null>(null);
+  const [avatarOperation, setAvatarOperation] =
+    useState<AvatarStudioOperation | null>(null);
   const [previewEmote, setPreviewEmote] = useState<AvatarEmoteState>("happy");
   const [sourceUri, setSourceUri] = useState<string | null>(null);
   const [scanLine, setScanLine] = useState(0);
@@ -215,11 +261,122 @@ export default function PortraitScreen() {
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
   const templateLife = useRef(new Animated.Value(0)).current;
+  const nextStudioSessionIdRef = useRef(0);
+  const studioSessionRef = useRef<AvatarStudioSession | null>(null);
+  const avatarDraftDirtyRef = useRef(false);
+  const avatarDraftAuthorityRef = useRef(
+    createAvatarStudioDraftAuthority<PetAvatarConfig>(avatarConfig),
+  );
+  const avatarOperationGateRef = useRef(
+    createAvatarStudioOperationGate<AvatarStudioOperation>(),
+  );
   const reduced = useReducedMotion();
+  const avatarStudioReady =
+    avatarHydrationStatus === "ready" &&
+    careHydrationStatus === "ready" &&
+    avatarDraftReady &&
+    boundCareScopeRevision === careScopeRevision &&
+    boundActivePetId === activePetId &&
+    boundPetName === petName;
+  const avatarStudioBusy = avatarOperation !== null || phase === "working";
+
+  useLayoutEffect(() => {
+    const activeSession = studioSessionRef.current;
+    if (
+      avatarHydrationStatus !== "ready" ||
+      careHydrationStatus !== "ready" ||
+      (activeSession &&
+        (activeSession.careScopeRevision !== careScopeRevision ||
+          activeSession.activePetId !== activePetId ||
+          activeSession.petName !== petName))
+    ) {
+      studioSessionRef.current = null;
+      avatarDraftDirtyRef.current = false;
+      avatarOperationGateRef.current.invalidate();
+      setAvatarOperation(null);
+    }
+  }, [
+    activePetId,
+    avatarHydrationStatus,
+    careHydrationStatus,
+    careScopeRevision,
+    petName,
+  ]);
 
   useEffect(() => {
-    setDraft(avatarConfig);
-  }, [avatarConfig]);
+    if (avatarHydrationStatus !== "ready" || careHydrationStatus !== "ready") {
+      setAvatarDraftReady(false);
+      setBoundCareScopeRevision(null);
+      setBoundActivePetId(null);
+      setBoundPetName(null);
+      avatarDraftDirtyRef.current = false;
+      setAvatarMutationError(null);
+      setSavedToast(null);
+      setSourceUri(null);
+      setScanLine(0);
+      setPreviewEmote("happy");
+      setPhase("idle");
+      setActiveTab("scan");
+      return;
+    }
+
+    if (!studioSessionRef.current) {
+      nextStudioSessionIdRef.current += 1;
+      studioSessionRef.current = {
+        id: nextStudioSessionIdRef.current,
+        careScopeRevision,
+        activePetId,
+        petName,
+      };
+      avatarDraftDirtyRef.current = false;
+      setAvatarMutationError(null);
+      setSavedToast(null);
+      setSourceUri(null);
+      setScanLine(0);
+      setPreviewEmote("happy");
+      setPhase("idle");
+      setActiveTab("scan");
+    }
+
+    if (
+      avatarDraftDirtyRef.current &&
+      avatarDraftReady &&
+      boundCareScopeRevision === careScopeRevision &&
+      boundActivePetId === activePetId &&
+      boundPetName === petName
+    ) {
+      return;
+    }
+
+    const boundDraft = avatarDraftAuthorityRef.current.replace({
+      ...avatarConfig,
+      petName,
+    });
+    setDraft(boundDraft.draft);
+    setBoundCareScopeRevision(careScopeRevision);
+    setBoundActivePetId(activePetId);
+    setBoundPetName(petName);
+    setAvatarDraftReady(true);
+  }, [
+    activePetId,
+    avatarConfig,
+    avatarHydrationStatus,
+    avatarDraftReady,
+    boundActivePetId,
+    boundCareScopeRevision,
+    boundPetName,
+    careHydrationStatus,
+    careScopeRevision,
+    petName,
+  ]);
+
+  useEffect(
+    () => () => {
+      studioSessionRef.current = null;
+      avatarOperationGateRef.current.invalidate();
+    },
+    [],
+  );
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30000);
@@ -227,7 +384,9 @@ export default function PortraitScreen() {
   }, []);
 
   useEffect(() => {
-    if (phase !== "working") return;
+    if (!avatarStudioReady || phase !== "working") return;
+    const studioSession = studioSessionRef.current;
+    if (!studioSession) return;
     const scanLoop = Animated.loop(
       Animated.timing(scanAnim, {
         toValue: 1,
@@ -263,7 +422,12 @@ export default function PortraitScreen() {
       900,
     );
     const finishTimer = setTimeout(() => {
-      setDraft(scanSuggestion.suggestedConfig);
+      if (studioSessionRef.current !== studioSession) return;
+      const editedDraft = avatarDraftAuthorityRef.current.edit(
+        () => scanSuggestion.suggestedConfig,
+      );
+      avatarDraftDirtyRef.current = true;
+      setDraft(editedDraft.draft);
       setPhase("result");
       setActiveTab("template");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
@@ -279,7 +443,14 @@ export default function PortraitScreen() {
       scanAnim.setValue(0);
       pulse.setValue(0);
     };
-  }, [phase, pulse, reduced, scanAnim, scanSuggestion.suggestedConfig]);
+  }, [
+    avatarStudioReady,
+    phase,
+    pulse,
+    reduced,
+    scanAnim,
+    scanSuggestion.suggestedConfig,
+  ]);
 
   useEffect(() => {
     if (reduced) return; // Reduce Motion: template preview holds still
@@ -414,6 +585,30 @@ export default function PortraitScreen() {
         ? "Make me yours."
         : "I'm ready!";
 
+  const getActiveStudioSession = () => {
+    if (!avatarStudioReady) return null;
+    const studioSession = studioSessionRef.current;
+    if (
+      !studioSession ||
+      studioSession.careScopeRevision !== careScopeRevision ||
+      studioSession.activePetId !== activePetId ||
+      studioSession.petName !== petName
+    ) {
+      return null;
+    }
+    return studioSession;
+  };
+
+  const applyAvatarDraftEdit = (
+    update: (current: PetAvatarConfig) => PetAvatarConfig,
+  ) => {
+    const editedDraft = avatarDraftAuthorityRef.current.edit(update);
+    avatarDraftDirtyRef.current = true;
+    setAvatarMutationError(null);
+    setSavedToast(null);
+    setDraft(editedDraft.draft);
+  };
+
   const ensurePermission = async (camera: boolean) => {
     if (Platform.OS === "web") return true;
     const fn = camera
@@ -424,33 +619,82 @@ export default function PortraitScreen() {
   };
 
   const pick = async (camera: boolean) => {
-    const ok = await ensurePermission(camera);
-    if (!ok) return;
-
-    const res = camera
-      ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ["images"],
-          allowsEditing: true,
-          quality: 0.86,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ["images"],
-          allowsEditing: true,
-          quality: 0.86,
+    if (!avatarStudioReady) return;
+    if (phase === "working") return;
+    const studioSession = getActiveStudioSession();
+    if (!studioSession) return;
+    const operation = avatarOperationGateRef.current.begin(
+      camera ? "photo-camera" : "photo-library",
+    );
+    if (!operation) return;
+    setAvatarOperation(operation.kind);
+    setAvatarMutationError(null);
+    try {
+      const ok = await ensurePermission(camera);
+      if (
+        !avatarOperationGateRef.current.isCurrent(operation) ||
+        studioSessionRef.current !== studioSession
+      ) {
+        return;
+      }
+      if (!ok) {
+        setAvatarMutationError({
+          kind: "photo",
+          camera,
+          reason: "permission",
         });
+        return;
+      }
 
-    if (res.canceled || !res.assets?.[0]?.uri) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    setSourceUri(res.assets[0].uri);
-    setScanLine(0);
-    setPhase("working");
-    setActiveTab("scan");
+      const res = camera
+        ? await ImagePicker.launchCameraAsync({
+            mediaTypes: ["images"],
+            allowsEditing: true,
+            quality: 0.86,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            allowsEditing: true,
+            quality: 0.86,
+          });
+
+      if (
+        !avatarOperationGateRef.current.isCurrent(operation) ||
+        studioSessionRef.current !== studioSession
+      ) {
+        return;
+      }
+      if (res.canceled || !res.assets?.[0]?.uri) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      setSourceUri(res.assets[0].uri);
+      setScanLine(0);
+      setPhase("working");
+      setActiveTab("scan");
+    } catch {
+      if (
+        avatarOperationGateRef.current.isCurrent(operation) &&
+        studioSessionRef.current === studioSession
+      ) {
+        setAvatarMutationError({
+          kind: "photo",
+          camera,
+          reason: "unavailable",
+        });
+      }
+    } finally {
+      if (avatarOperationGateRef.current.finish(operation)) {
+        setAvatarOperation(null);
+      }
+    }
   };
 
   const selectTemplate = (templateId: AvatarTemplateId) => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
     const template = getAvatarTemplate(templateId);
     Haptics.selectionAsync().catch(() => {});
-    setDraft((current) =>
+    applyAvatarDraftEdit((current) =>
       updateConfig(current, {
         templateId,
         earTypeId: template.defaultEarTypeId,
@@ -461,8 +705,11 @@ export default function PortraitScreen() {
   };
 
   const setAccessory = (item: AvatarAccessoryOption) => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
-    setDraft((current) =>
+    applyAvatarDraftEdit((current) =>
       updateConfig(current, {
         accessorySlots: { [item.slot]: item.id },
         collarId:
@@ -474,13 +721,19 @@ export default function PortraitScreen() {
   };
 
   const selectStudioTab = (tab: StudioTab) => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
     setActiveTab(tab);
   };
 
   const setCoatColor = (swatch: string, primary: boolean) => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
-    setDraft((current) =>
+    applyAvatarDraftEdit((current) =>
       updateConfig(
         current,
         primary ? { coatSecondary: swatch } : { coatPrimary: swatch },
@@ -489,16 +742,27 @@ export default function PortraitScreen() {
   };
 
   const setFaceMarking = (marking: AvatarFaceMarkingId) => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
-    setDraft((current) => updateConfig(current, { faceMarkingId: marking }));
+    applyAvatarDraftEdit((current) =>
+      updateConfig(current, { faceMarkingId: marking }),
+    );
   };
 
   const previewMoodState = (emote: AvatarEmoteState) => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
     setPreviewEmote(emote);
   };
 
   const openAvatarSpriteProductionQa = () => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
     router.push({
       pathname: "/care-twin-qa",
@@ -507,25 +771,306 @@ export default function PortraitScreen() {
   };
 
   const saveDraft = async () => {
-    await saveAvatarConfig({
-      ...draft,
+    if (avatarHydrationStatus !== "ready") return;
+    if (careHydrationStatus !== "ready") return;
+    if (!avatarStudioReady) return;
+    if (phase === "working") return;
+    const studioSession = getActiveStudioSession();
+    if (!studioSession) return;
+    const operation = avatarOperationGateRef.current.begin("save");
+    if (!operation) return;
+    const capturedDraft = avatarDraftAuthorityRef.current.capture();
+    const nextAvatarConfig = {
+      ...capturedDraft.draft,
       petName,
       updatedAt: new Date().toISOString(),
-    });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-      () => {},
-    );
-    setSavedToast(`${petName}'s care twin saved`);
-    setTimeout(() => setSavedToast(null), 1600);
-    setPhase("idle");
+    };
+    setAvatarOperation(operation.kind);
+    setAvatarMutationError(null);
+    try {
+      await saveAvatarConfig(nextAvatarConfig);
+      if (
+        !avatarOperationGateRef.current.isCurrent(operation) ||
+        studioSessionRef.current !== studioSession
+      ) {
+        return;
+      }
+      const acceptedDraft =
+        avatarDraftAuthorityRef.current.replaceIfCurrent(
+          capturedDraft,
+          nextAvatarConfig,
+        );
+      if (!acceptedDraft) return;
+      avatarDraftDirtyRef.current = false;
+      setDraft(acceptedDraft.draft);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
+      setSavedToast(`${petName}'s care twin saved`);
+      setTimeout(() => {
+        if (studioSessionRef.current === studioSession) setSavedToast(null);
+      }, 1600);
+      setPhase("idle");
+    } catch {
+      if (
+        avatarOperationGateRef.current.isCurrent(operation) &&
+        studioSessionRef.current === studioSession &&
+        avatarDraftAuthorityRef.current.isCurrent(capturedDraft)
+      ) {
+        setAvatarMutationError("save");
+      }
+    } finally {
+      if (avatarOperationGateRef.current.finish(operation)) {
+        setAvatarOperation(null);
+      }
+    }
   };
 
   const resetDraft = async () => {
-    const clean = createDefaultAvatarConfig(petName);
-    setDraft(clean);
-    await resetAvatarConfig(petName);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (!avatarStudioReady) return;
+    if (phase === "working") return;
+    const studioSession = getActiveStudioSession();
+    if (!studioSession) return;
+    const operation = avatarOperationGateRef.current.begin("reset");
+    if (!operation) return;
+    const capturedDraft = avatarDraftAuthorityRef.current.capture();
+    setAvatarOperation(operation.kind);
+    setAvatarMutationError(null);
+    try {
+      await resetAvatarConfig(petName);
+      if (
+        !avatarOperationGateRef.current.isCurrent(operation) ||
+        studioSessionRef.current !== studioSession
+      ) {
+        return;
+      }
+      const acceptedDraft =
+        avatarDraftAuthorityRef.current.replaceIfCurrent(
+          capturedDraft,
+          createDefaultAvatarConfig(petName),
+        );
+      if (!acceptedDraft) return;
+      avatarDraftDirtyRef.current = false;
+      setDraft(acceptedDraft.draft);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {
+      if (
+        avatarOperationGateRef.current.isCurrent(operation) &&
+        studioSessionRef.current === studioSession &&
+        avatarDraftAuthorityRef.current.isCurrent(capturedDraft)
+      ) {
+        setAvatarMutationError("reset");
+      }
+    } finally {
+      if (avatarOperationGateRef.current.finish(operation)) {
+        setAvatarOperation(null);
+      }
+    }
   };
+
+  const retryAvatarMutation = () => {
+    if (!avatarStudioReady || avatarStudioBusy) return;
+    Haptics.selectionAsync().catch(() => {});
+    if (avatarMutationError === "reset") {
+      void resetDraft();
+      return;
+    }
+    if (avatarMutationError && typeof avatarMutationError !== "string") {
+      void pick(avatarMutationError.camera);
+      return;
+    }
+    void saveDraft();
+  };
+
+  const avatarPhotoError =
+    avatarMutationError && typeof avatarMutationError !== "string"
+      ? avatarMutationError
+      : null;
+  const avatarMutationTitle =
+    avatarPhotoError
+      ? avatarPhotoError.camera
+        ? "Camera couldn't be opened"
+        : "Photo library couldn't be opened"
+      : avatarMutationError === "reset"
+        ? "Reset couldn't be saved"
+        : "Care twin couldn't be saved";
+  const avatarMutationMessage =
+    avatarPhotoError
+      ? avatarPhotoError.reason === "permission"
+        ? `WoofWatcher needs ${avatarPhotoError.camera ? "camera" : "photo library"} access before it can use a dog photo. Your current twin is unchanged.`
+        : `The ${avatarPhotoError.camera ? "camera" : "photo library"} did not open. Your current twin is unchanged, and you can retry.`
+      : avatarMutationError === "reset"
+        ? `The reset did not take effect. Your current edits are still here, and you can retry when this device's storage is available.`
+        : `Your changes are still here, but they are not safely stored on this device yet.`;
+  const avatarMutationRetryLabel =
+    avatarPhotoError
+      ? `Retry opening ${avatarPhotoError.camera ? "camera" : "photo library"}`
+      : avatarMutationError === "reset"
+        ? "Retry resetting Avatar Studio"
+        : "Retry saving Avatar Studio";
+  const studioLoadFailed =
+    avatarHydrationStatus === "failed" || careHydrationStatus === "failed";
+  const studioLoadFailureMessage =
+    avatarHydrationStatus === "failed" && careHydrationStatus === "failed"
+      ? "Your saved care details and care twin could not be read. Editing stays paused, and nothing has been replaced."
+      : careHydrationStatus === "failed"
+        ? "Your saved care details could not be read. Avatar Studio stays paused so a temporary dog identity cannot replace them."
+        : "Your saved care twin could not be read. Editing stays paused so a temporary default cannot replace it.";
+
+  const renderStudioHeader = () => (
+    <BoardRouteHeader
+      back
+      kicker="Pixel Twin"
+      onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+      plain
+      subtitle="Choose a pixel twin, then customize."
+      title="Avatar Studio"
+      actionIcon={avatarStudioReady ? "checkmark" : undefined}
+      actionLabel={
+        avatarStudioReady
+          ? avatarOperation === "save"
+            ? "Saving avatar"
+            : avatarStudioBusy
+              ? "Avatar Studio busy"
+              : "Save avatar"
+          : undefined
+      }
+      actionDisabled={avatarStudioBusy}
+      onAction={avatarStudioReady ? saveDraft : undefined}
+    />
+  );
+
+  if (studioLoadFailed) {
+    return (
+      <View style={[s.root, { backgroundColor: colors.background }]}>
+        <ScrollView
+          contentContainerStyle={[
+            s.hydrationScroll,
+            { paddingTop: topPadding, paddingBottom: bottomPadding },
+          ]}
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+        >
+          {renderStudioHeader()}
+          <View style={s.hydrationBody}>
+            <View
+              accessible
+              accessibilityLabel={`Avatar Studio couldn't load. ${studioLoadFailureMessage}`}
+              accessibilityLiveRegion="assertive"
+              accessibilityRole="alert"
+              style={s.hydrationStatusGroup}
+            >
+              <BoardCard style={s.hydrationCard} tone="soft">
+                <Ionicons
+                  accessible={false}
+                  color={colors.destructive}
+                  name="shield-checkmark-outline"
+                  size={30}
+                />
+                <Text
+                  selectable
+                  style={[
+                    s.hydrationTitle,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
+                  Avatar Studio couldn't load
+                </Text>
+                <Text
+                  selectable
+                  style={[
+                    s.hydrationCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  {studioLoadFailureMessage}
+                </Text>
+              </BoardCard>
+            </View>
+            <Pressable
+              accessibilityHint="Tries again without changing your saved care twin"
+              accessibilityLabel="Retry loading Avatar Studio"
+              accessibilityRole="button"
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {});
+                if (avatarHydrationStatus === "failed") {
+                  retryAvatarHydration();
+                }
+                if (careHydrationStatus === "failed") {
+                  retryCareHydration();
+                }
+              }}
+              style={({ pressed }) => [
+                s.hydrationRetryButton,
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.82 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                accessible={false}
+                color={colors.primaryForeground}
+                name="refresh-outline"
+                size={18}
+              />
+              <Text
+                style={[
+                  s.hydrationRetryText,
+                  {
+                    color: colors.primaryForeground,
+                    fontFamily: "Inter_700Bold",
+                  },
+                ]}
+              >
+                Retry loading Avatar Studio
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  if (!avatarStudioReady) {
+    return (
+      <View style={[s.root, { backgroundColor: colors.background }]}>
+        <ScrollView
+          contentContainerStyle={[
+            s.hydrationScroll,
+            { paddingTop: topPadding, paddingBottom: bottomPadding },
+          ]}
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+        >
+          {renderStudioHeader()}
+          <View
+            accessible
+            accessibilityLabel="Loading Avatar Studio"
+            accessibilityRole="progressbar"
+            accessibilityState={{ busy: true }}
+            style={s.hydrationBody}
+          >
+            <ActivityIndicator accessible={false} color={colors.primary} />
+            <Text
+              style={[
+                s.hydrationCopy,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                },
+              ]}
+            >
+              Preparing Avatar Studio...
+            </Text>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -538,17 +1083,84 @@ export default function PortraitScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <BoardRouteHeader
-          kicker="Pixel Twin"
-          title="Avatar Studio"
-          subtitle="Choose a pixel twin, then customize."
-          back
-          onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-          actionIcon="checkmark"
-          actionLabel="Save avatar"
-          onAction={saveDraft}
-          plain
-        />
+        {renderStudioHeader()}
+
+        {avatarMutationError ? (
+          <>
+            <View
+              accessible
+              accessibilityLabel={`${avatarMutationTitle}. ${avatarMutationMessage}`}
+              accessibilityLiveRegion="assertive"
+              accessibilityRole="alert"
+              style={s.mutationStatusGroup}
+            >
+              <BoardCard style={s.mutationCard} tone="soft">
+                <Ionicons
+                  accessible={false}
+                  color={colors.destructive}
+                  name="cloud-offline-outline"
+                  size={24}
+                />
+                <View style={s.mutationCopyGroup}>
+                  <Text
+                    selectable
+                    style={[
+                      s.mutationTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY },
+                    ]}
+                  >
+                    {avatarMutationTitle}
+                  </Text>
+                  <Text
+                    selectable
+                    style={[
+                      s.mutationCopy,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {avatarMutationMessage}
+                  </Text>
+                </View>
+              </BoardCard>
+            </View>
+            <Pressable
+              accessibilityHint="Tries the local Avatar Studio storage action again"
+              accessibilityLabel={avatarMutationRetryLabel}
+              accessibilityRole="button"
+              accessibilityState={{
+                disabled: avatarStudioBusy,
+                busy: avatarOperation !== null,
+              }}
+              disabled={avatarStudioBusy}
+              onPress={retryAvatarMutation}
+              style={({ pressed }) => [
+                s.mutationRetryButton,
+                {
+                  borderColor: colors.border,
+                  opacity: avatarStudioBusy ? 0.55 : pressed ? 0.68 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                accessible={false}
+                color={colors.foreground}
+                name="refresh-outline"
+                size={17}
+              />
+              <Text
+                style={[
+                  s.mutationRetryText,
+                  { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                {avatarMutationRetryLabel}
+              </Text>
+            </Pressable>
+          </>
+        ) : null}
 
         {phase === "working" ? (
           <BoardCard
@@ -979,6 +1591,8 @@ export default function PortraitScreen() {
                 accessibilityRole="button"
                 aria-selected={active}
                 accessibilityLabel={`Avatar Studio ${label}`}
+                accessibilityState={{ disabled: avatarStudioBusy }}
+                disabled={avatarStudioBusy}
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={() => selectStudioTab(key as StudioTab)}
                 haptic="none"
@@ -988,6 +1602,7 @@ export default function PortraitScreen() {
                   {
                     backgroundColor: active ? colors.primary : colors.card,
                     borderColor: active ? colors.primary : colors.border,
+                    opacity: avatarStudioBusy ? 0.55 : 1,
                   },
                 ]}
               >
@@ -1152,44 +1767,73 @@ export default function PortraitScreen() {
             <View style={s.actionRow}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Choose dog photo from gallery"
-                onPress={() => pick(false)}
+                accessibilityLabel={
+                  avatarOperation === "photo-library"
+                    ? "Opening dog photo library"
+                    : "Choose dog photo from gallery"
+                }
+                accessibilityState={{
+                  disabled: avatarStudioBusy,
+                  busy: avatarOperation === "photo-library",
+                }}
+                disabled={avatarStudioBusy}
+                onPress={() => void pick(false)}
                 style={({ pressed }) => [
                   s.secondaryBtn,
-                  { borderColor: colors.border, opacity: pressed ? 0.65 : 1 },
+                  {
+                    borderColor: colors.border,
+                    opacity: avatarStudioBusy ? 0.55 : pressed ? 0.65 : 1,
+                  },
                 ]}
               >
-                <Ionicons
-                  name="images-outline"
-                  size={18}
-                  color={colors.foreground}
-                />
+                {avatarOperation === "photo-library" ? (
+                  <ActivityIndicator color={colors.foreground} size="small" />
+                ) : (
+                  <Ionicons
+                    name="images-outline"
+                    size={18}
+                    color={colors.foreground}
+                  />
+                )}
                 <Text
                   style={[
                     s.secondaryBtnText,
                     { color: colors.foreground, fontFamily: "Inter_700Bold" },
                   ]}
                 >
-                  Gallery
+                  {avatarOperation === "photo-library" ? "Opening..." : "Gallery"}
                 </Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Take dog photo"
-                onPress={() => pick(true)}
+                accessibilityLabel={
+                  avatarOperation === "photo-camera"
+                    ? "Opening camera for dog photo"
+                    : "Take dog photo"
+                }
+                accessibilityState={{
+                  disabled: avatarStudioBusy,
+                  busy: avatarOperation === "photo-camera",
+                }}
+                disabled={avatarStudioBusy}
+                onPress={() => void pick(true)}
                 style={({ pressed }) => [
                   s.primaryBtn,
                   {
                     backgroundColor: colors.primary,
-                    opacity: pressed ? 0.82 : 1,
+                    opacity: avatarStudioBusy ? 0.55 : pressed ? 0.82 : 1,
                   },
                 ]}
               >
-                <Ionicons name="camera" size={18} color="#FFF9EF" />
+                {avatarOperation === "photo-camera" ? (
+                  <ActivityIndicator color="#FFF9EF" size="small" />
+                ) : (
+                  <Ionicons name="camera" size={18} color="#FFF9EF" />
+                )}
                 <Text
                   style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}
                 >
-                  Take photo
+                  {avatarOperation === "photo-camera" ? "Opening..." : "Take photo"}
                 </Text>
               </Pressable>
             </View>
@@ -1219,6 +1863,8 @@ export default function PortraitScreen() {
                       accessibilityRole="button"
                       aria-selected={active}
                       accessibilityLabel={`Choose ${template.label} avatar template`}
+                      accessibilityState={{ disabled: avatarStudioBusy }}
+                      disabled={avatarStudioBusy}
                       onPress={() => selectTemplate(template.id)}
                       haptic="none"
                       scaleTo={0.97}
@@ -1230,6 +1876,7 @@ export default function PortraitScreen() {
                             ? tone + "20"
                             : colors.background,
                           borderColor: active ? tone : colors.border,
+                          opacity: avatarStudioBusy ? 0.55 : 1,
                         },
                       ]}
                     >
@@ -1586,13 +2233,15 @@ export default function PortraitScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Open Avatar sprite production QA cockpit"
                   accessibilityHint="Opens the focused native QA checklist for sprite gait and phone crop review."
+                  accessibilityState={{ disabled: avatarStudioBusy }}
+                  disabled={avatarStudioBusy}
                   hitSlop={MOBILE_INLINE_HIT_SLOP}
                   onPress={openAvatarSpriteProductionQa}
                   style={({ pressed }) => [
                     s.productionQaButton,
                     {
                       backgroundColor: colors.primary,
-                      opacity: pressed ? 0.78 : 1,
+                      opacity: avatarStudioBusy ? 0.55 : pressed ? 0.78 : 1,
                     },
                   ]}
                 >
@@ -1629,6 +2278,8 @@ export default function PortraitScreen() {
                       accessibilityRole="button"
                       aria-selected={primary || secondary}
                       accessibilityLabel={`Set coat color ${swatch}`}
+                      accessibilityState={{ disabled: avatarStudioBusy }}
+                      disabled={avatarStudioBusy}
                       accessibilityHint={
                         primary
                           ? "Double tap to set this as the secondary coat color."
@@ -1648,6 +2299,7 @@ export default function PortraitScreen() {
                               ? colors.amber
                               : colors.border,
                           borderWidth: primary || secondary ? 3 : 1,
+                          opacity: avatarStudioBusy ? 0.55 : 1,
                         },
                       ]}
                     >
@@ -1687,6 +2339,8 @@ export default function PortraitScreen() {
                       accessibilityRole="button"
                       aria-selected={active}
                       accessibilityLabel={`Set ${marking.label} face marking`}
+                      accessibilityState={{ disabled: avatarStudioBusy }}
+                      disabled={avatarStudioBusy}
                       accessibilityHint="Double tap to apply this marking to the pixel twin."
                       hitSlop={MOBILE_INLINE_HIT_SLOP}
                       onPress={() => setFaceMarking(marking.id)}
@@ -1700,6 +2354,7 @@ export default function PortraitScreen() {
                           borderColor: active
                             ? colors.primary
                             : colors.border,
+                          opacity: avatarStudioBusy ? 0.55 : 1,
                         },
                       ]}
                     >
@@ -1781,6 +2436,8 @@ export default function PortraitScreen() {
                       accessibilityRole="button"
                       aria-selected={active}
                       accessibilityLabel={`Set ${item.label} ${item.slot} accessory`}
+                      accessibilityState={{ disabled: avatarStudioBusy }}
+                      disabled={avatarStudioBusy}
                       onPress={() => setAccessory(item)}
                       haptic="none"
                       scaleTo={0.97}
@@ -1792,6 +2449,7 @@ export default function PortraitScreen() {
                             ? item.tone + "20"
                             : colors.background,
                           borderColor: active ? item.tone : colors.border,
+                          opacity: avatarStudioBusy ? 0.55 : 1,
                         },
                       ]}
                     >
@@ -1900,13 +2558,18 @@ export default function PortraitScreen() {
                     accessibilityRole="button"
                     aria-selected={active}
                     accessibilityLabel={`Preview ${emoteLabel(emote)} mood`}
+                    accessibilityState={{ disabled: avatarStudioBusy }}
+                    disabled={avatarStudioBusy}
                     accessibilityHint="Double tap to update the live care-twin preview mood."
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => previewMoodState(emote)}
                     haptic="none"
                     scaleTo={0.94}
                     containerStyle={s.moodChip}
-                    style={s.moodChipInner}
+                    style={[
+                      s.moodChipInner,
+                      { opacity: avatarStudioBusy ? 0.55 : 1 },
+                    ]}
                   >
                     <View
                       style={[
@@ -2010,20 +2673,32 @@ export default function PortraitScreen() {
             accessibilityRole="button"
             accessibilityLabel="Reset Avatar Studio draft"
             accessibilityHint="Restores the default pixel twin before saving."
+            accessibilityState={{
+              disabled: avatarStudioBusy,
+              busy: avatarOperation === "reset",
+            }}
+            disabled={avatarStudioBusy}
             hitSlop={MOBILE_INLINE_HIT_SLOP}
             style={({ pressed }) => [
               s.secondaryBtn,
-              { borderColor: colors.border, opacity: pressed ? 0.65 : 1 },
+              {
+                borderColor: colors.border,
+                opacity: avatarStudioBusy ? 0.55 : pressed ? 0.65 : 1,
+              },
             ]}
           >
-            <Ionicons name="refresh" size={18} color={colors.foreground} />
+            {avatarOperation === "reset" ? (
+              <ActivityIndicator color={colors.foreground} size="small" />
+            ) : (
+              <Ionicons name="refresh" size={18} color={colors.foreground} />
+            )}
             <Text
               style={[
                 s.secondaryBtnText,
                 { color: colors.foreground, fontFamily: "Inter_700Bold" },
               ]}
             >
-              Reset
+              {avatarOperation === "reset" ? "Resetting..." : "Reset"}
             </Text>
           </Pressable>
           <Pressable
@@ -2031,15 +2706,27 @@ export default function PortraitScreen() {
             accessibilityRole="button"
             accessibilityLabel="Save Avatar Studio draft"
             accessibilityHint="Saves the current pixel twin configuration locally."
+            accessibilityState={{
+              disabled: avatarStudioBusy,
+              busy: avatarOperation === "save",
+            }}
+            disabled={avatarStudioBusy}
             hitSlop={MOBILE_INLINE_HIT_SLOP}
             style={({ pressed }) => [
               s.primaryBtn,
-              { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+              {
+                backgroundColor: colors.primary,
+                opacity: avatarStudioBusy ? 0.55 : pressed ? 0.82 : 1,
+              },
             ]}
           >
-            <Ionicons name="heart" size={18} color="#FFF9EF" />
+            {avatarOperation === "save" ? (
+              <ActivityIndicator color="#FFF9EF" size="small" />
+            ) : (
+              <Ionicons name="heart" size={18} color="#FFF9EF" />
+            )}
             <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>
-              Save Avatar
+              {avatarOperation === "save" ? "Saving..." : "Save Avatar"}
             </Text>
           </Pressable>
         </View>
@@ -2101,6 +2788,56 @@ export default function PortraitScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
+  hydrationScroll: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+  },
+  hydrationBody: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 520,
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingVertical: 24,
+  },
+  hydrationStatusGroup: { width: "100%" },
+  hydrationCard: { alignItems: "center", gap: 10 },
+  hydrationTitle: { fontSize: 23, lineHeight: 29, textAlign: "center" },
+  hydrationCopy: { fontSize: 14, lineHeight: 20, textAlign: "center" },
+  hydrationRetryButton: {
+    width: "100%",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 18,
+  },
+  hydrationRetryText: { fontSize: 14 },
+  mutationStatusGroup: { marginBottom: 8 },
+  mutationCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  mutationCopyGroup: { flex: 1, gap: 3 },
+  mutationTitle: { fontSize: 16, lineHeight: 21 },
+  mutationCopy: { fontSize: 12.5, lineHeight: 18 },
+  mutationRetryButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  mutationRetryText: { fontSize: 13.5 },
   canvasCard: {
     height: 360,
     overflow: "hidden",

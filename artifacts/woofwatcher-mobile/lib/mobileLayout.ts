@@ -5,6 +5,8 @@ export type MobileRuntimePlatform = "android" | "ios" | "web" | string;
 export interface MobileLayoutInput {
   platform: MobileRuntimePlatform;
   bottomInset?: number;
+  leftInset?: number;
+  rightInset?: number;
   topInset?: number;
 }
 
@@ -14,6 +16,9 @@ export interface FloatingTabChromeMetrics {
   tabBarBottom: number;
   tabBarHeight: number;
   tabBarHorizontalInset: number;
+  tabBarPaddingBottom: number;
+  tabBarPaddingLeft: number;
+  tabBarPaddingRight: number;
   tabBarRadius: number;
   centerFabBottom: number;
   centerFabSize: number;
@@ -58,6 +63,8 @@ const TAB_BAR_WEB_HEIGHT = 72;
 const TAB_BAR_NATIVE_BOTTOM = 12;
 const TAB_BAR_WEB_BOTTOM = 12;
 const TAB_BAR_HORIZONTAL_INSET = 16;
+const TAB_BAR_MIN_PADDING_BOTTOM = 6;
+const TAB_BAR_MIN_PADDING_HORIZONTAL = 7;
 const TAB_BAR_RADIUS = 26;
 const CENTER_FAB_SIZE = 56;
 const CENTER_FAB_BOTTOM_OFFSET = 18;
@@ -126,6 +133,11 @@ function normalizeBottomInset(platform: MobileRuntimePlatform, bottomInset = 0):
   return Math.max(0, bottomInset);
 }
 
+function normalizeHorizontalInset(platform: MobileRuntimePlatform, horizontalInset = 0): number {
+  if (isWebPlatform(platform)) return 0;
+  return Math.max(0, horizontalInset);
+}
+
 function normalizeTopInset(platform: MobileRuntimePlatform, topInset = 0): number {
   if (isWebPlatform(platform)) return 0;
   return Math.max(0, topInset);
@@ -134,6 +146,8 @@ function normalizeTopInset(platform: MobileRuntimePlatform, topInset = 0): numbe
 export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingTabChromeMetrics {
   const web = isWebPlatform(input.platform);
   const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
+  const leftInset = normalizeHorizontalInset(input.platform, input.leftInset);
+  const rightInset = normalizeHorizontalInset(input.platform, input.rightInset);
   const tabBarBottom = web ? TAB_BAR_WEB_BOTTOM : TAB_BAR_NATIVE_BOTTOM;
   const tabBarHeight = web
     ? TAB_BAR_WEB_HEIGHT
@@ -152,6 +166,9 @@ export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingT
     tabBarBottom,
     tabBarHeight,
     tabBarHorizontalInset: TAB_BAR_HORIZONTAL_INSET,
+    tabBarPaddingBottom: Math.max(TAB_BAR_MIN_PADDING_BOTTOM, bottomInset - tabBarBottom),
+    tabBarPaddingLeft: Math.max(TAB_BAR_MIN_PADDING_HORIZONTAL, leftInset - TAB_BAR_HORIZONTAL_INSET),
+    tabBarPaddingRight: Math.max(TAB_BAR_MIN_PADDING_HORIZONTAL, rightInset - TAB_BAR_HORIZONTAL_INSET),
     tabBarRadius: TAB_BAR_RADIUS,
     centerFabBottom,
     centerFabSize: CENTER_FAB_SIZE,

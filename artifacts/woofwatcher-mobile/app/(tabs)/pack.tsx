@@ -501,7 +501,7 @@ export default function PackScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state } = useCare();
+  const { state, avatarStorageScope, careScopeRevision } = useCare();
   const { avatarConfig, getAvatarSource } = useAvatar();
   const { isSignedIn } = useWoofAuth();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
@@ -532,25 +532,49 @@ export default function PackScreen() {
   // Supplies checklist: null until the stored list loads, so the starter
   // defaults never flash in over a user's saved answers (same pattern as
   // HOME_WELCOME_DISMISSED_KEY on Home).
-  const [supplies, setSupplies] = useState<SupplyItem[] | null>(null);
+  const packPersistence = useMemo(() => {
+    if (!avatarStorageScope) return null;
+    return createPackPersistence(AsyncStorage, {
+      scope: {
+        ownerUserId: avatarStorageScope.ownerUserId,
+        householdId: avatarStorageScope.householdId,
+        activePetId: avatarStorageScope.activePetId,
+      },
+    });
+  }, [
+    avatarStorageScope?.activePetId,
+    avatarStorageScope?.householdId,
+    avatarStorageScope?.ownerUserId,
+    careScopeRevision,
+  ]);
+  const [resolvedPackPersistence, setResolvedPackPersistence] =
+    useState<ReturnType<typeof createPackPersistence> | null>(null);
+  const packScopeResolved =
+    packPersistence !== null && resolvedPackPersistence === packPersistence;
+  const [storedSupplies, setSupplies] = useState<SupplyItem[] | null>(null);
+  const supplies = packScopeResolved ? storedSupplies : null;
   const [editingSupplyId, setEditingSupplyId] = useState<string | null>(null);
   const [editSupplyName, setEditSupplyName] = useState("");
   const [addSupplyOpen, setAddSupplyOpen] = useState(false);
   const [addSupplyName, setAddSupplyName] = useState("");
   const [addSupplyGroup, setAddSupplyGroup] =
     useState<SupplyGroup>("essentials");
-  const [travelBag, setTravelBag] =
+  const [storedTravelBag, setTravelBag] =
     useState<TravelBagSession>(defaultTravelBag);
+  const travelBag = packScopeResolved ? storedTravelBag : defaultTravelBag();
   const [editingBagLabel, setEditingBagLabel] = useState(false);
   const [bagLabelDraft, setBagLabelDraft] = useState("");
-  const [packStorageWarning, setPackStorageWarning] =
+  const [storedPackStorageWarning, setPackStorageWarning] =
     useState<PackStorageWarning | null>(null);
+  const packStorageWarning = packScopeResolved
+    ? storedPackStorageWarning
+    : null;
   const [packStorageRetrying, setPackStorageRetrying] = useState(false);
   const [packRecoveryCopy, setPackRecoveryCopy] = useState("");
   const [packRecoveryTransferBusy, setPackRecoveryTransferBusy] =
     useState(false);
   const packRecoveryTransferBusyRef = useRef(false);
-  const [packPersistence] = useState(() => createPackPersistence(AsyncStorage));
+  const activePackPersistenceRef = useRef(packPersistence);
   const suppliesRef = useRef<SupplyItem[] | null>(null);
   const travelBagRef = useRef(travelBag);
   const failedPackWritesRef = useRef(new Set<PackStoreKind>());
@@ -560,11 +584,12 @@ export default function PackScreen() {
   });
   suppliesRef.current = supplies;
   travelBagRef.current = travelBag;
+  activePackPersistenceRef.current = packPersistence;
 
-  useEffect(
-    () => registerPackPersistenceForOwnerWipe(packPersistence),
-    [packPersistence],
-  );
+  useEffect(() => {
+    if (!packPersistence) return;
+    return registerPackPersistenceForOwnerWipe(packPersistence);
+  }, [packPersistence]);
 
   useEffect(() => {
     if (segment !== "supplies") setPackRecoveryCopy("");
@@ -584,6 +609,10 @@ export default function PackScreen() {
   }, []);
 
   useEffect(() => {
+    setResolvedPackPersistence(null);
+    suppliesRef.current = null;
+    setPackRecoveryCopy("");
+    if (!packPersistence) return;
     let cancelled = false;
     void packPersistence.hydrate().then((result) => {
       if (cancelled) return;
@@ -594,6 +623,7 @@ export default function PackScreen() {
         suppliesRef.current = null;
         setSupplies(null);
         setPackStorageWarning(result.status);
+        setResolvedPackPersistence(packPersistence);
         return;
       }
       suppliesRef.current = result.supplies;
@@ -601,6 +631,7 @@ export default function PackScreen() {
       setSupplies(result.supplies);
       setTravelBag(result.travelBag);
       setPackStorageWarning(null);
+      setResolvedPackPersistence(packPersistence);
     });
     return () => {
       cancelled = true;
@@ -828,12 +859,26 @@ export default function PackScreen() {
   };
 
   const commitSupplies = (next: SupplyItem[]) => {
+    if (
+      !packPersistence ||
+      activePackPersistenceRef.current !== packPersistence ||
+      resolvedPackPersistence !== packPersistence
+    ) {
+      return;
+    }
     suppliesRef.current = next;
     setSupplies(next);
     void persistPackWrite("supplies", () => packPersistence.saveSupplies(next));
   };
 
   const commitTravelBag = (next: TravelBagSession) => {
+    if (
+      !packPersistence ||
+      activePackPersistenceRef.current !== packPersistence ||
+      resolvedPackPersistence !== packPersistence
+    ) {
+      return;
+    }
     travelBagRef.current = next;
     setTravelBag(next);
     void persistPackWrite("travelBag", () =>
@@ -842,11 +887,20 @@ export default function PackScreen() {
   };
 
   const retryPackStorage = async () => {
-    if (packStorageRetrying || !packStorageWarning) return;
+    if (
+      packStorageRetrying ||
+      !packStorageWarning ||
+      !packPersistence ||
+      activePackPersistenceRef.current !== packPersistence
+    ) {
+      return;
+    }
+    const persistenceAtStart = packPersistence;
     setPackStorageRetrying(true);
     try {
       if (packStorageWarning !== "save-failed") {
-        const result = await packPersistence.hydrate();
+        const result = await persistenceAtStart.hydrate();
+        if (activePackPersistenceRef.current !== persistenceAtStart) return;
         packWriteRevisionRef.current.supplies += 1;
         packWriteRevisionRef.current.travelBag += 1;
         failedPackWritesRef.current.clear();
@@ -877,13 +931,13 @@ export default function PackScreen() {
             const current = suppliesRef.current;
             return current
               ? persistPackWrite(kind, () =>
-                  packPersistence.saveSupplies(current),
+                  persistenceAtStart.saveSupplies(current),
                 )
               : Promise.resolve(false);
           }
           const current = travelBagRef.current;
           return persistPackWrite(kind, () =>
-            packPersistence.saveTravelBag(current),
+            persistenceAtStart.saveTravelBag(current),
           );
         }),
       );
@@ -898,7 +952,15 @@ export default function PackScreen() {
   };
 
   const recoverCorruptPack = () => {
-    if (packStorageRetrying || packStorageWarning !== "corrupt-data") return;
+    if (
+      packStorageRetrying ||
+      packStorageWarning !== "corrupt-data" ||
+      !packPersistence ||
+      activePackPersistenceRef.current !== packPersistence
+    ) {
+      return;
+    }
+    const persistenceAtConfirmation = packPersistence;
     confirmThroughSteps(
       [
         {
@@ -910,10 +972,18 @@ export default function PackScreen() {
         },
       ],
       () => {
+        if (activePackPersistenceRef.current !== persistenceAtConfirmation) {
+          return;
+        }
         setPackStorageRetrying(true);
-        void packPersistence
+        void persistenceAtConfirmation
           .recoverCorruptData()
           .then((result) => {
+            if (
+              activePackPersistenceRef.current !== persistenceAtConfirmation
+            ) {
+              return;
+            }
             packWriteRevisionRef.current.supplies += 1;
             packWriteRevisionRef.current.travelBag += 1;
             failedPackWritesRef.current.clear();
@@ -940,10 +1010,18 @@ export default function PackScreen() {
 
   const exportPackRecoveryCopy = async () => {
     if (packRecoveryTransferBusyRef.current) return;
+    if (
+      !packPersistence ||
+      activePackPersistenceRef.current !== packPersistence
+    ) {
+      return;
+    }
+    const persistenceAtStart = packPersistence;
     packRecoveryTransferBusyRef.current = true;
     setPackRecoveryTransferBusy(true);
     try {
       const result = await packPersistence.exportRecoveryCopy();
+      if (activePackPersistenceRef.current !== persistenceAtStart) return;
       if (result.status === "ready") {
         setPackRecoveryCopy(result.serialized);
         const shareOutcome = await shareTextPayload({
@@ -981,11 +1059,19 @@ export default function PackScreen() {
 
   const importPackRecoveryCopy = async () => {
     if (packRecoveryTransferBusyRef.current) return;
+    if (
+      !packPersistence ||
+      activePackPersistenceRef.current !== packPersistence
+    ) {
+      return;
+    }
+    const persistenceAtStart = packPersistence;
     packRecoveryTransferBusyRef.current = true;
     setPackRecoveryTransferBusy(true);
     try {
       const result =
         await packPersistence.restoreRecoveryCopy(packRecoveryCopy);
+      if (activePackPersistenceRef.current !== persistenceAtStart) return;
       if (result.status === "restored" || result.status === "already-present") {
         setPackRecoveryCopy("");
         announce("Pack recovery copy preserved on this device.");

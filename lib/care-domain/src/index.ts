@@ -23,6 +23,7 @@ export * from "./mood-trend.ts";
 export * from "./care-reminders.ts";
 export * from "./care-log-search.ts";
 export * from "./household-access.ts";
+export * from "./household-settings-access.ts";
 export * from "./household-responsibility.ts";
 export * from "./access-pass.ts";
 export * from "./adventure.ts";

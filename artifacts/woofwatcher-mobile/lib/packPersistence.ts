@@ -15,11 +15,162 @@ export const PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
 export const TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
 export const PACK_CORRUPT_BACKUP_KEY = "woofwatcher.packCorruptBackup.v1";
 export const PACK_RECOVERY_JOURNAL_KEY = "woofwatcher.packRecoveryJournal.v1";
+export const PACK_LEGACY_LOCAL_CLAIM_KEY =
+  "woofwatcher.packLegacyV1.localClaim";
+export const PACK_OWNER_WIPE_TOMBSTONE = "complete:owner-wipe";
+
+const SCOPED_PACK_SUPPLIES_PREFIX = "woofwatcher.packSupplies.v2.scope";
+const SCOPED_TRAVEL_BAG_PREFIX = "woofwatcher.travelBag.v2.scope";
+const SCOPED_PACK_CORRUPT_BACKUP_PREFIX =
+  "woofwatcher.packCorruptBackup.v2.scope";
+const SCOPED_PACK_RECOVERY_JOURNAL_PREFIX =
+  "woofwatcher.packRecoveryJournal.v2.scope";
+
+export interface PackPersistenceScope {
+  ownerUserId: string | null;
+  householdId: string | null;
+  activePetId: string;
+}
+
+export interface PackStorageKeys {
+  scopeKey: string;
+  supplies: string;
+  travelBag: string;
+  corruptBackup: string;
+  recoveryJournal: string;
+  mayClaimLegacy: boolean;
+}
+
+function encodePackScopeSegment(value: string): string {
+  return encodeURIComponent(value).replace(/\./g, "%2E");
+}
+
+export function buildPackStorageKeys(
+  scope: PackPersistenceScope,
+): PackStorageKeys {
+  const ownerUserId = scope.ownerUserId?.trim() || null;
+  const householdId = scope.householdId?.trim() || null;
+  const activePetId = scope.activePetId?.trim();
+  if (!activePetId) {
+    throw new Error("Pack persistence requires an active dog identity.");
+  }
+  if ((ownerUserId === null) !== (householdId === null)) {
+    throw new Error(
+      "Pack persistence requires both owner and household identity for an authenticated scope.",
+    );
+  }
+
+  const encodedPetId = encodePackScopeSegment(activePetId);
+  const scopeKey = ownerUserId
+    ? `account.${encodePackScopeSegment(ownerUserId)}.household.${encodePackScopeSegment(householdId!)}.pet.${encodedPetId}`
+    : `local.pet.${encodedPetId}`;
+  return {
+    scopeKey,
+    supplies: `${SCOPED_PACK_SUPPLIES_PREFIX}.${scopeKey}`,
+    travelBag: `${SCOPED_TRAVEL_BAG_PREFIX}.${scopeKey}`,
+    corruptBackup: `${SCOPED_PACK_CORRUPT_BACKUP_PREFIX}.${scopeKey}`,
+    recoveryJournal: `${SCOPED_PACK_RECOVERY_JOURNAL_PREFIX}.${scopeKey}`,
+    mayClaimLegacy: ownerUserId === null,
+  };
+}
 
 export interface PackKeyValueStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem?(key: string): Promise<void>;
+}
+
+interface PackStorageSnapshot {
+  recoveryJournal: string | null;
+  supplies: string | null;
+  travelBag: string | null;
+}
+
+const legacyClaimTails = new WeakMap<PackKeyValueStorage, Promise<void>>();
+
+async function readPackStorageSnapshot(
+  storage: PackKeyValueStorage,
+  keys: PackStorageKeys,
+): Promise<PackStorageSnapshot> {
+  const readScoped = () =>
+    Promise.all([
+      storage.getItem(keys.recoveryJournal),
+      storage.getItem(keys.supplies),
+      storage.getItem(keys.travelBag),
+      storage.getItem(keys.corruptBackup),
+    ]);
+
+  if (!keys.mayClaimLegacy) {
+    const [recoveryJournal, supplies, travelBag] = await readScoped();
+    return { recoveryJournal, supplies, travelBag };
+  }
+
+  const priorClaim = legacyClaimTails.get(storage) ?? Promise.resolve();
+  let result: PackStorageSnapshot | undefined;
+  const claimOperation = (async () => {
+    await priorClaim;
+    const [scopedJournal, scopedSupplies, scopedTravelBag, scopedBackup] =
+      await readScoped();
+    const [
+      legacyClaim,
+      legacyJournal,
+      legacySupplies,
+      legacyTravelBag,
+      legacyBackup,
+    ] = await Promise.all([
+      storage.getItem(PACK_LEGACY_LOCAL_CLAIM_KEY),
+      storage.getItem(PACK_RECOVERY_JOURNAL_KEY),
+      storage.getItem(PACK_SUPPLIES_KEY),
+      storage.getItem(TRAVEL_BAG_KEY),
+      storage.getItem(PACK_CORRUPT_BACKUP_KEY),
+    ]);
+    const pendingClaim = `pending:${keys.scopeKey}`;
+    const completedClaim = `complete:${keys.scopeKey}`;
+    const mayResumeClaim = legacyClaim === null || legacyClaim === pendingClaim;
+    const hasLegacyPayload =
+      legacyJournal !== null ||
+      legacySupplies !== null ||
+      legacyTravelBag !== null ||
+      legacyBackup !== null;
+    if (!mayResumeClaim || !hasLegacyPayload) {
+      result = {
+        recoveryJournal: scopedJournal,
+        supplies: scopedSupplies,
+        travelBag: scopedTravelBag,
+      };
+      return;
+    }
+
+    if (legacyClaim === null) {
+      await storage.setItem(PACK_LEGACY_LOCAL_CLAIM_KEY, pendingClaim);
+    }
+    const migrationSteps = [
+      [keys.recoveryJournal, scopedJournal, legacyJournal],
+      [keys.supplies, scopedSupplies, legacySupplies],
+      [keys.travelBag, scopedTravelBag, legacyTravelBag],
+      [keys.corruptBackup, scopedBackup, legacyBackup],
+    ] as const;
+    for (const [scopedKey, scopedValue, legacyValue] of migrationSteps) {
+      if (scopedValue === null && legacyValue !== null) {
+        await storage.setItem(scopedKey, legacyValue);
+      }
+    }
+    await storage.setItem(PACK_LEGACY_LOCAL_CLAIM_KEY, completedClaim);
+    result = {
+      recoveryJournal: scopedJournal ?? legacyJournal,
+      supplies: scopedSupplies ?? legacySupplies,
+      travelBag: scopedTravelBag ?? legacyTravelBag,
+    };
+  })();
+  legacyClaimTails.set(
+    storage,
+    claimOperation.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  await claimOperation;
+  return result!;
 }
 
 export type PackHydrationResult =
@@ -71,7 +222,9 @@ function isIsoTimestamp(value: unknown): value is string {
   return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
 }
 
-function parseStoredCorruptBackup(raw: string | null): PackCorruptBackup | null {
+function parseStoredCorruptBackup(
+  raw: string | null,
+): PackCorruptBackup | null {
   if (raw === null || raw.length > MAX_PACK_RECOVERY_COPY_LENGTH) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -80,10 +233,8 @@ function parseStoredCorruptBackup(raw: string | null): PackCorruptBackup | null 
     if (
       candidate.version !== 1 ||
       !isIsoTimestamp(candidate.capturedAt) ||
-      (candidate.supplies !== null &&
-        typeof candidate.supplies !== "string") ||
-      (candidate.travelBag !== null &&
-        typeof candidate.travelBag !== "string")
+      (candidate.supplies !== null && typeof candidate.supplies !== "string") ||
+      (candidate.travelBag !== null && typeof candidate.travelBag !== "string")
     ) {
       return null;
     }
@@ -167,23 +318,68 @@ export function getPackStorageWarningPresentation(
 
 type PackPersistenceOwnerWipeParticipant = {
   prepareForOwnerWipe(): Promise<void>;
+  deactivate?(): Promise<void>;
 };
 
 const mountedPackPersistence = new Set<PackPersistenceOwnerWipeParticipant>();
+const detachedPackDrains = new Set<Promise<void>>();
+const detachedPackDrainsByScope = new WeakMap<
+  PackKeyValueStorage,
+  Map<string, Promise<void>>
+>();
+
+function trackDetachedPackDrain(
+  storage: PackKeyValueStorage,
+  scopeKey: string,
+  drain: Promise<void>,
+): Promise<void> {
+  const tracked = drain.then(
+    () => undefined,
+    () => undefined,
+  );
+  detachedPackDrains.add(tracked);
+  const drainsByScope =
+    detachedPackDrainsByScope.get(storage) ?? new Map<string, Promise<void>>();
+  detachedPackDrainsByScope.set(storage, drainsByScope);
+  const prior = drainsByScope.get(scopeKey) ?? Promise.resolve();
+  const scopeTail = Promise.all([prior, tracked]).then(() => undefined);
+  drainsByScope.set(scopeKey, scopeTail);
+  void tracked.finally(() => detachedPackDrains.delete(tracked));
+  void scopeTail.finally(() => {
+    if (drainsByScope.get(scopeKey) === scopeTail) {
+      drainsByScope.delete(scopeKey);
+    }
+  });
+  return tracked;
+}
+
+async function waitForDetachedPackScope(
+  storage: PackKeyValueStorage,
+  scopeKey: string,
+): Promise<void> {
+  await detachedPackDrainsByScope.get(storage)?.get(scopeKey);
+}
 
 export function registerPackPersistenceForOwnerWipe(
   participant: PackPersistenceOwnerWipeParticipant,
 ): () => void {
   mountedPackPersistence.add(participant);
-  return () => mountedPackPersistence.delete(participant);
+  return () => {
+    mountedPackPersistence.delete(participant);
+    if (participant.deactivate) {
+      void participant.deactivate();
+    }
+  };
 }
 
 export async function prepareMountedPackPersistenceForOwnerWipe(): Promise<void> {
-  await Promise.all(
-    [...mountedPackPersistence].map((participant) =>
-      participant.prepareForOwnerWipe(),
-    ),
+  const mountedPreparations = [...mountedPackPersistence].map((participant) =>
+    participant.prepareForOwnerWipe(),
   );
+  await Promise.all([...mountedPreparations, ...detachedPackDrains]);
+  while (detachedPackDrains.size > 0) {
+    await Promise.all([...detachedPackDrains]);
+  }
 }
 
 function createSerializedWriter<T>(write: (value: T) => Promise<void>) {
@@ -203,8 +399,13 @@ function createSerializedWriter<T>(write: (value: T) => Promise<void>) {
 
 export function createPackPersistence(
   storage: PackKeyValueStorage,
-  now: () => string = () => new Date().toISOString(),
+  options: {
+    scope: PackPersistenceScope;
+    now?: () => string;
+  },
 ) {
+  const keys = buildPackStorageKeys(options.scope);
+  const now = options.now ?? (() => new Date().toISOString());
   let hydrated = false;
   let lifecycleGeneration = 0;
   let recoveryTail: Promise<void> = Promise.resolve();
@@ -215,7 +416,7 @@ export function createPackPersistence(
 
   const clearRecoveryJournal = async () => {
     if (storage.removeItem) {
-      await storage.removeItem(PACK_RECOVERY_JOURNAL_KEY);
+      await storage.removeItem(keys.recoveryJournal);
     }
   };
 
@@ -241,8 +442,8 @@ export function createPackPersistence(
     ) {
       throw new Error("Pack recovery journal payload is invalid.");
     }
-    await storage.setItem(PACK_SUPPLIES_KEY, journal.supplies);
-    await storage.setItem(TRAVEL_BAG_KEY, journal.travelBag);
+    await storage.setItem(keys.supplies, journal.supplies);
+    await storage.setItem(keys.travelBag, journal.travelBag);
     await clearRecoveryJournal();
     return journal;
   };
@@ -256,15 +457,26 @@ export function createPackPersistence(
   const writeSupplies = createSerializedWriter(
     async (items: readonly SupplyItem[]) => {
       assertHydrated();
-      await storage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(items));
+      await storage.setItem(keys.supplies, serializeSupplies(items));
     },
   );
   const writeTravelBag = createSerializedWriter(
     async (session: TravelBagSession) => {
       assertHydrated();
-      await storage.setItem(TRAVEL_BAG_KEY, serializeTravelBag(session));
+      await storage.setItem(keys.travelBag, serializeTravelBag(session));
     },
   );
+
+  const sealAndDrain = async () => {
+    lifecycleGeneration += 1;
+    hydrated = false;
+    corruptSnapshot = null;
+    await Promise.all([
+      recoveryTail,
+      writeSupplies.drain(),
+      writeTravelBag.drain(),
+    ]);
+  };
 
   return {
     async exportRecoveryCopy(): Promise<PackRecoveryCopyExportResult> {
@@ -273,7 +485,7 @@ export function createPackPersistence(
       if (generationAtStart !== lifecycleGeneration) {
         return { status: "paused" };
       }
-      const rawBackup = await storage.getItem(PACK_CORRUPT_BACKUP_KEY);
+      const rawBackup = await storage.getItem(keys.corruptBackup);
       if (generationAtStart !== lifecycleGeneration) {
         return { status: "paused" };
       }
@@ -305,7 +517,7 @@ export function createPackPersistence(
       const operation = (async () => {
         await priorRecovery;
         if (generationAtStart !== lifecycleGeneration) return;
-        const existingRaw = await storage.getItem(PACK_CORRUPT_BACKUP_KEY);
+        const existingRaw = await storage.getItem(keys.corruptBackup);
         if (generationAtStart !== lifecycleGeneration) return;
         if (existingRaw !== null) {
           const existing = parseStoredCorruptBackup(existingRaw);
@@ -326,7 +538,7 @@ export function createPackPersistence(
           return;
         }
         await storage.setItem(
-          PACK_CORRUPT_BACKUP_KEY,
+          keys.corruptBackup,
           JSON.stringify(copy.recovery),
         );
         if (generationAtStart !== lifecycleGeneration) return;
@@ -344,11 +556,24 @@ export function createPackPersistence(
       hydrated = false;
       const generationAtStart = lifecycleGeneration;
       try {
-        const [rawJournal, rawSupplies, rawTravelBag] = await Promise.all([
-          storage.getItem(PACK_RECOVERY_JOURNAL_KEY),
-          storage.getItem(PACK_SUPPLIES_KEY),
-          storage.getItem(TRAVEL_BAG_KEY),
-        ]);
+        await waitForDetachedPackScope(storage, keys.scopeKey);
+        if (generationAtStart !== lifecycleGeneration) {
+          return { status: "read-failed" };
+        }
+        await recoveryTail;
+        if (generationAtStart !== lifecycleGeneration) {
+          return { status: "read-failed" };
+        }
+        const read = readPackStorageSnapshot(storage, keys);
+        recoveryTail = read.then(
+          () => undefined,
+          () => undefined,
+        );
+        const {
+          recoveryJournal: rawJournal,
+          supplies: rawSupplies,
+          travelBag: rawTravelBag,
+        } = await read;
         if (generationAtStart !== lifecycleGeneration) {
           return { status: "read-failed" };
         }
@@ -400,11 +625,11 @@ export function createPackPersistence(
       const generationAtStart = lifecycleGeneration;
       let result: PackHydrationResult = { status: "read-failed" };
       const operation = (async () => {
-        const existingBackup = await storage.getItem(PACK_CORRUPT_BACKUP_KEY);
+        const existingBackup = await storage.getItem(keys.corruptBackup);
         if (generationAtStart !== lifecycleGeneration) return;
         if (existingBackup === null) {
           await storage.setItem(
-            PACK_CORRUPT_BACKUP_KEY,
+            keys.corruptBackup,
             JSON.stringify({
               version: 1,
               capturedAt: now(),
@@ -420,15 +645,15 @@ export function createPackPersistence(
         const serializedSupplies = serializeSupplies(supplies);
         const serializedTravelBag = serializeTravelBag(travelBag);
         await storage.setItem(
-          PACK_RECOVERY_JOURNAL_KEY,
+          keys.recoveryJournal,
           JSON.stringify({
             version: 1,
             supplies: serializedSupplies,
             travelBag: serializedTravelBag,
           }),
         );
-        await storage.setItem(PACK_SUPPLIES_KEY, serializedSupplies);
-        await storage.setItem(TRAVEL_BAG_KEY, serializedTravelBag);
+        await storage.setItem(keys.supplies, serializedSupplies);
+        await storage.setItem(keys.travelBag, serializedTravelBag);
         await clearRecoveryJournal();
         if (generationAtStart !== lifecycleGeneration) return;
         corruptSnapshot = null;
@@ -459,14 +684,11 @@ export function createPackPersistence(
     },
 
     async prepareForOwnerWipe(): Promise<void> {
-      lifecycleGeneration += 1;
-      hydrated = false;
-      corruptSnapshot = null;
-      await Promise.all([
-        recoveryTail,
-        writeSupplies.drain(),
-        writeTravelBag.drain(),
-      ]);
+      await sealAndDrain();
+    },
+
+    async deactivate(): Promise<void> {
+      await trackDetachedPackDrain(storage, keys.scopeKey, sealAndDrain());
     },
   };
 }

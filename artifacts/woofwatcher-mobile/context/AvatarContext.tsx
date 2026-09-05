@@ -6,6 +6,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Platform, type ImageSourcePropType } from "react-native";
@@ -14,10 +15,24 @@ import {
   normalizeAvatarConfig,
   type PetAvatarConfig,
 } from "@/lib/avatarStudio";
+import {
+  buildAvatarStorageKeys,
+  createAvatarPersistence,
+  fenceAvatarPersistenceWrites,
+  type AvatarPersistence,
+  type AvatarPersistenceScope,
+} from "@/lib/avatarPersistence";
+import {
+  createAvatarConfigWriteGate,
+  type AvatarConfigWriteSnapshot,
+} from "@/lib/avatarConfigWriteGate";
 import type { Mood } from "@/lib/phoenixStatus";
+import { useCare } from "@/context/CareContext";
 
-const AVATAR_KEY = "woofwatcher.avatarSet.v1";
-const AVATAR_CONFIG_KEY = "woofwatcher.petAvatarConfig.v1";
+export {
+  AVATAR_SET_STORAGE_KEY as AVATAR_KEY,
+  AVATAR_CONFIG_STORAGE_KEY as AVATAR_CONFIG_KEY,
+} from "@/lib/avatarPersistence";
 
 export const MOODS: Mood[] = ["happy", "excited", "calm", "anxious", "unwell"];
 
@@ -32,6 +47,12 @@ const DEFAULT_SOURCES: Record<Mood, ImageSourcePropType> = {
 };
 
 export type AvatarSet = Partial<Record<Mood, string>>;
+export type AvatarHydrationStatus = "loading" | "ready" | "failed";
+export type AvatarEraseResult = "erased" | "superseded";
+export type ConditionalAvatarConfigSaveResult =
+  | { status: "saved"; revision: number }
+  | { status: "stale"; revision: number }
+  | { status: "failed"; revision: number; error: unknown };
 
 async function uriExists(uri: string): Promise<boolean> {
   try {
@@ -80,163 +101,409 @@ interface AvatarContextValue {
   avatarConfig: PetAvatarConfig;
   hasCustomAvatar: boolean;
   hasConfiguredAvatar: boolean;
+  hydrationStatus: AvatarHydrationStatus;
   isLoaded: boolean;
+  avatarConfigWriteRevision: number;
+  avatarConfigWritePending: boolean;
+  getAvatarConfigWriteState: () => AvatarConfigWriteSnapshot;
+  retryHydration: () => void;
+  eraseAvatarData: () => Promise<AvatarEraseResult>;
   getAvatarSource: (mood: Mood) => ImageSourcePropType;
   saveAvatarSet: (set: AvatarSet) => Promise<void>;
   clearAvatarSet: () => Promise<void>;
   saveAvatarConfig: (config: PetAvatarConfig) => Promise<void>;
+  saveAvatarConfigIfCurrent: (
+    config: PetAvatarConfig,
+    expectedRevision: number,
+  ) => Promise<ConditionalAvatarConfigSaveResult>;
   resetAvatarConfig: (petName?: string) => Promise<void>;
 }
 
 const AvatarContext = createContext<AvatarContextValue | null>(null);
 
 export function AvatarProvider({ children }: { children: React.ReactNode }) {
+  const { avatarStorageScope } = useCare();
+  const retainedAvatarStorageSessionKeyRef = useRef<string | null>(null);
+  if (avatarStorageScope) {
+    retainedAvatarStorageSessionKeyRef.current =
+      buildAvatarStorageKeys(avatarStorageScope).scopeKey;
+  }
+  // Care temporarily hides its scope while an owner wipe or exact rehydrate
+  // is in flight. Retaining the last exact key keeps the Privacy screen
+  // mounted long enough to report the durable result. A genuinely different
+  // non-null owner/household/dog scope still changes the key and remounts all
+  // Avatar state before that scope can render.
+  const avatarStorageSessionKey =
+    retainedAvatarStorageSessionKeyRef.current ?? "unavailable";
+
+  return (
+    <AvatarProviderSession
+      key={avatarStorageSessionKey}
+      scope={avatarStorageScope}
+    >
+      {children}
+    </AvatarProviderSession>
+  );
+}
+
+function AvatarProviderSession({
+  children,
+  scope,
+}: {
+  children: React.ReactNode;
+  scope: AvatarPersistenceScope | null;
+}) {
   const [avatarSet, setAvatarSet] = useState<AvatarSet | null>(null);
   const [avatarConfig, setAvatarConfig] = useState<PetAvatarConfig>(() =>
     createDefaultAvatarConfig("Phoenix"),
   );
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [avatarHydrationStatus, setAvatarHydrationStatus] =
+    useState<AvatarHydrationStatus>("loading");
+  const avatarHydrationStatusRef = useRef<AvatarHydrationStatus>("loading");
+  const hydrationAttemptRef = useRef(0);
+  const [hydrationAttempt, setHydrationAttempt] = useState(0);
+  const avatarStateGenerationRef = useRef(0);
+  const [avatarConfigWriteGate] = useState(createAvatarConfigWriteGate);
+  const [avatarConfigWriteState, setAvatarConfigWriteState] =
+    useState<AvatarConfigWriteSnapshot>(() => avatarConfigWriteGate.snapshot());
+  const publishAvatarConfigWriteState = useCallback(() => {
+    setAvatarConfigWriteState(avatarConfigWriteGate.snapshot());
+  }, [avatarConfigWriteGate]);
+  const getAvatarConfigWriteState = useCallback(
+    () => avatarConfigWriteGate.snapshot(),
+    [avatarConfigWriteGate],
+  );
+  const avatarPersistenceRef = useRef<AvatarPersistence<
+    AvatarSet,
+    PetAvatarConfig
+  > | null>(null);
+  if (scope && !avatarPersistenceRef.current) {
+    avatarPersistenceRef.current = createAvatarPersistence({
+      scope,
+      storage: AsyncStorage,
+      parseAvatarSet: async (decoded) => {
+        const verified = await verifyAvatarSet(decoded as AvatarSet);
+        return {
+          value: verified.set,
+          ...(verified.changed
+            ? {
+                rewrite:
+                  Object.keys(verified.set).length > 0
+                    ? JSON.stringify(verified.set)
+                    : null,
+              }
+            : {}),
+        };
+      },
+      parseAvatarConfig: (decoded) => ({
+        value: normalizeAvatarConfig(decoded, "Phoenix"),
+      }),
+    });
+  }
+  const avatarPersistence = avatarPersistenceRef.current;
+  const scopeAvailable = scope !== null;
+  const visibleAvatarSet = scopeAvailable ? avatarSet : null;
+  const visibleAvatarConfig = scopeAvailable
+    ? avatarConfig
+    : createDefaultAvatarConfig("Phoenix");
+  const visibleHydrationStatus = scopeAvailable
+    ? avatarHydrationStatus
+    : "loading";
+  const isLoaded = visibleHydrationStatus === "ready";
+
+  const retryHydration = useCallback(() => {
+    const nextAttempt = hydrationAttemptRef.current + 1;
+    hydrationAttemptRef.current = nextAttempt;
+    avatarStateGenerationRef.current += 1;
+    avatarConfigWriteGate.invalidate();
+    publishAvatarConfigWriteState();
+    avatarHydrationStatusRef.current = "loading";
+    setAvatarHydrationStatus("loading");
+    setHydrationAttempt(nextAttempt);
+  }, [avatarConfigWriteGate, publishAvatarConfigWriteState]);
 
   useEffect(() => {
+    if (!scopeAvailable) {
+      avatarPersistence?.deactivate();
+      return;
+    }
+    avatarPersistence?.activate();
+    return () => {
+      avatarPersistence?.deactivate();
+    };
+  }, [avatarPersistence, scopeAvailable]);
+
+  useEffect(() => {
+    if (scopeAvailable) return;
+    // Mask the prior scope synchronously through the derived context values
+    // above, then retire every async publisher before the same key can be
+    // reactivated and hydrated again.
+    avatarStateGenerationRef.current += 1;
+    avatarConfigWriteGate.invalidate();
+    publishAvatarConfigWriteState();
+    avatarHydrationStatusRef.current = "loading";
+    setAvatarHydrationStatus("loading");
+    setAvatarSet(null);
+    setAvatarConfig(createDefaultAvatarConfig("Phoenix"));
+  }, [avatarConfigWriteGate, publishAvatarConfigWriteState, scopeAvailable]);
+
+  useEffect(() => {
+    if (!scopeAvailable || !avatarPersistence) return;
     let cancelled = false;
+    // The erase path advances the synchronous attempt ref without scheduling
+    // a redundant load. When the same exact scope returns, capture that
+    // current ref so the reactivation hydrate cannot reject itself as stale.
+    const attempt = hydrationAttemptRef.current;
+    const isCurrentAttempt = () =>
+      !cancelled && hydrationAttemptRef.current === attempt;
 
     const load = async () => {
-      let parsed: AvatarSet | null = null;
-      let parsedConfig: PetAvatarConfig | null = null;
       try {
-        const raw = await AsyncStorage.getItem(AVATAR_KEY);
-        if (raw) {
-          const data = JSON.parse(raw);
-          if (data && typeof data === "object") {
-            parsed = data as AvatarSet;
-          }
+        const result = await avatarPersistence.hydrate();
+        if (!isCurrentAttempt() || result.status === "superseded") return;
+        if (
+          result.status === "ready" ||
+          result.status === "recovered-corrupt-data"
+        ) {
+          setAvatarSet(
+            result.avatarSet && Object.keys(result.avatarSet).length > 0
+              ? result.avatarSet
+              : null,
+          );
+          setAvatarConfig(
+            result.avatarConfig ?? createDefaultAvatarConfig("Phoenix"),
+          );
+          avatarHydrationStatusRef.current = "ready";
+          setAvatarHydrationStatus("ready");
+          return;
         }
+        avatarHydrationStatusRef.current = "failed";
+        setAvatarHydrationStatus("failed");
       } catch {
-        // ignore corrupt cache
-        parsed = null;
+        if (!isCurrentAttempt()) return;
+        avatarHydrationStatusRef.current = "failed";
+        setAvatarHydrationStatus("failed");
       }
-
-      try {
-        const rawConfig = await AsyncStorage.getItem(AVATAR_CONFIG_KEY);
-        if (rawConfig) {
-          parsedConfig = normalizeAvatarConfig(JSON.parse(rawConfig), "Phoenix");
-        }
-      } catch {
-        parsedConfig = null;
-      }
-
-      if (parsed) {
-        const verified = await verifyAvatarSet(parsed);
-        if (verified) {
-          parsed = verified.set;
-          if (verified.changed) {
-            try {
-              if (Object.keys(verified.set).length > 0) {
-                await AsyncStorage.setItem(
-                  AVATAR_KEY,
-                  JSON.stringify(verified.set),
-                );
-              } else {
-                await AsyncStorage.removeItem(AVATAR_KEY);
-              }
-            } catch {
-              // ignore persistence errors; in-memory state is already corrected
-            }
-          }
-        }
-      }
-
-      if (cancelled) return;
-      setAvatarSet(parsed && Object.keys(parsed).length > 0 ? parsed : null);
-      setAvatarConfig(parsedConfig ?? createDefaultAvatarConfig("Phoenix"));
-      setIsLoaded(true);
     };
 
-    load();
+    void load();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [avatarPersistence, hydrationAttempt, scopeAvailable]);
+
+  const requireSuccessfulHydration = useCallback(() => {
+    if (
+      !scopeAvailable ||
+      avatarHydrationStatusRef.current !== "ready" ||
+      !avatarPersistence
+    ) {
+      throw new Error(
+        "Avatar data cannot be changed until local storage loads successfully.",
+      );
+    }
+    return avatarPersistence;
+  }, [avatarPersistence, scopeAvailable]);
 
   const getAvatarSource = useCallback(
     (mood: Mood): ImageSourcePropType => {
-      const uri = avatarSet?.[mood];
+      const uri = visibleAvatarSet?.[mood];
       if (uri) return { uri };
       return DEFAULT_SOURCES[mood] ?? DEFAULT_SOURCES.calm;
     },
-    [avatarSet],
+    [visibleAvatarSet],
   );
 
-  const saveAvatarSet = useCallback(async (set: AvatarSet) => {
-    const clean: AvatarSet = {};
-    for (const m of MOODS) {
-      if (set[m]) clean[m] = set[m];
-    }
-    setAvatarSet(clean);
-    await AsyncStorage.setItem(AVATAR_KEY, JSON.stringify(clean));
-  }, []);
+  const saveAvatarSet = useCallback(
+    async (set: AvatarSet) => {
+      const persistence = requireSuccessfulHydration();
+      const stateGeneration = avatarStateGenerationRef.current;
+      const clean: AvatarSet = {};
+      for (const m of MOODS) {
+        if (set[m]) clean[m] = set[m];
+      }
+      await persistence.saveAvatarSet(JSON.stringify(clean));
+      if (stateGeneration !== avatarStateGenerationRef.current) return;
+      setAvatarSet(clean);
+    },
+    [avatarPersistence, requireSuccessfulHydration],
+  );
 
   const clearAvatarSet = useCallback(async () => {
+    const persistence = requireSuccessfulHydration();
+    const stateGeneration = avatarStateGenerationRef.current;
+    await persistence.clearAvatarSet();
+    if (stateGeneration !== avatarStateGenerationRef.current) return;
     setAvatarSet(null);
-    await AsyncStorage.removeItem(AVATAR_KEY);
-  }, []);
+  }, [avatarPersistence, requireSuccessfulHydration]);
 
-  const saveAvatarConfig = useCallback(async (config: PetAvatarConfig) => {
-    const clean = normalizeAvatarConfig(
-      {
-        ...config,
-        updatedAt: new Date().toISOString(),
-      },
-      config.petName || "Phoenix",
-    );
-    setAvatarConfig(clean);
-    await AsyncStorage.setItem(AVATAR_CONFIG_KEY, JSON.stringify(clean));
-  }, []);
+  const persistAvatarConfig = useCallback(
+    async (
+      config: PetAvatarConfig,
+      expectedRevision?: number,
+    ): Promise<ConditionalAvatarConfigSaveResult> => {
+      const persistence = requireSuccessfulHydration();
+      const reservation =
+        expectedRevision === undefined
+          ? avatarConfigWriteGate.begin()
+          : avatarConfigWriteGate.beginIfCurrent(expectedRevision);
+      if (!reservation) {
+        return {
+          status: "stale",
+          revision: avatarConfigWriteGate.snapshot().revision,
+        };
+      }
+      publishAvatarConfigWriteState();
+      const stateGeneration = avatarStateGenerationRef.current;
+      const clean = normalizeAvatarConfig(
+        {
+          ...config,
+          updatedAt: new Date().toISOString(),
+        },
+        config.petName || "Phoenix",
+      );
+      try {
+        await persistence.saveAvatarConfig(JSON.stringify(clean));
+        if (stateGeneration !== avatarStateGenerationRef.current) {
+          return {
+            status: "stale",
+            revision: avatarConfigWriteGate.snapshot().revision,
+          };
+        }
+        setAvatarConfig(clean);
+        return { status: "saved", revision: reservation.revision };
+      } catch (error) {
+        if (stateGeneration !== avatarStateGenerationRef.current) {
+          return {
+            status: "stale",
+            revision: avatarConfigWriteGate.snapshot().revision,
+          };
+        }
+        return { status: "failed", revision: reservation.revision, error };
+      } finally {
+        avatarConfigWriteGate.finish(reservation);
+        publishAvatarConfigWriteState();
+      }
+    },
+    [
+      avatarConfigWriteGate,
+      publishAvatarConfigWriteState,
+      requireSuccessfulHydration,
+    ],
+  );
 
-  const resetAvatarConfig = useCallback(async (petName = "Phoenix") => {
-    const clean = createDefaultAvatarConfig(petName);
-    setAvatarConfig(clean);
-    await AsyncStorage.setItem(AVATAR_CONFIG_KEY, JSON.stringify(clean));
-  }, []);
+  const saveAvatarConfig = useCallback(
+    async (config: PetAvatarConfig) => {
+      const result = await persistAvatarConfig(config);
+      if (result.status === "failed") throw result.error;
+    },
+    [persistAvatarConfig],
+  );
 
-  const hasCustomAvatar = !!avatarSet && Object.keys(avatarSet).length > 0;
+  const saveAvatarConfigIfCurrent = useCallback(
+    (config: PetAvatarConfig, expectedRevision: number) =>
+      persistAvatarConfig(config, expectedRevision),
+    [persistAvatarConfig],
+  );
+
+  const resetAvatarConfig = useCallback(
+    async (petName = "Phoenix") => {
+      const result = await persistAvatarConfig(
+        createDefaultAvatarConfig(petName),
+      );
+      if (result.status === "failed") throw result.error;
+    },
+    [persistAvatarConfig],
+  );
+
+  const eraseAvatarData = useCallback(async () => {
+    hydrationAttemptRef.current += 1;
+    const stateGeneration = avatarStateGenerationRef.current + 1;
+    avatarStateGenerationRef.current = stateGeneration;
+    avatarConfigWriteGate.invalidate();
+    publishAvatarConfigWriteState();
+    avatarHydrationStatusRef.current = "loading";
+    setAvatarHydrationStatus("loading");
+    setAvatarSet(null);
+    setAvatarConfig(createDefaultAvatarConfig("Phoenix"));
+    try {
+      if (!avatarPersistence) {
+        const result = await fenceAvatarPersistenceWrites(AsyncStorage);
+        return result === "fenced" ? "erased" : "superseded";
+      }
+      const result = await avatarPersistence.eraseAvatarData();
+      if (
+        result === "superseded" ||
+        stateGeneration !== avatarStateGenerationRef.current
+      ) {
+        return "superseded";
+      }
+      avatarHydrationStatusRef.current = "ready";
+      setAvatarHydrationStatus("ready");
+      return "erased";
+    } catch (error) {
+      if (stateGeneration === avatarStateGenerationRef.current) {
+        avatarHydrationStatusRef.current = "failed";
+        setAvatarHydrationStatus("failed");
+      }
+      throw error;
+    }
+  }, [avatarConfigWriteGate, avatarPersistence, publishAvatarConfigWriteState]);
+
+  const hasCustomAvatar =
+    !!visibleAvatarSet && Object.keys(visibleAvatarSet).length > 0;
   const hasConfiguredAvatar =
-    avatarConfig.scanAssisted ||
-    avatarConfig.templateId !== "shepherd" ||
-    avatarConfig.collarId !== "forest-bandana" ||
-    avatarConfig.faceMarkingId !== "mask" ||
-    avatarConfig.coatPrimary !== "#1B1714" ||
-    avatarConfig.coatSecondary !== "#C99052";
+    visibleAvatarConfig.scanAssisted ||
+    visibleAvatarConfig.templateId !== "shepherd" ||
+    visibleAvatarConfig.collarId !== "forest-bandana" ||
+    visibleAvatarConfig.faceMarkingId !== "mask" ||
+    visibleAvatarConfig.coatPrimary !== "#1B1714" ||
+    visibleAvatarConfig.coatSecondary !== "#C99052";
 
   const value = useMemo(
     () => ({
-      avatarSet,
-      avatarConfig,
+      avatarSet: visibleAvatarSet,
+      avatarConfig: visibleAvatarConfig,
       hasCustomAvatar,
       hasConfiguredAvatar,
+      hydrationStatus: visibleHydrationStatus,
       isLoaded,
+      avatarConfigWriteRevision: avatarConfigWriteState.revision,
+      avatarConfigWritePending: avatarConfigWriteState.pending,
+      getAvatarConfigWriteState,
+      retryHydration,
+      eraseAvatarData,
       getAvatarSource,
       saveAvatarSet,
       clearAvatarSet,
       saveAvatarConfig,
+      saveAvatarConfigIfCurrent,
       resetAvatarConfig,
     }),
     [
-      avatarSet,
-      avatarConfig,
+      visibleAvatarSet,
+      visibleAvatarConfig,
       hasCustomAvatar,
       hasConfiguredAvatar,
+      visibleHydrationStatus,
       isLoaded,
+      avatarConfigWriteState,
+      getAvatarConfigWriteState,
+      retryHydration,
+      eraseAvatarData,
       getAvatarSource,
       saveAvatarSet,
       clearAvatarSet,
       saveAvatarConfig,
+      saveAvatarConfigIfCurrent,
       resetAvatarConfig,
     ],
   );
 
-  return <AvatarContext.Provider value={value}>{children}</AvatarContext.Provider>;
+  return (
+    <AvatarContext.Provider value={value}>{children}</AvatarContext.Provider>
+  );
 }
 
 export function useAvatar() {

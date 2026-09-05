@@ -8,15 +8,17 @@ import {
   type SupplyItem,
 } from "./packSupplies.ts";
 import {
-  createPackPersistence,
+  buildPackStorageKeys,
+  createPackPersistence as createScopedPackPersistence,
   getPackStorageWarningPresentation,
   prepareMountedPackPersistenceForOwnerWipe,
-  PACK_CORRUPT_BACKUP_KEY,
-  PACK_RECOVERY_JOURNAL_KEY,
-  PACK_SUPPLIES_KEY,
+  PACK_CORRUPT_BACKUP_KEY as LEGACY_PACK_CORRUPT_BACKUP_KEY,
+  PACK_RECOVERY_JOURNAL_KEY as LEGACY_PACK_RECOVERY_JOURNAL_KEY,
+  PACK_SUPPLIES_KEY as LEGACY_PACK_SUPPLIES_KEY,
   registerPackPersistenceForOwnerWipe,
-  TRAVEL_BAG_KEY,
+  TRAVEL_BAG_KEY as LEGACY_TRAVEL_BAG_KEY,
   type PackKeyValueStorage,
+  type PackPersistenceScope,
 } from "./packPersistence.ts";
 import {
   defaultTravelBag,
@@ -41,6 +43,296 @@ function changedSupplies(status: "low" | "out"): SupplyItem[] {
       : { ...item },
   );
 }
+
+const accountAScope = {
+  ownerUserId: "owner-a",
+  householdId: "household-a",
+  activePetId: "pet-a",
+} as const;
+
+const accountBScope = {
+  ownerUserId: "owner-b",
+  householdId: "household-b",
+  activePetId: "pet-b",
+} as const;
+
+const testScope: PackPersistenceScope = {
+  ownerUserId: null,
+  householdId: null,
+  activePetId: "test-dog",
+};
+
+const testKeys = buildPackStorageKeys(testScope);
+const PACK_SUPPLIES_KEY = testKeys.supplies;
+const TRAVEL_BAG_KEY = testKeys.travelBag;
+const PACK_CORRUPT_BACKUP_KEY = testKeys.corruptBackup;
+const PACK_RECOVERY_JOURNAL_KEY = testKeys.recoveryJournal;
+
+function createPackPersistence(
+  storage: PackKeyValueStorage,
+  optionsOrNow?:
+    | Parameters<typeof createScopedPackPersistence>[1]
+    | (() => string),
+) {
+  if (typeof optionsOrNow === "function") {
+    return createScopedPackPersistence(storage, {
+      scope: testScope,
+      now: optionsOrNow,
+    });
+  }
+  return createScopedPackPersistence(
+    storage,
+    optionsOrNow ?? { scope: testScope },
+  );
+}
+
+test("A to B to A hydration never exposes or overwrites another principal's Pack", async () => {
+  const stored = new Map<string, string>();
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      stored.set(key, value);
+    },
+    removeItem: async (key) => {
+      stored.delete(key);
+    },
+  };
+
+  const accountA = createPackPersistence(storage, { scope: accountAScope });
+  assert.equal((await accountA.hydrate()).status, "ready");
+  const accountASupplies = changedSupplies("low");
+  const accountABag = { ...defaultTravelBag(), label: "Account A vet bag" };
+  await accountA.saveSupplies(accountASupplies);
+  await accountA.saveTravelBag(accountABag);
+
+  const accountB = createPackPersistence(storage, { scope: accountBScope });
+  const accountBFirstLoad = await accountB.hydrate();
+  assert.equal(accountBFirstLoad.status, "ready");
+  if (accountBFirstLoad.status !== "ready") return;
+  assert.deepEqual(accountBFirstLoad.supplies, [...DEFAULT_SUPPLIES]);
+  assert.deepEqual(accountBFirstLoad.travelBag, defaultTravelBag());
+
+  const accountBSupplies = changedSupplies("out");
+  const accountBBag = { ...defaultTravelBag(), label: "Account B holiday bag" };
+  await accountB.saveSupplies(accountBSupplies);
+  await accountB.saveTravelBag(accountBBag);
+
+  const accountAReturn = createPackPersistence(storage, {
+    scope: accountAScope,
+  });
+  const restoredAccountA = await accountAReturn.hydrate();
+  assert.equal(restoredAccountA.status, "ready");
+  if (restoredAccountA.status !== "ready") return;
+  assert.deepEqual(restoredAccountA.supplies, accountASupplies);
+  assert.deepEqual(restoredAccountA.travelBag, accountABag);
+});
+
+test("a local dog claims every legacy Pack payload once without deleting the recovery originals", async () => {
+  const legacySupplies = serializeSupplies(changedSupplies("low"));
+  const legacyTravelBag = serializeTravelBag({
+    ...defaultTravelBag(),
+    label: "Legacy local bag",
+  });
+  const legacyBackup = JSON.stringify({
+    version: 1,
+    capturedAt: "2026-09-03T04:00:00.000Z",
+    supplies: "legacy corrupt supplies",
+    travelBag: "legacy corrupt travel bag",
+  });
+  const legacyJournal = JSON.stringify({
+    version: 1,
+    supplies: legacySupplies,
+    travelBag: legacyTravelBag,
+  });
+  const stored = new Map<string, string>([
+    [LEGACY_PACK_SUPPLIES_KEY, legacySupplies],
+    [LEGACY_TRAVEL_BAG_KEY, legacyTravelBag],
+    [LEGACY_PACK_CORRUPT_BACKUP_KEY, legacyBackup],
+    [LEGACY_PACK_RECOVERY_JOURNAL_KEY, legacyJournal],
+  ]);
+  const writes: string[] = [];
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      writes.push(key);
+      stored.set(key, value);
+    },
+    removeItem: async (key) => {
+      stored.delete(key);
+    },
+  };
+
+  const persistence = createPackPersistence(storage);
+  const hydrated = await persistence.hydrate();
+
+  assert.equal(hydrated.status, "ready");
+  if (hydrated.status !== "ready") return;
+  assert.deepEqual(hydrated.supplies, changedSupplies("low"));
+  assert.equal(hydrated.travelBag.label, "Legacy local bag");
+  assert.equal(stored.get(PACK_SUPPLIES_KEY), legacySupplies);
+  assert.equal(stored.get(TRAVEL_BAG_KEY), legacyTravelBag);
+  assert.equal(stored.get(PACK_CORRUPT_BACKUP_KEY), legacyBackup);
+  assert.equal(
+    stored.get("woofwatcher.packLegacyV1.localClaim"),
+    "complete:local.pet.test-dog",
+  );
+  assert.equal(stored.get(LEGACY_PACK_SUPPLIES_KEY), legacySupplies);
+  assert.equal(stored.get(LEGACY_TRAVEL_BAG_KEY), legacyTravelBag);
+  assert.equal(stored.get(LEGACY_PACK_CORRUPT_BACKUP_KEY), legacyBackup);
+  assert.equal(stored.get(LEGACY_PACK_RECOVERY_JOURNAL_KEY), legacyJournal);
+  assert.deepEqual(writes, [
+    "woofwatcher.packLegacyV1.localClaim",
+    PACK_RECOVERY_JOURNAL_KEY,
+    PACK_SUPPLIES_KEY,
+    TRAVEL_BAG_KEY,
+    PACK_CORRUPT_BACKUP_KEY,
+    "woofwatcher.packLegacyV1.localClaim",
+    PACK_SUPPLIES_KEY,
+    TRAVEL_BAG_KEY,
+  ]);
+});
+
+test("concurrent local scopes cannot both adopt the same unowned legacy Pack", async () => {
+  const legacySupplies = serializeSupplies(changedSupplies("low"));
+  const legacyTravelBag = serializeTravelBag({
+    ...defaultTravelBag(),
+    label: "Only one local dog owns this",
+  });
+  const stored = new Map<string, string>([
+    [LEGACY_PACK_SUPPLIES_KEY, legacySupplies],
+    [LEGACY_TRAVEL_BAG_KEY, legacyTravelBag],
+  ]);
+  const firstClaimReachedStorage = deferred<void>();
+  const releaseFirstClaim = deferred<void>();
+  const localAScope: PackPersistenceScope = {
+    ownerUserId: null,
+    householdId: null,
+    activePetId: "local-a",
+  };
+  const localBScope: PackPersistenceScope = {
+    ownerUserId: null,
+    householdId: null,
+    activePetId: "local-b",
+  };
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      if (
+        key === "woofwatcher.packLegacyV1.localClaim" &&
+        value === "pending:local.pet.local-a"
+      ) {
+        firstClaimReachedStorage.resolve();
+        await releaseFirstClaim.promise;
+      }
+      stored.set(key, value);
+    },
+    removeItem: async (key) => {
+      stored.delete(key);
+    },
+  };
+
+  const localA = createPackPersistence(storage, { scope: localAScope });
+  const localB = createPackPersistence(storage, { scope: localBScope });
+  const hydrationA = localA.hydrate();
+  await firstClaimReachedStorage.promise;
+  const hydrationB = localB.hydrate();
+  for (let turn = 0; turn < 10; turn += 1) await Promise.resolve();
+  releaseFirstClaim.resolve();
+  const [resultA, resultB] = await Promise.all([hydrationA, hydrationB]);
+
+  assert.equal(resultA.status, "ready");
+  assert.equal(resultB.status, "ready");
+  if (resultA.status !== "ready" || resultB.status !== "ready") return;
+  assert.deepEqual(resultA.supplies, changedSupplies("low"));
+  assert.deepEqual(resultB.supplies, [...DEFAULT_SUPPLIES]);
+  assert.deepEqual(resultB.travelBag, defaultTravelBag());
+  assert.equal(
+    stored.get("woofwatcher.packLegacyV1.localClaim"),
+    "complete:local.pet.local-a",
+  );
+});
+
+test("an authenticated scope never auto-adopts ownership-unknown legacy Pack data", async () => {
+  const legacySupplies = serializeSupplies(changedSupplies("low"));
+  const legacyTravelBag = serializeTravelBag({
+    ...defaultTravelBag(),
+    label: "Unknown former owner",
+  });
+  const stored = new Map<string, string>([
+    [LEGACY_PACK_SUPPLIES_KEY, legacySupplies],
+    [LEGACY_TRAVEL_BAG_KEY, legacyTravelBag],
+  ]);
+  const writes: string[] = [];
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      writes.push(key);
+      stored.set(key, value);
+    },
+  };
+
+  const authenticated = createPackPersistence(storage, {
+    scope: accountAScope,
+  });
+  const result = await authenticated.hydrate();
+
+  assert.equal(result.status, "ready");
+  if (result.status !== "ready") return;
+  assert.deepEqual(result.supplies, [...DEFAULT_SUPPLIES]);
+  assert.deepEqual(result.travelBag, defaultTravelBag());
+  assert.equal(stored.get("woofwatcher.packLegacyV1.localClaim"), undefined);
+  assert.deepEqual(writes, []);
+});
+
+test("an interrupted recovery journal stays inside its exact principal scope", async () => {
+  const accountAKeys = buildPackStorageKeys(accountAScope);
+  const accountBKeys = buildPackStorageKeys(accountBScope);
+  const stored = new Map<string, string>([
+    [accountAKeys.supplies, '{"version":1,"items":"broken"}'],
+    [accountAKeys.travelBag, '{"version":1,"phase":"broken"}'],
+  ]);
+  let interruptAccountATravelWrite = true;
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      if (key === accountAKeys.travelBag && interruptAccountATravelWrite) {
+        interruptAccountATravelWrite = false;
+        throw new Error("account A process stopped between recovery writes");
+      }
+      stored.set(key, value);
+    },
+    removeItem: async (key) => {
+      stored.delete(key);
+    },
+  };
+
+  const interruptedA = createPackPersistence(storage, {
+    scope: accountAScope,
+  });
+  assert.equal((await interruptedA.hydrate()).status, "corrupt-data");
+  assert.deepEqual(await interruptedA.recoverCorruptData(), {
+    status: "read-failed",
+  });
+  assert.equal(stored.has(accountAKeys.recoveryJournal), true);
+
+  const accountB = createPackPersistence(storage, { scope: accountBScope });
+  const resultB = await accountB.hydrate();
+  assert.equal(resultB.status, "ready");
+  if (resultB.status !== "ready") return;
+  assert.deepEqual(resultB.supplies, [...DEFAULT_SUPPLIES]);
+  assert.deepEqual(resultB.travelBag, defaultTravelBag());
+  assert.equal(stored.has(accountBKeys.recoveryJournal), false);
+
+  const relaunchedA = createPackPersistence(storage, {
+    scope: accountAScope,
+  });
+  const resultA = await relaunchedA.hydrate();
+  assert.equal(resultA.status, "ready");
+  if (resultA.status !== "ready") return;
+  assert.deepEqual(resultA.supplies, [...DEFAULT_SUPPLIES]);
+  assert.deepEqual(resultA.travelBag, defaultTravelBag());
+  assert.equal(stored.has(accountAKeys.recoveryJournal), false);
+});
 
 test("a failed read pauses writes instead of exposing defaults that can overwrite saved Pack data", async () => {
   const writes: Array<{ key: string; value: string }> = [];
@@ -75,12 +367,12 @@ test("a malformed stored payload pauses both Pack stores instead of exposing ove
       }
       if (key === TRAVEL_BAG_KEY) {
         return JSON.stringify({
-            version: 1,
-            label: "Weekend trip",
-            phase: "active",
-            activatedAt: "not-a-date",
-            completedAt: null,
-          });
+          version: 1,
+          label: "Weekend trip",
+          phase: "active",
+          activatedAt: "not-a-date",
+          completedAt: null,
+        });
       }
       return null;
     },
@@ -348,6 +640,132 @@ test("owner wipe drains the active Pack write and prevents a queued snapshot fro
   unregister();
 });
 
+test("owner wipe still drains and seals a Pack write after its scoped screen unmounts", async () => {
+  const firstWrite = deferred<void>();
+  const stored = new Map<string, string>();
+  const calls: string[] = [];
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      calls.push(key);
+      if (calls.length === 1) await firstWrite.promise;
+      stored.set(key, value);
+    },
+  };
+  const persistence = createPackPersistence(storage);
+  assert.equal((await persistence.hydrate()).status, "ready");
+  const unregister = registerPackPersistenceForOwnerWipe(persistence);
+
+  const activeSave = persistence.saveSupplies(changedSupplies("low"));
+  await Promise.resolve();
+  const queuedSave = persistence.saveSupplies(changedSupplies("out"));
+  unregister();
+  const prepared = prepareMountedPackPersistenceForOwnerWipe();
+  let preparationFinished = false;
+  void prepared.then(() => {
+    preparationFinished = true;
+  });
+  await Promise.resolve();
+  assert.equal(
+    preparationFinished,
+    false,
+    "screen cleanup must keep its active storage write inside the wipe barrier",
+  );
+
+  firstWrite.resolve();
+  await activeSave;
+  await assert.rejects(queuedSave, /paused until Pack loads successfully/i);
+  await prepared;
+  stored.clear();
+  await Promise.resolve();
+
+  assert.equal(calls.length, 1);
+  assert.equal(stored.size, 0);
+});
+
+test("a remounted scope hydrates only after its detached save reaches storage", async () => {
+  const activeWrite = deferred<void>();
+  const stored = new Map<string, string>();
+  let blockNextWrite = false;
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      if (blockNextWrite) {
+        blockNextWrite = false;
+        await activeWrite.promise;
+      }
+      stored.set(key, value);
+    },
+    removeItem: async (key) => {
+      stored.delete(key);
+    },
+  };
+  const firstMount = createPackPersistence(storage);
+  assert.equal((await firstMount.hydrate()).status, "ready");
+  const unregister = registerPackPersistenceForOwnerWipe(firstMount);
+  const savedSupplies = changedSupplies("low");
+  blockNextWrite = true;
+  const save = firstMount.saveSupplies(savedSupplies);
+  await Promise.resolve();
+  unregister();
+
+  const secondMount = createPackPersistence(storage);
+  const hydration = secondMount.hydrate();
+  let hydrationFinished = false;
+  void hydration.then(() => {
+    hydrationFinished = true;
+  });
+  for (let turn = 0; turn < 10; turn += 1) await Promise.resolve();
+  assert.equal(
+    hydrationFinished,
+    false,
+    "the remount must not snapshot storage before the detached write finishes",
+  );
+
+  activeWrite.resolve();
+  await save;
+  const result = await hydration;
+  assert.equal(result.status, "ready");
+  if (result.status !== "ready") return;
+  assert.deepEqual(result.supplies, savedSupplies);
+});
+
+test("a detached account A write does not block account B hydration", async () => {
+  const activeWrite = deferred<void>();
+  const accountAWriteStarted = deferred<void>();
+  const stored = new Map<string, string>();
+  const accountAKeys = buildPackStorageKeys(accountAScope);
+  let blockAccountAWrite = false;
+  const storage: PackKeyValueStorage = {
+    getItem: async (key) => stored.get(key) ?? null,
+    setItem: async (key, value) => {
+      if (key === accountAKeys.supplies && blockAccountAWrite) {
+        blockAccountAWrite = false;
+        accountAWriteStarted.resolve();
+        await activeWrite.promise;
+      }
+      stored.set(key, value);
+    },
+  };
+  const accountA = createPackPersistence(storage, { scope: accountAScope });
+  assert.equal((await accountA.hydrate()).status, "ready");
+  const unregister = registerPackPersistenceForOwnerWipe(accountA);
+  blockAccountAWrite = true;
+  const saveA = accountA.saveSupplies(changedSupplies("low"));
+  await accountAWriteStarted.promise;
+  unregister();
+
+  const accountB = createPackPersistence(storage, { scope: accountBScope });
+  const resultB = await accountB.hydrate();
+  assert.equal(resultB.status, "ready");
+  if (resultB.status !== "ready") return;
+  assert.deepEqual(resultB.supplies, [...DEFAULT_SUPPLIES]);
+
+  activeWrite.resolve();
+  await saveA;
+  await prepareMountedPackPersistenceForOwnerWipe();
+});
+
 test("owner wipe waits for active corrupt-data recovery before deleting Pack keys", async () => {
   const backupWrite = deferred<void>();
   const stored = new Map<string, string>([
@@ -583,9 +1001,13 @@ test("concurrent recovery-copy restores preserve the first accepted copy", async
       },
     });
 
-  const first = persistence.restoreRecoveryCopy(copy("2026-09-01T10:00:00.000Z"));
+  const first = persistence.restoreRecoveryCopy(
+    copy("2026-09-01T10:00:00.000Z"),
+  );
   await Promise.resolve();
-  const second = persistence.restoreRecoveryCopy(copy("2026-09-02T10:00:00.000Z"));
+  const second = persistence.restoreRecoveryCopy(
+    copy("2026-09-02T10:00:00.000Z"),
+  );
   firstWrite.resolve();
 
   assert.deepEqual(await first, {

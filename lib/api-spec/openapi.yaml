@@ -302,6 +302,9 @@ paths:
       operationId: updateHousehold
       tags: [household]
       summary: Rename the current household
+      description: Owner/admin-only update of the authenticated active household name.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedHouseholdId"
       requestBody:
         required: true
         content:
@@ -323,6 +326,18 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only an owner/admin can rename the household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The expected household no longer matches the active household
           content:
             application/json:
               schema:
@@ -1754,6 +1769,7 @@ components:
         name:
           type: string
           minLength: 1
+          maxLength: 80
       required:
         - name
     JoinHouseholdInput:

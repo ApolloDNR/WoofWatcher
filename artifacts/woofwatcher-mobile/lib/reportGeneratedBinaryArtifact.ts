@@ -1,3 +1,5 @@
+import { WOOFWATCHER_REPORTS_DIRECTORY_NAME } from "./ownedLocalData.ts";
+
 export type GeneratedBinaryArtifactMimeType = "application/pdf" | "image/png";
 export type GeneratedBinaryArtifactEncoding = "base64";
 
@@ -51,7 +53,7 @@ export interface GeneratedBinaryArtifactShareContent {
   url?: string;
 }
 
-const REPORT_EXPORT_DIRECTORY_NAME = "WoofWatcherReports";
+const REPORT_EXPORT_DIRECTORY_NAME = WOOFWATCHER_REPORTS_DIRECTORY_NAME;
 const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const PDF_BOUNDARY =
   "Native share/reopen proof still required on iOS and Android; provider storage is not enabled by this local PDF.";

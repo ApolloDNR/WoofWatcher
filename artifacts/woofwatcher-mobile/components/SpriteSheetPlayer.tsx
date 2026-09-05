@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
   useReducedMotion,
@@ -41,25 +42,60 @@ export function SpriteSheetPlayer({
 }: Props) {
   const reduced = useReducedMotion();
   const frameProgress = useSharedValue(0);
-  const totalFrames = Math.max(1, Math.min(track.frameCount, (asset?.columns ?? 0) * (asset?.rows ?? 0)));
-  const durationMs = Math.max(160, Math.round((totalFrames / Math.max(1, track.fps)) * 1000));
+  const totalFrames = Math.max(
+    1,
+    Math.min(track.frameCount, (asset?.columns ?? 0) * (asset?.rows ?? 0)),
+  );
+  const durationMs = Math.max(
+    160,
+    Math.round((totalFrames / Math.max(1, track.fps)) * 1000),
+  );
+
+  // Asset or track changes start a new strip at frame zero. A temporary
+  // `playing=false` pause deliberately does not run this reset, so scrolling
+  // and tab focus changes never snap the dog back to its first pose.
+  useEffect(() => {
+    cancelAnimation(frameProgress);
+    frameProgress.value = 0;
+  }, [asset, frameProgress, totalFrames, track.key]);
 
   useEffect(() => {
-    frameProgress.value = 0;
-    if (!asset || !playing) return;
+    cancelAnimation(frameProgress);
+    if (!asset || !playing) {
+      return () => cancelAnimation(frameProgress);
+    }
     // Honor Reduce Motion: never run the perpetual sprite loop. Hold a single
     // static frame so the care twin still reads as present without continuous
     // motion. Brief one-shot tracks still resolve to their end pose.
     if (reduced) {
       if (!track.loop) frameProgress.value = totalFrames - 0.001;
-      return;
+      return () => cancelAnimation(frameProgress);
     }
 
-    const target = track.loop ? totalFrames : totalFrames - 0.001;
+    // Loop over a full strip from the current progress. Frame selection uses
+    // modulo below, so a resumed loop keeps the paused pose and still visits
+    // every frame instead of looping only the tail of the strip.
+    const target = track.loop
+      ? Number(frameProgress.value) + totalFrames
+      : totalFrames - 0.001;
     frameProgress.value = track.loop
-      ? withRepeat(withTiming(target, { duration: durationMs, easing: Easing.linear }), -1, false)
+      ? withRepeat(
+          withTiming(target, { duration: durationMs, easing: Easing.linear }),
+          -1,
+          false,
+        )
       : withTiming(target, { duration: durationMs, easing: Easing.linear });
-  }, [asset, durationMs, frameProgress, playing, totalFrames, track.loop, reduced]);
+    return () => cancelAnimation(frameProgress);
+  }, [
+    asset,
+    durationMs,
+    frameProgress,
+    playing,
+    totalFrames,
+    track.key,
+    track.loop,
+    reduced,
+  ]);
 
   const frameMetrics = useMemo(() => {
     if (!asset) return null;
@@ -78,7 +114,10 @@ export function SpriteSheetPlayer({
 
   const sheetStyle = useAnimatedStyle(() => {
     if (!frameMetrics) return {};
-    const index = Math.max(0, Math.min(totalFrames - 1, Math.floor(frameProgress.value)));
+    const rawIndex = Math.floor(frameProgress.value);
+    const index = track.loop
+      ? ((rawIndex % totalFrames) + totalFrames) % totalFrames
+      : Math.max(0, Math.min(totalFrames - 1, rawIndex));
     const column = index % frameMetrics.columns;
     const row = Math.floor(index / frameMetrics.columns);
 
@@ -88,7 +127,7 @@ export function SpriteSheetPlayer({
         { translateY: -row * frameMetrics.frameHeight },
       ],
     };
-  }, [frameMetrics, totalFrames]);
+  }, [frameMetrics, totalFrames, track.loop]);
 
   if (!asset || !frameMetrics) return null;
 

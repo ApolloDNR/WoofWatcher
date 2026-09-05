@@ -23,10 +23,22 @@ import { LinkPreviewContextProvider } from "expo-router/build/link/preview/LinkP
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useLayoutEffect, useMemo } from "react";
-import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  useColorScheme,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider, KeyboardToolbar } from "react-native-keyboard-controller";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  KeyboardProvider,
+  KeyboardToolbar,
+} from "react-native-keyboard-controller";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -35,6 +47,7 @@ import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
 import { AppViewportProvider } from "@/context/AppViewportContext";
+import { PrivacyEraseFlowProvider } from "@/context/PrivacyEraseFlowContext";
 import { useColors } from "@/hooks/useColors";
 import {
   clerkProxyUrl,
@@ -69,8 +82,9 @@ function PrincipalScopedQueryProvider({
         : isSignedIn === true && normalizedUserId
           ? `account:${normalizedUserId}`
           : null;
-  const [transportPrincipalKey, setTransportPrincipalKey] =
-    React.useState<string | null>(null);
+  const [transportPrincipalKey, setTransportPrincipalKey] = React.useState<
+    string | null
+  >(null);
   // A separate client is the cache boundary. Account B can never render a
   // stale `/me` or household response retained by account A while offline.
   const principalQueryClient = useMemo(
@@ -247,7 +261,11 @@ function RootLayoutNav() {
 type WebViewport = { width: number; height: number };
 
 function getWebViewport(): WebViewport | null {
-  const viewport = (globalThis as unknown as { visualViewport?: { width: number; height: number } }).visualViewport;
+  const viewport = (
+    globalThis as unknown as {
+      visualViewport?: { width: number; height: number };
+    }
+  ).visualViewport;
   if (!viewport) return null;
   return { width: viewport.width, height: viewport.height };
 }
@@ -256,13 +274,15 @@ function useWebViewportClamp() {
   useEffect(() => {
     if (Platform.OS !== "web") return;
 
-    const webDocument = (globalThis as unknown as {
-      document?: {
-        body?: HTMLElement;
-        documentElement?: HTMLElement;
-        getElementById?: (id: string) => HTMLElement | null;
-      };
-    }).document;
+    const webDocument = (
+      globalThis as unknown as {
+        document?: {
+          body?: HTMLElement;
+          documentElement?: HTMLElement;
+          getElementById?: (id: string) => HTMLElement | null;
+        };
+      }
+    ).document;
 
     const nodes = [
       webDocument?.documentElement,
@@ -307,15 +327,19 @@ function AppFrame() {
   if (Platform.OS !== "web") return <RootLayoutNav />;
 
   const { width, height } = useWindowDimensions();
-  const [webViewport, setWebViewport] = React.useState<WebViewport | null>(() => getWebViewport());
+  const [webViewport, setWebViewport] = React.useState<WebViewport | null>(() =>
+    getWebViewport(),
+  );
 
   useEffect(() => {
-    const viewport = (globalThis as unknown as {
-      visualViewport?: {
-        addEventListener: (type: "resize", listener: () => void) => void;
-        removeEventListener: (type: "resize", listener: () => void) => void;
-      };
-    }).visualViewport;
+    const viewport = (
+      globalThis as unknown as {
+        visualViewport?: {
+          addEventListener: (type: "resize", listener: () => void) => void;
+          removeEventListener: (type: "resize", listener: () => void) => void;
+        };
+      }
+    ).visualViewport;
     if (!viewport) return;
 
     const syncViewport = () => setWebViewport(getWebViewport());
@@ -430,15 +454,23 @@ export default function RootLayout() {
               {/* Follows the shared walk lifecycle: starts route capture when
                   any surface opens a walk session, persists it on finish. */}
               <WalkRouteRecorderBridge />
-              <AvatarProvider>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  <KeyboardProvider>
-                    <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
-                    <AppFrame />
-                    <IosKeyboardToolbar />
-                  </KeyboardProvider>
-                </GestureHandlerRootView>
-              </AvatarProvider>
+              <PrivacyEraseFlowProvider>
+                <AvatarProvider>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <KeyboardProvider>
+                      <StatusBar
+                        style={
+                          Platform.OS !== "web" && scheme === "dark"
+                            ? "light"
+                            : "dark"
+                        }
+                      />
+                      <AppFrame />
+                      <IosKeyboardToolbar />
+                    </KeyboardProvider>
+                  </GestureHandlerRootView>
+                </AvatarProvider>
+              </PrivacyEraseFlowProvider>
             </CareProvider>
           </PrincipalScopedQueryProvider>
         </ErrorBoundary>

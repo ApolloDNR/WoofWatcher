@@ -1,4 +1,7 @@
-export const DURABLE_ATTACHMENT_DIRECTORY_NAME = "woofwatcher-attachments";
+import { WOOFWATCHER_ATTACHMENTS_DIRECTORY_NAME } from "./ownedLocalData.ts";
+
+export const DURABLE_ATTACHMENT_DIRECTORY_NAME =
+  WOOFWATCHER_ATTACHMENTS_DIRECTORY_NAME;
 
 export interface DurablePickedMediaFileSystem {
   documentDirectory: string | null;
@@ -56,7 +59,9 @@ function extensionFromName(value: string | null | undefined): string | null {
   return match?.[1]?.toLowerCase() ?? null;
 }
 
-function extensionFromMimeType(value: string | null | undefined): string | null {
+function extensionFromMimeType(
+  value: string | null | undefined,
+): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();
   const knownExtensions: Record<string, string> = {
@@ -70,7 +75,9 @@ function extensionFromMimeType(value: string | null | undefined): string | null 
   return knownExtensions[normalized] ?? null;
 }
 
-function resolvePickedMediaExtension(options: PersistPickedMediaOptions): string {
+function resolvePickedMediaExtension(
+  options: PersistPickedMediaOptions,
+): string {
   return (
     extensionFromName(options.fileName) ??
     extensionFromMimeType(options.mimeType) ??
@@ -114,7 +121,10 @@ export async function persistPickedMedia(
   }
 
   const directoryUri = `${durableRoot}/${DURABLE_ATTACHMENT_DIRECTORY_NAME}/`;
-  const filePrefix = cleanToken(options.filePrefix ?? "attachment", "attachment");
+  const filePrefix = cleanToken(
+    options.filePrefix ?? "attachment",
+    "attachment",
+  );
   const timestamp = Math.max(0, Math.trunc((options.now ?? Date.now)()));
   const randomToken = cleanToken(
     (options.randomToken ?? defaultRandomToken)(),

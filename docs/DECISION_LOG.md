@@ -1,11 +1,21 @@
 # WoofWatcher Decision Log
 
+## 2026-09-04 — Mutable state requires current durable and scope evidence
+
+- Decision: Care and Avatar expose explicit hydration/retry states. Avatar persistence is keyed to the exact owner, verified household, and dog; migrations reserve legacy data before copying; failed erase retains a claim tombstone; and reads, recovery, writes, and erases reject stale sessions.
+- Decision: Setup rebases same-dog provider updates per field, requires owner review for true conflicts, and recognizes only a semantically identical provider echo after Care acceptance. Care must persist durably before the optional Avatar stage, while every result and retry remains fenced to the accepted transaction.
+- Decision: Avatar Studio owns a synchronous versioned draft. More editors capture hydration readiness plus the Care revision, active dog, provider household, and editor-specific source fingerprint; a mismatch closes the editor without saving. Household rename carries its captured household id through the provider request, and the server rejects a mismatch before mutation.
+- Decision: Privacy reports deletion only after every local participant settles. Modal layout wrappers remain outside accessibility grouping, actionable children remain named, pending controls remain locked, and backdrops dismiss rather than commit.
+- Reason: Temporary defaults, stale provider echoes, same-frame edits, detached storage promises, scope changes, and grouped or ambiguous modal actions can create false owner confidence or overwrite a different dog or household.
+- Evidence: Red-first More scope and provider-bound rename coverage passes `4/4`; server household-scope coverage passes `5/5`; the mobile matrix passes `880/880`; the full focused matrix passes `1149/1149`; mobile and API-server TypeScript are green; PixelLab passes `150/150`; exact-source Expo export completes at `1,934` modules / `258` assets; and all `13` runtime routes pass. Dependency-complete CI remains pending.
+- Boundary: This establishes local persistence and source/build semantics, not provider acknowledgement or an atomic Care-plus-Avatar transaction. Real slow-device, VoiceOver/TalkBack, configured-provider, native screenshot, store, launch, and Apollo approval gates remain open.
+
 ## 2026-09-04 — Visible Auth and Setup captions are not programmatic input names
 
 - Decision: Every shared Auth and Setup field applies `accessibilityLabel={accessibilityLabel ?? label}` at the `TextInput` boundary, while callers may override duplicate visual captions with a unique spoken name.
 - Applied: Provider sign-in, sign-up, and verification-code fields inherit their visible labels; Setup uses explicit `Dog name` and `Caregiver name` overrides and covers every remaining field through the shared fallback.
 - Reason: A sibling `Text` caption does not guarantee that VoiceOver or TalkBack names the input. The previous broad readiness assertion was also a false positive because it matched a button's `accessibilityLabel={label}` instead of the Auth field.
-- Evidence: The scoped regression failed red and passes green `1/1`; mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; the full focused matrix passes `1058/1058`; mobile TypeScript and diff validation are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass. Dependency-complete `WoofWatcher Verify` run `33906155259`, job `101131461214`, passed exact implementation/docs commit `b919cc04` end to end.
+- Evidence: The scoped regression failed red and passes green `1/1`; mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; the full focused matrix passes `1058/1058`; mobile TypeScript and diff validation are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass. Dependency-complete `WoofWatcher Verify` [run `33906155259`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33906155259), job `101131461214`, passed exact implementation commit `b919cc0470e2b69a4e78728b688426f1c3bb089c` in `2m15s`; checkout, pnpm/Node setup, dependency install, generated clients, beta doctor, focused tests, workspace typecheck and CI-safe builds, post steps, and completion were all green.
 - Boundary: Programmatic source labels do not establish real screen-reader behavior, Clerk/provider authentication, native screenshot approval, store readiness, public launch, or Apollo approval.
 
 ## 2026-09-04 — Saved Care Passes and share results are separate evidence
@@ -856,9 +866,9 @@ proof stranded while the older manifest checks still pass.
 Consequences:
 
 - `scripts/mobile-beta-doctor.mjs` reports `auth setup proof evidence
-  propagation is source-backed` for the saved Auth/Setup evidence path.
+propagation is source-backed` for the saved Auth/Setup evidence path.
 - `scripts/mobile-beta-doctor.mjs` reports `payments proof evidence propagation
-  is source-backed` for the saved Payments evidence path.
+is source-backed` for the saved Payments evidence path.
 - The checks preserve truth boundaries: they prove source wiring only, not real
   Clerk configuration, native screenshots, billing setup, receipts, checkout,
   public launch, or Apollo sign-off.
@@ -3410,6 +3420,7 @@ review, or Apollo visual approval.
   dark contrast without creating a separate route-local color.
 - Boundary: this is source-backed contrast hardening. It does not replace
   route-named iOS/Android dark-mode screenshots or native accessibility review.
+
 ## 2026-07-25 - Keep fixed-light Avatar Studio aura labels dark
 
 Selected Avatar Studio mood previews use light translucent art-direction auras in both themes, so their selected labels use `brandNavy` rather than the adaptive foreground token.
@@ -3447,6 +3458,7 @@ art unless its edge is explicitly bounded.
 Boundary: This is source-backed contrast hardening. It does not replace
 route-named iOS/Android dark-mode screenshots, native accessibility traversal,
 or Apollo visual approval.
+
 # 2026-07-28 - Keep fixed-light Auth HUD indicator constant
 
 - Decision: the Auth gateway stage HUD keeps its ivory art surface, while its status dot uses constant `brandNavy` rather than the adaptive `sage` theme token.
@@ -3482,6 +3494,7 @@ or Apollo visual approval.
   credential plate.
 - Boundary: this is source-level contrast hardening, not native Records file
   proof, device accessibility review, or Apollo visual approval.
+
 ## 2026-07-28 - Keep fixed-light Auth proof status ink constant
 
 - Decision: keep the Auth/Setup proof manifest ivory in both themes and render
@@ -3543,6 +3556,7 @@ or Apollo visual approval.
   unnecessarily weakens that small line on a fixed-light surface.
 - Boundary: this is source-level contrast hardening, not native Records
   screenshots, file/share proof, accessibility review, or Apollo sign-off.
+
 # 2026-07-30 - Keep the Plus launch-checklist CTA on a fixed contrast pair
 
 - Decision: render the fixed-ivory Plus console's launch-checklist action with
@@ -3552,6 +3566,7 @@ or Apollo visual approval.
   semantic success signal.
 - Boundary: this improves source-level contrast only. It does not enable
   checkout, configure payments, prove native accessibility, or approve launch.
+
 # 2026-07-30 - Shared Phoenix portraits are decorative
 
 Decision: keep the canonical `PetPortrait` image out of the accessibility tree.
@@ -3565,6 +3580,7 @@ Decision: keep `BoardMedallion` images out of the accessibility tree. These
 crafted care icons appear within controls and cards whose surrounding content
 already names the action or metric, so a second raw image stop adds noise
 without meaning. The parent remains responsible for the accessible label.
+
 ## 2026-07-31 - Keep the Auth stage dog decorative
 
 Decision: mark the Auth gateway's Phoenix stage image `accessible={false}`.
@@ -3572,6 +3588,7 @@ The surrounding gateway, speech bubble, care-start copy, proof action, and
 form already carry the meaningful account/setup experience; exposing the raw
 sprite risks an unlabeled duplicate stop. Native traversal and provider
 readiness are not inferred from this source guard.
+
 # 2026-07-31 - Treat the Home room backdrop as decorative
 
 The full-bleed room/park art establishes atmosphere but does not add care information beyond the labeled Home console and care-twin controls. Its Image is excluded from accessibility traversal to avoid an unlabeled duplicate stop; native traversal remains required before release approval.
@@ -3589,6 +3606,7 @@ Today's Story, recent-adventure, and memory-photo artwork repeats information
 already carried by labeled parent navigation controls. Exclude the child Image
 from traversal while preserving the parent's real title/date/visit context.
 Native traversal remains required.
+
 # 2026-08-01 Keep walk-journal photos subordinate to story actions
 
 Walk-journal cards announce their real date and story text as one actionable control. Their child proof photos are decorative for assistive technology because exposing both creates a duplicate stop without adding care context.
@@ -3637,6 +3655,7 @@ copy never invents an identity.
 Health Review Packet prompts must use the packet's active `dogName` input.
 Default Phoenix identity is valid only before profile personalization; it must
 not leak into owner-reviewed caregiver or vet copy for a renamed dog.
+
 ## 2026-08-03: Care-twin interaction verbs follow Dog Profile
 
 Decision: direct pet/rest verbs in the shared living room use the active dog
@@ -3688,6 +3707,7 @@ The live room's pet control is a meaningful owner-facing accessibility action, s
 ## 2026-08-05 WoofGuide provider context follows Dog Profile
 
 The structured care snapshot is part of the owner-facing AI boundary even while live AI is disabled. Its dog name must use canonical Dog Profile identity before any future provider request so whitespace and the `My Dog` placeholder cannot reappear in summaries or handoffs. This does not enable live AI, automatic writes, or veterinary advice.
+
 ## 2026-08-05: Household rename guidance follows Dog Profile
 
 Household naming suggestions are owner-facing shared-care identity, so More must build the rename placeholder from the canonical active dog name. Renamed dogs receive `The Luna Pack`; blank and `My Dog` profiles retain the intentional `The Phoenix Pack` starter suggestion. This does not create, rename, or sync a provider-backed household.
@@ -3722,6 +3742,7 @@ Default creation and cache normalization must use `resolvePetName`, preventing
 blank or `My Dog` starter values from diverging from the intentional Phoenix
 display identity. Internal Phoenix asset, template, and emote-pack names stay
 unchanged.
+
 ## 2026-08-07: Home mission fallbacks follow Dog Profile identity
 
 Home mission fallback titles are owner-facing care-loop identity and must use
@@ -3758,6 +3779,7 @@ handoff boundaries and must resolve Dog Profile identity independently of their
 screen caller. Blank and `My Dog` starter profiles read as Phoenix; renamed dogs
 retain their trimmed saved name. Health derivation and non-diagnostic safety
 boundaries remain unchanged.
+
 ## 2026-08-08: Dog Profile saves enforce canonical identity
 
 The More profile editor now resolves the entered dog name before persisting
@@ -3780,11 +3802,13 @@ apply `resolvePetName` to both imported profile identity fields. A legacy blank
 or `My Dog` profile therefore retains Phoenix, while a renamed dog retains its
 trimmed name. Demo filtering, private-log visibility, and the preserved legacy
 backup key remain unchanged.
+
 ## 2026-08-12 - Canonicalize identity inside PWA backend seed drafts
 
 - Decision: Treat `buildBackendSeedDraft` as a durable provider-bound identity boundary and resolve Dog Profile identity there rather than trusting normalized UI callers.
 - Reason: Review packages can outlive the current screen and must never encode the starter `My Dog` placeholder as a real household or pet identity.
 - Boundary: The builder remains review-only and performs no external writes or sync activation.
+
 ## 2026-08-12: Scoped PWA Care Passes canonicalize Dog Profile identity
 
 Decision: `buildScopedCarePass` resolves the exported dog identity at the
@@ -3803,6 +3827,7 @@ return `My Dog` or describe a renamed dog as Phoenix.
 
 Boundary: This changes local, owner-reviewed presentation only. It does not
 enable live AI, automatic actions, provider delivery, diagnosis, or launch.
+
 ### 2026-08-13: PWA Notification Copy Resolves Dog Profile Identity
 
 Decision: The shared Notification Center owns Dog Profile canonicalization for local guidance and notification titles rather than trusting callers or using a Phoenix literal.
@@ -3812,15 +3837,18 @@ Reason: Local reminders are household-visible care guidance. A renamed dog must 
 Consequences: Notification copy resolves identity at the shared builder boundary. Hosted push, native delivery, provider setup, privacy/legal approval, store review, and Apollo sign-off remain gated.
 
 Owner: Codex.
+
 ## 2026-08-14 - Durable report privacy copy follows Dog Profile identity
 
 - Decision: Resolve identity inside `buildReportArtifact` and use that canonical value in every owner/recipient-visible artifact field, including the privacy boundary.
 - Boundary: This does not prove file download, native sharing, recipient review, provider storage, veterinary acceptance, or launch approval.
+
 # 2026-08-31 - Provide iOS keyboard completion globally
 
 - Decision: Mount the keyboard-controller toolbar at the native app root on iOS and reserve its height in shared keyboard-aware forms.
 - Why: Number and decimal keyboards can omit a native return key; one safe-area-aware Done path prevents owners from becoming trapped while preserving Android and web behavior.
 - Boundary: Device focus behavior, VoiceOver, screenshots, store review, and Apollo approval still require real-iPhone evidence.
+
 ## 2026-08-31 - Keep Setup inside the shared keyboard-aware form contract
 
 - Decision: Replace Setup's plain form `ScrollView` with `KeyboardAwareScrollViewCompat` so native focus tracking can keep every onboarding field and the final actions above compact keyboards.
@@ -3831,9 +3859,11 @@ Owner: Codex.
 - Decision: Wrap the complete AuthShell gateway and provider form in `KeyboardAwareScrollViewCompat` instead of a route-local plain ScrollView.
 - Why: Compact native keyboards must not strand sign-in/sign-up fields or submit actions, and auth should share Setup's iOS toolbar clearance, interactive dismissal, Android drag dismissal, and web fallback behavior.
 - Boundary: Source/tests do not prove real-device focus order, VoiceOver/TalkBack behavior, Clerk configuration, store readiness, or launch approval.
+
 # 2026-08-31 — Calendar editors use explicit keyboard flows
 
 Plans routine and event sheets treat visible captions as native accessibility labels and define ordered Next/Done actions. Event date remains a number-pad field but explicitly advances to event time; final note/location actions dismiss the keyboard. Device and assistive-technology proof remains a separate release gate.
+
 # 2026-09-01 — Training Quick Log uses a deterministic two-field keyboard path
 
 Decision: Treat skill/cue as the first field and next practice as the final field. The first advances focus; the final multiline field uses Done and dismisses the keyboard. Keep real-device and assistive-technology proof separate from source verification.
@@ -3849,6 +3879,7 @@ Decision: Treat coat/skin condition, products used, and next-due date as one ord
 # 2026-09-01 — Meal portion fields follow outcome-aware keyboard order
 
 Decision: Expected portion advances to eaten amount only when eaten amount is editable. Skipped, served, and grazing outcomes dismiss instead of targeting a disabled field. Both care facts retain explicit accessibility labels, and eaten amount remains the final Done action.
+
 # 2026-09-01 Alone Time departure input contract
 
 - Decision: treat departure context, recovery minutes, and calming support as one ordered keyboard/accessibility flow, ending with explicit dismissal.
@@ -3857,6 +3888,7 @@ Decision: Expected portion advances to eaten amount only when eaten amount is ed
 # 2026-09-01 — Walk Quick Log follows the care handoff order
 
 Decision: Treat route, distance, dog interactions, and social outcome as one ordered walk form. Each field advances deterministically and the final social outcome dismisses the keyboard. Keep real-device and assistive-technology proof separate from source verification.
+
 # 2026-09-03 — Pack recovery imports are non-destructive evidence
 
 Pack recovery-copy import stores only the first preserved corrupt payload. It never applies that raw payload to active lists. This keeps support evidence portable without turning malformed historical data into a silent restore path.
@@ -3880,6 +3912,20 @@ Pack places generated recovery JSON in the visible field before sharing and repo
 
 - Decision: Route the owner-triggered clear action through a named handler that clears mounted private JSON and announces completion. Automatic blur/background cleanup stays silent to avoid unsolicited screen-reader chatter.
 - Boundary: The announcement confirms only current-screen state; it does not claim deletion of the durable backup or system clipboard.
+
 ## 2026-09-04 - Fence Pack recovery transfers at the event boundary
 
 Decision: Use a synchronous ref as the authority for recovery export/import admission and mirrored React state for owner-visible disabled/working feedback. State alone is not the lock because two taps can arrive before React commits a render.
+
+## 2026-09-04 - Make primary navigation and Home density explicit
+
+- Decision: Use a fixed navy Home / Log / Plans / Health / More tab contract. Keep Pack, Story, and Records routable through in-app links and deep links instead of crowding primary navigation.
+- Decision: Keep the Phoenix room compact and in the Home flow; order Quick Log and Next Up before Care Sense and collapse secondary modules until requested.
+- Visual rule: Use the shared 8px card radius and restrained shadows. Remove the unused fixed-hero utility rather than retaining parallel layout paths.
+- Performance rule: Pause scene timers and animation loops when Home is inactive or scrolling, exercise the safe live/tap animation path on web, and retain a static reduced-motion fallback.
+- Integrity rule: Keep Pack legacy-wipe tombstoning effective across partial failures, and normalize household names by trimming them and enforcing an `80`-character maximum.
+- Evidence: The latest exact-source Expo export completed `1,935` modules / `254` assets / `262` files. The final focused run passed `1,221/1,221` tests across `146` files with zero fail/cancel/skip/todo in `12.456s`; runtime passed `13/13`, PixelLab passed `ok=150 missing=0 invalid=0`, live preview passed `19/19`, and mobile/API TypeScript plus diff validation passed.
+- Interaction evidence: Home / Log / Plans / Health / More and Quick Log save -> History -> detail -> delete passed in browser. The confirmation now layers above the detail sheet and the tab-bar bottom gutter stays visually clean.
+- Rebuilt-preview evidence: The browser proves that Home fills its runtime phone frame end to end; the automated layout contract separately covers the `390x844` baseline. Top reset is gated on route blur, the room background stays edge-locked while Phoenix moves, the live/tap animation path runs, and the Next Up overflow action clears floating navigation with a `48pt` target. This does not prove native iOS/device FPS.
+- Visual evidence: A direct side-by-side comparison of the latest Home output with the canonical light reference board passed for palette, typography, pixel art, spacing, hierarchy, and navigation. The `1,396` elements / `2,948px` to `313` / `1,240px` Home change remains diagnostic only.
+- Boundary: Doctor source checks pass, but local status remains `BLOCKED` solely on pnpm `11.19.0` versus pinned `10.24.0`. This Windows host lacks `xcrun` and `simctl`; native iOS/VoiceOver/device performance, provider credentials, signing/store review, and Apollo approval remain open.

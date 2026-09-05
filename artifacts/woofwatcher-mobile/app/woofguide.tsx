@@ -1167,12 +1167,13 @@ export default function WoofGuideScreen() {
         onRequestClose={() => setReviewAction(null)}
       >
         <Pressable
+          accessible={false}
           style={s.reviewBackdrop}
           onPress={() => setReviewAction(null)}
-          accessibilityRole="button"
-          accessibilityLabel="Close owner review"
         >
           <Pressable
+            accessible={false}
+            accessibilityViewIsModal
             style={[
               s.reviewSheet,
               {

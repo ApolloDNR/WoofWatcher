@@ -1,6 +1,9 @@
 import { CARE_ENTRY_SYNC_REVISION_KEY } from "@workspace/care-domain";
 
-export { createSerializedCareSyncWriter } from "./serializedCareSyncWriter.ts";
+export {
+  createSerializedCareSyncWriter,
+  getOrCreateSharedCareSyncWriter,
+} from "./serializedCareSyncWriter.ts";
 export type { SerializedCareSyncWriter } from "./serializedCareSyncWriter.ts";
 
 export type EntrySyncStatus = "local" | "pending" | "synced" | "failed";
@@ -890,10 +893,13 @@ export async function clearDiscardedServerEntryDurably({
 export function selectWoofWatcherKeysForOwnerWipe(
   keys: readonly string[],
   deletionLedgerKeyPrefix: string,
+  preservedExactKeys: readonly string[] = [],
 ): string[] {
+  const preserved = new Set(preservedExactKeys);
   return keys.filter(
     (key) =>
       key.startsWith("woofwatcher") &&
+      !preserved.has(key) &&
       key !== deletionLedgerKeyPrefix &&
       !key.startsWith(`${deletionLedgerKeyPrefix}.account.`),
   );

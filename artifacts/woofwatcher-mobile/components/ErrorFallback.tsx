@@ -84,6 +84,8 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
         <Pressable
           onPress={handleRestart}
+          accessibilityRole="button"
+          accessibilityLabel="Try again after app error"
           style={({ pressed }) => [
             styles.button,
             {
@@ -111,8 +113,10 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           transparent={true}
           onRequestClose={() => setIsModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
+          <View accessible={false} style={styles.modalOverlay}>
             <View
+              accessible={false}
+              accessibilityViewIsModal
               style={[
                 styles.modalContainer,
                 { backgroundColor: colors.background },

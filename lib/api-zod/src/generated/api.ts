@@ -213,8 +213,20 @@ export const UpdateMeResponse = zod.object({
  * @summary Rename the current household
  */
 
+export const UpdateHouseholdHeader = zod.object({
+  "x-woofwatcher-household-id": zod
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "Backward-compatible concurrency fence. Current clients send the exact household id from their latest identity-matched \/me response; the server returns 409 if it no longer matches the active household.",
+    ),
+});
+
+export const updateHouseholdBodyNameMax = 80;
+
 export const UpdateHouseholdBody = zod.object({
-  name: zod.string().min(1),
+  name: zod.string().min(1).max(updateHouseholdBodyNameMax),
 });
 
 export const UpdateHouseholdResponse = zod.object({

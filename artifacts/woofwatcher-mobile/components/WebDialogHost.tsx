@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 import {
@@ -50,62 +50,84 @@ export function WebDialogHost() {
   if (Platform.OS !== "web" || !current) return null;
 
   const confirmTone = current.destructive ? colors.rose : colors.primary;
+  const dismiss = () =>
+    closeWith(current.cancelLabel != null ? current.onCancel : current.onConfirm);
 
   return (
-    <View
-      style={[s.backdrop, { backgroundColor: "rgba(9,17,32,0.55)" }]}
-      accessibilityViewIsModal
-      testID="web-dialog-host"
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      onRequestClose={dismiss}
     >
       <View
-        accessibilityRole="alert"
-        style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+        accessible={false}
+        style={[s.backdrop, { backgroundColor: "rgba(9,17,32,0.55)" }]}
+        accessibilityViewIsModal
+        testID="web-dialog-host"
       >
-        <Text style={[s.title, { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" }]}>
-          {current.title}
-        </Text>
-        <Text style={[s.message, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-          {current.message}
-        </Text>
-        <View style={s.buttonRow}>
-          {current.cancelLabel != null ? (
+        <View
+          accessibilityRole="alert"
+          style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <Text
+            style={[s.title, { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" }]}
+          >
+            {current.title}
+          </Text>
+          <Text
+            style={[s.message, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+          >
+            {current.message}
+          </Text>
+          <View style={s.buttonRow}>
+            {current.cancelLabel != null ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={current.cancelLabel}
+                onPress={() => closeWith(current.onCancel)}
+                style={({ pressed }) => [
+                  s.button,
+                  {
+                    backgroundColor: pressed ? colors.muted : colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[s.buttonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                >
+                  {current.cancelLabel}
+                </Text>
+              </Pressable>
+            ) : null}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={current.cancelLabel}
-              onPress={() => closeWith(current.onCancel)}
+              accessibilityLabel={current.confirmLabel}
+              onPress={() => closeWith(current.onConfirm)}
               style={({ pressed }) => [
                 s.button,
                 {
-                  backgroundColor: pressed ? colors.muted : colors.background,
-                  borderColor: colors.border,
+                  backgroundColor: confirmTone,
+                  borderColor: confirmTone,
+                  opacity: pressed ? 0.85 : 1,
                 },
               ]}
             >
-              <Text style={[s.buttonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                {current.cancelLabel}
+              <Text
+                style={[
+                  s.buttonText,
+                  { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                {current.confirmLabel}
               </Text>
             </Pressable>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={current.confirmLabel}
-            onPress={() => closeWith(current.onConfirm)}
-            style={({ pressed }) => [
-              s.button,
-              {
-                backgroundColor: confirmTone,
-                borderColor: confirmTone,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Text style={[s.buttonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-              {current.confirmLabel}
-            </Text>
-          </Pressable>
+          </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 

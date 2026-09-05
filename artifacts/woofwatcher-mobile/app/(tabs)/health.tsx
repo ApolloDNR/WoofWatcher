@@ -616,8 +616,6 @@ export default function HealthScreen() {
           kicker="Health"
           title="Health Watch"
           subtitle="Owner notes. No diagnosis."
-          back
-          onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           actionIcon="folder-open-outline"
           actionLabel="Open Records from Health Watch"
           onAction={() => router.push("/records")}

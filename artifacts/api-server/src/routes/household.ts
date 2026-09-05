@@ -13,7 +13,6 @@ import {
   GetMeResponse,
   JoinHouseholdResponse,
   UpdateMeBody,
-  UpdateHouseholdBody,
   JoinHouseholdBody,
   UpdateHouseholdMemberParams,
   UpdateHouseholdMemberBody,
@@ -35,6 +34,7 @@ import {
   ListHouseholdSharingCleanupResponse,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
+import { rejectMismatchedHouseholdRequestScope } from "../lib/household-request-scope";
 import {
   ensureUserAndHousehold,
   buildMe,
@@ -68,6 +68,7 @@ import {
   buildHouseholdSharingCleanupCandidates,
   normalizeHouseholdSharingCleanupQuery,
 } from "../lib/household-sharing-cleanup";
+import { createHouseholdUpdateRouter } from "./household-update-router.ts";
 
 const router: IRouter = Router();
 
@@ -125,20 +126,22 @@ router.patch("/me", requireAuth, async (req, res): Promise<void> => {
   res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
 });
 
-router.patch("/household", requireAuth, async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  const parsed = UpdateHouseholdBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const { householdId } = await ensureUserAndHousehold(userId);
-  await db
-    .update(householdsTable)
-    .set({ name: parsed.data.name })
-    .where(eq(householdsTable.id, householdId));
-  res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
-});
+router.use(
+  createHouseholdUpdateRouter({
+    requireAuth,
+    getUserId,
+    ensureUserAndHousehold,
+    getHouseholdMemberAuthz,
+    rejectMismatchedHouseholdRequestScope,
+    async updateHouseholdName(householdId, name) {
+      await db
+        .update(householdsTable)
+        .set({ name })
+        .where(eq(householdsTable.id, householdId));
+    },
+    buildMe,
+  }),
+);
 
 router.get("/household/invitations", requireAuth, async (req, res): Promise<void> => {
   const userId = getUserId(req);

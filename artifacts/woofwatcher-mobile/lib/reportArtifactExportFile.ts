@@ -1,4 +1,6 @@
-export const REPORT_EXPORT_DIRECTORY_NAME = "WoofWatcherReports";
+import { WOOFWATCHER_REPORTS_DIRECTORY_NAME } from "./ownedLocalData.ts";
+
+export const REPORT_EXPORT_DIRECTORY_NAME = WOOFWATCHER_REPORTS_DIRECTORY_NAME;
 export type ReportArtifactExportMimeType = "text/html" | "image/svg+xml";
 export type RecordsLocalFileHandoffProofStatus = "blocked" | "ready-for-review";
 

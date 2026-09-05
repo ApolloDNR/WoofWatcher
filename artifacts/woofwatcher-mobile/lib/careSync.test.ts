@@ -2018,16 +2018,18 @@ test("owner wipe preserves opaque cleanup ids until final remote deletion remove
   assert.deepEqual(writes, [["server_orphan", "temp_cancelled"], null]);
 });
 
-test("owner clear removes every data-bearing WoofWatcher key except the remote cleanup ledger", () => {
+test("owner clear preserves only cleanup intent and a failed-avatar-erase tombstone", () => {
   assert.deepEqual(
     selectWoofWatcherKeysForOwnerWipe(
       [
         "woofwatcher.v2.state",
         "woofwatcher.avatar",
+        "woofwatcher.avatarLegacyV1.localClaim",
         "woofwatcher.v2.discarded-server-entry-ids",
         "unrelated.app.state",
       ],
       "woofwatcher.v2.discarded-server-entry-ids",
+      ["woofwatcher.avatarLegacyV1.localClaim"],
     ),
     ["woofwatcher.v2.state", "woofwatcher.avatar"],
   );

@@ -228,14 +228,21 @@ test("registers the critical mobile routes and tabs", () => {
     );
   }
 
-  for (const tab of ["Log", "Plan", "Today", "Pack", "Story"]) {
+  const visibleTabs = [
+    { route: "index", title: "Home" },
+    { route: "log", title: "Log" },
+    { route: "calendar", title: "Plans" },
+    { route: "health", title: "Health" },
+    { route: "more", title: "More" },
+  ];
+  for (const { title } of visibleTabs) {
     assert.match(
       tabLayout,
-      new RegExp(`title: "${tab}"`),
-      `${tab} tab should be visible`,
+      new RegExp(`title: "${title}"`),
+      `${title} tab should be visible`,
     );
   }
-  for (const tabRoute of ["index", "log", "calendar", "pack", "story"]) {
+  for (const { route: tabRoute } of visibleTabs) {
     assert.match(
       tabLayout,
       new RegExp(`name="${tabRoute}"`),
@@ -246,11 +253,11 @@ test("registers the critical mobile routes and tabs", () => {
       `${tabRoute} tab route file should exist`,
     );
   }
-  for (const hiddenRoute of ["records", "health", "more"]) {
+  for (const hiddenRoute of ["pack", "story", "records"]) {
     assert.match(
       tabLayout,
       new RegExp(`name="${hiddenRoute}"`),
-      `${hiddenRoute} route should stay registered for Today/Pack links and deep links`,
+      `${hiddenRoute} route should stay registered for in-app links and deep links`,
     );
     assert.ok(
       existsSync(join(APP_DIR, "(tabs)", `${hiddenRoute}.tsx`)),
@@ -258,9 +265,23 @@ test("registers the critical mobile routes and tabs", () => {
     );
   }
   const hiddenTabCount = tabLayout.match(/href: null/g)?.length ?? 0;
-  assert.ok(
-    hiddenTabCount >= 3,
-    "health, more, and records should be hidden from the bottom tab bar with href: null",
+  assert.equal(
+    hiddenTabCount,
+    3,
+    "only pack, story, and records should be hidden from the bottom tab bar with href: null",
+  );
+  assert.doesNotMatch(
+    tabLayout,
+    /CenterToday|Quick log|router\.push\("\/fastlog"|tabBarButton/,
+  );
+
+  const visibleTabOffsets = visibleTabs.map(({ route }) =>
+    tabLayout.indexOf(`name="${route}"`),
+  );
+  assert.deepEqual(
+    visibleTabOffsets,
+    [...visibleTabOffsets].sort((a, b) => a - b),
+    "primary tabs should render in Home, Log, Plans, Health, More order",
   );
 });
 
@@ -752,7 +773,7 @@ test("keeps the fixed-light Quick Care status and HUD bounded in dark mode", () 
 
   assert.match(
     log,
-    /s\.logCommandChip,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F2",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33"\s*\}/,
+    /s\.logCommandChip,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F2",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33",?\s*\}/,
     "the fixed-light Quick Care status chip needs a constant dark boundary",
   );
   assert.match(
@@ -767,12 +788,12 @@ test("keeps the fixed-light Quick Care status and HUD bounded in dark mode", () 
   );
   assert.match(
     log,
-    /s\.logCommandDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F3",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33"\s*\}/,
+    /s\.logCommandDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F3",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33",?\s*\}/,
     "the fixed-light Quick Care HUD dock needs a constant dark boundary",
   );
   assert.match(
     log,
-    /s\.logCommandHudCell,\s*\{\s*backgroundColor:\s*colors\.cream,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    /s\.logCommandHudCell,\s*\{\s*backgroundColor:\s*colors\.cream,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22",?\s*\}/,
     "the fixed-light Quick Care HUD cells need constant dark boundaries",
   );
   assert.doesNotMatch(
@@ -787,12 +808,12 @@ test("keeps the fixed-light Records credential dock bounded in dark mode", () =>
 
   assert.match(
     records,
-    /s\.recordsCredentialDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F4",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33"\s*\}/,
+    /s\.recordsCredentialDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F4",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33",?\s*\}/,
     "the fixed-light Records credential dock needs a constant dark boundary",
   );
   assert.match(
     records,
-    /s\.recordsCredentialHudCell,\s*\{\s*backgroundColor:\s*colors\.cream,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    /s\.recordsCredentialHudCell,\s*\{\s*backgroundColor:\s*colors\.cream,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22",?\s*\}/,
     "the fixed-light Records credential HUD cells need constant dark boundaries",
   );
   assert.doesNotMatch(
@@ -845,7 +866,7 @@ test("keeps the fixed-light Records Dog ID metadata readable in dark mode", () =
 
   assert.match(
     records,
-    /s\.recordsCredentialIdMeta,\s*\{\s*color:\s*colors\.brandNavy,\s*fontFamily:\s*"Inter_600SemiBold"\s*\}/,
+    /s\.recordsCredentialIdMeta,\s*\{\s*color:\s*colors\.brandNavy,\s*fontFamily:\s*"Inter_600SemiBold",?\s*\}/,
     "breed and weight are handoff-critical Dog ID data and need full-strength fixed dark ink",
   );
   assert.doesNotMatch(
@@ -1136,7 +1157,7 @@ test("keeps the fixed-light More profile edit control visible in dark mode", () 
 
   assert.match(
     more,
-    /s\.profileEditBtn,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    /s\.profileEditBtn,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22",?\s*\}/,
     "the fixed-light More profile edit control needs a constant dark boundary",
   );
   assert.match(
@@ -1279,7 +1300,7 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   assert.match(more, /accessibilityLabel="Sign out of WoofWatcher"/);
 });
 
-test("keeps tabbed mobile routes clear of the floating paw nav", () => {
+test("keeps tabbed mobile routes clear of the floating primary nav", () => {
   const mobileLayout = readMobileLibFile("mobileLayout.ts");
   const tabs = readAppFile(join("(tabs)", "_layout.tsx"));
   const tabbedRoutes = [
@@ -1301,8 +1322,10 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
   assert.match(mobileLayout, /MIN_MOBILE_TOUCH_TARGET/);
   assert.match(mobileLayout, /MOBILE_INLINE_HIT_SLOP/);
   assert.match(tabs, /getFloatingTabChromeMetrics/);
-  assert.match(tabs, /centerFabBottom/);
+  assert.match(tabs, /tabBarBottom/);
+  assert.match(tabs, /tabBarHorizontalInset/);
   assert.match(tabs, /tabBarHeight/);
+  assert.doesNotMatch(tabs, /centerFabBottom/);
 
   for (const route of tabbedRoutes) {
     const source = readAppFile(join("(tabs)", `${route}.tsx`));
@@ -1805,7 +1828,7 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(boardPrimitives, /function buildQaReturnToCockpitRoute/);
   assert.match(
     boardPrimitives,
-    /qaSurface \? `\/care-twin-qa\?qaSurface=\$\{encodeURIComponent\(qaSurface\)\}` : "\/care-twin-qa"/,
+    /qaSurface\s*\?\s*`\/care-twin-qa\?qaSurface=\$\{encodeURIComponent\(qaSurface\)\}`\s*:\s*"\/care-twin-qa"/,
   );
   assert.match(
     boardPrimitives,
@@ -2098,7 +2121,16 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
     "utf8",
   );
 
-  assert.match(home, /LivingPhoenixRoom/);
+  assert.match(
+    home,
+    /testID="home-room-stage"[\s\S]*?<LivingPhoenixRoom[\s\S]*?petName=\{petName\}[\s\S]*?active=\{isHomeFocused && !homeScrolling\}/,
+    "the compact Home stage should keep the active dog and motion lifecycle wired into its living room",
+  );
+  assert.doesNotMatch(
+    home,
+    /lowMotion=\{Platform\.OS === "web"\}/,
+    "the web preview should exercise the same guarded motion path as the native Home room",
+  );
   assert.match(home, /avatarConfig=\{avatarConfig\}/);
   assert.match(home, /deriveAvatarMotion/);
   assert.match(home, /avatarMotion\.speech/);
@@ -2120,8 +2152,8 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
     /deriveCareTwinChoreography\(deriveCareTwinScene\(avatarMotion\)\)/,
   );
   assert.match(home, /avatarMotion\.line/);
-  assert.match(home, /buildHomeCareTwinAccessibilityLabel/);
-  assert.match(home, /heroStudioButton/);
+  assert.doesNotMatch(home, /buildHomeCareTwinAccessibilityLabel/);
+  assert.match(home, /s\.heroStudioChip/);
   assert.match(home, /const openAvatarStudio/);
   assert.match(home, /onPress=\{openAvatarStudio\}/);
   assert.match(home, /onLongPress=\{openAvatarStudio\}/);
@@ -2137,6 +2169,14 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(room, /energyBlocks/);
   assert.match(room, /statusReadouts\?\.slice\(0, 4\)/);
   assert.match(room, /buildCareTwinRoomAccessibilityLabel/);
+  assert.match(room, /active\?: boolean/);
+  assert.match(room, /lowMotion\?: boolean/);
+  assert.match(room, /AppState\.addEventListener\("change"/);
+  assert.match(room, /const sceneActive = active && appIsForeground/);
+  assert.match(
+    room,
+    /const continuousMotionEnabled = sceneActive && !lowMotion && !reduced/,
+  );
   assert.match(room, /deriveCareTwinScene/);
   assert.match(room, /plan\.tapVerb/);
   assert.match(room, /plan\.recommendedActionLabel/);
@@ -2162,7 +2202,8 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(room, /roomLayer\?\.source \?\? sceneSource/);
   assert.match(room, /ROOM_ZONES/);
   assert.match(room, /STATE_SCENES/);
-  assert.match(room, /sceneMotionStyle/);
+  assert.doesNotMatch(room, /sceneMotionStyle/);
+  assert.match(room, /scene: \{\s*\.\.\.StyleSheet\.absoluteFillObject/);
   assert.match(room, /dogFocusGlow/);
   assert.match(room, /speechBubble/);
   assert.match(room, /zoneX/);
@@ -2281,10 +2322,12 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   );
   assert.doesNotMatch(missionDeck, /\|\s*"\/log\?type=meal"/);
 
-  assert.match(firstScreenLayout, /mockup-accurate/);
-  assert.match(firstScreenLayout, /firstMissionPeekPx/);
+  assert.match(firstScreenLayout, /runtime-measured navigation clearance/);
   assert.match(firstScreenLayout, /heroAspectRatio/);
-  assert.match(firstScreenLayout, /presencePanelOverlap/);
+  assert.match(firstScreenLayout, /presencePanelMinHeight/);
+  assert.doesNotMatch(firstScreenLayout, /firstMissionPeekPx/);
+  assert.doesNotMatch(firstScreenLayout, /todayCommandPeekPx/);
+  assert.doesNotMatch(firstScreenLayout, /presencePanelOverlap/);
 
   assert.match(missionLayout, /compact/);
   assert.match(missionLayout, /estimatedDeckHeight/);
@@ -2293,7 +2336,8 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(releaseQa, /home-mission-deck/);
   assert.match(releaseQa, /compact Home mission deck/);
   assert.match(releaseQa, /pending meal routes to Meal Log/);
-  assert.match(releaseQa, /floating paw nav/);
+  assert.match(releaseQa, /Show more from today/);
+  assert.match(releaseQa, /canonical bottom navigation/);
 });
 
 test("keeps Home immediate care actions ahead of the richer mission deck", () => {
@@ -2320,7 +2364,7 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
   );
   assert.match(
     home,
-    /BoardSectionHeader\s+title="Next Up"[\s\S]*accessibilityLabel=\{`Open Plan\. 1 of \$\{nextCount\} next up\.`\}/,
+    /BoardSectionHeader\s+title="Next Up"[\s\S]*`View \$\{nextUp\.length - 1\} more planned[\s\S]*`Open Plans\. 1 of \$\{nextCount\} next up\.`/,
   );
   assert.match(home, /s\.nextPrimaryRow/);
   assert.match(home, /Snooze/);
@@ -2617,7 +2661,7 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   );
   assert.match(
     more,
-    /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/,
+    /const sectionParam\s*=\s*Array\.isArray\(routeParams\.section\)\s*\?\s*routeParams\.section\[0\]\s*:\s*routeParams\.section/,
   );
   assert.match(more, /if \(sectionParam === "diet"\) setDietOpen\(true\)/);
   assert.match(more, /const householdFocus = sectionParam === "household"/);
@@ -2788,7 +2832,7 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   // and the composer rail's "-- Care IQ".)
   assert.match(
     log,
-    /careIntelligence\.visibleLogCount === 0 \? "--" : `\$\{careIntelligence\.score\}%`/,
+    /careIntelligence\.visibleLogCount === 0\s*\?\s*"--"\s*:\s*`\$\{careIntelligence\.score\}%`/,
   );
   assert.match(log, /"-- Care IQ"/);
   assert.match(more, /deriveCareIntelligence/);
@@ -2859,7 +2903,7 @@ test("keeps Health Watch and the Quick Care Console honest at zero data and at n
   );
   assert.match(
     log,
-    /logCommandStageIsNight \? \{ backgroundColor: "rgba\(9,17,32,0\.35\)" \} : null/,
+    /logCommandStageIsNight\s*\?\s*\{\s*backgroundColor:\s*"rgba\(9,17,32,0\.35\)",?\s*\}\s*:\s*null/,
   );
 });
 
@@ -3181,12 +3225,22 @@ test("locks the mobile pixel UI foundation to Apollo's reference boards", () => 
   assert.match(home, /StatusMeter/);
   assert.match(home, /QuickActionTile/);
   assert.match(home, /LivingPhoenixRoom/);
-  assert.match(tabs, /colors\.brandNavy/);
-  // Mock boards show plain icons+labels in the floating bar - the active
-  // state is the forest tint alone, no pill wash behind the item.
+  assert.match(tabs, /backgroundColor:\s*colors\.brandNavy/);
+  // Mock boards show plain icons+labels in the floating navy bar - the active
+  // state is the cream tint alone, no pill wash behind the item.
   assert.doesNotMatch(tabs, /tabBarActiveBackgroundColor/);
-  assert.match(tabs, /tabBarActiveTintColor:\s*colors\.forest/);
-  // The paw FAB pops with the shared game-feel bounce on every press.
+  assert.match(tabs, /tabBarActiveTintColor:\s*colors\.cream/);
+  assert.match(
+    tabs,
+    /tabBar=\{\(props\) => <KeyboardAwareTabBar \{\.\.\.props\} \/>\}/,
+  );
+  assert.match(tabs, /getFloatingTabKeyboardPresentation/);
+  assert.match(tabs, /accessibilityElementsHidden=/);
+  assert.match(tabs, /importantForAccessibility=/);
+  assert.doesNotMatch(tabs, /tabBarHideOnKeyboard/);
+  assert.match(tabs, /getFloatingTabChromeMetrics/);
+  assert.match(tabs, /Haptics\.selectionAsync\(\)/);
+  // Focused tab icons keep the shared game-feel bounce.
   assert.match(tabs, /useBounce/);
 });
 
@@ -3272,7 +3326,7 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
 
   assert.match(
     plans,
-    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+    /import\s*\{\s*BoardCard,\s*BoardPill,\s*BoardRouteHeader,\s*BoardSectionHeader,?\s*\}\s*from\s*"@\/components\/board\/BoardPrimitives"/,
   );
   assert.doesNotMatch(plans, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(log, /<BoardCard[\s\S]*style=\{s\.composerHero/);
@@ -3286,14 +3340,14 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
   );
   assert.match(
     plans,
-    /BoardSectionHeader\s+title="Upcoming Events"[\s\S]*<BoardPill\s+label=\{upcoming\.length \? `\$\{upcoming\.length\} days` : "Add one"\}/,
+    /BoardSectionHeader\s+title="Upcoming Events"[\s\S]*<BoardPill\s+label=\{\s*upcoming\.length\s*\?\s*`\$\{upcoming\.length\} days`\s*:\s*"Add one"\s*\}/,
   );
   assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
 });
 
 test("keeps web route previews visible before native entry animation starts", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
   const routeSources: Record<string, string> = {
-    home: readAppFile(join("(tabs)", "index.tsx")),
     log: readAppFile(join("(tabs)", "log.tsx")),
     plans: readAppFile(join("(tabs)", "calendar.tsx")),
     records: readAppFile(join("(tabs)", "records.tsx")),
@@ -3318,6 +3372,13 @@ test("keeps web route previews visible before native entry animation starts", ()
       `${route} should skip native-style entrance animation on web`,
     );
   }
+
+  assert.doesNotMatch(
+    home,
+    /const fade = useRef\(new Animated\.Value|<Animated\.View style=\{\{ opacity: fade \}\}/,
+    "Home should present its full-phone surface immediately instead of fading the entire route",
+  );
+  assert.match(home, /backgroundColor: colors\.background/);
 
   for (const [route, source] of Object.entries({
     log: routeSources.log,
@@ -3350,14 +3411,19 @@ test("keeps the floating route gutter consistent across web and native", () => {
     );
     assert.match(
       source,
-      /contentContainerStyle=\{\{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD \}\}/,
+      /contentContainerStyle=\{\{\s*paddingTop:\s*topPadding,\s*paddingBottom:\s*bottomPadding,\s*paddingHorizontal:\s*H_PAD,?\s*\}\}/,
       `${route} should route ScrollView padding through H_PAD`,
     );
   }
 
   const home = readAppFile(join("(tabs)", "index.tsx"));
+  const homeLayout = readAppFile(join("..", "lib", "homeFirstScreenLayout.ts"));
   const health = readAppFile(join("(tabs)", "health.tsx"));
-  assert.match(home, /const routeHorizontalPadding = 16;/);
+  assert.match(homeLayout, /const routeHorizontalPadding = 16;/);
+  assert.match(
+    home,
+    /const routeHorizontalPadding = homeFirstScreenLayout\.routeHorizontalPadding;/,
+  );
   assert.match(health, /const routeHorizontalPadding = 16;/);
   assert.match(home, /paddingHorizontal: routeHorizontalPadding/);
   assert.match(health, /paddingHorizontal: routeHorizontalPadding/);
@@ -3497,7 +3563,7 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   // the pre-focused composer, and the policy explainer lives behind the "?".
   assert.match(
     log,
-    /onLongPress=\{\(\) => focusFullComposerForLauncherAction\(action\)\}/,
+    /onLongPress=\{\(\)\s*=>\s*focusFullComposerForLauncherAction\(action\)\s*\}/,
   );
   assert.doesNotMatch(
     log,
@@ -4162,7 +4228,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     avatarStudio,
     /savedName:\s*\{ color: "#FFF9EF", fontSize: 17\.5/,
   );
-  assert.match(avatarStudio, /<Text numberOfLines=\{1\} style=\{\[s\.savedSub/);
+  assert.match(
+    avatarStudio,
+    /<Text\s+numberOfLines=\{1\}\s+style=\{\[s\.savedSub/,
+  );
   assert.match(avatarPreviewModel, /Animated Phoenix pack/);
   assert.match(avatarPreviewModel, /Live template sprite pack/);
   assert.match(avatarPreviewModel, /Starter still preview/);
@@ -4708,7 +4777,7 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   assert.match(setup, /@\/components\/board\/BoardPrimitives/);
   assert.match(
     setup,
-    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+    /import\s*\{\s*BoardCard,\s*BoardPill,\s*BoardRouteHeader,\s*BoardSectionHeader,?\s*\}\s*from\s*"@\/components\/board\/BoardPrimitives"/,
   );
   assert.doesNotMatch(setup, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(setup, /<BoardRouteHeader[\s\S]*title="Set up WoofWatcher"/);
@@ -4744,7 +4813,7 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   assert.match(setup, /state\.launchProviderProfile\.authSetupProofEvidence/);
   assert.match(
     setup,
-    /const authSetupProofManifest = buildAuthSetupProofManifest\(state\.launchProviderProfile\.authSetupProofEvidence \?\? undefined\)/,
+    /const authSetupProofManifest\s*=\s*buildAuthSetupProofManifest\(\s*state\.launchProviderProfile\.authSetupProofEvidence \?\? undefined,?\s*\)/,
   );
   assert.match(setup, /Auth\/Setup proof manifest/);
   assert.match(setup, /authSetupProofManifest\.rows\.map/);
@@ -4814,15 +4883,15 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   );
   assert.match(
     records,
-    /storageProviderConfigured: launchProviderSetupPlan\.providerInput\.storageProviderConfigured/,
+    /storageProviderConfigured:\s*launchProviderSetupPlan\.providerInput\s*\.storageProviderConfigured/,
   );
   assert.match(
     records,
-    /storageProviderEvidence: launchProviderSetupPlan\.providerInput\.storageProviderEvidence/,
+    /storageProviderEvidence:\s*launchProviderSetupPlan\.providerInput\s*\.storageProviderEvidence/,
   );
   assert.match(
     records,
-    /providerStorageEvidence:\s*launchProviderSetupPlan\.providerInput\.storageProviderEvidence\s*\?\s*\[launchProviderSetupPlan\.providerInput\.storageProviderEvidence\]\s*:\s*\[\]/,
+    /providerStorageEvidence:\s*launchProviderSetupPlan\s*\.providerInput\.storageProviderEvidence\s*\?\s*\[\s*launchProviderSetupPlan\.providerInput\s*\.storageProviderEvidence,?\s*\]\s*:\s*\[\]/,
   );
   assert.match(records, /exportView\.formatLabel/);
   assert.match(records, /local file - PDF pending/);
@@ -4832,7 +4901,7 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /Binary proof manifest/);
   assert.match(
     records,
-    /const binaryProofManifest = buildReportBinaryExportProofManifest/,
+    /const binaryProofManifest\s*=\s*buildReportBinaryExportProofManifest/,
   );
   assert.match(records, /carePassHtmlFileName: exportView\.fileName/);
   assert.match(records, /dogIdSvgFileName: credentialImageView\.fileName/);
@@ -4840,7 +4909,7 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /generatedDogIdPng:/);
   assert.match(
     records,
-    /storageProviderConfigured: launchProviderSetupPlan\.providerInput\.storageProviderConfigured/,
+    /storageProviderConfigured:\s*launchProviderSetupPlan\.providerInput\s*\.storageProviderConfigured/,
   );
   assert.match(records, /binaryProofManifest\.rows\.map/);
   assert.match(records, /binaryProofManifest\.blockers\.map/);
@@ -4881,7 +4950,11 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
   assert.match(records, /sharePrintableCredential/);
   assert.match(records, /shareCredentialImageSource/);
   assert.match(records, /shareCredentialPngArtifact/);
-  assert.match(records, /directoryName: "WoofWatcherCredentials"/);
+  assert.match(records, /WOOFWATCHER_CREDENTIALS_DIRECTORY_NAME/);
+  assert.match(
+    records,
+    /directoryName: WOOFWATCHER_CREDENTIALS_DIRECTORY_NAME/,
+  );
   assert.match(records, /printableLabel: "Dog ID credential source"/);
   assert.match(records, /printableLabel: "Dog ID SVG image source"/);
   assert.match(records, /FileSystem\.writeAsStringAsync/);
@@ -4999,10 +5072,10 @@ test("keeps saved Care Pass history truthful across share outcomes", () => {
 
 test("keeps Records modal sheets and controls exposed to assistive technology", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
-  const carePassStart = records.indexOf(
-    "<Modal visible={carePassPreview !== null}",
+  const carePassStart = records.search(
+    /<Modal\s+visible=\{carePassPreview !== null\}/,
   );
-  const recordStart = records.indexOf("<Modal visible={recordOpen}");
+  const recordStart = records.search(/<Modal\s+visible=\{recordOpen\}/);
 
   assert.ok(carePassStart >= 0 && recordStart > carePassStart);
 
@@ -5124,7 +5197,7 @@ test("keeps Records section status labels as badges instead of passive actions",
 
   assert.match(
     records,
-    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+    /import\s*\{\s*BoardCard,\s*BoardPill,\s*BoardRouteHeader,\s*BoardSectionHeader,?\s*\}\s*from "@\/components\/board\/BoardPrimitives"/,
   );
   assert.doesNotMatch(records, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(
@@ -5133,15 +5206,15 @@ test("keeps Records section status labels as badges instead of passive actions",
   );
   assert.match(
     records,
-    /BoardSectionHeader[\s\S]*title="Weight Trend"[\s\S]*<BoardPill\s+label=\{remaining > 0 \?/,
+    /BoardSectionHeader[\s\S]*?title="Weight Trend"[\s\S]*?<BoardPill\s+label=\{\s*remaining\s*>\s*0\s*\?/,
   );
   assert.match(
     records,
-    /BoardSectionHeader\s+title="Mood Trend"[\s\S]*<BoardPill\s+label=\{moodStats\.total > 0 \?/,
+    /BoardSectionHeader\s+title="Mood Trend"[\s\S]*?<BoardPill\s+label=\{\s*moodStats\.total\s*>\s*0\s*\?/,
   );
   assert.match(
     records,
-    /BoardSectionHeader\s+title="Hydration"[\s\S]*<BoardPill\s+label=\{waterHydration\.total \?/,
+    /BoardSectionHeader\s+title="Hydration"[\s\S]*?<BoardPill\s+label=\{\s*waterHydration\.total\s*\?/,
   );
   assert.match(
     records,
@@ -5149,7 +5222,7 @@ test("keeps Records section status labels as badges instead of passive actions",
   );
   assert.match(
     records,
-    /BoardSectionHeader\s+title="Records Cabinet"[\s\S]*<BoardPill\s+label=\{`\$\{recordVault\.total\} saved`\}/,
+    /BoardSectionHeader\s+title="Records Cabinet"[\s\S]*?<BoardPill\s+label=\{\s*`\$\{recordVault\.total\} saved`\s*\}/,
   );
 });
 
@@ -5421,7 +5494,7 @@ test("keeps Incident Watch visible from Log composer to Records and Care Pass re
   assert.match(records, /incidentWatch\.latest\?\.id/);
   assert.match(
     records,
-    /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(incidentWatch\.latest\.id\)\}` as never\)/,
+    /router\.push\(\s*`\/log\?entry=\$\{encodeURIComponent\(incidentWatch\.latest\.id\)\}`\s*as never,?\s*\)/,
   );
   assert.match(
     records,
@@ -5548,13 +5621,15 @@ test("keeps care log trust review wired into Log detail flows", () => {
 test("copies picked care files into durable storage before persisting native URIs", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
   const durableMedia = readMobileLibFile("durablePickedMedia.ts");
+  const ownedLocalData = readMobileLibFile("ownedLocalData.ts");
 
   assert.match(records, /persistPickedMedia/);
   assert.match(records, /filePrefix:\s*"record-attachment"/);
   assert.match(records, /if \(!persistedAttachment\.ok\)/);
   assert.match(records, /setRecordAttachmentUri\(persistedAttachment\.uri\)/);
   assert.doesNotMatch(records, /setRecordAttachmentUri\(pickedUri\)/);
-  assert.match(durableMedia, /woofwatcher-attachments/);
+  assert.match(durableMedia, /WOOFWATCHER_ATTACHMENTS_DIRECTORY_NAME/);
+  assert.match(ownedLocalData, /"woofwatcher-attachments"/);
   assert.match(durableMedia, /await options\.fileSystem\.copyAsync/);
   assert.match(
     durableMedia,
@@ -5620,7 +5695,7 @@ test("keeps Reminder Center visible while gating future push controls from produ
   assert.match(calendar, /reminderCount/);
   assert.match(
     calendar,
-    /\{consumerSurfacePolicy\.pushNotificationControls \? \(\s*<View style=\{\[s\.reminderNotificationPanel/,
+    /\{consumerSurfacePolicy\.pushNotificationControls \? \(\s*<View\s+style=\{\[\s*s\.reminderNotificationPanel/,
   );
   assert.match(reminders, /getConsumerSurfacePolicy/);
   assert.match(reminders, /showNotificationControls/);
@@ -5637,7 +5712,7 @@ test("routes Reminder Center rows to concrete care workflows", () => {
   assert.match(calendar, /router\.push\("\/records"\)/);
   assert.match(
     calendar,
-    /router\.push\(`\/log\?type=\$\{encodeURIComponent\(type\)\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/,
+    /router\.push\(\s*`\/log\?type=\$\{encodeURIComponent\(type\)\}&detail=1&intent=\$\{Date\.now\(\)\}`\s*as never,?\s*\)/,
   );
   assert.match(calendar, /openReminderLogDetailRoute\("medication"\)/);
   assert.match(calendar, /openReminderLogDetailRoute\("grooming"\)/);
@@ -5705,7 +5780,7 @@ test("keeps Plans reminder and routine sections on shared board card anatomy", (
   );
   assert.match(
     calendar,
-    /BoardSectionHeader\s+title="Reminder Center"[\s\S]*<BoardPill\s+label=\{reminderCount === 0 \? "Clear" : `\$\{reminderCount\} active`\}/,
+    /BoardSectionHeader\s+title="Reminder Center"[\s\S]*?<BoardPill\s+label=\{\s*reminderCount\s*===\s*0\s*\?\s*"Clear"\s*:\s*`\$\{reminderCount\} active`\s*\}/,
   );
   assert.match(
     calendar,
@@ -6176,7 +6251,7 @@ test("clears private Pack recovery JSON when it leaves the active screen", () =>
   assert.match(
     pack,
     /useFocusEffect\([\s\S]*?return \(\) => setPackRecoveryCopy\(""\)/,
-    "switching away from the still-mounted Pack tab must remove private recovery JSON",
+    "switching away from the still-mounted Pack deep route must remove private recovery JSON",
   );
   assert.match(
     pack,
@@ -6242,11 +6317,18 @@ test("keeps the More dog profile artwork out of accessibility traversal", () => 
 
 test("keeps the Home room backdrop out of accessibility traversal", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
+  const room = readAppFile(join("..", "components", "LivingPhoenixRoom.tsx"));
 
+  assert.match(home, /testID="home-room-stage"[\s\S]*?<LivingPhoenixRoom/);
   assert.match(
-    home,
-    /<Image\s+accessible=\{false\}\s+source=\{fixedBackdropSource\}[\s\S]*?style=\{s\.fullBleedArt\}/,
-    "the decorative Home room backdrop must not create an unlabeled stop before the labeled care console and care-twin controls",
+    room,
+    /<Animated\.Image\s+accessible=\{false\}\s+source=\{stageSource\}/,
+    "the living room backdrop must stay decorative inside its labeled care-twin control",
+  );
+  assert.match(
+    room,
+    /<Animated\.Image\s+accessible=\{false\}\s+source=\{fallbackAvatarSource\}/,
+    "the fallback dog artwork must stay decorative inside its labeled care-twin control",
   );
 });
 
@@ -6451,7 +6533,10 @@ test("keeps the iOS numeric-keyboard completion toolbar wired at the app root", 
     "utf8",
   );
 
-  assert.match(rootLayout, /KeyboardProvider, KeyboardToolbar/);
+  assert.match(
+    rootLayout,
+    /import\s*\{\s*KeyboardProvider,\s*KeyboardToolbar,?\s*\}\s*from\s*"react-native-keyboard-controller"/,
+  );
   assert.match(rootLayout, /useSafeAreaInsets/);
   assert.match(rootLayout, /shouldRenderKeyboardToolbar\(Platform\.OS\)/);
   assert.match(rootLayout, /<KeyboardToolbar insets=\{insets\} \/>/);
@@ -6526,6 +6611,154 @@ test("programmatically names every Auth and Setup text field", () => {
     setup,
     /<Field\s+accessibilityLabel="Caregiver name"\s+label="Name"/,
     "the caregiver name field must be distinct from the dog name field",
+  );
+});
+
+test("waits for Care and Avatar hydration before Setup becomes interactive", () => {
+  const setup = readAppFile("setup.tsx");
+  const avatarContext = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
+    "utf8",
+  );
+  const careContext = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    setup,
+    /avatarHydrationStatus[\s\S]*?retryHydration: retryAvatarHydration[\s\S]*?useAvatar\(\)/,
+    "Setup must consume AvatarContext readiness instead of editing the temporary default twin",
+  );
+  assert.match(
+    setup,
+    /INITIAL_SETUP_DRAFT_READINESS[\s\S]*?reduceSetupDraftReadiness/,
+  );
+  assert.match(
+    setup,
+    /careHydrationStatus !== "ready"[\s\S]*?type: "care-unavailable"[\s\S]*?setDraft\([\s\S]*?type: "draft-bound"[\s\S]*?careScopeRevision/,
+    "the editable draft must be invalidated on an unavailable scope and rebound before interaction",
+  );
+  assert.match(
+    setup,
+    /isSetupInteractive\(\{[\s\S]*?avatarHydrationStatus[\s\S]*?careHydrationStatus[\s\S]*?careScopeRevision[\s\S]*?draftReadiness/,
+  );
+  assert.match(
+    setup,
+    /const setField = \([^)]*\) => \{\s*if \(!setupHydrated\) return;/,
+    "field writes must fail closed if a stale event arrives before hydration completes",
+  );
+  assert.match(
+    setup,
+    /const saveSetup = \(\) => \{\s*if \(!setupHydrated\) return;/,
+    "save must fail closed even if invoked outside the visible loading gate",
+  );
+  assert.match(
+    setup,
+    /setupLoadFailed[\s\S]*?accessibilityRole="alert"[\s\S]*?Setup couldn't load safely[\s\S]*?Retry loading setup/,
+    "terminal storage failures must replace the spinner with a named recovery action",
+  );
+  assert.match(
+    setup,
+    /if \(!setupHydrated\) \{[\s\S]*?accessibilityLabel="Preparing care setup"[\s\S]*?accessibilityState=\{\{ busy: true \}\}[\s\S]*?Preparing your care setup/,
+    "Setup must expose a named busy state instead of editable default data while contexts hydrate",
+  );
+  assert.match(
+    avatarContext,
+    /export type AvatarHydrationStatus = "loading" \| "ready" \| "failed"/,
+  );
+  assert.match(
+    avatarContext,
+    /catch \{[\s\S]*?setAvatarHydrationStatus\("failed"\)/,
+    "an avatar read failure must never be reported as loaded defaults",
+  );
+  assert.match(
+    careContext,
+    /hydrationStatus:[\s\S]*?retryHydration:[\s\S]*?careScopeRevision:/,
+    "CareContext must expose explicit local-read recovery and scope identity",
+  );
+});
+
+test("keeps Avatar Studio and owner wipe safe across hydration failures", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+  const privacy = readAppFile("privacy.tsx");
+
+  assert.match(
+    avatarStudio,
+    /hydrationStatus: avatarHydrationStatus[\s\S]*?retryHydration: retryAvatarHydration/,
+    "Avatar Studio must consume the same explicit hydration boundary as Setup",
+  );
+  assert.match(
+    avatarStudio,
+    /avatarHydrationStatus === "failed"[\s\S]*?accessibilityRole="alert"[\s\S]*?Retry loading Avatar Studio/,
+    "Avatar Studio must expose a recoverable terminal failure instead of editable defaults",
+  );
+  assert.match(
+    avatarStudio,
+    /avatarHydrationStatus !== "ready"[\s\S]*?accessibilityRole="progressbar"[\s\S]*?Preparing Avatar Studio/,
+    "Avatar Studio must remain visibly busy until its persisted draft is ready",
+  );
+  assert.match(
+    avatarStudio,
+    /const saveDraft = async \(\) => \{[\s\S]*?if \(avatarHydrationStatus !== "ready"\) return;[\s\S]*?catch/,
+    "stale save events and durable-write failures must be handled explicitly",
+  );
+  assert.match(
+    privacy,
+    /eraseAvatarData[\s\S]*?await Promise\.allSettled\(\[[\s\S]*?eraseAvatarData\(\)[\s\S]*?eraseAllLocalData\(\)/,
+    "owner wipe must use the destructive hydration-independent avatar boundary before care deletion",
+  );
+  assert.doesNotMatch(
+    privacy,
+    /Promise\.allSettled\(\[[\s\S]*?clearAvatarSet\(\)[\s\S]*?resetAvatarConfig\(\)/,
+    "owner wipe must not depend on ordinary avatar mutations that require a successful read",
+  );
+});
+
+test("keeps Privacy destructive-sheet actions separate for VoiceOver", () => {
+  const privacy = readAppFile("privacy.tsx");
+  const eraseModalStart = privacy.indexOf(
+    "<Modal\n        visible={eraseStage !== null}",
+  );
+  const eraseModalEnd = privacy.indexOf("<Modal", eraseModalStart + 1);
+  assert.ok(
+    eraseModalStart >= 0 && eraseModalEnd > eraseModalStart,
+    "the destructive Privacy modal must remain source-identifiable",
+  );
+  const eraseModal = privacy.slice(eraseModalStart, eraseModalEnd);
+
+  assert.match(
+    eraseModal,
+    /<Pressable\s+accessible=\{false\}\s+style=\{s\.modalBackdrop\}/,
+    "the backdrop must not group the destructive sheet into one dismiss button",
+  );
+  assert.match(
+    eraseModal,
+    /<Pressable\s+accessible=\{false\}\s+accessibilityViewIsModal\s+style=\{\[/,
+    "the non-action sheet wrapper must isolate modal traversal without hiding its descendants",
+  );
+  assert.match(
+    eraseModal,
+    /accessibilityRole="button"\s+accessibilityLabel=\{eraseSteps\[eraseStage\]\.cancelLabel\}/,
+    "Cancel must remain its own named action",
+  );
+  assert.match(
+    eraseModal,
+    /accessibilityRole="button"\s+accessibilityLabel=\{\s*erasing\s*\? "Deleting local care data"\s*: eraseSteps\[eraseStage\]\.confirmLabel\s*\}\s+accessibilityState=\{\{ busy: erasing, disabled: erasing \}\}/,
+    "Delete must remain its own named action and expose its in-flight state",
+  );
+  assert.match(
+    privacy,
+    /const confirmEraseAllLocalData = \(\) => \{\s*void Haptics\.impactAsync\([\s\S]*?\)\.catch\(\s*\(\) => \{\},?\s*\);/,
+    "opening the destructive flow must absorb an unavailable haptics service",
+  );
+  const advanceStart = privacy.indexOf("const advanceEraseFlow = () =>");
+  const advanceEnd = privacy.indexOf("\n  };", advanceStart);
+  assert.ok(advanceStart > 0 && advanceEnd > advanceStart);
+  assert.match(
+    privacy.slice(advanceStart, advanceEnd),
+    /void Haptics\.impactAsync\([\s\S]*?\)\.catch\(\s*\(\) => \{\},?\s*\);/,
+    "advancing the destructive flow must absorb an unavailable haptics service",
   );
 });
 
@@ -6604,7 +6837,7 @@ test("gives Alone Time Quick Log an explicit departure keyboard path", () => {
   );
   assert.match(
     log,
-    /accessibilityLabel=\{ALONE_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => aloneRecoveryMinutesRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{ALONE_QUICK_LOG_FIELD_FLOW\[1\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => aloneCalmingSupportRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{ALONE_QUICK_LOG_FIELD_FLOW\[2\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{Keyboard\.dismiss\}/,
+    /accessibilityLabel=\{\s*ALONE_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\s*\}[\s\S]*?onSubmitEditing=\{\s*\(\)\s*=>\s*aloneRecoveryMinutesRef\.current\?\.focus\(\)\s*\}[\s\S]*?accessibilityLabel=\{\s*ALONE_QUICK_LOG_FIELD_FLOW\[1\]\.accessibilityLabel\s*\}[\s\S]*?onSubmitEditing=\{\s*\(\)\s*=>\s*aloneCalmingSupportRef\.current\?\.focus\(\)\s*\}[\s\S]*?accessibilityLabel=\{\s*ALONE_QUICK_LOG_FIELD_FLOW\[2\]\.accessibilityLabel\s*\}[\s\S]*?onSubmitEditing=\{\s*Keyboard\.dismiss\s*\}/,
     "Alone Time departure logging must advance through context, recovery minutes, and calming support before dismissing",
   );
 });
@@ -6618,12 +6851,12 @@ test("gives Medication Quick Log an explicit dose-to-context keyboard path", () 
   );
   assert.match(
     log,
-    /accessibilityLabel=\{MEDICATION_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\}[\s\S]*?returnKeyType=\{MEDICATION_QUICK_LOG_FIELD_FLOW\[0\]\.returnKeyType\}[\s\S]*?onSubmitEditing=\{\(\) => medicationNoteRef\.current\?\.focus\(\)\}/,
+    /accessibilityLabel=\{\s*MEDICATION_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\s*\}[\s\S]*?returnKeyType=\{\s*MEDICATION_QUICK_LOG_FIELD_FLOW\[0\]\.returnKeyType\s*\}[\s\S]*?onSubmitEditing=\{\s*\(\)\s*=>\s*medicationNoteRef\.current\?\.focus\(\)\s*\}/,
     "the medication dose must announce itself and advance to the context field",
   );
   assert.match(
     log,
-    /accessibilityLabel=\{selectedType === "medication" \? MEDICATION_QUICK_LOG_FIELD_FLOW\[1\]\.accessibilityLabel : undefined\}[\s\S]*?onSubmitEditing=\{selectedType === "medication" \? Keyboard\.dismiss : undefined\}/,
+    /accessibilityLabel=\{\s*selectedType\s*===\s*"medication"\s*\?\s*MEDICATION_QUICK_LOG_FIELD_FLOW\[1\]\s*\.accessibilityLabel\s*:\s*undefined\s*\}[\s\S]*?onSubmitEditing=\{\s*selectedType\s*===\s*"medication"\s*\?\s*Keyboard\.dismiss\s*:\s*undefined\s*\}/,
     "the medication context must be named and provide a final Done dismissal",
   );
 });
@@ -6637,23 +6870,31 @@ test("gives Walk Quick Log an explicit route-to-social-outcome keyboard path", (
   );
   assert.match(
     log,
-    /accessibilityLabel=\{WALK_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => walkDistanceRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{WALK_QUICK_LOG_FIELD_FLOW\[1\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => walkDogInteractionsRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{WALK_QUICK_LOG_FIELD_FLOW\[2\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{\(\) => walkSocialOutcomeRef\.current\?\.focus\(\)\}[\s\S]*?accessibilityLabel=\{WALK_QUICK_LOG_FIELD_FLOW\[3\]\.accessibilityLabel\}[\s\S]*?onSubmitEditing=\{Keyboard\.dismiss\}/,
+    /accessibilityLabel=\{\s*WALK_QUICK_LOG_FIELD_FLOW\[0\]\.accessibilityLabel\s*\}[\s\S]*?onSubmitEditing=\{\s*\(\)\s*=>\s*walkDistanceRef\.current\?\.focus\(\)\s*\}[\s\S]*?accessibilityLabel=\{\s*WALK_QUICK_LOG_FIELD_FLOW\[1\]\.accessibilityLabel\s*\}[\s\S]*?onSubmitEditing=\{\s*\(\)\s*=>\s*walkDogInteractionsRef\.current\?\.focus\(\)\s*\}[\s\S]*?accessibilityLabel=\{\s*WALK_QUICK_LOG_FIELD_FLOW\[2\]\.accessibilityLabel\s*\}[\s\S]*?onSubmitEditing=\{\s*\(\)\s*=>\s*walkSocialOutcomeRef\.current\?\.focus\(\)\s*\}[\s\S]*?accessibilityLabel=\{\s*WALK_QUICK_LOG_FIELD_FLOW\[3\]\.accessibilityLabel\s*\}[\s\S]*?onSubmitEditing=\{\s*Keyboard\.dismiss\s*\}/,
     "walk logging must advance through route, distance, interactions, and social outcome before dismissing",
   );
 });
 
 test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
+  const room = readAppFile(join("..", "components", "LivingPhoenixRoom.tsx"));
 
+  assert.match(home, /const petName = resolvePetName\(state\.profile\.name\)/);
   assert.match(
     home,
-    /accessibilityLabel=\{buildHomeCareTwinAccessibilityLabel\([\s\S]*?petName,[\s\S]*?avatarTemplate\.label,[\s\S]*?avatarMotion\.label,[\s\S]*?\)\}/,
-    "Home must not announce a renamed dog's room as a Phoenix care twin",
+    /<LivingPhoenixRoom[\s\S]*?petName=\{petName\}/,
+    "Home must pass the normalized Dog Profile identity into the room control",
   );
+  assert.match(
+    room,
+    /accessibilityLabel=\{buildCareTwinRoomAccessibilityLabel\(\{[\s\S]*?petName,[\s\S]*?templateLabel:[\s\S]*?motionLabel:[\s\S]*?\}\)\}/,
+    "LivingPhoenixRoom must own the meaningful room label and build it from the active dog identity",
+  );
+  assert.doesNotMatch(home, /buildHomeCareTwinAccessibilityLabel/);
   assert.doesNotMatch(
-    home,
+    `${home}\n${room}`,
     /accessibilityLabel=\{`\$\{petName\} Room\. Phoenix/,
-    "Home must not reintroduce the hardcoded Phoenix identity in its room control",
+    "the compact room architecture must not reintroduce a hardcoded Phoenix identity",
   );
 });
 
@@ -6724,6 +6965,16 @@ test("keeps household access readiness visible from More", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 
   assert.match(more, /deriveHouseholdAccessPlan/);
+  assert.match(more, /canCurrentMemberManageHouseholdSettings/);
+  assert.match(
+    more,
+    /const canRenameHousehold = canCurrentMemberManageHouseholdSettings\(members\)/,
+  );
+  assert.match(
+    more,
+    /consumerSurfacePolicy\.householdProviderActions\s*&&\s*canRenameHousehold\s*\?\s*\(/,
+    "More must expose Rename only when the exact current member has owner/admin authority",
+  );
   assert.match(more, /householdAccess/);
   assert.match(more, /Household Access/);
   assert.match(more, /localOnlyCaregivers/);
@@ -6919,7 +7170,7 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /Command Directory/);
   assert.match(
     more,
-    /BoardPill label=\{`\$\{moreDirectoryItems\.length\} hubs`\}/,
+    /<BoardPill[\s\S]*?label=\{`\$\{moreDirectoryItems\.length\} hubs`\}/,
   );
   assert.match(more, /Care today/);
   assert.match(more, /Household/);
@@ -6934,11 +7185,11 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /router\.push\("\/records" as never\)/);
   assert.match(
     more,
-    /router\.push\(buildCareTwinQaFocusRoute\(routeVisualConsistencyTarget\) as never\)/,
+    /router\.push\(\s*buildCareTwinQaFocusRoute\(\s*routeVisualConsistencyTarget,?\s*\)\s*as never,?\s*\)/,
   );
   assert.match(
     more,
-    /router\.push\(buildCareTwinQaFocusRoute\(nativeQaPrimaryMissionTarget\) as never\)/,
+    /router\.push\(\s*buildCareTwinQaFocusRoute\(\s*nativeQaPrimaryMissionTarget,?\s*\)\s*as never,?\s*\)/,
   );
   assert.match(more, /style=\{s\.moreDirectoryCard\}/);
   assert.match(more, /s\.moreDirectoryRow/);
@@ -7053,57 +7304,57 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /supportRunbookOwnerReviewed/);
   assert.match(
     more,
-    /const supportRunbookApproved =\s*state\.launchSupportProfile\.providerStatus === "provider-approved" && launchSupportPlan\.supportRunbookApproved/,
+    /const supportRunbookApproved\s*=\s*state\.launchSupportProfile\.providerStatus\s*===\s*"provider-approved"\s*&&\s*launchSupportPlan\.supportRunbookApproved/,
   );
   assert.match(
     more,
-    /const privacyLegalApproved =\s*state\.launchSupportProfile\.providerStatus === "provider-approved" && launchSupportPlan\.privacyLegalApproved/,
+    /const privacyLegalApproved\s*=\s*state\.launchSupportProfile\.providerStatus\s*===\s*"provider-approved"\s*&&\s*launchSupportPlan\.privacyLegalApproved/,
   );
   assert.match(more, /privacyLegalApproved,\s*privacyLegalOwnerReviewed/);
   assert.match(more, /supportRunbookApproved,\s*supportRunbookOwnerReviewed/);
   assert.match(
     more,
-    /authConfigured:\s*Boolean\(launchProviderSetupPlan\.providerInput\.authConfigured\)/,
+    /authConfigured:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.authConfigured,?\s*\)/,
   );
   assert.match(
     more,
-    /authProviderProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.authProviderProofReady\)/,
+    /authProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.authProviderProofReady,?\s*\)/,
   );
   assert.match(
     more,
-    /databaseConfigured:\s*Boolean\(launchProviderSetupPlan\.providerInput\.databaseConfigured\)/,
+    /databaseConfigured:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.databaseConfigured,?\s*\)/,
   );
   assert.match(
     more,
-    /databaseProviderProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.databaseProviderProofReady\)/,
+    /databaseProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.databaseProviderProofReady,?\s*\)/,
   );
   assert.match(
     more,
-    /storageProviderConfigured:\s*Boolean\(launchProviderSetupPlan\.providerInput\.storageProviderConfigured\)/,
+    /storageProviderConfigured:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.storageProviderConfigured,?\s*\)/,
   );
   assert.match(
     more,
-    /storageProviderProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.storageProviderProofReady\)/,
+    /storageProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.storageProviderProofReady,?\s*\)/,
   );
   assert.match(
     more,
-    /aiProviderProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.aiProviderProofReady\)/,
+    /aiProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.aiProviderProofReady,?\s*\)/,
   );
   assert.match(
     more,
-    /paymentsProviderProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.paymentsProviderProofReady\)/,
+    /paymentsProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.paymentsProviderProofReady,?\s*\)/,
   );
   assert.match(
     more,
-    /accountDeletionProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.accountDeletionProofReady\)/,
+    /accountDeletionProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.accountDeletionProofReady,?\s*\)/,
   );
   assert.match(
     more,
-    /pushNotificationsProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.pushNotificationsProofReady\)/,
+    /pushNotificationsProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.pushNotificationsProofReady,?\s*\)/,
   );
   assert.match(
     more,
-    /storeAccountsProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.storeAccountsProofReady\)/,
+    /storeAccountsProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.storeAccountsProofReady,?\s*\)/,
   );
   assert.match(more, /privacyLegalProofReady/);
   assert.match(more, /supportRunbookProofReady/);
@@ -7130,7 +7381,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /launchReleasePacket\.betaSummary/);
   assert.match(
     more,
-    /launchReleasePacket\.betaNextActions\.slice\(0, 3\)\.map/,
+    /launchReleasePacket\.betaNextActions\s*\.slice\(\s*0,\s*3,?\s*\)\s*\.map/,
   );
   assert.match(more, /accessibilityLabel=\{[\s\S]*Open beta device QA cockpit/);
   assert.match(more, /Open QA Cockpit/);
@@ -7143,14 +7394,14 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /providerSetupVisibleRows/);
   assert.match(
     more,
-    /launchProviderSetupPlan\.rows\.filter\(\(row\) => row\.status !== "ready"\)/,
+    /launchProviderSetupPlan\.rows\.filter\(\s*\(row\)\s*=>\s*row\.status\s*!==\s*"ready",?\s*\)/,
   );
   assert.match(more, /launchProviderSetupPlan\.nextGate/);
   assert.match(more, /Next provider gate/);
   assert.match(more, /Provider gates ready for owner approval/);
   assert.match(more, /row\.proofRequired/);
   assert.match(more, /row\.proofChecklist/);
-  assert.match(more, /row\.proofChecklist\.slice\(0, 3\)\.map/);
+  assert.match(more, /row\.proofChecklist\s*\.slice\(\s*0,\s*3,?\s*\)\s*\.map/);
   assert.match(more, /row\.proofChecklist\.length > 3/);
   assert.match(more, /More proof steps:/);
   assert.doesNotMatch(more, /Proof step: \{row\.proofChecklist\[0\]\}/);
@@ -7170,13 +7421,13 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /Open proof mission/);
   assert.match(
     more,
-    /buildCareTwinQaFocusRoute\(\{ surfaceId: rowQaTarget\.surfaceId \}\)/,
+    /buildCareTwinQaFocusRoute\(\s*\{\s*surfaceId:\s*rowQaTarget\.surfaceId,?\s*\},?\s*\)/,
   );
   assert.match(more, /providerSetupProofChecklist/);
   assert.match(more, /Proof needed/);
   assert.match(
     more,
-    /row\.status === "blocked" \? row\.nextAction : row\.detail/,
+    /row\.status\s*===\s*"blocked"\s*\?\s*row\.nextAction\s*:\s*row\.detail/,
   );
   assert.match(more, /Owner: \{launchProviderSetupPlan\.nextGate\.owner\}/);
   assert.match(
@@ -7214,11 +7465,11 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     more,
-    /shareTextPayload\(\{[\s\S]*message:\s*buildLaunchProviderSetupShareText\(launchProviderSetupPlan/,
+    /shareTextPayload\(\s*\{[\s\S]*?message:\s*buildLaunchProviderSetupShareText\(\s*launchProviderSetupPlan/,
   );
   assert.match(
     more,
-    /const message = buildBetaHandoffPacketShareText\(launchReleasePacket,\s*nativeQaCapturePlan,\s*\{[\s\S]*providerSetupPlan:\s*launchProviderSetupPlan/,
+    /const message\s*=\s*buildBetaHandoffPacketShareText\(\s*launchReleasePacket,\s*nativeQaCapturePlan,\s*\{[\s\S]*?providerSetupPlan:\s*launchProviderSetupPlan/,
   );
   assert.match(more, /RECORDED_MOBILE_BETA_CI_PROOF/);
   assert.match(more, /ciProof:\s*RECORDED_MOBILE_BETA_CI_PROOF/);
@@ -7226,15 +7477,15 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/);
   assert.match(
     more,
-    /shareTextPayload\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/,
+    /shareTextPayload\(\s*\{\s*message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff",?\s*\},?\s*\)/,
   );
   assert.match(
     more,
-    /shareTextPayload\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/,
+    /shareTextPayload\(\s*\{\s*message:\s*buildReleasePacketShareText\(\s*launchReleasePacket/,
   );
   assert.match(
     more,
-    /shareTextPayload\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/,
+    /shareTextPayload\(\s*\{\s*message:\s*buildStoreSubmissionPacketShareText\(\s*launchStoreSubmissionPacket/,
   );
   assert.match(careContext, /launchProviderProfile/);
   assert.match(
@@ -7338,7 +7589,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     providerSetup,
-    /authSetupProofEvidence:\s*normalizeAuthSetupProofEvidence\(source\.authSetupProofEvidence\)/,
+    /authSetupProofEvidence:\s*normalizeAuthSetupProofEvidence\(\s*source\.authSetupProofEvidence,?\s*\)/,
   );
   assert.match(
     providerSetup,
@@ -7346,11 +7597,11 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     providerSetup,
-    /careEntryProviderSyncEvidence:\s*normalizeCareEntryProviderSyncEvidence\(source\.careEntryProviderSyncEvidence\)/,
+    /careEntryProviderSyncEvidence:\s*normalizeCareEntryProviderSyncEvidence\(\s*source\.careEntryProviderSyncEvidence,?\s*\)/,
   );
   assert.match(
     providerSetup,
-    /storageProviderEvidence:\s*normalizeStorageProviderEvidence\(source\.storageProviderEvidence\)/,
+    /storageProviderEvidence:\s*normalizeStorageProviderEvidence\(\s*source\.storageProviderEvidence,?\s*\)/,
   );
   assert.match(
     providerSetup,
@@ -7378,27 +7629,27 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     providerSetup,
-    /aiProviderEvidence:\s*normalizeAiProviderEvidence\(source\.aiProviderEvidence\)/,
+    /aiProviderEvidence:\s*normalizeAiProviderEvidence\(\s*source\.aiProviderEvidence,?\s*\)/,
   );
   assert.match(
     providerSetup,
-    /paymentsProviderEvidence:\s*normalizePaymentsProviderEvidence\(source\.paymentsProviderEvidence\)/,
+    /paymentsProviderEvidence:\s*normalizePaymentsProviderEvidence\(\s*source\.paymentsProviderEvidence,?\s*\)/,
   );
   assert.match(
     providerSetup,
-    /pushNotificationsProofEvidence:\s*normalizePushNotificationsProofEvidence\(source\.pushNotificationsProofEvidence\)/,
+    /pushNotificationsProofEvidence:\s*normalizePushNotificationsProofEvidence\(\s*source\.pushNotificationsProofEvidence,?\s*\)/,
   );
   assert.match(
     providerSetup,
-    /storeAccountsProofEvidence:\s*normalizeStoreAccountsProofEvidence\(source\.storeAccountsProofEvidence\)/,
+    /storeAccountsProofEvidence:\s*normalizeStoreAccountsProofEvidence\(\s*source\.storeAccountsProofEvidence,?\s*\)/,
   );
   assert.match(
     providerSetup,
-    /accountDeletionEvidence:\s*normalizeAccountDeletionEvidence\(source\.accountDeletionEvidence\)/,
+    /accountDeletionEvidence:\s*normalizeAccountDeletionEvidence\(\s*source\.accountDeletionEvidence,?\s*\)/,
   );
   assert.match(
     careTwinQaRoute,
-    /buildAuthSetupProofManifest\(state\.launchProviderProfile\.authSetupProofEvidence \?\? undefined\)/,
+    /buildAuthSetupProofManifest\(\s*state\.launchProviderProfile\.authSetupProofEvidence\s*\?\?\s*undefined,?\s*\)/,
   );
   assert.doesNotMatch(careTwinQaRoute, /buildAuthSetupProofManifest\(\{\}\)/);
   assert.match(
@@ -7411,7 +7662,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     careTwinQaRoute,
-    /const savedProof = state\.launchProviderProfile\.reportBinaryExportProofEvidence \?\? \{\}/,
+    /const savedProof\s*=\s*state\.launchProviderProfile\.reportBinaryExportProofEvidence\s*\?\?\s*\{\}/,
   );
   assert.match(
     careTwinQaRoute,
@@ -7443,7 +7694,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     careTwinQaRoute,
-    /deriveCareEntryProviderSyncProof\(state\.launchProviderProfile\.careEntryProviderSyncEvidence\)/,
+    /deriveCareEntryProviderSyncProof\(\s*state\.launchProviderProfile\.careEntryProviderSyncEvidence,?\s*\)/,
   );
   assert.doesNotMatch(
     careTwinQaRoute,
@@ -7451,12 +7702,12 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     careTwinQaRoute,
-    /buildAiProviderProofManifest\(state\.launchProviderProfile\.aiProviderEvidence\)/,
+    /buildAiProviderProofManifest\(\s*state\.launchProviderProfile\.aiProviderEvidence,?\s*\)/,
   );
   assert.doesNotMatch(careTwinQaRoute, /buildAiProviderProofManifest\(\{\}\)/);
   assert.match(
     careTwinQaRoute,
-    /buildPushNotificationsProofManifest\(state\.launchProviderProfile\.pushNotificationsProofEvidence\)/,
+    /buildPushNotificationsProofManifest\(\s*state\.launchProviderProfile\.pushNotificationsProofEvidence,?\s*\)/,
   );
   assert.doesNotMatch(
     careTwinQaRoute,
@@ -7464,7 +7715,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     careTwinQaRoute,
-    /buildStoreAccountsProofManifest\(state\.launchProviderProfile\.storeAccountsProofEvidence\)/,
+    /buildStoreAccountsProofManifest\(\s*state\.launchProviderProfile\.storeAccountsProofEvidence,?\s*\)/,
   );
   assert.doesNotMatch(
     careTwinQaRoute,
@@ -7472,7 +7723,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     careTwinQaRoute,
-    /buildAccountDeletionProofManifest\(state\.launchProviderProfile\.accountDeletionEvidence\)/,
+    /buildAccountDeletionProofManifest\(\s*state\.launchProviderProfile\.accountDeletionEvidence,?\s*\)/,
   );
   assert.doesNotMatch(
     careTwinQaRoute,
@@ -7570,7 +7821,7 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   );
   assert.match(
     more,
-    /router\.push\(buildCareTwinQaFocusRoute\(nativeQaCaptureNeedsTuneTarget\) as never\)/,
+    /router\.push\(\s*buildCareTwinQaFocusRoute\(\s*nativeQaCaptureNeedsTuneTarget,?\s*\)\s*as never,?\s*\)/,
   );
   assert.match(more, /mobileLaunchQaCaptureTargetStatusLabel\(target\)/);
   assert.match(more, /Pass pending proof/);
@@ -7585,29 +7836,29 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /qaSurface=\$\{encodeURIComponent\(target\.surfaceId\)\}/);
   assert.match(
     more,
-    /buildCareTwinQaFocusRoute\(storeScreenshotProofStatus\.nextTarget\)/,
+    /buildCareTwinQaFocusRoute\(\s*storeScreenshotProofStatus\.nextTarget,?\s*\)/,
   );
   assert.match(more, /Finish Proof/);
   assert.match(more, /nativeQaCaptureCockpitAction/);
   assert.match(
     more,
-    /shareTextPayload\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/,
+    /shareTextPayload\(\s*\{[\s\S]*?message:\s*buildMobileLaunchQaCaptureShareText\(\s*nativeQaCapturePlan/,
   );
   assert.match(more, /proofManifest:\s*savedQaProofManifest/);
   assert.match(more, /nativeQa:\s*savedNativeQaSummary/);
   assert.doesNotMatch(more, /nativeQa:\s*null/);
-  assert.match(more, /router\.push\(buildCareTwinQaFocusRoute/);
+  assert.match(more, /router\.push\(\s*buildCareTwinQaFocusRoute/);
 
   assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFixBriefShareText/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFocusedTargetShareText/);
   assert.match(
     careTwinQaRoute,
-    /buildMobileLaunchQaCaptureShareText\(betaCapturePlan,\s*reviewedAtIso\)/,
+    /buildMobileLaunchQaCaptureShareText\(\s*betaCapturePlan,\s*reviewedAtIso,?\s*\)/,
   );
   assert.match(
     careTwinQaRoute,
-    /buildMobileLaunchQaFixBriefShareText\(betaCapturePlan,\s*generatedAtIso\)/,
+    /buildMobileLaunchQaFixBriefShareText\(\s*betaCapturePlan,\s*generatedAtIso,?\s*\)/,
   );
   assert.match(careTwinQaRoute, /const shareFocusedTargetChecklist = async/);
   assert.match(careTwinQaRoute, /const shareFocusedFixBrief = async/);
@@ -7615,7 +7866,7 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(careTwinQaRoute, /title:\s*"WoofWatcher Needs Tune Fix Brief"/);
   assert.match(
     careTwinQaRoute,
-    /buildMobileReleaseQaShareText\(releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso\)/,
+    /buildMobileReleaseQaShareText\(\s*releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso,?\s*\)/,
   );
   assert.match(careTwinQaRoute, /useLocalSearchParams/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFocusedTarget/);
@@ -7748,7 +7999,7 @@ test("keeps shared care-document writes capability-gated and visibly recoverable
     /runCareSyncRequestWithTimeout\(\(signal\) =>\s*getCareState\(\s*householdScopedRequest\(storageHouseholdIdRef\.current, signal\)/,
   );
   assert.match(careContext, /careDocSyncNotice/);
-  assert.match(careContext, /createSerializedCareSyncWriter/);
+  assert.match(careContext, /getOrCreateSharedCareSyncWriter/);
   assert.match(careContext, /lastServerCareState/);
   assert.match(careContext, /careDocWriteGenerationRef/);
   assert.match(
@@ -8463,7 +8714,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (action) =>
         action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
         action.includes(
-          "Log, Plan, Today, Pack, Story, Health, Records, and More",
+          "Home, Log, Plans, Health, More, Pack, Story, and Records",
         ) &&
         action.includes("iOS and Android") &&
         action.includes("route-named"),

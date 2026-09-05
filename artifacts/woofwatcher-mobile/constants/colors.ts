@@ -128,15 +128,14 @@ const darkTheme = {
   goldSoft: "#33290F",
 };
 
-// Softened toward Apollo's 2026-07 storybook mockups: large calm radii,
-// hairline warm borders, soft diffuse shadows. Pixel style stays in the art
-// and accents, not in the container chrome.
+// Locked neo-retro board chrome: compact repeated surfaces, hairline warm
+// borders, and a close low-strength shadow so scrolling stacks stay crisp.
 const pixelUi = {
   radius: {
-    card: 20,
-    panel: 24,
-    scene: 18,
-    chip: 12,
+    card: 8,
+    panel: 12,
+    scene: 8,
+    chip: 6,
     pill: 999,
   },
   // Mock boards draw the Care Sense meters as 7 chunky rounded pips.
@@ -144,9 +143,10 @@ const pixelUi = {
   borderWidth: 1,
   hairline: "#E5DCC3",
   shadow: {
-    opacity: 0.06,
-    radius: 16,
-    y: 8,
+    opacity: 0.04,
+    radius: 6,
+    y: 2,
+    elevation: 1,
   },
 };
 

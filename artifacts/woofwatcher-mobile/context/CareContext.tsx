@@ -35,7 +35,7 @@ import {
   clearDiscardedServerEntryDurably,
   cleanupDiscardedServerEntryRows,
   createCareEntryDeleteFence,
-  createSerializedCareSyncWriter,
+  getOrCreateSharedCareSyncWriter,
   createSerializedCareEntryMutationQueue,
   decideCareEntryEditSyncDisposition,
   deriveCareSyncOutbox,
@@ -55,7 +55,6 @@ import {
   retryCareEntryMutationAfterConflict,
   runCareSyncRequestWithTimeout,
   sanitizeCareEntryDetailsForSync,
-  selectWoofWatcherKeysForOwnerWipe,
   shouldRetryCreate,
   shouldRetryUpdate,
   type CareEntryPendingDelete,
@@ -64,7 +63,12 @@ import {
   type SerializedCareSyncWriter,
   type SerializedCareEntryMutationQueue,
 } from "@/lib/careSync";
-import { prepareMountedPackPersistenceForOwnerWipe } from "@/lib/packPersistence";
+import {
+  PACK_LEGACY_LOCAL_CLAIM_KEY,
+  PACK_OWNER_WIPE_TOMBSTONE,
+  prepareMountedPackPersistenceForOwnerWipe,
+} from "@/lib/packPersistence";
+import { wipeWoofWatcherOwnedDataIfCurrent } from "@/lib/ownedLocalData";
 import {
   CARE_ENTRY_SYNC_PROTOCOL,
   CARE_ENTRY_SYNC_REVISION_KEY,
@@ -89,6 +93,16 @@ import {
   type CareDocSyncNotice,
   type CareStateWriteAccess,
 } from "@/lib/careStateWriteAccess";
+import {
+  createAcceptedCareDocFence,
+  createCareDocDurabilityCoordinator,
+  type CareDocDurabilityCoordinator,
+} from "@/lib/careDocDurability";
+import {
+  AVATAR_LEGACY_LOCAL_CLAIM_KEY,
+  type AvatarPersistenceScope,
+} from "@/lib/avatarPersistence";
+import type { LocalDataEraseResult } from "@/lib/privacy-erase-outcome";
 import {
   buildPrincipalStorageKey,
   cacheBelongsToPrincipal,
@@ -158,7 +172,11 @@ function isCareStateEnvelope(value: unknown): value is CareStateEnvelope {
 type DurableCareStorageMutation =
   | { kind: "set"; key: string; value: string }
   | { kind: "remove"; key: string }
-  | { kind: "wipe"; preserveLedgerPrefix: string };
+  | {
+      kind: "wipe";
+      preserveLedgerPrefix: string;
+      isCurrent: () => boolean;
+    };
 
 export interface WeightInfo {
   current: number;
@@ -721,6 +739,8 @@ function isNotFound(err: unknown): boolean {
   );
 }
 
+export type CareHydrationStatus = "loading" | "ready" | "failed";
+
 interface CareContextValue {
   state: CareState;
   addEntry: (entry: Omit<Entry, "id">) => string | null;
@@ -731,6 +751,15 @@ interface CareContextValue {
     updater: (doc: CareDoc) => CareDoc,
     options?: { blockedMessage?: string },
   ) => boolean;
+  /**
+   * Applies the same local/provider update as updateCareDoc, but resolves true
+   * only after that exact accepted snapshot reaches this principal's current
+   * household storage boundary.
+   */
+  updateCareDocDurably: (
+    updater: (doc: CareDoc) => CareDoc,
+    options?: { blockedMessage?: string },
+  ) => Promise<boolean>;
   refresh: () => void;
   /**
    * Store-compliance data deletion: resets the live care document and
@@ -738,9 +767,13 @@ interface CareContextValue {
    * avatar art, QA sessions). Only an opaque, non-renderable remote-deletion
    * ledger may remain until provider cleanup is confirmed.
    */
-  eraseAllLocalData: () => Promise<void>;
+  eraseAllLocalData: () => Promise<LocalDataEraseResult>;
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
+  hydrationStatus: CareHydrationStatus;
+  retryHydration: () => void;
+  careScopeRevision: number;
+  avatarStorageScope: AvatarPersistenceScope | null;
   isSyncing: boolean;
   careStateWriteAccess: CareStateWriteAccess;
   careDocSyncNotice: CareDocSyncNotice | null;
@@ -784,38 +817,44 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       : authenticatedStorageUserId
         ? `account:${authenticatedStorageUserId}`
         : "local";
-  const storageWriterRef =
-    useRef<SerializedCareSyncWriter<DurableCareStorageMutation> | null>(null);
-  if (!storageWriterRef.current) {
-    storageWriterRef.current =
-      createSerializedCareSyncWriter<DurableCareStorageMutation>(
-        async (mutation) => {
-          if (mutation.kind === "set") {
-            await AsyncStorage.setItem(mutation.key, mutation.value);
-            return;
-          }
-          if (mutation.kind === "remove") {
-            await AsyncStorage.removeItem(mutation.key);
-            return;
-          }
-          // Resolve the key list inside the serialized wipe itself. Any
-          // already-started write finishes first; every key it creates is
-          // therefore visible to this final removal pass.
-          const keys = await AsyncStorage.getAllKeys();
-          const owned = selectWoofWatcherKeysForOwnerWipe(
-            keys,
-            mutation.preserveLedgerPrefix,
-          );
-          if (owned.length > 0) await AsyncStorage.multiRemove(owned);
-        },
-      );
-  }
+  const storageWriter =
+    getOrCreateSharedCareSyncWriter<DurableCareStorageMutation>(
+      AsyncStorage,
+      async (mutation) => {
+        if (mutation.kind === "set") {
+          await AsyncStorage.setItem(mutation.key, mutation.value);
+          return;
+        }
+        if (mutation.kind === "remove") {
+          await AsyncStorage.removeItem(mutation.key);
+          return;
+        }
+        // Resolve and remove inside the serialized wipe. The initiating
+        // Care session is re-checked after the queue and key scan, so an old
+        // account cannot erase data created by the newly active principal.
+        await wipeWoofWatcherOwnedDataIfCurrent({
+          storage: AsyncStorage,
+          deletionLedgerKeyPrefix: mutation.preserveLedgerPrefix,
+          preservedExactKeys: [AVATAR_LEGACY_LOCAL_CLAIM_KEY],
+          terminalTombstones: [
+            {
+              key: PACK_LEGACY_LOCAL_CLAIM_KEY,
+              value: PACK_OWNER_WIPE_TOMBSTONE,
+            },
+          ],
+          documentDirectory:
+            Platform.OS === "web" ? null : FileSystem.documentDirectory,
+          fileSystem: FileSystem,
+          isCurrent: mutation.isCurrent,
+        });
+      },
+    );
 
   return (
     <CareProviderSession
       key={sessionKey}
       storageUserId={authenticatedStorageUserId}
-      storageWriter={storageWriterRef.current}
+      storageWriter={storageWriter}
     >
       {children}
     </CareProviderSession>
@@ -862,6 +901,8 @@ function CareProviderSession({
   const [entries, setEntries] = useState<Entry[]>([]);
   const [serverVersion, setServerVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+  const [hydrationAttempt, setHydrationAttempt] = useState(0);
+  const [careScopeRevision, setCareScopeRevision] = useState(0);
   const [householdScopeChanging, setHouseholdScopeChanging] = useState(
     storageUserId !== null,
   );
@@ -933,6 +974,7 @@ function CareProviderSession({
   const householdSessionGenerationRef = useRef(0);
   const householdScopeInvalidationGenerationRef = useRef(0);
   const careDocWriteGenerationRef = useRef(0);
+  const careDocMutationRevisionRef = useRef(0);
   const careDocWritesInFlightRef = useRef(0);
   const entryDeletesInFlightRef = useRef(0);
   const entryDeleteGenerationRef = useRef(0);
@@ -940,13 +982,24 @@ function CareProviderSession({
   const careDocRecoveryInFlightRef = useRef(false);
   const careDocRecoveryGenerationRef = useRef(0);
   const careDocPermissionNoticeAtRef = useRef(0);
-  const eraseInFlightRef = useRef<Promise<void> | null>(null);
+  const eraseInFlightRef = useRef<Promise<LocalDataEraseResult> | null>(null);
   const lastServerCareStateRef = useRef<{
     doc: CareDoc;
     version: number;
   } | null>(null);
   const stateWriter = storageWriter;
   const discardedServerEntryWriter = storageWriter;
+  const careDocDurabilityRef = useRef<CareDocDurabilityCoordinator | null>(
+    null,
+  );
+  if (!careDocDurabilityRef.current) {
+    careDocDurabilityRef.current = createCareDocDurabilityCoordinator({
+      currentEpoch: () => storageWriter.currentEpoch(),
+      enqueue: (mutation, expectedEpoch) =>
+        storageWriter.enqueue(mutation, expectedEpoch),
+    });
+  }
+  const careDocDurability = careDocDurabilityRef.current;
 
   const markServerEntryDiscarded = useCallback(
     async (entryId: string) => {
@@ -1225,6 +1278,7 @@ function CareProviderSession({
     if (!sessionActiveRef.current || !signedInRef.current) return;
     householdScopeInvalidationGenerationRef.current += 1;
     householdSessionGenerationRef.current += 1;
+    setCareScopeRevision((current) => current + 1);
     careDocWriteGenerationRef.current += 1;
     careDocRecoveryGenerationRef.current += 1;
     careDocRecoveryInFlightRef.current = false;
@@ -1634,6 +1688,9 @@ function CareProviderSession({
         if (!isCurrentSession()) return;
         hydratedRef.current = true;
         setHydrated(true);
+        setStorageWarning((current) =>
+          current === "read-failed" ? null : current,
+        );
       } catch {
         if (!isCurrentSession()) return;
         // The read itself failed (transient storage error). Retry once;
@@ -1652,7 +1709,27 @@ function CareProviderSession({
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [discardedEntryStorageKey, stateStorageKey, storageUserId, storageWriter]);
+  }, [
+    discardedEntryStorageKey,
+    hydrationAttempt,
+    stateStorageKey,
+    storageUserId,
+    storageWriter,
+  ]);
+
+  const retryHydration = useCallback(() => {
+    if (
+      !sessionActiveRef.current ||
+      hydratedRef.current ||
+      storageUserId === undefined
+    ) {
+      return;
+    }
+    setStorageWarning((current) =>
+      current === "read-failed" ? null : current,
+    );
+    setHydrationAttempt((current) => current + 1);
+  }, [storageUserId]);
 
   // Persist the offline cache whenever synced state changes. A failing
   // device store is a data risk in a local-first app, so surface it instead
@@ -1668,6 +1745,18 @@ function CareProviderSession({
     ) {
       return;
     }
+    const automaticSnapshot = {
+      storageKey: stateStorageKey,
+      ownerUserId: storageUserId,
+      householdId: storageHouseholdIdRef.current,
+      doc,
+      entries,
+      serverVersion,
+      lastServerCareState: lastServerCareStateRef.current,
+    };
+    if (careDocDurability.consumeAutomaticPersistence(automaticSnapshot)) {
+      return;
+    }
     const writerEpoch = stateWriter.currentEpoch();
     stateWriter
       .enqueue(
@@ -1675,17 +1764,18 @@ function CareProviderSession({
           kind: "set",
           key: stateStorageKey,
           value: JSON.stringify({
-            ownerUserId: storageUserId,
-            householdId: storageHouseholdIdRef.current,
-            doc,
-            entries,
-            serverVersion,
-            lastServerCareState: lastServerCareStateRef.current,
+            ownerUserId: automaticSnapshot.ownerUserId,
+            householdId: automaticSnapshot.householdId,
+            doc: automaticSnapshot.doc,
+            entries: automaticSnapshot.entries,
+            serverVersion: automaticSnapshot.serverVersion,
+            lastServerCareState: automaticSnapshot.lastServerCareState,
           }),
         },
         writerEpoch,
       )
-      .then(() => {
+      .then((result) => {
+        if (result !== "applied") return;
         setStorageWarning((current) =>
           current === "save-failed" ? null : current,
         );
@@ -1697,6 +1787,7 @@ function CareProviderSession({
     serverVersion,
     hydrated,
     householdScopeChanging,
+    careDocDurability,
     stateWriter,
     stateStorageKey,
     storageUserId,
@@ -2342,6 +2433,7 @@ function CareProviderSession({
           persistencePausedRef.current = true;
           setHouseholdScopeChanging(true);
           householdSessionGenerationRef.current += 1;
+          setCareScopeRevision((current) => current + 1);
           careDocWriteGenerationRef.current += 1;
           entryUpdateQueue.cancelAll();
           careDocWritesInFlightRef.current = 0;
@@ -3292,6 +3384,7 @@ function CareProviderSession({
         ...updater(previous),
         updatedAt: new Date().toISOString(),
       };
+      careDocMutationRevisionRef.current += 1;
       docRef.current = next;
       setDoc(next);
       if (signedInRef.current && access === "allowed") {
@@ -3339,6 +3432,67 @@ function CareProviderSession({
     [presentCareDocBlockedNotice, pushDoc],
   );
 
+  const updateCareDocDurably = useCallback(
+    async (
+      updater: (doc: CareDoc) => CareDoc,
+      options?: { blockedMessage?: string },
+    ): Promise<boolean> => {
+      const accepted = updateCareDoc(updater, options);
+      if (!accepted || storageUserId === undefined) return false;
+
+      // Capture every identity and lifecycle field in the same synchronous
+      // turn as the accepted update. The serialized snapshot never borrows a
+      // later household id, entry list, or provider baseline.
+      const authenticatedUserAtStart = authenticatedUserIdRef.current;
+      const signedInAtStart = signedInRef.current;
+      const householdIdAtStart = storageHouseholdIdRef.current;
+      const householdGenerationAtStart = householdSessionGenerationRef.current;
+      const scopeInvalidationAtStart =
+        householdScopeInvalidationGenerationRef.current;
+      const eraseGenerationAtStart = eraseGenerationRef.current;
+      const mutationRevisionAtStart = careDocMutationRevisionRef.current;
+      const snapshot = {
+        storageKey: stateStorageKey,
+        ownerUserId: storageUserId,
+        householdId: householdIdAtStart,
+        doc: docRef.current,
+        entries: entriesRef.current,
+        serverVersion: versionRef.current,
+        lastServerCareState: lastServerCareStateRef.current,
+      };
+      const acceptedDocIsCurrent = createAcceptedCareDocFence(snapshot.doc);
+
+      const sessionBoundaryIsCurrent = () =>
+        sessionActiveRef.current &&
+        hydratedRef.current &&
+        !persistencePausedRef.current &&
+        !householdScopeChangingRef.current &&
+        eraseGenerationRef.current === eraseGenerationAtStart &&
+        householdSessionGenerationRef.current === householdGenerationAtStart &&
+        householdScopeInvalidationGenerationRef.current ===
+          scopeInvalidationAtStart &&
+        signedInRef.current === signedInAtStart &&
+        authenticatedUserIdRef.current === authenticatedUserAtStart &&
+        storageHouseholdIdRef.current === householdIdAtStart;
+      const saveIsCurrent = () =>
+        sessionBoundaryIsCurrent() &&
+        careDocMutationRevisionRef.current === mutationRevisionAtStart &&
+        acceptedDocIsCurrent(docRef.current);
+
+      const outcome = await careDocDurability.persist(snapshot, saveIsCurrent);
+      if (outcome.status === "storage-failed") {
+        if (sessionBoundaryIsCurrent()) setStorageWarning("save-failed");
+        return false;
+      }
+      if (outcome.status !== "applied") return false;
+      setStorageWarning((current) =>
+        current === "save-failed" ? null : current,
+      );
+      return true;
+    },
+    [careDocDurability, stateStorageKey, storageUserId, updateCareDoc],
+  );
+
   const state = useMemo<CareState>(() => {
     // Never render the previous household while a newly verified scope is
     // being archived and loaded. Consumers also receive isLoaded=false,
@@ -3380,7 +3534,7 @@ function CareProviderSession({
     // caller must not report completion while the first wipe is still queued.
     if (eraseInFlightRef.current) return eraseInFlightRef.current;
 
-    const operation = (async () => {
+    const operation = (async (): Promise<LocalDataEraseResult> => {
       const authenticatedUserAtStart = authenticatedUserIdRef.current;
       const eraseGenerationAtStart = eraseGenerationRef.current + 1;
       eraseGenerationRef.current = eraseGenerationAtStart;
@@ -3404,6 +3558,8 @@ function CareProviderSession({
       }
       setHydrated(false);
       setHouseholdScopeChanging(true);
+      householdSessionGenerationRef.current += 1;
+      setCareScopeRevision((current) => current + 1);
       careDocWriteGenerationRef.current += 1;
       careDocWritesInFlightRef.current = 0;
       entryDeletesInFlightRef.current = 0;
@@ -3438,7 +3594,7 @@ function CareProviderSession({
           // Continue the local privacy action, but retain a visible warning.
           setStorageWarning("save-failed");
         }
-        if (!eraseIsCurrent()) return;
+        if (!eraseIsCurrent()) return "superseded";
       }
 
       entryUpdateQueue.cancelAll();
@@ -3455,31 +3611,21 @@ function CareProviderSession({
 
       // Re-check immediately before the destructive shared-writer transition;
       // a stale account-A callback must never supersede account B's writes.
-      if (!eraseIsCurrent()) return;
+      if (!eraseIsCurrent()) return "superseded";
       try {
         await prepareMountedPackPersistenceForOwnerWipe();
-        if (!eraseIsCurrent()) return;
+        if (!eraseIsCurrent()) return "superseded";
         await storageWriter.supersede({
           kind: "wipe",
           preserveLedgerPrefix: DISCARDED_SERVER_ENTRY_IDS_KEY,
+          isCurrent: eraseIsCurrent,
         });
       } catch (error) {
         setStorageWarning("save-failed");
         throw error;
       }
-      if (!eraseIsCurrent()) return;
-
-      // "Local care data cleared" includes files written by WoofWatcher, not only
-      // key-value state: exports and record attachments live here on native.
-      if (Platform.OS !== "web" && FileSystem.documentDirectory) {
-        await Promise.all(
-          ["WoofWatcherReports", "woofwatcher-attachments"].map((dir) =>
-            FileSystem.deleteAsync(`${FileSystem.documentDirectory}${dir}/`, {
-              idempotent: true,
-            }),
-          ),
-        );
-      }
+      if (!eraseIsCurrent()) return "superseded";
+      return "erased";
     })();
 
     eraseInFlightRef.current = operation;
@@ -3489,9 +3635,14 @@ function CareProviderSession({
           eraseInFlightRef.current = null;
         }
         if (sessionActiveRef.current) {
-          persistencePausedRef.current = false;
-          householdScopeChangingRef.current = false;
-          setHouseholdScopeChanging(false);
+          // Local-only sessions can reopen immediately. An authenticated
+          // session must stay masked until the fresh /me + care refresh below
+          // republishes its exact owner-household-dog Avatar scope. Otherwise
+          // the usual same-household response can leave Avatar stuck at null.
+          const householdReverificationRequired = signedInRef.current;
+          persistencePausedRef.current = householdReverificationRequired;
+          householdScopeChangingRef.current = householdReverificationRequired;
+          setHouseholdScopeChanging(householdReverificationRequired);
           hydratedRef.current = true;
           setHydrated(true);
         }
@@ -3505,6 +3656,35 @@ function CareProviderSession({
     storageWriter,
   ]);
 
+  const hydrationStatus: CareHydrationStatus =
+    !hydrated && storageWarning === "read-failed"
+      ? "failed"
+      : hydrated && !householdScopeChanging
+        ? "ready"
+        : "loading";
+
+  const avatarStorageScope = useMemo<AvatarPersistenceScope | null>(() => {
+    if (!hydrated || householdScopeChanging || storageUserId === undefined) {
+      return null;
+    }
+    const activePetId = normalizeStorageUserId(state.activePetId);
+    if (!activePetId) return null;
+    if (storageUserId === null) {
+      return isClerkEnabledForBuild
+        ? null
+        : { ownerUserId: null, householdId: null, activePetId };
+    }
+    const householdId = storageHouseholdIdRef.current;
+    if (!householdScopeVerifiedRef.current || !householdId) return null;
+    return { ownerUserId: storageUserId, householdId, activePetId };
+  }, [
+    careScopeRevision,
+    householdScopeChanging,
+    hydrated,
+    state.activePetId,
+    storageUserId,
+  ]);
+
   const value = useMemo<CareContextValue>(
     () => ({
       state,
@@ -3512,10 +3692,15 @@ function CareProviderSession({
       deleteEntry,
       updateEntry,
       updateCareDoc,
+      updateCareDocDurably,
       refresh: () => void syncFromServer(),
       eraseAllLocalData,
       syncOutbox,
       isLoaded: hydrated && !householdScopeChanging,
+      hydrationStatus,
+      retryHydration,
+      careScopeRevision,
+      avatarStorageScope,
       isSyncing,
       careStateWriteAccess,
       careDocSyncNotice,
@@ -3528,11 +3713,16 @@ function CareProviderSession({
       deleteEntry,
       updateEntry,
       updateCareDoc,
+      updateCareDocDurably,
       syncFromServer,
       eraseAllLocalData,
       syncOutbox,
       hydrated,
       householdScopeChanging,
+      hydrationStatus,
+      retryHydration,
+      careScopeRevision,
+      avatarStorageScope,
       isSyncing,
       careStateWriteAccess,
       careDocSyncNotice,

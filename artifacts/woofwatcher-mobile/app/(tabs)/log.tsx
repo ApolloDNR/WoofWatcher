@@ -38,6 +38,7 @@ import {
 } from "@workspace/care-domain";
 import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, Entry } from "@/context/CareContext";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
@@ -48,7 +49,6 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import {
   getCenteredModalBackdropPadding,
-  getFormKeyboardScrollProps,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
@@ -1814,6 +1814,11 @@ export default function LogScreen() {
     setPromptNote("");
   }, [promptId, promptNote, promptMode, state.entries, caregiver, updateEntry]);
 
+  const dismissQuickNote = useCallback(() => {
+    setPromptId(null);
+    setPromptNote("");
+  }, []);
+
   const handleDelete = useCallback(
     (id: string, title: string, onDeleted?: () => void) => {
       confirmThroughSteps(
@@ -2547,8 +2552,7 @@ export default function LogScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <ScrollView
-        {...getFormKeyboardScrollProps(Platform.OS)}
+      <KeyboardAwareScrollViewCompat
         ref={scrollRef}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
@@ -2557,8 +2561,6 @@ export default function LogScreen() {
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
             title="Log"
-            back
-            onBack={() => router.push("/")}
             actionIcon="notifications-outline"
             actionLabel="Open Health Watch"
             onAction={() => {
@@ -4503,7 +4505,7 @@ export default function LogScreen() {
             </>
           ) : null}
         </Animated.View>
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
 
       {/* Launcher detail sheet */}
       <Modal
@@ -4537,6 +4539,15 @@ export default function LogScreen() {
                       {launcherDetailPresentation.subtitle}
                     </Text>
                   </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close quick log details"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => setLauncherDetailAction(null)}
+                    style={s.sheetCloseButton}
+                  >
+                    <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                  </Pressable>
                 </View>
 
                 <View style={[s.launcherDetailSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -4673,6 +4684,15 @@ export default function LogScreen() {
                       {detailEntry.caregiver || "Care team"} - {new Date(detailEntry.occurredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                     </Text>
                   </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close care log details"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => setDetailEntryId(null)}
+                    style={s.sheetCloseButton}
+                  >
+                    <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                  </Pressable>
                 </View>
 
                 <View style={s.detailCommandRail}>
@@ -5328,8 +5348,20 @@ export default function LogScreen() {
       <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
         <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
           <Pressable accessible={false} accessibilityViewIsModal style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+            <KeyboardAwareScrollViewCompat style={s.editSheetFormScroll} showsVerticalScrollIndicator={false} bounces={false}>
             <View style={s.editHandle} />
-            <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
+            <View style={s.editSheetHeader}>
+              <Text accessibilityRole="header" style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cancel editing care log"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => setEditEntry(null)}
+                style={s.sheetCloseButton}
+              >
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
             <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Title</Text>
             <TextInput
               value={editTitle}
@@ -5353,19 +5385,20 @@ export default function LogScreen() {
               onPress={saveEditEntry}
               style={s.editSaveAction}
             />
+            </KeyboardAwareScrollViewCompat>
           </Pressable>
         </Pressable>
       </Modal>
 
       {/* Post-log quick-note prompt */}
-      <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
-        <Pressable accessible={false} style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
+      <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={dismissQuickNote}>
+        <Pressable accessible={false} style={[s.modalBackdrop, centeredModalPadding]} onPress={dismissQuickNote}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalCenter}>
-            <Pressable accessible={false} accessibilityViewIsModal style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
+            <Pressable accessible={false} accessibilityViewIsModal style={[s.modalCard, { backgroundColor: colors.card }]} onPress={(event) => event.stopPropagation()}>
               <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
                 <Ionicons name="checkmark" size={22} color={colors.sage} />
               </View>
-              <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+              <Text accessibilityRole="header" style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                 {promptMode === "post-log" ? `${promptTitle} logged` : "Add sticky note"}
               </Text>
               <Text style={[s.modalSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -5373,6 +5406,11 @@ export default function LogScreen() {
               </Text>
               <TextInput
                 ref={promptRef}
+                accessibilityLabel={
+                  promptMode === "post-log"
+                    ? "Optional care log note"
+                    : "Sticky note"
+                }
                 placeholder="e.g. ate eagerly, left some kibble..."
                 placeholderTextColor={colors.mutedForeground}
                 value={promptNote}
@@ -5385,15 +5423,16 @@ export default function LogScreen() {
               />
               <View style={s.modalActions}>
                 <Pressable
-                  onPress={() => {
-                    setPromptId(null);
-                    setPromptNote("");
-                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Skip sticky note"
+                  onPress={dismissQuickNote}
                   style={({ pressed }) => [s.modalSkip, { opacity: pressed ? 0.6 : 1 }]}
                 >
                   <Text style={[s.modalSkipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Skip</Text>
                 </Pressable>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Save sticky note"
                   onPress={saveQuickNote}
                   style={({ pressed }) => [s.modalSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
@@ -6153,6 +6192,7 @@ const s = StyleSheet.create({
   stickyNoteMeta: { fontSize: 11, marginTop: 4 },
   launcherDetailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, gap: 14 },
   launcherDetailTop: { flexDirection: "row", alignItems: "center", gap: 13 },
+  sheetCloseButton: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   launcherDetailIcon: { width: 58, height: 58, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   launcherDetailKicker: { fontSize: 9, letterSpacing: 1.1 },
   launcherDetailTitle: { fontSize: 23, marginTop: 2 },
@@ -6477,9 +6517,11 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
+  editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", padding: 22 },
+  editSheetFormScroll: { flexShrink: 1 },
   editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
-  editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
+  editSheetHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 },
+  editSheetTitle: { flex: 1, fontSize: 20, letterSpacing: -0.2 },
   editFieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 7, marginTop: 14 },
   editSaveAction: { marginTop: 20 },
 

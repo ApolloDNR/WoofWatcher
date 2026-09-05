@@ -78,6 +78,16 @@ function includesAll(source, values) {
   return values.every((value) => source.includes(value));
 }
 
+function matchesAll(source, patterns) {
+  return patterns.every((pattern) => pattern.test(source));
+}
+
+function consumesAuthSetupProofEvidence(source) {
+  return /buildAuthSetupProofManifest\(\s*state\.launchProviderProfile\.authSetupProofEvidence\s*\?\?\s*undefined,?\s*\)/.test(
+    source,
+  );
+}
+
 const doctorName = "WoofWatcher mobile beta doctor";
 const doctorPurpose = "confirm the two-day beta export path before device QA.";
 const proofCommands = [
@@ -128,7 +138,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=account-deletion-proof and capture structured self-serve deletion route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store approval proof files before enabling destructive account deletion.",
   "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture structured support/legal proof files for support inbox, privacy policy and terms, refund/subscription policy, veterinary boundary and emergency language, deletion escalation, incident response owner, and Apollo approval/no-launch boundary before public launch.",
-  "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android with route-named evidence before claiming route visual proof.",
+  "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, More, Pack, Story, and Records on iOS and Android with route-named evidence before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
@@ -1259,11 +1269,13 @@ const carePassStorageProofGuardIsSourceBacked =
   ) &&
   includesAll(recordsRouteSource, [
     "deriveLaunchProviderSetup",
-    "describeCarePassArtifactExport(artifact",
     "const storage = exportView.storage",
-    "storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured",
     "storage.label",
     "storage.detail",
+  ]) &&
+  matchesAll(recordsRouteSource, [
+    /describeCarePassArtifactExport\(\s*artifact,\s*\{/,
+    /storageProviderConfigured:\s*launchProviderSetupPlan\.providerInput\s*\.storageProviderConfigured/,
   ]);
 check(
   "Care Pass storage proof guard is source-backed",
@@ -1293,9 +1305,11 @@ const attachmentStorageProofGuardIsSourceBacked =
     "Attach records storage proof",
   ]) &&
   includesAll(moreRouteSource, [
-    "storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured)",
-    "storageProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.storageProviderProofReady)",
     "storageQueue: attachmentManifest.launchQueue",
+  ]) &&
+  matchesAll(moreRouteSource, [
+    /storageProviderConfigured:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.storageProviderConfigured,?\s*\)/,
+    /storageProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.storageProviderProofReady,?\s*\)/,
   ]) &&
   !/storageProviderProofReady:\s*false/.test(moreRouteSource);
 check(
@@ -1328,15 +1342,17 @@ const aggregateLaunchReadinessProofGuardIsSourceBacked =
   ]) &&
   includesAll(moreRouteSource, [
     "deriveLaunchProviderSetup(state.launchProviderProfile)",
-    "authProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.authProviderProofReady)",
-    "databaseProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.databaseProviderProofReady)",
-    "aiProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.aiProviderProofReady)",
-    "paymentsProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.paymentsProviderProofReady)",
-    "accountDeletionProofReady: Boolean(launchProviderSetupPlan.providerInput.accountDeletionProofReady)",
-    "pushNotificationsProofReady: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsProofReady)",
-    "storeAccountsProofReady: Boolean(launchProviderSetupPlan.providerInput.storeAccountsProofReady)",
     "privacyLegalProofReady",
     "supportRunbookProofReady",
+  ]) &&
+  matchesAll(moreRouteSource, [
+    /authProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.authProviderProofReady,?\s*\)/,
+    /databaseProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.databaseProviderProofReady,?\s*\)/,
+    /aiProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.aiProviderProofReady,?\s*\)/,
+    /paymentsProviderProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.paymentsProviderProofReady,?\s*\)/,
+    /accountDeletionProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.accountDeletionProofReady,?\s*\)/,
+    /pushNotificationsProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.pushNotificationsProofReady,?\s*\)/,
+    /storeAccountsProofReady:\s*Boolean\(\s*launchProviderSetupPlan\.providerInput\.storeAccountsProofReady,?\s*\)/,
   ]) &&
   !/authProviderProofReady:\s*false/.test(moreRouteSource) &&
   !/databaseProviderProofReady:\s*false/.test(moreRouteSource) &&
@@ -1431,15 +1447,9 @@ const authSetupProofEvidencePropagationIsSourceBacked =
     "authSetupProofEvidence?: AuthSetupProofManifestInput | null",
     "authSetupProofEvidence: normalizeAuthSetupProofEvidence(source.authSetupProofEvidence)",
   ]) &&
-  includesAll(authUiSource, [
-    "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
-  ]) &&
-  includesAll(setupRouteSource, [
-    "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
-  ]) &&
-  includesAll(careTwinQaRouteSource, [
-    "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
-  ]) &&
+  consumesAuthSetupProofEvidence(authUiSource) &&
+  consumesAuthSetupProofEvidence(setupRouteSource) &&
+  consumesAuthSetupProofEvidence(careTwinQaRouteSource) &&
   !authUiSource.includes("buildAuthSetupProofManifest({})") &&
   !setupRouteSource.includes("buildAuthSetupProofManifest({})") &&
   !careTwinQaRouteSource.includes("buildAuthSetupProofManifest({})");
@@ -1996,14 +2006,16 @@ const recordsBinaryExportProofManifestIsSourceBacked =
   includesAll(recordsRouteSource, [
     "buildReportBinaryExportProofManifest",
     "Binary proof manifest",
-    "const binaryProofManifest = buildReportBinaryExportProofManifest",
-    "carePassHtmlFileName: exportView.fileName",
-    "dogIdSvgFileName: credentialImageView.fileName",
     "generatedCarePassPdf:",
     "generatedDogIdPng:",
-    "storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured",
     "binaryProofManifest.rows.map",
     "binaryProofManifest.blockers.map",
+  ]) &&
+  matchesAll(recordsRouteSource, [
+    /const binaryProofManifest\s*=\s*buildReportBinaryExportProofManifest\(\s*\{/,
+    /carePassHtmlFileName:\s*exportView\.fileName/,
+    /dogIdSvgFileName:\s*credentialImageView\.fileName/,
+    /storageProviderConfigured:\s*launchProviderSetupPlan\.providerInput\s*\.storageProviderConfigured/,
   ]);
 check(
   "records binary export proof manifest is source-backed",
@@ -2735,30 +2747,30 @@ const routeVisualProofTargetIsSourceBacked =
   includesAll(mobileReleaseQaSource, [
     "route-visual-consistency",
     "Route Visual Consistency",
-    "Today",
+    "Home",
     "Log",
-    "Plan",
+    "Plans",
+    "Health",
+    "More",
     "Pack",
     "Story",
-    "Health",
     "Records",
-    "More",
-    "iOS screenshot of Today route top.",
-    "Android screenshot of Today route top.",
+    "iOS screenshot of Home route top.",
+    "Android screenshot of Home route top.",
     "Route-named file names or URIs for every attachment",
     'requiredNativePlatforms: ["ios", "android"]',
   ]) &&
   includesAll(betaHandoffPacketSource, [
     "Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
-    "Capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android before claiming route visual proof.",
+    "Capture Home, Log, Plans, Health, More, Pack, Story, and Records on iOS and Android before claiming route visual proof.",
     "Name or save each Route Visual screenshot with the route label and platform before attaching it",
-    "Today-iOS",
-    "More-Android",
+    "Home-iOS",
+    "Records-Android",
   ]) &&
   includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused route visual consistency target",
     "/care-twin-qa?qaSurface=route-visual-consistency",
-    "Log, Plan, Today, Pack, Story, Health, Records, and More",
+    "Home, Log, Plans, Health, More, Pack, Story, and Records",
     "route-named iOS screenshots",
     "route-named Android screenshots",
     "Web preview screenshots do not replace native proof",

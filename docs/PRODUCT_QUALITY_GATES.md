@@ -1,12 +1,23 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-04 Local state-integrity and staged-save gate
+
+- PASS context boundary: Care and Avatar expose `loading`, `ready`, and `failed` plus retry. Avatar persistence is exact-owner/verified-household/dog scoped; corruption recovery is slot-specific; legacy claims are failure-atomic; writes are ordered; and failed erase preserves a non-reclaimable tombstone.
+- PASS scope integrity: Setup and Avatar Studio bind to the current Care scope and dog identity. More editors additionally require Care readiness and bind to the provider household plus an editor-specific source fingerprint, so both cross-household changes and same-household refreshes dismiss stale drafts. Rename requests carry the captured household id and are rejected server-side after identity lookup but before mutation if it changed.
+- PASS local durability: Setup is single-flight, rebases same-dog provider updates with conflict review, accepts semantic provider echoes, and awaits exact accepted Care persistence before optional Avatar work. Partial retries cannot replay the completed stage, and navigation plus controls stay locked until the outcome is known.
+- PASS interaction/accessibility: Versioned Avatar drafts prevent same-frame loss; Privacy deletion settles every local participant; storage failures are visible; modal wrappers do not swallow child semantics; named close actions are present; pending controls are truthful; and backdrop taps never save.
+- PASS behavioral/source: The More scope and provider-bound rename regression passes `4/4`; the server household-scope regression passes `5/5`; the mobile matrix passes `880/880`; the full focused matrix passes `1149/1149`; mobile and API-server TypeScript are green.
+- PASS export/runtime/assets: PixelLab passes `150/150`; exact-source Expo export completes at `1,934` modules / `258` assets; all `13` runtime routes pass.
+- PENDING dependency-complete: Record branch CI for this slice.
+- OPEN native/release: Verify slow hydration, corruption recovery, failed writes, scope changes, partial retries, modal focus, fast household/dog switching, and announcements on real iOS/Android with VoiceOver/TalkBack. Provider acknowledgement, native screenshots, store review, public launch, and Apollo approval remain separate gates.
+
 ## 2026-09-04 Auth and Setup programmatic input-label gate
 
 - PASS source: Shared Auth and Setup fields apply `accessibilityLabel={accessibilityLabel ?? label}` to the input itself, covering provider sign-in, sign-up, verification code, and every Setup field.
 - PASS disambiguation: The duplicate visible `Name` captions expose `Dog name` and `Caregiver name` as their distinct accessible names.
 - PASS regression: A scoped red-first readiness test rejected the former global false positive and now passes `1/1`; mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; and the full focused matrix passes `1058/1058`.
 - PASS source/build: Mobile TypeScript and diff validation are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass.
-- PASS dependency-complete: `WoofWatcher Verify` run `33906155259`, job `101131461214`, passed exact implementation/docs commit `b919cc04` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
+- PASS dependency-complete: `WoofWatcher Verify` [run `33906155259`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33906155259), job `101131461214`, passed exact implementation commit `b919cc0470e2b69a4e78728b688426f1c3bb089c` in `2m15s`; checkout, pnpm/Node setup, dependency install, generated clients, beta doctor, focused tests, workspace typecheck and CI-safe builds, post steps, and completion were all green.
 - OPEN native/release: Verify field naming, focus, and error behavior with VoiceOver/TalkBack; prove real Clerk/provider auth; capture route-named iOS/Android screenshots; and retain store, public-launch, and Apollo approval gates.
 
 ## 2026-09-04 Records saved-share and modal accessibility gate
@@ -658,7 +669,7 @@ Latest known passing automation-branch CI:
   propagation passed focused provider/reminder/readiness tests `124/124`, the
   full zero-dependency suite `594/594`, root TypeScript, mobile TypeScript,
   direct JSON mobile beta doctor source-backed checks including `push
-  notification proof evidence propagation is source-backed`, and PixelLab
+notification proof evidence propagation is source-backed`, and PixelLab
   `ok=149 missing=0 invalid=0`. Dependency-complete branch proof is current for
   commit `9d02eaa`.
 - Store Accounts proof evidence propagation now keeps saved Apple/Google proof
@@ -666,8 +677,8 @@ Latest known passing automation-branch CI:
   passed focused provider/store/readiness tests `125/125`, the full
   zero-dependency suite `594/594`, root TypeScript, mobile TypeScript, direct
   JSON mobile beta doctor source-backed checks including `store accounts proof
-  evidence propagation is source-backed`, and PixelLab `ok=149 missing=0
-  invalid=0`. Branch CI proved implementation commit `b5286de` in
+evidence propagation is source-backed`, and PixelLab `ok=149 missing=0
+invalid=0`. Branch CI proved implementation commit `b5286de` in
   `WoofWatcher Verify` run `28863131822`, completed success in `3m6s`. Rerun CI
   after this proof-record docs commit before dependency-complete proof is
   current for the final branch tip.
@@ -679,11 +690,11 @@ Latest known passing automation-branch CI:
   passed mobile readiness `114/114`, the full zero-dependency suite `594/594`,
   root TypeScript, mobile TypeScript, direct JSON mobile beta doctor
   source-backed checks including `account deletion proof evidence propagation is
-  source-backed`, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check`
+source-backed`, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check`
   with expected Windows CRLF warnings only; real destructive deletion, provider
   data deletion, legal/store approval, public launch, and Apollo sign-off remain
   blocked. Branch CI proved implementation commit `4ca69a1` in `WoofWatcher
-  Verify` run `28874371159`, job `85645338456`; rerun CI after this proof-record
+Verify` run `28874371159`, job `85645338456`; rerun CI after this proof-record
   docs commit before dependency-complete proof is current for the final branch
   tip.
 - Support Legal Readiness proof evidence propagation now keeps saved
@@ -726,7 +737,7 @@ Latest known passing automation-branch CI:
   Apollo approval proof exists. Local proof passed mobile readiness `114/114`,
   the full zero-dependency suite `594/594`, root TypeScript, mobile TypeScript,
   direct JSON mobile beta doctor source-backed checks, PixelLab `ok=149 missing=0
-  invalid=0`, and `git diff --check` with expected Windows CRLF warnings only.
+invalid=0`, and `git diff --check` with expected Windows CRLF warnings only.
   Direct JSON mobile beta doctor remains blocked only by local pnpm `11.7.0`
   versus pinned `10.24.0` and missing Corepack. Branch CI proved implementation
   commit `721ebe69` in `WoofWatcher Verify` run `28906351424`, completed success
@@ -750,9 +761,9 @@ Latest known passing automation-branch CI:
   screenshots, store review, public launch, and Apollo sign-off remain blocked.
 - The machine-readable beta doctor now explicitly guards Auth/Setup and Payments
   proof-evidence propagation. It reports `auth setup proof evidence propagation
-  is source-backed` only when saved Auth/Setup evidence reaches AuthShell, Setup,
+is source-backed` only when saved Auth/Setup evidence reaches AuthShell, Setup,
   and the focused Auth/Setup proof mission; it reports `payments proof evidence
-  propagation is source-backed` only when saved payments evidence reaches
+propagation is source-backed` only when saved payments evidence reaches
   Premium, Privacy & Safety, and the focused Payments proof mission. Local
   red/green proof first failed on the missing doctor labels, then passed mobile
   readiness `114/114`, direct JSON doctor source-backed checks for both labels,
@@ -786,6 +797,7 @@ Setup/CareContext and reach
 iOS/Android share-sheet proof, Android content URI or saved-file proof,
 fallback-copy capture, native PDF/PNG share/reopen proof, provider storage
 proof, public launch, or Apollo sign-off.
+
 ## 2026-07-28 Avatar selected-template contrast
 
 - PASS, source: selected ivory template artwork uses a constant translucent
@@ -813,12 +825,14 @@ proof, public launch, or Apollo sign-off.
   constant brand-navy ink with red/green readiness coverage.
 - OPEN, native: iOS/Android dark screenshots, local-file and generated
   PNG/share proof, accessibility traversal, and Apollo approval.
+
 # 2026-07-30 Plus launch-checklist action
 
 - PASS (source): the fixed-ivory Plus console uses a constant brand-navy/ivory
   contrast pair for its launch-checklist action.
 - OPEN (native): device contrast, screen-reader traversal, store proof, and
   Apollo visual approval.
+
 # 2026-07-30 shared dog-portrait accessibility gate
 
 The canonical Phoenix portrait must not create an unlabeled duplicate image
@@ -830,12 +844,14 @@ native VoiceOver/TalkBack proof.
 Shared crafted care medallions must stay decorative when their parent control
 or card already exposes the action or metric label. Source coverage is not
 native VoiceOver/TalkBack proof.
+
 ## 2026-07-31 Auth stage-dog accessibility gate
 
 The decorative Phoenix image in the labeled Auth/Setup gateway is excluded
 from the accessibility tree. This is source-level protection only; native
 VoiceOver/TalkBack traversal, Clerk/provider proof, and route-named iOS/Android
 Auth/Setup evidence remain open.
+
 # 2026-07-31 Home backdrop accessibility gate
 
 - PASS (source): the decorative Home room/park backdrop is excluded from accessibility traversal and the labeled care controls retain responsibility for meaning.
@@ -854,6 +870,7 @@ Auth/Setup evidence remain open.
   and Story navigation controls; the parent retains meaningful context.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android
   Home/Story evidence, and Apollo accessibility approval.
+
 # 2026-08-01 Story walk-journal accessibility boundary
 
 - Source guard complete: real proof photos inside fully labeled walk-journal actions no longer create duplicate image stops.
@@ -907,6 +924,7 @@ Auth/Setup evidence remain open.
   dog, with a generic fallback only when the saved name is blank.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android evidence,
   and Apollo accessibility approval.
+
 # 2026-08-03 Care-twin interaction identity gate
 
 The shared care-twin scene now personalizes direct interaction verbs from Dog
@@ -934,14 +952,17 @@ screen-reader traversal and route-named device proof remain open gates.
 
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
 ## PWA Notification Dog Profile Identity (2026-08-13)
 
 - PASS (source/test): shared Notification Center copy and notification titles resolve Dog Profile identity at the builder boundary.
 - OPEN (runtime/provider): browser permission review, native iOS/Android notification rendering, Expo/APNs/FCM delivery, privacy/legal approval, and Apollo sign-off.
+
 # Calendar editor keyboard accessibility — 2026-08-31
 
 - Source gate: Plans routine and event sheets provide labeled, deterministic keyboard progression and final dismissal without changing routine/log semantics.
 - Remaining native gate: compact-height iOS/Android, numeric keyboard behavior, VoiceOver/TalkBack, and screenshot proof.
+
 # 2026-09-01 Training Quick Log keyboard accessibility
 
 - Source gate: PASS when the shared two-field contract and Training composer wiring provide explicit labels, Next progression, and final Done dismissal.
@@ -961,6 +982,7 @@ screen-reader traversal and route-named device proof remain open gates.
 
 - Source gate: PASS when the complete five-field incident safety handoff exposes explicit labels, ordered Next actions, and final Done dismissal.
 - Native gate: OPEN until compact-height iOS/Android, keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.
+
 # 2026-09-01 Alone Time departure form gate
 
 - Source-level keyboard/accessibility contract is covered for context, recovery minutes, and calming support.
@@ -971,6 +993,7 @@ screen-reader traversal and route-named device proof remain open gates.
 - Source gate: PASS when route, distance, dog interactions, and social outcome expose explicit labels, ordered Next actions, and final Done dismissal.
 - Dependency gate: PASS for implementation commit `beaaee4b` in `WoofWatcher Verify` run `33593338283`, job `100131668442`.
 - Native gate: OPEN until compact-height iOS/Android, numeric-keyboard, VoiceOver/TalkBack, and route screenshot evidence is captured.
+
 # 2026-09-03 Pack recovery-copy boundary
 
 Source tests now protect portable export/import of the preserved corrupt Pack copy. Import is evidence-only: it cannot replace live Supplies or Travel Bag lists, overwrite a different first backup, or escape owner-wipe fencing. Native lifecycle, share-sheet, accessibility, store, and Apollo proof remain open.
@@ -997,7 +1020,20 @@ Source PASS requires the generated private JSON to remain visible and failed sha
 - PASS (source): The explicit clear action removes private recovery JSON and announces the result through the shared accessibility announcement path.
 - PASS (truth): Clearing mounted UI state does not delete the durable first corrupt-data backup.
 - OPEN: Native VoiceOver/TalkBack timing, system clipboard behavior, screenshots, store review, and Apollo approval.
+
 ## 2026-09-04 Pack recovery transfer tap safety
 
 - PASS (source): Pack recovery export/import has one immediate transfer fence plus visible disabled-state feedback, so duplicate taps cannot start overlapping private-data transfers.
 - OPEN (native): Real iOS/Android share-sheet timing, cancellation, lifecycle, and VoiceOver/TalkBack behavior remain unproved.
+
+## 2026-09-04 Visible quality, navigation, and scene-performance gate
+
+- PASS (product): Navy tabs expose Home / Log / Plans / Health / More; Pack / Story / Records remain deep-linkable. Home uses a compact in-flow room, Quick Log and Next Up precede Care Sense, secondary modules collapse, and cards use the 8px/restrained-shadow tokens.
+- PASS (performance contract): Scene timers/loops pause when the tab is inactive or Home is scrolling, web exercises the same safe live/tap animation path with a static reduced-motion fallback, and the dead fixed-hero utility is removed.
+- PASS (integrity): Pack legacy-wipe tombstoning survives partial failures, and household names are trimmed and limited to `80` characters.
+- PASS (automated/build): The latest exact-source Expo export completed `1,935` modules / `254` assets / `262` files. The focused run passed `1,221/1,221` tests across `146` files with zero fail/cancel/skip/todo in `12.456s`; runtime smoke passed `13/13`, PixelLab passed `ok=150 missing=0 invalid=0`, live preview passed `19/19`, and mobile/API TypeScript plus diff validation passed.
+- PASS (manual browser): Home / Log / Plans / Health / More and Quick Log save -> History -> detail -> delete. The confirmation is visible above the detail sheet, and the bottom safety gutter stays clean beneath the floating tab bar. Home measured `1,396` elements / `2,948px` maximum scroll before and `313` / `1,240px` after; treat this as diagnostic only.
+- PASS (rebuilt web preview): The browser proves that Home fills its runtime phone frame end to end; the automated layout contract separately covers the `390x844` baseline. Top reset is blur-gated, the room background stays edge-locked while Phoenix moves, the live/tap animation path runs, and the Next Up overflow action clears floating navigation with a `48pt` target. This does not clear native iOS/device FPS.
+- PASS (visual comparison): The latest Home output matches the canonical light board's palette, typography, pixel art, spacing, hierarchy, and navigation in a direct side-by-side review.
+- BLOCKED (local doctor): Source checks pass; installed pnpm `11.19.0` does not match pinned `10.24.0`.
+- OPEN: The Windows host lacks `xcrun` and `simctl`; route-named native iOS device/simulator behavior, VoiceOver, touch/performance evidence, provider credentials, signing/store review, and Apollo approval remain unproved.

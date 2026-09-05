@@ -8,6 +8,7 @@ import {
   cacheBelongsToPrincipal,
   householdCacheIsCompatible,
 } from "./careStateStorage.ts";
+import { WOOFWATCHER_OWNED_DOCUMENT_DIRECTORIES } from "./ownedLocalData.ts";
 import { createSerializedCareSyncWriter } from "./serializedCareSyncWriter.ts";
 
 const MOBILE_ROOT = join(process.cwd(), "artifacts", "woofwatcher-mobile");
@@ -446,8 +447,13 @@ test("bounds every CareContext-owned provider request", () => {
   );
 });
 
-test("serialized owner erase seals producers and propagates wipe failures", () => {
+test("serialized owner erase reports exact completion or supersession", () => {
   const careContext = readMobileFile("context", "CareContext.tsx");
+  const provider = section(
+    careContext,
+    "export function CareProvider",
+    "function CareProviderSession",
+  );
   const erase = section(
     careContext,
     "const eraseAllLocalData = useCallback",
@@ -466,10 +472,8 @@ test("serialized owner erase seals producers and propagates wipe failures", () =
       "entryUpdateQueue.cancelAll()",
       "await storageWriter.supersede({",
       'kind: "wipe"',
-      "await Promise.all(",
-      "FileSystem.deleteAsync(",
     ],
-    "erase must seal, retain cleanup intent, serialize the wipe, then delete files",
+    "erase must seal, retain cleanup intent, then serialize its complete key-and-file wipe",
   );
   assert.match(
     erase,
@@ -484,11 +488,86 @@ test("serialized owner erase seals producers and propagates wipe failures", () =
   assert.match(erase, /return operation/);
   assert.doesNotMatch(
     erase,
+    /if \(!eraseIsCurrent\(\)\) return;/,
+    "every stale owner-erase fence must report superseded instead of resolving as success",
+  );
+  assert.match(
+    erase,
+    /await storageWriter\.supersede\([\s\S]*if \(!eraseIsCurrent\(\)\) return "superseded";[\s\S]*return "erased";/,
+    "erased is reported only after the complete serialized key-and-file wipe",
+  );
+  assert.match(
+    careContext,
+    /eraseInFlightRef\s*=\s*useRef<Promise<LocalDataEraseResult> \| null>/,
+  );
+  assert.match(
+    provider,
+    /wipeWoofWatcherOwnedDataIfCurrent\([\s\S]*?deletionLedgerKeyPrefix:\s*mutation\.preserveLedgerPrefix,[\s\S]*?preservedExactKeys:\s*\[AVATAR_LEGACY_LOCAL_CLAIM_KEY\]/,
+    "the broad Care wipe must preserve a failed Avatar erase tombstone",
+  );
+  assert.match(
+    provider,
+    /wipeWoofWatcherOwnedDataIfCurrent\([\s\S]*?terminalTombstones:\s*\[\s*\{\s*key:\s*PACK_LEGACY_LOCAL_CLAIM_KEY,\s*value:\s*PACK_OWNER_WIPE_TOMBSTONE/,
+    "the broad Care wipe must reserve Pack legacy data until its complete key-and-file wipe succeeds",
+  );
+  assert.match(
+    provider,
+    /wipeWoofWatcherOwnedDataIfCurrent\([\s\S]*?isCurrent:\s*mutation\.isCurrent/,
+    "the queued shared-writer callback must re-check its initiating Care session before deleting keys",
+  );
+  assert.match(
+    provider,
+    /wipeWoofWatcherOwnedDataIfCurrent\([\s\S]*?documentDirectory:[\s\S]*?isCurrent:\s*mutation\.isCurrent/,
+    "the shared writer must remain active through native deletion so a replacement session drains behind it",
+  );
+  assert.match(
+    provider,
+    /getOrCreateSharedCareSyncWriter<DurableCareStorageMutation>\(\s*AsyncStorage/,
+    "the writer barrier must be shared by principal-scoped CareProvider remounts",
+  );
+  assert.match(
+    erase,
+    /kind:\s*"wipe"[\s\S]*?isCurrent:\s*eraseIsCurrent/,
+    "the complete queued key-and-file wipe must carry the initiating Care-session fence",
+  );
+  assert.doesNotMatch(
+    erase,
     /AsyncStorage\.(?:getAllKeys|multiRemove|removeItem)\(/,
   );
 });
 
-test("privacy reports success only when every deletion participant resolves", () => {
+test("owner erase deletes every WoofWatcher-owned document directory", () => {
+  assert.deepEqual(WOOFWATCHER_OWNED_DOCUMENT_DIRECTORIES, [
+    "WoofWatcherReports",
+    "WoofWatcherCredentials",
+    "woofwatcher-attachments",
+  ]);
+
+  const careContext = readMobileFile("context", "CareContext.tsx");
+  assert.match(
+    careContext,
+    /wipeWoofWatcherOwnedDataIfCurrent[\s\S]*from "@\/lib\/ownedLocalData"/,
+  );
+  assert.match(
+    careContext,
+    /wipeWoofWatcherOwnedDataIfCurrent\([\s\S]*documentDirectory:[\s\S]*FileSystem\.documentDirectory[\s\S]*fileSystem:\s*FileSystem/,
+    "the privacy wipe must delete reports, Dog ID credentials, and durable attachments from one owned-directory registry",
+  );
+
+  const records = readMobileFile("app", "(tabs)", "records.tsx");
+  assert.match(
+    records,
+    /WOOFWATCHER_CREDENTIALS_DIRECTORY_NAME/,
+    "Dog ID exports must use the same credential directory registered for owner erase",
+  );
+  assert.doesNotMatch(
+    records,
+    /directoryName:\s*"WoofWatcherCredentials"/,
+    "Dog ID exports must not bypass the owned-directory registry",
+  );
+});
+
+test("privacy reports success only when both deletion participants report erased", () => {
   const privacy = readMobileFile("app", "privacy.tsx");
   const eraseFlow = section(privacy, "const advanceEraseFlow", "return (");
 
@@ -496,22 +575,54 @@ test("privacy reports success only when every deletion participant resolves", ()
     eraseFlow,
     [
       "const avatarResults = await Promise.allSettled([",
-      "clearAvatarSet()",
-      "resetAvatarConfig()",
+      "eraseAvatarData()",
       "const careResults = await Promise.allSettled([eraseAllLocalData()])",
-      "const results = [...avatarResults, ...careResults]",
-      'results.every((result) => result.status === "fulfilled")',
-      '? "done"',
-      ': "failed"',
+      "derivePrivacyEraseStage(avatarResults[0], careResults[0])",
     ],
-    "avatar reset writes must settle before the care wipe performs the terminal key removal",
+    "the hydration-independent avatar erase must settle before the care wipe performs the terminal key removal",
   );
   assert.match(eraseFlow, /\.finally\(\(\) => setErasing\(false\)\)/);
   assert.doesNotMatch(
     eraseFlow,
-    /Promise\.allSettled\(\[[\s\S]{0,120}eraseAllLocalData\(\)[\s\S]{0,120}(?:clearAvatarSet|resetAvatarConfig)\(\)/,
+    /Promise\.allSettled\(\[[\s\S]{0,120}eraseAllLocalData\(\)[\s\S]{0,120}eraseAvatarData\(\)/,
   );
   assert.doesNotMatch(eraseFlow, /\.finally\([^)]*setEraseStage\("done"\)/);
+  assert.match(privacy, /usePrivacyEraseFlow\(\)/);
+});
+
+test("a secondary-dog wipe keeps its terminal notice above Avatar's keyed remount", () => {
+  const layout = readMobileFile("app", "_layout.tsx");
+  const privacy = readMobileFile("app", "privacy.tsx");
+  const flowContext = readMobileFile("context", "PrivacyEraseFlowContext.tsx");
+  const flowStart = layout.indexOf("<PrivacyEraseFlowProvider>");
+  const avatarStart = layout.indexOf("<AvatarProvider>", flowStart);
+  const avatarEnd = layout.indexOf("</AvatarProvider>", avatarStart);
+  const flowEnd = layout.indexOf("</PrivacyEraseFlowProvider>", avatarEnd);
+
+  assert.ok(
+    flowStart > 0 &&
+      avatarStart > flowStart &&
+      avatarEnd > avatarStart &&
+      flowEnd > avatarEnd,
+    "the deletion flow owner must survive a secondary-dog to primary Avatar session remount",
+  );
+  assert.match(
+    flowContext,
+    /useState<PrivacyEraseStage>\(null\)[\s\S]*?useState\(false\)/,
+  );
+  assert.match(
+    flowContext,
+    /"confirm"[\s\S]*?"confirm-final"[\s\S]*?"done"[\s\S]*?"cancelled"[\s\S]*?"failed"/,
+  );
+  assert.match(
+    privacy,
+    /const \{ eraseStage, setEraseStage, erasing, setErasing \} =[\s\S]*?usePrivacyEraseFlow\(\)/,
+  );
+  assert.doesNotMatch(
+    privacy,
+    /useState<[\s\S]{0,160}"confirm-final"/,
+    "a remounted Privacy screen must read the durable terminal stage instead of resetting local state",
+  );
 });
 
 test("a failed superseding wipe settles drain and fences every stale epoch", async () => {

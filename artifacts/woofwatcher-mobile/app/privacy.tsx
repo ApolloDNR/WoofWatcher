@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
+import { usePrivacyEraseFlow } from "@/context/PrivacyEraseFlowContext";
 import { useColors } from "@/hooks/useColors";
 import {
   BoardCard,
@@ -42,6 +43,7 @@ import {
 } from "@/lib/privacySafety";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { resolvePetName } from "@/lib/petIdentity";
+import { derivePrivacyEraseStage } from "@/lib/privacy-erase-outcome";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { shareTextPayload } from "@/lib/shareText";
 import {
@@ -100,7 +102,9 @@ export default function PrivacyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, updateCareDoc, eraseAllLocalData } = useCare();
-  const { clearAvatarSet, resetAvatarConfig } = useAvatar();
+  const { eraseAvatarData } = useAvatar();
+  const { eraseStage, setEraseStage, erasing, setErasing } =
+    usePrivacyEraseFlow();
   // Launch-ops cards (support runbook, launch gates) are owner tooling and
   // stay out of store production builds.
   const ownerOps = isOwnerOpsBuild();
@@ -283,11 +287,6 @@ export default function PrivacyScreen() {
   // fallback read as browser chrome on web, so the flow now runs in the
   // app's own board-style sheet on every platform. Semantics are unchanged:
   // two explicit confirmations, then a completion notice after the wipe.
-  const [eraseStage, setEraseStage] = useState<
-    "confirm" | "confirm-final" | "done" | "failed" | null
-  >(null);
-  const [erasing, setErasing] = useState(false);
-
   const eraseSteps = {
     confirm: {
       title: "Clear local care data on this device?",
@@ -307,6 +306,11 @@ export default function PrivacyScreen() {
       message:
         "WoofWatcher reset visible care data on this device. Minimal cleanup identifiers may remain until pending provider deletions are confirmed; provider-held data was not deleted.",
     },
+    cancelled: {
+      title: "Deletion was interrupted",
+      message:
+        "WoofWatcher stopped confirming this reset because the active account or dog changed while deletion was running. Anything already cleared stays cleared. Review the current profile, then run Clear local care data again if needed.",
+    },
     failed: {
       title: "Deletion needs another try",
       message:
@@ -315,7 +319,9 @@ export default function PrivacyScreen() {
   } as const;
 
   const confirmEraseAllLocalData = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
+      () => {},
+    );
     setEraseStage("confirm");
   };
 
@@ -326,27 +332,23 @@ export default function PrivacyScreen() {
 
   const advanceEraseFlow = () => {
     if (eraseStage === "confirm") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
+        () => {},
+      );
       setEraseStage("confirm-final");
       return;
     }
     if (eraseStage === "confirm-final") {
       if (erasing) return;
       setErasing(true);
-      // Reset avatar memory/storage first, then make the care wipe the final
-      // storage operation so resetAvatarConfig cannot recreate a key after
-      // the owner sees a successful local-clear result.
+      // Supersede any in-flight avatar load/write first, then make the broad
+      // care wipe the final storage operation. An unread or corrupt avatar
+      // cache must never prevent the owner from deleting local data.
       void (async () => {
-        const avatarResults = await Promise.allSettled([
-          clearAvatarSet(),
-          resetAvatarConfig(),
-        ]);
+        const avatarResults = await Promise.allSettled([eraseAvatarData()]);
         const careResults = await Promise.allSettled([eraseAllLocalData()]);
-        const results = [...avatarResults, ...careResults];
         setEraseStage(
-          results.every((result) => result.status === "fulfilled")
-            ? "done"
-            : "failed",
+          derivePrivacyEraseStage(avatarResults[0], careResults[0]),
         );
       })().finally(() => setErasing(false));
       return;
@@ -902,16 +904,19 @@ export default function PrivacyScreen() {
         onRequestClose={cancelEraseFlow}
       >
         <Pressable
+          accessible={false}
           style={s.modalBackdrop}
           onPress={
-            eraseStage === "done" || eraseStage === "failed"
+            eraseStage === "done" ||
+            eraseStage === "cancelled" ||
+            eraseStage === "failed"
               ? advanceEraseFlow
               : cancelEraseFlow
           }
-          accessibilityRole="button"
-          accessibilityLabel="Dismiss delete confirmation"
         >
           <Pressable
+            accessible={false}
+            accessibilityViewIsModal
             style={[
               s.confirmSheet,
               {
@@ -933,7 +938,9 @@ export default function PrivacyScreen() {
                         backgroundColor:
                           eraseStage === "done"
                             ? colors.sage + "16"
-                            : colors.rose + "14",
+                            : eraseStage === "cancelled"
+                              ? colors.amber + "16"
+                              : colors.rose + "14",
                       },
                     ]}
                   >
@@ -941,12 +948,20 @@ export default function PrivacyScreen() {
                       name={
                         eraseStage === "done"
                           ? "checkmark-circle-outline"
-                          : eraseStage === "failed"
-                            ? "alert-circle-outline"
-                            : "trash-bin-outline"
+                          : eraseStage === "cancelled"
+                            ? "information-circle-outline"
+                            : eraseStage === "failed"
+                              ? "alert-circle-outline"
+                              : "trash-bin-outline"
                       }
                       size={20}
-                      color={eraseStage === "done" ? colors.sage : colors.rose}
+                      color={
+                        eraseStage === "done"
+                          ? colors.sage
+                          : eraseStage === "cancelled"
+                            ? colors.amber
+                            : colors.rose
+                      }
                     />
                   </View>
                   <Text
@@ -969,7 +984,9 @@ export default function PrivacyScreen() {
                 >
                   {eraseSteps[eraseStage].message}
                 </Text>
-                {eraseStage === "done" || eraseStage === "failed" ? (
+                {eraseStage === "done" ||
+                eraseStage === "cancelled" ||
+                eraseStage === "failed" ? (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Close data deletion notice"
@@ -1000,6 +1017,7 @@ export default function PrivacyScreen() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={eraseSteps[eraseStage].cancelLabel}
+                      accessibilityState={{ disabled: erasing }}
                       disabled={erasing}
                       onPress={cancelEraseFlow}
                       style={({ pressed }) => [
@@ -1025,7 +1043,12 @@ export default function PrivacyScreen() {
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={eraseSteps[eraseStage].confirmLabel}
+                      accessibilityLabel={
+                        erasing
+                          ? "Deleting local care data"
+                          : eraseSteps[eraseStage].confirmLabel
+                      }
+                      accessibilityState={{ busy: erasing, disabled: erasing }}
                       disabled={erasing}
                       onPress={advanceEraseFlow}
                       style={({ pressed }) => [
@@ -1061,10 +1084,13 @@ export default function PrivacyScreen() {
         onRequestClose={() => setLaunchEditorOpen(false)}
       >
         <Pressable
+          accessible={false}
           style={s.modalBackdrop}
           onPress={() => setLaunchEditorOpen(false)}
         >
           <Pressable
+            accessible={false}
+            accessibilityViewIsModal
             style={[
               s.launchModal,
               {

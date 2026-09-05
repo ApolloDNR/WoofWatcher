@@ -20,6 +20,31 @@ export interface SerializedCareSyncWriter<T> {
   supersede: (value: T) => Promise<SerializedCareSyncWriteResult>;
 }
 
+const sharedCareSyncWritersByOwner = new WeakMap<object, object>();
+
+/**
+ * Returns one durable writer for the lifetime of a storage backend.
+ *
+ * Care's React subtree is intentionally remounted when the auth principal
+ * changes. Keeping the writer in this module-level registry ensures the new
+ * principal's hydration drain waits for any platform operation that the old
+ * principal already started. A given owner must always use one mutation
+ * contract and write callback.
+ */
+export function getOrCreateSharedCareSyncWriter<T>(
+  owner: object,
+  write: (value: T) => Promise<void>,
+): SerializedCareSyncWriter<T> {
+  const existing = sharedCareSyncWritersByOwner.get(owner) as
+    | SerializedCareSyncWriter<T>
+    | undefined;
+  if (existing) return existing;
+
+  const writer = createSerializedCareSyncWriter(write);
+  sharedCareSyncWritersByOwner.set(owner, writer);
+  return writer;
+}
+
 /**
  * Runs durable writes in issue order. The explicit discard/drain barrier lets
  * owner-wipe code prevent an older queued snapshot from landing after data

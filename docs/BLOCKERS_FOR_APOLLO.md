@@ -1,10 +1,19 @@
 # Blockers For Apollo
 
+## 2026-09-04 Local state-integrity native proof
+
+- Care and Avatar now fail closed with explicit retry, exact owner/verified-household/dog scoping, ordered writes, failure-atomic local migration claims, and an erase tombstone that survives a failed delete. Setup and Avatar Studio stay sealed until both stores match the current Care scope and dog identity.
+- Setup rebases non-conflicting same-dog provider changes, requires review for real field conflicts, accepts only semantic provider echoes, and awaits durable Care persistence before optional Avatar persistence. Duplicate actions, stale completions, partial failures, and secondary navigation are fenced to the captured transaction.
+- Avatar Studio uses versioned draft authority; mutable More editors capture and recheck hydration readiness plus exact Care revision, active dog, provider household, and source fingerprint; Privacy drains all local participants before completion. Same-household provider refreshes invalidate stale drafts, and rename requests are bound to the captured household at both client and server boundaries. The remaining modal sweep exposes separate named actions and prevents backdrop taps from saving.
+- Local proof: the More scope and provider-bound rename regression passes `4/4`; the server household-scope regression passes `5/5`; the mobile matrix passes `880/880`; the full focused matrix passes `1149/1149`; mobile and API-server TypeScript are green; PixelLab assets pass `150/150`; exact-source Expo export completes at `1,934` modules / `258` assets; and all `13` runtime routes pass.
+- Still pending: dependency-complete CI for this slice.
+- Still blocked: real slow-device/storage-failure timing, fast household/dog-switch behavior, VoiceOver/TalkBack focus and announcements, provider acknowledgement, native screenshots, store review, public launch, and Apollo approval. Care and Avatar remain separate stores, so the visible staged retry is the release boundary rather than an atomic cross-store claim.
+
 ## 2026-09-04 Auth and Setup input-label native proof
 
 - Source behavior now gives provider sign-in, sign-up, verification-code, and every Setup input a programmatic accessible name through the shared `accessibilityLabel={accessibilityLabel ?? label}` contract. `Dog name` and `Caregiver name` explicitly distinguish the two visible `Name` fields.
 - Red-first scoped coverage exposed the former false-positive assertion before passing `1/1`; mobile readiness passes `198/198`, the Auth/Setup focused matrix passes `223/223`, the full focused matrix passes `1058/1058`, mobile TypeScript and diff validation are green, exact-source Expo web export completes at `1,927` modules / `258` assets, and all `13` runtime routes pass.
-- Dependency-complete `WoofWatcher Verify` run `33906155259`, job `101131461214`, passed exact implementation/docs commit `b919cc04` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
+- Dependency-complete `WoofWatcher Verify` [run `33906155259`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33906155259), job `101131461214`, passed exact implementation commit `b919cc0470e2b69a4e78728b688426f1c3bb089c` in `2m15s`; checkout, pnpm/Node setup, dependency install, generated clients, beta doctor, focused tests, workspace typecheck and CI-safe builds, post steps, and completion were all green.
 - Still blocked: real VoiceOver/TalkBack field naming and focus, real Clerk/provider authentication, route-named native screenshots, store review, public launch, and Apollo approval.
 
 ## 2026-09-04 Records saved-share and modal native proof
@@ -568,7 +577,7 @@ device accessibility review, and Apollo visual approval.
 ## Accounts And Secrets
 
 - Current automation-branch CI is green as of 2026-07-07 UTC: `WoofWatcher
-  Verify` run `28836909561`, job `85522525710`, passed for commit `d21f44e`.
+Verify` run `28836909561`, job `85522525710`, passed for commit `d21f44e`.
   This supersedes the older pending-CI note for the launch proof propagation
   sequence, but it does not clear native iOS/Android screenshots, provider proof
   files, store approval, public launch, or Apollo sign-off.
@@ -912,6 +921,7 @@ Branch CI proved implementation commit `6c1c5e7e` in `WoofWatcher Verify` run
 `30139367465`, job `89629537631`, with dependency install, JSON doctor, focused
 tests, typecheck, and CI-safe builds passing. Rerun after this proof-record
 commit before treating dependency proof as current for the final branch tip.
+
 # 2026-07-28 Auth stage HUD contrast boundary
 
 - Source coverage now protects the fixed-light Auth stage HUD indicator from adaptive dark-mode token drift.
@@ -931,6 +941,7 @@ The fixed-light Dog ID badge now has source-protected constant dark wash and
 icon ink. Real route-named iOS/Android Records screenshots, native Care Pass
 and Dog ID share/reopen evidence, device accessibility traversal, and Apollo
 visual approval remain blocked.
+
 ## 2026-07-28 Auth proof-manifest contrast boundary
 
 The fixed-light Auth/Setup proof manifest now has source-protected constant
@@ -967,12 +978,14 @@ The fixed-light Dog ID breed and weight line now has source-protected
 full-strength dark ink. Real route-named iOS/Android Records screenshots,
 native local-file and PDF/PNG share/reopen evidence, device accessibility
 review, and Apollo visual approval remain blocked.
+
 # 2026-07-30 Plus launch-checklist contrast boundary
 
 - Source-level contrast is corrected and guarded: the fixed-ivory Plus console
   launch-checklist CTA uses constant brand-navy behind fixed ivory content.
 - Still blocked: route-named native screenshots, VoiceOver/TalkBack traversal,
   payments/provider setup, store review, checkout approval, and Apollo sign-off.
+
 # 2026-07-30 shared dog-portrait accessibility boundary
 
 - Source guard complete: the shared Phoenix portrait no longer creates a
@@ -986,6 +999,7 @@ review, and Apollo visual approval remain blocked.
   duplicate or unlabeled image stops inside already-labeled controls/cards.
 - Still blocked: native VoiceOver/TalkBack traversal and route-named
   iOS/Android evidence across medallion-bearing core routes.
+
 ## 2026-07-30 Living Story trail accessibility boundary
 
 - Source-level proof now keeps the decorative painted trail map out of
@@ -993,12 +1007,14 @@ review, and Apollo visual approval remain blocked.
   care waypoints.
 - Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
   Story screenshots, and Apollo accessibility approval.
+
 ## 2026-07-31 Auth stage-dog accessibility boundary
 
 - Source now excludes the decorative Phoenix Auth stage image from assistive
   traversal while preserving the labeled gateway and care-start content.
 - Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
   Auth/Setup screenshots, Clerk/provider evidence, and Apollo approval.
+
 # 2026-07-31 Home backdrop accessibility boundary
 
 Source now excludes the decorative Home room/park backdrop from accessibility traversal. Apollo/native helpers still need to capture real VoiceOver/TalkBack traversal and route-named iOS/Android proof; source and CI do not satisfy that launch gate.
@@ -1016,6 +1032,7 @@ Source now excludes the decorative Home room/park backdrop from accessibility tr
   or unlabeled stops inside controls that already announce meaningful context.
 - Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
   Home/Story evidence, and Apollo accessibility approval.
+
 # 2026-08-01 Story walk-journal photo accessibility boundary
 
 Source now excludes proof-photo thumbnails inside fully labeled walk-journal controls from accessibility traversal. Native VoiceOver/TalkBack traversal, route-named iOS/Android Story proof, and Apollo accessibility approval remain required.
@@ -1063,6 +1080,7 @@ required; source tests do not clear native evidence gates.
 Source tests now prove watch-state packet guidance follows the active dog name.
 Route-named iOS/Android Health review and share-sheet evidence plus Apollo
 approval remain required; this does not claim native or veterinary approval.
+
 ## 2026-08-03 Care-twin interaction identity proof remains open
 
 Source tests now prove personalized happy/rest interaction verbs follow Dog
@@ -1099,6 +1117,7 @@ Source tests now prove the live room's pet action follows canonical Dog Profile 
 ## 2026-08-05 WoofGuide provider-context identity proof remains open
 
 Source coverage now proves future WoofGuide provider context receives canonical Dog Profile identity. Live AI still requires approved credentials, model and citation policy, owner-review write gates, veterinary-safety review, fallback and incident handling, route-named native evidence, and Apollo approval.
+
 ## 2026-08-05 Household rename identity proof remains open
 
 Source coverage now proves More's household rename suggestion follows canonical Dog Profile identity. Native modal/accessibility evidence, real household-provider rename proof, route-named iOS/Android captures, and Apollo approval remain required.
@@ -1144,6 +1163,7 @@ approval remain required; source tests do not clear those gates.
 Dependency-complete `WoofWatcher Verify` run `31143459306`, job `92757994210`,
 passed implementation/docs commit `e660637a`. This does not clear native,
 provider, store, or Apollo approval gates.
+
 ## 2026-08-07 Home mission identity proof remains open
 
 Source coverage now proves Home mission fallback titles cannot expose the
@@ -1168,6 +1188,7 @@ source and CI do not clear those gates.
 Dependency-complete `WoofWatcher Verify` run `31229495920`, job `93030332784`,
 passed implementation/docs commit `965cf134`. This does not clear the native
 accessibility/device or Apollo approval gates above.
+
 ## 2026-08-08 Dog Profile save identity proof remains open
 
 - Source coverage now proves the local profile editor normalizes blank and
@@ -1191,10 +1212,12 @@ literal `My Dog` placeholder into the v2 Dog Profile. A live legacy-web
 migration smoke, provider-backed propagation, native device evidence, store
 review, and Apollo approval remain separate gates; source and CI proof do not
 clear them.
+
 ## 2026-08-12 PWA backend seed Dog Profile identity
 
 - Source-level blocker closed: review-only backend seed drafts no longer persist the starter `My Dog` placeholder into household, pet, embedded profile, or audit identity fields.
 - Still blocked externally: no database rows were written and provider selection, reviewed seed data, household scoping/RLS proof, migration execution, rollback approval, and Apollo launch approval remain required.
+
 ## 2026-08-12 PWA scoped Care Pass identity status
 
 Scoped PWA Care Pass exports now canonicalize Dog Profile identity inside the
@@ -1214,6 +1237,7 @@ safety review, store approval, and Apollo approval remain separate gates.
 Dependency-complete `WoofWatcher Verify` run `31684892387`, job `94398549158`,
 passed implementation/docs commit `171003c3`; this source/CI proof does not
 clear those external gates.
+
 ## PWA Notification Identity Follow-up (2026-08-13)
 
 No new Apollo decision is required for the source fix. Real closed-app reminder delivery still requires the existing provider, native delivery, privacy/legal, store, and Apollo approval evidence; local source/test proof must not be treated as push-delivery proof.
@@ -1229,9 +1253,11 @@ Dependency-complete `WoofWatcher Verify` run `31744066020`, job `94594216641`, p
 Source coverage now proves both vanilla PWA profile cards consume canonical Dog Profile identity. Live browser rendering, screen-reader traversal, native profile evidence, provider sync, store review, and Apollo approval remain separate gates.
 
 Dependency-complete `WoofWatcher Verify` run `31775219339`, job `94689152045`, passed implementation/docs commit `136fae60`; this source/CI proof does not clear those external gates.
+
 ## 2026-08-14 PWA report privacy identity remainder
 
 Source coverage now protects canonical Dog Profile identity across durable report content and privacy copy. Real browser/native artifact download, share/reopen, trusted-recipient review, provider storage, veterinary review, store evidence, and Apollo approval remain blocked on external evidence.
+
 ## 2026-08-31 Setup keyboard reachability boundary
 
 Source/tests now keep the complete Setup form and final actions inside the shared keyboard-aware scroller. Real compact-height iPhone and Android Setup completion, numeric-toolbar focus order, VoiceOver/TalkBack traversal, screenshots, provider proof, store review, and Apollo approval remain blocked on external evidence.
@@ -1239,9 +1265,11 @@ Source/tests now keep the complete Setup form and final actions inside the share
 ## 2026-08-31 Auth keyboard reachability boundary
 
 Source/tests now keep the complete AuthShell provider form inside the shared keyboard-aware scroller. Real compact-height iPhone and Android auth completion, keyboard focus order, VoiceOver/TalkBack traversal, provider-backed Clerk proof, screenshots, store review, and Apollo approval remain external gates.
+
 # Calendar editor native keyboard proof — OPEN 2026-08-31
 
 Source coverage now protects labeled routine/event field progression and final dismissal. Still requires route-named compact-height iPhone/Android validation for number-pad advance, field/action reach, VoiceOver/TalkBack focus order and return, and screenshots. This does not block local-first source work, but blocks a native accessibility-complete claim.
+
 # 2026-09-01 Training Quick Log native proof
 
 - Source-level labels and keyboard progression are implemented.
@@ -1261,6 +1289,7 @@ Source coverage now protects labeled routine/event field progression and final d
 
 - Source coverage now protects explicit expected/eaten portion labels, editable-field progression, and safe dismissal when the chosen meal outcome disables eaten amount.
 - Still blocked on route-named compact-height iPhone/Android, decimal-keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.
+
 # 2026-09-01 Alone Time departure evidence
 
 - Source keyboard/accessibility wiring can be completed autonomously.
@@ -1271,6 +1300,7 @@ Source coverage now protects labeled routine/event field progression and final d
 - Source-level field labels and keyboard progression are implemented.
 - Dependency-complete source verification passed for commit `beaaee4b` in `WoofWatcher Verify` run `33593338283`, job `100131668442`.
 - Still blocked on route-named compact-height iPhone/Android, decimal/number keyboard progression, VoiceOver/TalkBack, screenshot, store, and Apollo approval evidence.
+
 # 2026-09-03 Pack recovery-copy native proof remains open
 
 Source coverage now proves versioned export/import, non-destructive active-list behavior, first-copy preservation, concurrent-restore serialization, and owner-wipe fencing. Real iOS/Android share/paste, process termination and relaunch, compact-height layout, VoiceOver/TalkBack, screenshots, store review, and Apollo approval remain required.
@@ -1291,7 +1321,20 @@ Dependency-complete `WoofWatcher Verify` run `33833355785`, job `100900786070`, 
 Dependency-complete `WoofWatcher Verify` run `33844534832`, job `100933470929`, passed route-blur privacy commit `aed9e003`; it does not clear native tab/lifecycle, clipboard, share-destination, accessibility, store, or Apollo gates.
 
 The explicit Pack recovery-copy clear action now has source-backed screen-reader result feedback while preserving the durable backup. Real VoiceOver/TalkBack timing, native share/cancel/manual-copy/clear, system clipboard behavior, route screenshots, store review, and Apollo approval remain open.
+
 ## 2026-09-04 Pack recovery transfer native proof
 
 - Source coverage now prevents overlapping Pack recovery export/import operations and shows a disabled `Working…` state.
 - Still blocked externally: real iOS/Android rapid-tap, share/cancel, lifecycle, VoiceOver/TalkBack, and route-screenshot evidence.
+
+## 2026-09-04 Visible-quality and performance boundary
+
+- The canonical navy Home / Log / Plans / Health / More navigation, deep-linkable Pack / Story / Records routes, compact in-flow Phoenix room, Quick Log and Next Up priority, collapsed secondary Home modules, 8px cards, restrained shadows, inactive/scroll-paused scene work, web live/tap motion with a static reduced-motion fallback, and dead fixed-hero removal are complete.
+- Final review also hardened Pack legacy-wipe tombstoning against partial failures and made household names trimmed and limited to `80` characters.
+- The final local proof is green: the latest exact-source Expo export completed `1,935` modules / `254` assets / `262` files; all `1,221/1,221` focused tests passed across `146` files with zero fail/cancel/skip/todo in `12.456s`; runtime smoke passed `13/13`; PixelLab passed `ok=150 missing=0 invalid=0`; live-preview proof passed `19/19`; mobile/API TypeScript and diff validation passed.
+- Manual browser proof covers Home / Log / Plans / Health / More and Quick Log save, History, detail, and delete. The confirmation sits visibly above the detail sheet, and the bottom gutter no longer exposes clipped page content beneath the floating tab bar.
+- The rebuilt browser proves that Home fills its runtime phone frame end to end; the automated layout contract separately covers the `390x844` baseline. Top reset occurs only after route blur, the room background remains edge-locked while Phoenix moves, the live/tap animation path runs, and the Next Up overflow action clears floating navigation with a `48pt` target. Native iOS/device FPS remains unproved.
+- A direct side-by-side review of the latest Home output against the canonical light board passed for palette, typography, pixel art, spacing, hierarchy, and navigation.
+- The Home reduction from `1,396` DOM elements / `2,948px` maximum scroll to `313` / `1,240px` is diagnostic browser evidence, not native performance proof.
+- Doctor source checks pass. The overall local doctor is `BLOCKED` solely by installed pnpm `11.19.0` versus pinned `10.24.0`.
+- Still open: this Windows host has no `xcrun` or `simctl`, so real iOS simulator/device behavior, VoiceOver, touch and performance evidence, provider credentials, signing/store review, and Apollo approval are unproved. The source/browser proof does not clear those gates.

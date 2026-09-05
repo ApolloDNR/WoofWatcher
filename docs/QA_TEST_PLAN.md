@@ -1,11 +1,22 @@
 # QA Test Plan
 
+## 2026-09-04 Local state-integrity and staged-save QA
+
+- PASS failure matrix: Care and Avatar loading/read/corruption/recovery/write/erase paths fail closed with retry. Malformed Avatar slots preserve valid siblings; stale reads, migrations, queued writes, and duplicate erases cannot republish removed data; failed local legacy copy or erase cannot be claimed by another dog.
+- PASS identity/scope: Setup and Avatar Studio remain sealed until both stores match the Care revision and dog identity. Setup rebases safe same-dog provider changes and surfaces conflicts. More's eight mutable editors require Care readiness and capture Care revision, active dog, provider household, and editor-specific source fingerprint; they dismiss on scope or same-household source change and recheck before mutation. Rename carries its captured household id through the provider boundary, where mismatches return `409` before database mutation.
+- PASS transaction behavior: Duplicate Setup taps share one operation; Care must become locally durable before Avatar starts; Care failure never queues Avatar; Avatar failure retries only its captured snapshot; semantic provider echo is accepted while replacement is rejected; navigation and form controls stay locked throughout.
+- PASS interaction/accessibility: Versioned Avatar authority captures same-frame edits and rejects stale picker/save/reset work. Privacy settles every local erase participant. WoofGuide, Calendar, Log, More, Privacy, Setup, and fallback modal wrappers preserve child traversal, named close actions, truthful pending state, and non-committing backdrops.
+- PASS local/build: The More scope and provider-bound rename regression passes `4/4`; the server household-scope regression passes `5/5`; the mobile matrix passes `880/880`; the full focused matrix passes `1149/1149`; mobile and API-server TypeScript are green; PixelLab reports `150` valid, `0` missing, `0` invalid.
+- PASS export/runtime: Exact-source Expo web export completes at `1,934` modules / `258` assets; all `13` required routes pass runtime smoke.
+- PENDING CI: Record dependency-complete branch CI.
+- OPEN native: Reproduce deferred hydration, malformed storage, rejected writes, owner erase, same-dog provider updates, conflicts, fast household/dog changes, and Care-versus-Avatar partial failure on real iOS and Android. Confirm VoiceOver/TalkBack focus, announcements, busy state, and recovery controls; capture route-named screenshots. Provider, store, public-launch, and Apollo approval remain open.
+
 ## 2026-09-04 Auth and Setup programmatic input-label QA
 
 - PASS red/green: The new readiness assertion scopes itself to the shared Auth and Setup `Field` bodies, failed against the formerly unnamed inputs, and passes `1/1` after implementation instead of matching the unrelated primary-button label.
 - PASS source: Both shared fields apply `accessibilityLabel={accessibilityLabel ?? label}`. Provider sign-in, sign-up, and verification code inherit truthful labels; Setup covers every field and overrides the duplicate visual `Name` captions with `Dog name` and `Caregiver name`.
 - PASS local: Mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; the full focused matrix passes `1058/1058`; mobile TypeScript and `git diff --check` are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass.
-- PASS CI: Dependency-complete `WoofWatcher Verify` run `33906155259`, job `101131461214`, passed exact implementation/docs commit `b919cc04` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
+- PASS CI: Dependency-complete `WoofWatcher Verify` [run `33906155259`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33906155259), job `101131461214`, passed exact implementation commit `b919cc0470e2b69a4e78728b688426f1c3bb089c` in `2m15s`; checkout, pnpm/Node setup, dependency install, generated clients, beta doctor, focused tests, workspace typecheck and CI-safe builds, post steps, and completion were all green.
 - OPEN native: On real iOS and Android, traverse sign-in email/password, sign-up email/password, verification code, and the complete Setup form with VoiceOver/TalkBack; confirm `Dog name` and `Caregiver name` are distinct; capture route-named screenshots. Real Clerk/provider auth, store review, public launch, and Apollo approval remain open.
 
 ## 2026-09-04 Records saved-share and modal accessibility QA
@@ -1588,7 +1599,7 @@ Latest local evidence, 2026-06-26:
 - `scripts/mobile-beta-doctor.mjs --json` now source-validates the Owner
   Preview Care Pass storage proof chain.
 - The JSON doctor reports `owner-preview Care Pass storage proof is
-  source-backed` only when the release QA matrix still requires the Care Pass
+source-backed` only when the release QA matrix still requires the Care Pass
   Report History storage-status proof, the native QA capture share text still
   carries route-check `Proof:` lines, and `/care-twin-qa` still renders the
   Owner route-loop proof text.
@@ -1608,7 +1619,7 @@ Latest local evidence, 2026-06-26:
 - The one-tap 48-hour Beta Handoff packet now explicitly includes the Care Pass
   Report History storage-status proof in `Required beta proof after export`.
 - The packet tells helpers to confirm Report History says `Saved on this
-  device`, or `Ready to upload` only after structured provider storage proof is attached, so the
+device`, or `Ready to upload` only after structured provider storage proof is attached, so the
   storage truth check is visible even if a tester reads only the handoff packet
   and not the route-loop details.
 - The mobile beta doctor's source-backed Owner Preview storage-proof guard now
@@ -1633,7 +1644,7 @@ Latest local evidence, 2026-06-26:
   updated.
 - Follow-up verification passed mobile readiness, the 420-test zero-dependency
   behavior/readiness suite, PixelLab verification at 149 files, `git diff
-  --check`, and the direct JSON doctor still blocks only on missing pnpm and
+--check`, and the direct JSON doctor still blocks only on missing pnpm and
   missing mobile Expo dependency resolution.
 
 Latest local evidence, 2026-06-26:
@@ -1643,7 +1654,7 @@ Latest local evidence, 2026-06-26:
 - `describeCarePassArtifactExport` returns the printable HTML file name, MIME
   type, format label, byte size, source status, storage view, provider-backed
   truth flag, and an explicit `PDF export still needs native or
-  provider-backed generation` detail.
+provider-backed generation` detail.
 - Records Report History now renders `Printable HTML`, calculated KB,
   `PDF pending`, provider/local storage state, and the PDF/native-provider
   boundary beside the existing resend and printable-source actions.
@@ -1675,7 +1686,7 @@ Latest local evidence, 2026-06-26:
 - Verification passed the beta handoff packet test, 81-test mobile readiness,
   direct JSON doctor source checks, the 421-test zero-dependency
   behavior/readiness suite, PixelLab verification at 149 files, and `git diff
-  --check` with expected Windows line-ending warnings only.
+--check` with expected Windows line-ending warnings only.
 - Direct JSON doctor still reports `BLOCKED` on the real local export issues:
   missing pnpm and missing mobile Expo dependency resolution.
 
@@ -1917,7 +1928,7 @@ Latest local evidence, 2026-07-04:
   occurrence-time filter into fake provider sync readiness.
 - The readiness boundary is explicit:
   `Full care-entry refresh required until the API exposes an updatedAt cursor
-  and delete tombstones.`
+and delete tombstones.`
 - Red/green proof first failed because `careSync.ts` did not export
   `buildCareEntryRefreshPlan`, then passed after the helper and CareContext
   wiring were added.
@@ -2045,7 +2056,7 @@ Latest local evidence, 2026-07-03:
   `mobileReleaseQa.test.ts` with `28/28` tests, plus the focused care-twin QA
   route and machine-readable doctor readiness run with `114/114` tests. Direct
   JSON mobile beta doctor reports `care-entry provider sync proof manifest is
-  source-backed` as `PASS` while remaining blocked only on local pnpm/Corepack.
+source-backed` as `PASS` while remaining blocked only on local pnpm/Corepack.
 - This clears only source-backed helper visibility for the provider-sync proof
   packet. It does not run Supabase migrations, approve RLS, configure
   retention/export/deletion, enable incremental sync, replace native proof, or
@@ -2080,10 +2091,10 @@ Latest local evidence, 2026-07-03:
   plus mobile readiness and release-QA tests with `143/143`, and the broader
   zero-dependency API/mobile/PWA/care-domain suite with `572/572`. Root
   TypeScript passes, PixelLab asset verification passes with `ok=149
-  missing=0 invalid=0`, and `git diff --check` passes with expected Windows
+missing=0 invalid=0`, and `git diff --check` passes with expected Windows
   CRLF warnings only.
 - Direct JSON mobile beta doctor reports `woofguide ai provider proof manifest
-  is source-backed` as `PASS` while remaining blocked only on local
+is source-backed` as `PASS` while remaining blocked only on local
   pnpm `11.7.0` versus pinned `10.24.0` plus missing Corepack. Direct JSON
   native QA tooling doctor remains blocked because this Windows shell lacks
   Android `adb`, Android `emulator`, Java, `ANDROID_HOME`/`ANDROID_SDK_ROOT`,
@@ -2124,7 +2135,7 @@ Latest local evidence, 2026-07-03:
   `1772aed`; Setup pnpm, Setup Node, install dependencies, JSON mobile beta
   doctor, focused behavior tests, and Typecheck plus CI-safe builds all passed.
 - Direct JSON mobile beta doctor reports `push notifications proof manifest is
-  source-backed` as `PASS` while remaining blocked only on local
+source-backed` as `PASS` while remaining blocked only on local
   pnpm/Corepack. Direct JSON native QA tooling doctor remains blocked because
   this Windows shell lacks Android `adb`, Android `emulator`, Java,
   `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
@@ -2157,11 +2168,11 @@ Latest local evidence, 2026-07-03:
   evidence still has to be attached before treating Records handoff proof as
   device-verified.
 - The focused route now renders a source-backed `Records local file handoff
-  proof manifest` before Evidence Capture, with ready/open counts, `Native file
-  proof allowed: No`, item evidence rows, blockers, and the generated
+proof manifest` before Evidence Capture, with ready/open counts, `Native file
+proof allowed: No`, item evidence rows, blockers, and the generated
   PDF/PNG/provider boundary.
 - The JSON mobile beta doctor now checks `release smoke checklist is
-  source-backed` and includes `Release smoke checklist` in
+source-backed` and includes `Release smoke checklist` in
   `handoffProofSections`.
 - Red/green proof first failed with `ERR_MODULE_NOT_FOUND` for
   `mobileReleaseSmokeChecklist.ts`, then passed after the helper and handoff
@@ -2206,7 +2217,7 @@ Latest local evidence, 2026-07-03:
   evidence before binary readiness.
 - The focused route now renders the `Report binary export proof manifest`
   before Evidence Capture, with ready/open counts, `Generated artifacts
-  allowed: No`, Care Pass PDF, Dog ID PNG, provider storage, native artifact
+allowed: No`, Care Pass PDF, Dog ID PNG, provider storage, native artifact
   proof rows, blockers, and the native/provider/Apollo approval boundary.
 - The manifest now requires `4/4 native proofs ready` before generated binary
   readiness can open: iOS Care Pass PDF, Android Care Pass PDF, iOS Dog ID PNG,
@@ -2218,14 +2229,14 @@ Latest local evidence, 2026-07-03:
 - Fresh local verification also passed the broader API/mobile/PWA/care-domain
   suite `520/520`, mobile TypeScript, and `tsc --build`.
 - JSON mobile beta doctor source-backed checks pass, including `report binary
-  export proof packet is source-backed`, but the result remains truthfully
+export proof packet is source-backed`, but the result remains truthfully
   `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to
   `10.24.0`; Corepack is not on PATH.
 - Follow-up proof-target verification first failed on the missing QA surface,
   beta handoff instruction, release smoke item, and doctor guard, then passed
   focused mobile release/beta/smoke/readiness tests `133/133`, the broader
   API/mobile/PWA/care-domain suite `521/521`, mobile TypeScript, and `tsc
-  --build`.
+--build`.
 - Focused manifest verification first failed on missing route manifest wiring
   and the missing JSON doctor guard, then passed focused care-twin route and
   machine-readable doctor readiness tests `114/114`, the full zero-dependency
@@ -2327,7 +2338,7 @@ Latest local evidence, 2026-07-03:
   `/more`, `/care-twin-qa`, `/woofguide`, `/premium`, `/privacy`, and
   `/portrait`.
 - The mobile package exposes `pnpm --filter @workspace/woofwatcher-mobile run
-  smoke:runtime`; root `build:ci` runs it immediately after mobile `smoke:web`.
+smoke:runtime`; root `build:ci` runs it immediately after mobile `smoke:web`.
   Share Beta Handoff, the Release Smoke Checklist, and the JSON mobile beta
   doctor list the same command.
 - Red/green proof first failed because the package script, runtime smoke
@@ -2344,7 +2355,7 @@ Latest local evidence, 2026-07-03:
   `/`, `/log`, `/calendar`, `/health`, `/records`, `/more`, `/care-twin-qa`,
   `/woofguide`, `/premium`, `/privacy`, and `/portrait`.
 - JSON mobile beta doctor source-backed checks pass, including `smoke:runtime
-  route command exists` and `release smoke checklist is source-backed`, but the
+route command exists` and `release smoke checklist is source-backed`, but the
   result remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while
   the repo is pinned to `10.24.0`.
 - This is exported web-runtime proof only. Native iOS/Android simulator or
@@ -2424,7 +2435,7 @@ Latest local evidence, 2026-07-03:
   readiness tests `117/117`, the full zero-dependency API/mobile/PWA/care-domain
   suite `560/560`, root TypeScript, mobile TypeScript, and `git diff --check`.
   JSON mobile beta doctor source-backed checks pass, including `recorded CI proof
-  freshness boundary is source-backed`, and still block only on the local
+freshness boundary is source-backed`, and still block only on the local
   pnpm/Corepack mismatch.
 - Branch CI proved the recorded-proof refresh itself in `WoofWatcher Verify` run
   `28692782500`, job `85096979911`, on commit `4254e05`; Set up job, Checkout,
@@ -2480,7 +2491,7 @@ Latest local evidence, 2026-07-04:
   doctor tests `118/118`, and direct JSON mobile beta doctor source-backed
   checks including `auth/setup proof manifest is source-backed`.
 - Branch CI proved the native-proof hardening implementation in `WoofWatcher
-  Verify` run `28694530592`, job `85101746726`, on commit `581b8b1`; Setup
+Verify` run `28694530592`, job `85101746726`, on commit `581b8b1`; Setup
   pnpm, Setup Node, install dependencies, JSON mobile beta doctor, focused
   behavior tests, and Typecheck plus CI-safe builds all passed.
 - The full zero-dependency API/mobile/PWA/care-domain focused suite passed
@@ -2493,7 +2504,7 @@ Latest local evidence, 2026-07-04:
   TypeScript, mobile TypeScript, direct JSON doctor source-backed checks, and
   `git diff --check`.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `auth/setup proof
-  manifest is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
+manifest is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
   only because local pnpm is `11.7.0` and the repo is pinned to `10.24.0`.
 - Branch CI also passed for commit `e8a1ea9` in `WoofWatcher Verify` run
   `28690620657`, job `85091134806`, in `3m18s`; Setup pnpm, Setup Node,
@@ -2518,11 +2529,11 @@ Latest local evidence, 2026-07-04:
   mapping, household role access, refund/support policy, and Apollo checkout
   approval.
 - More's Provider Launch Setup maps the Plus payments row to `Open proof
-  mission`, and Share Beta Handoff, the Release Smoke Checklist, the JSON mobile
+mission`, and Share Beta Handoff, the Release Smoke Checklist, the JSON mobile
   beta doctor, live-preview proof, and native QA tooling doctor all name the
   same target.
 - Launch Readiness now keeps the WoofWatcher Plus tile in `Checkout approval
-  open` review when payment provider proof is staged but store-account,
+open` review when payment provider proof is staged but store-account,
   privacy/legal, or support/refund approval is still missing. The tile does not
   say `Checkout ready` until those obligations are closed.
 - Premium now shows a `Payments proof manifest` with Product catalog, Billing
@@ -2547,14 +2558,14 @@ Latest local evidence, 2026-07-04:
   `mobileReadiness.test.ts` with `138/138` tests. The broader mobile/PWA/care
   domain suite passed `506/506`.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `payments provider
-  proof target is source-backed` as `PASS`, while remaining truthfully
+proof target is source-backed` as `PASS`, while remaining truthfully
   `BLOCKED` only because local pnpm is `11.7.0` and the repo is pinned to
   `10.24.0`.
 - Direct `scripts/mobile-beta-doctor.mjs --json` also reports `premium
-  payments proof manifest is source-backed` as `PASS`, proving the Premium
+payments proof manifest is source-backed` as `PASS`, proving the Premium
   route renders the manifest without enabling checkout.
 - Direct `scripts/mobile-beta-doctor.mjs --json` now reports `payments provider
-  proof manifest is source-backed` as `PASS`, proving the focused helper route
+proof manifest is source-backed` as `PASS`, proving the focused helper route
   renders the manifest without enabling checkout.
 - Branch CI also passed for commit `12c63eb` in `WoofWatcher Verify` run
   `28690249414`, job `85090172228`, in `2m56s`; Setup pnpm, Setup Node,
@@ -2576,7 +2587,7 @@ Latest local evidence, 2026-07-04:
   `betaHandoffPacket.test.ts`, `mobileReleaseSmokeChecklist.test.ts`, and
   `mobileReadiness.test.ts` with `148/148`, direct JSON mobile beta doctor
   source-backed checks including `payments provider proof target is
-  source-backed` and `payments provider proof manifest is source-backed`, the
+source-backed` and `payments provider proof manifest is source-backed`, the
   full zero-dependency API/mobile/PWA/care-domain suite `569/569`, root
   TypeScript, and mobile TypeScript. Direct JSON mobile beta doctor remains
   `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to
@@ -2606,8 +2617,8 @@ Latest local evidence, 2026-07-04:
   zero-dependency API/mobile/PWA/care-domain suite passed `571/571`; root
   TypeScript, mobile TypeScript, and `git diff --check` passed.
 - Direct JSON mobile beta doctor source-backed checks pass, including `store
-  accounts proof packet is source-backed`, `store accounts proof target is
-  source-backed`, and `store accounts proof manifest is source-backed`, while
+accounts proof packet is source-backed`, `store accounts proof target is
+source-backed`, and `store accounts proof manifest is source-backed`, while
   remaining blocked only on the local pnpm/Corepack mismatch.
 - Branch CI proved commit `0c495a1` in `WoofWatcher Verify` run `28696518769`,
   job `85106928992`; JSON mobile beta doctor, focused behavior tests, and
@@ -2634,7 +2645,7 @@ Latest local evidence, 2026-07-03:
   suite passed `555/555`, root TypeScript passed, mobile TypeScript passed, and
   `git diff --check` reported only expected Windows CRLF warnings.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `store accounts proof
-  manifest is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
+manifest is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
   only because this Windows shell exposes pnpm `11.7.0` while the repo is pinned
   to `10.24.0` and Corepack is not on PATH.
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
@@ -2660,7 +2671,7 @@ Latest local evidence, 2026-07-04:
   before native file proof can open: iOS Care Pass local HTML, Android Care Pass
   local HTML, iOS Dog ID local HTML, Android Dog ID local HTML, iOS Dog ID SVG
   image source, and Android Dog ID SVG image source. Generic `iOS and Android
-  share sheets opened` notes stay blocked. Android content URI or saved-file
+share sheets opened` notes stay blocked. Android content URI or saved-file
   proof requires `content://` or `file://` URI evidence for the Android file
   slots.
 - The focused route shows ready/open counts, `Native file proof allowed: No`,
@@ -2681,7 +2692,7 @@ Latest local evidence, 2026-07-04:
   API/mobile/PWA/care-domain suite `563/563`, root TypeScript, and mobile
   TypeScript.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `records local file
-  handoff proof manifest is source-backed` as `PASS`, while remaining
+handoff proof manifest is source-backed` as `PASS`, while remaining
   truthfully `BLOCKED` only because this Windows shell exposes pnpm `11.7.0`
   while the repo is pinned to `10.24.0` and Corepack is not on PATH.
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
@@ -2722,7 +2733,7 @@ Latest local evidence, 2026-07-03:
   suite passed `556/556`, root TypeScript passed, mobile TypeScript passed, and
   `git diff --check` reported only expected Windows CRLF warnings.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `account deletion
-  proof manifest is source-backed` as `PASS`, while remaining truthfully
+proof manifest is source-backed` as `PASS`, while remaining truthfully
   `BLOCKED` only because this Windows shell exposes pnpm `11.7.0` while the repo
   is pinned to `10.24.0`.
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
@@ -2735,7 +2746,7 @@ Latest local evidence, 2026-07-03:
 Latest local evidence, 2026-07-04:
 
 - The manifest now rejects generic approval strings. `Destructive deletion
-  allowed` remains `No` until six structured proof files are attached:
+allowed` remains `No` until six structured proof files are attached:
   deletion-route/auth, export-before-delete, data/object deletion receipt,
   audit/support receipt, recovery/cancellation policy, and legal/store/Apollo
   approval.
@@ -2789,7 +2800,7 @@ Latest local evidence, 2026-07-04:
   job `85112820340`, with JSON mobile beta doctor, focused behavior tests, and
   Typecheck plus CI-safe builds all passing.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `support legal
-  readiness proof manifest is source-backed` as `PASS`, while remaining
+readiness proof manifest is source-backed` as `PASS`, while remaining
   truthfully `BLOCKED` only because this Windows shell exposes pnpm `11.7.0`
   while the repo is pinned to `10.24.0`.
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
@@ -2859,7 +2870,7 @@ Latest local evidence, 2026-07-07:
   TypeScript, mobile TypeScript, direct JSON mobile beta doctor source-backed
   checks, and PixelLab verifier `ok=149 missing=0 invalid=0` passed.
 - Direct JSON mobile beta doctor reports `push notification proof evidence
-  propagation is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
+propagation is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
   only because local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is
   not on PATH. Branch CI proved commit `9d02eaa` in `WoofWatcher Verify` run
   `28852945785`, completed success in `3m16s` on
@@ -2874,7 +2885,7 @@ Latest local evidence, 2026-07-07:
   TypeScript, mobile TypeScript, direct JSON mobile beta doctor source-backed
   checks, and PixelLab verifier `ok=149 missing=0 invalid=0` passed.
 - Direct JSON mobile beta doctor reports `store accounts proof evidence
-  propagation is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
+propagation is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
   only because local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is
   not on PATH. Branch CI proved implementation commit `b5286de` in
   `WoofWatcher Verify` run `28863131822`, completed success in `3m6s` on
@@ -2891,7 +2902,7 @@ Latest local evidence, 2026-07-07:
   TypeScript passed, PixelLab verifier passed `ok=149 missing=0 invalid=0`, and
   `git diff --check` passed with expected Windows CRLF warnings only. Direct
   JSON mobile beta doctor reports `account deletion proof evidence propagation
-  is source-backed` as `PASS`, while remaining truthfully `BLOCKED` only because
+is source-backed` as `PASS`, while remaining truthfully `BLOCKED` only because
   local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH.
   Real destructive deletion, provider data/object deletion receipts, legal/store
   approval, public launch, and Apollo sign-off remain required.
@@ -2987,9 +2998,9 @@ Latest local evidence, 2026-07-07:
   branch CI after the next commit before treating dependency proof as current.
 - The JSON mobile beta doctor now has explicit source-backed propagation checks
   for the newest Auth/Setup and Payments slices. `auth setup proof evidence
-  propagation is source-backed` verifies saved Auth/Setup evidence reaches
+propagation is source-backed` verifies saved Auth/Setup evidence reaches
   AuthShell, Setup, and the focused Auth/Setup QA mission; `payments proof
-  evidence propagation is source-backed` verifies saved payments evidence
+evidence propagation is source-backed` verifies saved payments evidence
   reaches Premium, Privacy & Safety, and the focused Payments QA mission.
 - Red/green verification first failed on the missing doctor labels, then mobile
   readiness passed `114/114`; direct JSON doctor output showed both new labels
@@ -3023,6 +3034,7 @@ Branch CI proved implementation commit `db6f280c` in `WoofWatcher Verify` run
 doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and
 Complete job all passing. Rerun CI after the proof-record docs commit before
 dependency proof is current for the final branch tip.
+
 ## 2026-07-28 Avatar selected-template contrast QA
 
 Source readiness now rejects a variable accent border around the selected ivory
@@ -3050,12 +3062,14 @@ Source readiness now rejects translucent ink for breed and weight on the
 fixed-light Dog ID. On native iOS and Android, verify that line in dark mode,
 Dynamic Type, screen-reader traversal, compact phone layouts, and generated
 Dog ID PNG/share flows before approving Records.
+
 # 2026-07-30 Plus launch-checklist contrast
 
 - Confirm the Plus value console launch-checklist CTA remains brand-navy with
   ivory label/icon in light and dark themes.
 - Confirm the checklist still opens and checkout remains disabled.
 - Native VoiceOver/TalkBack and route-named iOS/Android evidence remain open.
+
 # 2026-07-30 shared dog-portrait accessibility boundary
 
 - Verify `PetPortrait` keeps its internal Phoenix image
@@ -3071,6 +3085,7 @@ Dog ID PNG/share flows before approving Records.
   the care-action label.
 - Still required: native VoiceOver/TalkBack traversal on medallion-bearing
   Home, Quick Log, Plans, Health, and Records surfaces.
+
 ## 2026-07-31 Auth stage-dog accessibility QA
 
 - Source readiness requires the Auth gateway's decorative Phoenix image to use
@@ -3078,6 +3093,7 @@ Dog ID PNG/share flows before approving Records.
   meaningful account/setup narration.
 - Still required: native VoiceOver/TalkBack traversal and route-named
   iOS/Android Auth/Setup evidence.
+
 # 2026-07-31 Home room accessibility source check
 
 - Static readiness coverage requires the Home full-bleed room/park Image to remain `accessible={false}`. Native VoiceOver/TalkBack traversal remains open.
@@ -3096,6 +3112,7 @@ Dog ID PNG/share flows before approving Records.
   thumbnails to remain decorative inside labeled navigation controls.
 - Still required: confirm each parent announces its title/date/visit context in
   native VoiceOver/TalkBack traversal on route-named iOS/Android Home/Story.
+
 # 2026-08-01 Story walk-journal photo accessibility
 
 - Source contract: a walk-journal card remains one labeled story action; its child proof photo is excluded from accessibility traversal.
@@ -3153,6 +3170,7 @@ Dog ID PNG/share flows before approving Records.
   confirm factual-note guidance names that dog rather than Phoenix.
 - Confirm the shared packet text remains non-diagnostic and suitable for
   owner-reviewed caregiver or vet handoff.
+
 # 2026-08-03 Care-twin interaction identity QA
 
 Source coverage now checks that happy and tired living-room interactions use
@@ -3183,6 +3201,7 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
 ## 2026-08-13 PWA Notification Identity Check
 
 - Set Dog Profile to `My Dog`, deny browser notification permission, and confirm Reminder Center guidance says `Phoenix care` without exposing the placeholder.
@@ -3196,10 +3215,12 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Import a backup whose Dog Profile is `  Mochi  `; confirm the review guidance names Mochi and never Phoenix.
 - Confirm the normalized imported state is the same state persisted before guidance is built. Treat automated coverage as source proof; live browser file import, cross-device transfer, and native share/reopen review remain open.
 - Dependency-complete branch proof: `WoofWatcher Verify` run `31713497155`, job `94492214748`, passed implementation/docs commit `474a0a64` including install, doctor, focused tests, typecheck, and CI-safe builds.
+
 # Calendar editor keyboard accessibility — 2026-08-31
 
 - Source contract: routine label -> time -> owner -> note and event title -> date -> time -> location expose explicit accessibility labels and Next/Done keyboard actions.
 - Device gate: verify compact-height iPhone and Android reach, number-pad exit/advance, interactive dismissal, VoiceOver/TalkBack focus order and return, and route-named screenshots before claiming native completion.
+
 # 2026-09-01 Training Quick Log keyboard accessibility
 
 - Source behavior: verify the training field contract announces `Training skill or cue` with Next and `Training next practice` with Done, and returns isolated copies.
@@ -3223,6 +3244,7 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Source behavior: verify expected portion -> eaten amount exposes explicit labels with ordered Next/Done actions.
 - Outcome behavior: verify skipped, served, and grazing dismiss from expected portion without targeting the intentionally disabled eaten amount field.
 - External proof still required: compact-height iOS/Android reach, decimal-keyboard behavior, VoiceOver/TalkBack traversal, focus return, and route-named screenshots.
+
 # 2026-09-01 Alone Time departure keyboard accessibility
 
 - Source test: verify context -> recovery minutes -> calming support focus progression, explicit accessibility labels, and final keyboard dismissal.
@@ -3233,6 +3255,7 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Source test: verify route -> distance -> dog interactions -> social outcome focus progression, explicit accessibility labels, and final keyboard dismissal.
 - CI proof: `WoofWatcher Verify` run `33593338283`, job `100131668442`, passed commit `beaaee4b` through dependency install, doctor, focused tests, typecheck, and CI-safe builds.
 - Native proof still required: compact-height iOS/Android, decimal/number keyboard completion, VoiceOver/TalkBack order and focus return, and route-named screenshots.
+
 # Pack recovery-copy portability — 2026-09-03
 
 - Verify export returns the exact first corrupt Supplies/Travel Bag payload in a versioned WoofWatcher JSON envelope.
@@ -3262,7 +3285,21 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 
 - Export or paste a recovery copy, focus `Clear recovery copy`, activate it, and confirm the field empties, Restore disables, and assistive technology announces that the private copy was cleared from this screen.
 - Confirm the durable first recovery backup can still be exported afterward; native VoiceOver/TalkBack timing remains required.
+
 ## 2026-09-04 Pack recovery transfer tap safety
 
 - Source/readiness proof: rapid repeated export or import taps are fenced synchronously, both transfer actions remain disabled with visible `Working…` feedback until completion, and the lock releases through `finally` on every result path.
 - Native proof still required: exercise rapid taps, share cancellation, screen-reader feedback, and interrupted/backgrounded transfers on real iOS and Android devices.
+
+## 2026-09-04 Visible quality, navigation, and performance slice
+
+- Navigation: verify the navy bar presents Home / Log / Plans / Health / More in order and Pack / Story / Records still open from their in-app/deep-link entry points.
+- Home hierarchy: verify the compact in-flow Phoenix room, Quick Log and Next Up before Care Sense, collapsed secondary modules, 8px cards, restrained shadows, and removal of the dead fixed-hero path.
+- Performance: verify scene timers/loops pause when Home loses focus or scrolls, web exercises the safe live/tap animation path, and reduced-motion remains static.
+- Integrity: verify Pack legacy-wipe tombstoning remains effective after partial failures and household names are trimmed and limited to `80` characters.
+- Current automated/build proof: the latest exact-source Expo export completed `1,935` modules / `254` assets / `262` files; `1,221/1,221` focused tests passed across `146` files with zero fail/cancel/skip/todo in `12.456s`; runtime smoke passed `13/13`; PixelLab passed `ok=150 missing=0 invalid=0`; live-preview proof passed `19/19`; mobile/API TypeScript and diff validation passed.
+- Current manual browser proof: Home / Log / Plans / Health / More and Quick Log save -> History -> detail -> delete passed; verify the destructive confirmation remains above the detail sheet and no page content peeks beneath the floating tab bar. The Home change from `1,396` DOM elements / `2,948px` maximum scroll to `313` / `1,240px` is diagnostic only.
+- Current rebuilt-preview proof: the browser proves that Home fills its runtime phone frame end to end; the automated layout contract separately covers the `390x844` baseline. Verify top reset remains gated on a real route blur, the room background remains edge-locked while Phoenix moves, the live/tap animation path runs, and the Next Up overflow action keeps its `48pt` target clear of floating navigation. Native iOS/device FPS remains unproved.
+- Current visual proof: compare the canonical light reference board and the latest Home output side by side; palette, typography, pixel art, spacing, hierarchy, and navigation passed this review.
+- Tooling boundary: doctor source checks pass, while the overall local doctor is `BLOCKED` solely on pnpm `11.19.0` versus pinned `10.24.0`.
+- Still required: this Windows host has no `xcrun` or `simctl`, so route-named native iOS simulator/device behavior, VoiceOver, touch and scene-performance evidence, provider credentials, signing/store review, and Apollo approval remain external gates.

@@ -80,7 +80,7 @@ test("names the active dog in the shared Today tab hint", () => {
 });
 
 test("derives iOS tabbed route padding from the floating paw and safe area", () => {
-  const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
+  const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34, leftInset: 59, rightInset: 47 });
 
   assert.equal(metrics.tabBarHeight, 84);
   assert.ok(
@@ -88,6 +88,9 @@ test("derives iOS tabbed route padding from the floating paw and safe area", () 
     "the visible iOS tab controls must retain a full touch target above the home indicator",
   );
   assert.equal(metrics.tabBarBottom, 12);
+  assert.equal(metrics.tabBarPaddingBottom, 22);
+  assert.equal(metrics.tabBarPaddingLeft, 43);
+  assert.equal(metrics.tabBarPaddingRight, 31);
   assert.equal(metrics.centerFabBottom, 52);
   assert.equal(metrics.centerFabSize, 56);
   assert.equal(metrics.contentBottomPadding, 124);
@@ -101,6 +104,9 @@ test("keeps Android and web tabbed routes clear of the floating nav without wast
   const webMetrics = getFloatingTabChromeMetrics({ platform: "web", bottomInset: 99 });
   assert.equal(webMetrics.tabBarHeight, 72);
   assert.equal(webMetrics.tabBarBottom, 12);
+  assert.equal(webMetrics.tabBarPaddingBottom, 6);
+  assert.equal(webMetrics.tabBarPaddingLeft, 7);
+  assert.equal(webMetrics.tabBarPaddingRight, 7);
   assert.equal(webMetrics.centerFabBottom, 26);
 });
 

@@ -1,11 +1,23 @@
 # Autonomous Build Queue
 
+## 2026-09-04 Local state integrity, staged saves, and editor scope safety
+
+- DONE: CareContext and AvatarContext expose explicit `loading`, `ready`, and `failed` states with retry. Avatar data is scoped to the exact owner, verified household, and active dog; malformed slots fail closed; migrations and writes are ordered; local legacy claims are failure-atomic; and failed erase leaves a tombstone that prevents old data from being reclaimed.
+- DONE: Setup waits for both stores, rebases same-dog provider echoes field by field, surfaces real edit conflicts, and fences every staged result to the accepted semantic Care document. Its single-flight transaction requires durable Care success before optional Avatar persistence, preserves the correct retry after a partial failure, and locks every escape route and control while the captured save is active.
+- DONE: Avatar Studio uses a synchronous versioned draft and exact scope/session fences, so same-frame edits, picker results, saves, resets, retries, unmounts, and household or dog changes cannot publish stale configuration.
+- DONE: Privacy drains every local participant before reporting erase success and preserves failed-erase claim tombstones. WoofGuide, Calendar, Log, More, Privacy, Setup, and fallback sheets now keep layout containers out of accessibility grouping, expose modal boundaries and named close actions, and prevent backdrop taps from committing data.
+- DONE: Every mutable More draft captures the exact Care revision, active dog, provider household, hydration readiness, and an editor-specific semantic source fingerprint. Same-household refreshes and scope changes dismiss stale drafts. Household rename also sends the captured household id to the provider, which rejects a changed active household before database mutation, and ignores stale request completions.
+- VERIFIED LOCALLY: The More scope and provider-bound rename regression passes `4/4`; the server household-scope regression passes `5/5`; the complete mobile matrix passes `880/880`; the full focused matrix passes `1149/1149`; mobile and API-server TypeScript are green; PixelLab verification reports `150` valid, `0` missing, `0` invalid; exact-source Expo export bundles `1,934` modules / `258` assets; and all `13` runtime routes pass.
+- PENDING: Record dependency-complete CI for this implementation.
+- BOUNDARY: Local durability is not provider acknowledgement, and Care plus Avatar remain an intentionally staged rather than atomic cross-store transaction. Source/build proof does not establish real slow-device behavior, VoiceOver/TalkBack focus, configured providers, native screenshots, store review, public launch, or Apollo approval.
+- NEXT: Run dependency-complete CI, then capture deferred hydration, storage failure, retry, scope change, partial-save recovery, modal traversal, and fast household/dog switching on real iOS and Android devices.
+
 ## 2026-09-04 Auth and Setup programmatic input labels
 
 - DONE: A red-first readiness test scoped directly to both shared field implementations exposed the old false positive, where a broad Auth assertion matched a button label while provider inputs remained unnamed.
 - DONE: The shared Auth `Field` and Setup `Field` now apply `accessibilityLabel={accessibilityLabel ?? label}`. Explicit `Dog name` and `Caregiver name` overrides disambiguate their duplicate visible `Name` labels; the contract covers provider sign-in, sign-up, verification code, and every Setup field.
 - VERIFIED LOCALLY: The scoped regression failed red and passes green `1/1`; mobile readiness passes `198/198`; the Auth/Setup focused matrix passes `223/223`; the full focused matrix passes `1058/1058`; mobile TypeScript and `git diff --check` are green; exact-source Expo web export completes at `1,927` modules / `258` assets; and all `13` runtime routes pass.
-- VERIFIED CI: Dependency-complete `WoofWatcher Verify` run `33906155259`, job `101131461214`, passed implementation/docs commit `b919cc04` through checkout, pinned dependency install, generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
+- VERIFIED CI: Dependency-complete `WoofWatcher Verify` [run `33906155259`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33906155259), job `101131461214`, passed exact implementation commit `b919cc0470e2b69a4e78728b688426f1c3bb089c` in `2m15s`; checkout, pnpm/Node setup, dependency install, generated clients, beta doctor, focused tests, workspace typecheck and CI-safe builds, post steps, and completion were all green.
 - BOUNDARY: Source-level accessible names do not prove real VoiceOver/TalkBack announcements or focus, real Clerk/provider authentication, native screenshots, store readiness, public launch, or Apollo approval.
 - NEXT: Capture route-named Auth sign-in/sign-up/code and Setup field traversal with VoiceOver and TalkBack on real iOS and Android devices.
 
@@ -1110,7 +1122,7 @@
   source correction, then passed after implementation.
 - DONE: Local verification passed mobile readiness `131/131`, care-domain
   `148/148`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and `git
-  diff --check`. The broad partial-checkout suite passed `662/663` and failed
+diff --check`. The broad partial-checkout suite passed `662/663` and failed
   only on the known missing `@workspace/care-domain` package link in
   `careCareer.test.ts`; JSON beta doctor kept 84 source-backed checks passing
   but remained truthfully `BLOCKED` on local pnpm/Corepack and Expo resolution.
@@ -1126,97 +1138,97 @@
 ## 2026-07-25 Dark-Scheme Shell Hardening
 
 - [x] Keep the fixed-light Auth proof manifest's internal cells visibly
-  separated in dark mode with translucent brand-navy boundaries.
+      separated in dark mode with translucent brand-navy boundaries.
 - [x] Add a red-first readiness contract for the Auth proof cell boundaries.
 - [x] Dependency-complete branch CI passed for implementation commit
-  `9de72c87`: WoofWatcher Verify run `30287783222`, job `90049755104`.
+      `9de72c87`: WoofWatcher Verify run `30287783222`, job `90049755104`.
 - [x] Route the compact web shell, desktop preview frame/backdrop, and Fast Log
-  modal through the active palette instead of hard-coded light colors.
+      modal through the active palette instead of hard-coded light colors.
 - [x] Add a red-first readiness contract for those shared navigation surfaces.
 - [x] Keep the fixed-light Quick Care Console speech bubble readable in dark
-  mode by using constant dark ink instead of the adaptive foreground token.
+      mode by using constant dark ink instead of the adaptive foreground token.
 - [x] Add a red-first readiness contract for the console speech contrast.
 - [x] Keep the fixed-light Records Dog ID plate boundary visible in dark mode
-  by using constant brand-navy instead of the theme-flipping navy token.
+      by using constant brand-navy instead of the theme-flipping navy token.
 - [x] Add a red-first readiness contract for the Dog ID plate boundary.
 - [x] Keep Avatar Studio's fixed-light inactive template status badges
-  readable in dark mode with constant brand-navy ink.
+      readable in dark mode with constant brand-navy ink.
 - [x] Keep Avatar Studio's fixed-light production action icons readable in
-  dark mode with constant brand-navy ink.
+      dark mode with constant brand-navy ink.
 - [x] Keep those fixed-light production action tiles visibly bounded over
-  variable studio artwork and in dark mode with translucent brand-navy.
+      variable studio artwork and in dark mode with translucent brand-navy.
 - [x] Add a red-first readiness contract for production action icon ink and
-  boundary contrast.
+      boundary contrast.
 - [x] Dependency-complete branch CI passed for the Avatar Studio production
-  action boundary implementation commit `16076314`: WoofWatcher Verify run
-  `30313148200`, job `90132964077`.
+      action boundary implementation commit `16076314`: WoofWatcher Verify run
+      `30313148200`, job `90132964077`.
 - [x] Keep Avatar Studio's fixed-light emote icon tiles visibly bounded over
-  light sprite/photo art and in dark mode with translucent brand-navy.
+      light sprite/photo art and in dark mode with translucent brand-navy.
 - [x] Add a red-first readiness contract for the emote icon boundary.
 - [x] Dependency-complete branch CI passed for the Avatar Studio emote tile
-  implementation commit `5a7a38ff`: WoofWatcher Verify run `30273548325`, job
-  `90001804654`.
+      implementation commit `5a7a38ff`: WoofWatcher Verify run `30273548325`, job
+      `90001804654`.
 - [x] Keep the Plus value console's fixed-light recommended-plan card visibly
-  bounded in dark mode with a constant translucent brand-navy border.
+      bounded in dark mode with a constant translucent brand-navy border.
 - [x] Add a red-first readiness contract for the recommended-plan boundary.
 - [x] Dependency-complete branch CI passed for the recommended-plan
-  implementation commit `561c44f4`: WoofWatcher Verify run `30248465495`, job
-  `89920782424`.
+      implementation commit `561c44f4`: WoofWatcher Verify run `30248465495`, job
+      `89920782424`.
 - [x] Dependency-complete branch CI passed for the Avatar Studio production
-  action implementation commit `107ee880`: WoofWatcher Verify run
-  `30238765977`, job `89891533935`.
+      action implementation commit `107ee880`: WoofWatcher Verify run
+      `30238765977`, job `89891533935`.
 - [x] Keep the same fixed-light inactive template badges visibly bounded in
-  dark mode with a constant translucent brand-navy border.
+      dark mode with a constant translucent brand-navy border.
 - [x] Add a red-first readiness contract for the template badge ink and
-  boundary contrast.
+      boundary contrast.
 - [x] Dependency-complete branch CI passed for the Avatar Studio badge-boundary
-  implementation commit `e9d1c36c`: WoofWatcher Verify run `30224467419`, job
-  `89852313500`.
+      implementation commit `e9d1c36c`: WoofWatcher Verify run `30224467419`, job
+      `89852313500`.
 - [x] Keep Avatar Studio's fixed-light template speech bubble readable in dark
-  mode with a constant brand-navy boundary and headline.
+      mode with a constant brand-navy boundary and headline.
 - [x] Add a red-first readiness contract for the template speech bubble.
 - [x] Keep Home's fixed-light Avatar Studio launcher visible in dark mode with
-  a constant brand-navy icon and boundary.
+      a constant brand-navy icon and boundary.
 - [x] Add a red-first readiness contract for the Home Avatar Studio launcher.
 - [x] Keep WoofGuide's fixed-light veterinary safety card visibly bounded in
-  dark mode with a constant translucent brand-navy border.
+      dark mode with a constant translucent brand-navy border.
 - [x] Add a red-first readiness contract for the WoofGuide safety boundary.
 - [x] Dependency-complete branch CI passed for the WoofGuide safety-card
-  implementation commit `d874ef9b`: WoofWatcher Verify run `30218103984`, job
-  `89835669054`.
+      implementation commit `d874ef9b`: WoofWatcher Verify run `30218103984`, job
+      `89835669054`.
 - [x] Dependency-complete branch CI passed for the Home launcher contrast
-  implementation commit `c34acded`: WoofWatcher Verify run `30188629419`, job
-  `89757619879`.
+      implementation commit `c34acded`: WoofWatcher Verify run `30188629419`, job
+      `89757619879`.
 - [x] Dependency-complete branch CI passed for the template speech contrast
-  implementation commit `f92aec90`: WoofWatcher Verify run `30183727973`, job
-  `89744661646`.
+      implementation commit `f92aec90`: WoofWatcher Verify run `30183727973`, job
+      `89744661646`.
 - [x] Dependency-complete branch CI passed for the earlier Avatar Studio mood
-  contrast commit `164cce20`: WoofWatcher Verify run `30178415387`, job
-  `89730878839`.
+      contrast commit `164cce20`: WoofWatcher Verify run `30178415387`, job
+      `89730878839`.
 - [x] Dependency-complete branch CI passed for the Avatar Studio template
-  badge implementation commit `55bdbae3`: WoofWatcher Verify run
-  `30178528061`, job `89731163097`.
+      badge implementation commit `55bdbae3`: WoofWatcher Verify run
+      `30178528061`, job `89731163097`.
 - [x] Dependency-complete branch CI passed for the Records Dog ID implementation
-  commit `a94675e0`: WoofWatcher Verify run `30166602309`, job `89700603998`.
+      commit `a94675e0`: WoofWatcher Verify run `30166602309`, job `89700603998`.
 - [x] Dependency-complete branch CI passed for Quick Care implementation commit
-  `0d9c6e26`: WoofWatcher Verify run `30160597968`, job `89685181345`.
+      `0d9c6e26`: WoofWatcher Verify run `30160597968`, job `89685181345`.
 - [x] Dependency-complete branch CI passed for implementation commit
-  `1fe57ba8`: WoofWatcher Verify run `30150170653`, job `89659086829`.
+      `1fe57ba8`: WoofWatcher Verify run `30150170653`, job `89659086829`.
 - [ ] Capture route-by-route dark screenshots when browser or device tooling is
-  available. This source/test pass is not visual QA.
+      available. This source/test pass is not visual QA.
 
 ## 2026-07-24 Automation/Main Reconciliation
 
 - [x] Merge current mainline premium mockup-parity, truthful-care, QA harness,
-  Supabase prep, store asset, and installable-PWA work into
-  `automation/premium-revenue-product-builder` without rewriting history.
+      Supabase prep, store asset, and installable-PWA work into
+      `automation/premium-revenue-product-builder` without rewriting history.
 - [x] Preserve durable Auth/Setup, payments, Records local-file, report-binary,
-  and route-visual proof evidence across the reconciliation.
+      and route-visual proof evidence across the reconciliation.
 - [x] Fresh branch CI passed for merge commit `c9b3abc8`: WoofWatcher Verify
-  run `30144755384`, job `89644315640`.
+      run `30144755384`, job `89644315640`.
 - [ ] Next highest-impact external proof remains route-named native iOS and
-  Android evidence for Auth/Setup, Records file handoff, report binary
-  share/reopen, and route visual consistency.
+      Android evidence for Auth/Setup, Records file handoff, report binary
+      share/reopen, and route visual consistency.
 
 ## Operating Rule
 
@@ -1307,8 +1319,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 81. DONE 2026-06-16: Mobile now has the layered sprite runtime seam: `SpriteSheetPlayer` animates registered strips, `careTwinAssets.ts` gates rendering until both dogless room and transparent Phoenix strips exist, Home switches to layered rendering only when safe, and `docs/design/CARE_TWIN_ASSET_PIPELINE.md` tells Apollo/Fable/Replit exactly how to produce and register assets.
 82. DONE 2026-06-17: Mobile Avatar Studio Lite now has a real template-based care-twin backbone: `PetAvatarConfig`, 12 dog templates, accessory slots, emote state inventory, mock scan suggestion, local config persistence, a Scan/Template/Customize/Emotes Studio flow, and Home/More identity wiring without claiming live AI scan.
 83. IN PROGRESS 2026-06-18: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app; PixelLab v2 now has a full registered sprite manifest, first-pass dogless room variants, a standing-source walk loop, Avatar Studio previews the live layered care-twin room instead of the old generic hero art, the template picker uses a 12-item PixelLab preview catalog, selected templates can render production-scale base stills when available, the Phoenix/Shepherd, Retriever, Husky/Spitz, and Bully 10-state emote packs are wired, and the Studio presentation pass removed Home-HUD overlap from `/portrait`. Next: native safe-area/device QA, remaining Avatar Studio template packs/accessories, and screen-by-screen polish.
-83a. DONE 2026-06-30: Health Watch second design-system polish now uses the normal route header, a compact Appetite/Potty/Vomit/Water health command deck, a shorter pixel stage, safer two-line Health Snapshot row anatomy, and tighter Review Packet spacing while preserving Health Watch/Bile Watch formulas, non-diagnostic copy, and Log/Records routing.
-83b. DONE 2026-07-01: Compact route visual QA polish tightened Quick Log, Health Watch, and Avatar Studio against the active neo-retro pixel mockups. Quick Log now reveals the action grid sooner, Health prioritizes the first status panel before the pixel room, and Avatar Studio follows a one-dog/one-room/one-truth-label hero rule with fresh exported screenshot proof.
+    83a. DONE 2026-06-30: Health Watch second design-system polish now uses the normal route header, a compact Appetite/Potty/Vomit/Water health command deck, a shorter pixel stage, safer two-line Health Snapshot row anatomy, and tighter Review Packet spacing while preserving Health Watch/Bile Watch formulas, non-diagnostic copy, and Log/Records routing.
+    83b. DONE 2026-07-01: Compact route visual QA polish tightened Quick Log, Health Watch, and Avatar Studio against the active neo-retro pixel mockups. Quick Log now reveals the action grid sooner, Health prioritizes the first status panel before the pixel room, and Avatar Studio follows a one-dog/one-room/one-truth-label hero rule with fresh exported screenshot proof.
 84. DONE 2026-06-18: PixelLab Phoenix Asset Production Phase 1/2 is no longer blocked by MCP access or credits. The approved v2 Phoenix seed/state pack, idle/tail/sleep strips, additional action strips, day dogless room, and first-pass room variants are generated, logged, and wired into the layered care-twin runtime.
 85. DONE 2026-06-18: `Premium Revenue Product Builder` automation was corrected from the stale Highest Self OS prompt/workspace to the WoofWatcher repo, 3-hour cadence, worktree execution, and dog-care OS build loop.
 86. NEXT: Replace first-pass locally derived room variants with final PixelLab/Figma-quality night, bedtime, health-watch, and home-alone illustrations once the core runtime is verified on device.
@@ -2496,6 +2508,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Dependency-complete branch CI proved implementation commit `f4b319b0` in `WoofWatcher Verify` run `30322334790`, job `90160618387`, completed successfully in `2m10s`; checkout, pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip.
 - NEXT: Run the strongest local verification, push the verified implementation, and require fresh branch CI before treating dependency-complete proof as current. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
+
 ## 2026-07-25 Avatar Studio dark-mode contrast
 
 - Selected mood labels now use constant brand-navy ink on their scheme-independent light aura, preserving readable contrast in native dark mode.
@@ -2576,7 +2589,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   boundary before the source correction, then passed `133/133`.
 - DONE: Local verification passed mobile readiness `133/133`, care-domain
   `148/148`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and `git
-  diff --check`. The broad partial-checkout suite passed `664/665` and failed
+diff --check`. The broad partial-checkout suite passed `664/665` and failed
   only on the known missing `@workspace/care-domain` package link in
   `careCareer.test.ts`; JSON beta doctor kept `84` source-backed checks passing
   but remained truthfully `BLOCKED` on exact pnpm/Corepack and local Expo
@@ -2626,6 +2639,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   dependency proof as current for the final tip.
 - DONE: Dependency-complete branch CI proved implementation commit `f4059be3` in `WoofWatcher Verify` run `30301224391`, job `90094366601`, completed successfully in `2m3s`; checkout, pinned dependency setup/install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
+
 ## 2026-07-28 Auth proof-manifest dark-mode status contrast
 
 - DONE: Ready values inside the fixed-ivory Auth/Setup proof manifest now use
@@ -2648,6 +2662,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+
 1158. DONE 2026-07-28: Reconciled `origin/main` launch-readiness work through `284f2b96` into `automation/premium-revenue-product-builder` by normal merge. The automation branch now includes idempotent care-entry creates, legacy PWA import, persistence/data-loss hardening, offline PWA support, accessibility and Reduce Motion repairs, the real Travel Bag lifecycle, Log/History and Plan calendar navigation, honest Avatar Studio behavior, refreshed store assets, and the mainline pre-launch QA fixes while preserving durable provider-proof propagation and fixed-light dark-mode contracts.
 1159. DONE 2026-07-28: Merge verification passed mobile readiness `134/134`, care-domain `157/157`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and every JSON doctor source-backed guard. The broad direct partial-checkout suite still fails only where local package links are absent (`express` for API route tests and `@workspace/care-domain` for mobile package-import tests); dependency-complete branch CI remains the authority for those paths.
 1160. NEXT: Prove this reconciled branch tip in `WoofWatcher Verify`, then continue real native/provider evidence: Auth/Setup, Records local-file handoff, generated PDF/PNG share/reopen, Route Visual Consistency, Avatar Studio device behavior, and the signed-in wipe product decision. Do not treat source, web, store-asset, or CI proof as native/provider/store/Apollo approval.
@@ -2675,6 +2690,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+
 ## 2026-07-29 Avatar mood-badge contrast
 
 - DONE: inactive Avatar Studio mood badges keep their ivory surface but now
@@ -2759,6 +2775,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   builds, post steps, and Complete job all passed.
 - NEXT: Capture native VoiceOver/TalkBack traversal across medallion-bearing
   core routes. Source coverage does not replace device accessibility approval.
+
 ## 2026-07-30 Living Story trail accessibility
 
 - DONE: Marked the painted `DayTrailScene` map as decorative so the scene
@@ -2769,6 +2786,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `91080857807`, passed implementation/docs commit `8acdb169`.
 - NEXT: Native VoiceOver/TalkBack traversal and route-named iOS/Android Story
   evidence remain required.
+
 # 2026-07-31 Home room accessibility hardening
 
 - Marked the full-bleed Home room/park backdrop decorative so VoiceOver and TalkBack do not encounter an unlabeled image before the labeled care console and care-twin controls.
@@ -2798,6 +2816,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `91331912216`, passed implementation/docs commit `368841c7`.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+
 # 2026-08-01 Story walk-journal photo accessibility
 
 - DONE: Marked real walk-journal photos decorative inside controls that already announce the walk date and full story text.
@@ -2832,6 +2851,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+
 # 2026-08-03 Care-twin interaction identity
 
 - DONE: Shared living-room interaction verbs now follow Dog Profile identity,
@@ -2963,6 +2983,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI. Live AI remains disabled pending provider, model-policy, veterinary-safety, owner-review, and Apollo approval; source coverage does not clear those gates.
 - CI: Dependency-complete `WoofWatcher Verify` run `31018021482`, job `92347159956`, passed implementation/docs commit `1d9bccc1`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
 ## 2026-08-05 Household rename Dog Profile identity
 
 - DONE: More's household rename suggestion now follows the active Dog Profile name instead of hardcoding `The Phoenix Pack`; canonical route identity trims renamed dogs and preserves Phoenix only for blank/`My Dog` starter profiles.
@@ -3005,6 +3026,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack
   traversal and route-named iOS/Android bottom-navigation evidence remain open;
   source coverage does not replace device or Apollo approval.
+
 ## 2026-08-07 Home mission deck Dog Profile identity
 
 - DONE: Shared Home mission fallback titles now resolve canonical Dog Profile
@@ -3045,6 +3067,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `93030332784`, passed implementation/docs commit `965cf134` with pinned
   dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds,
   post steps, and Complete job all green.
+
 ## 2026-08-08 Dog Profile save identity boundary
 
 - DONE: Route the More profile editor's persisted `name` and `publicLabel`
@@ -3074,6 +3097,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED: Dependency-complete `WoofWatcher Verify` run `31264178482`, job
   `93119546727`, passed implementation/docs commit `081bb120` with pinned
   install, JSON doctor, focused tests, typecheck, and CI-safe builds green.
+
 ## 2026-08-12 PWA backend seed identity boundary
 
 - DONE: The review-only legacy PWA backend seed builder now resolves Dog Profile identity before deriving pet ids or emitting household, pet, profile JSON, and audit rows.
@@ -3081,6 +3105,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - CI: Dependency-complete `WoofWatcher Verify` run `31580890116` passed implementation commit `b8bba7c4`, including focused tests, typecheck, and CI-safe builds.
 - BOUNDARY: This does not apply database writes, enable provider sync, change household authorization, or prove migration/RLS/native/store readiness.
 - NEXT: Retain real provider seed review, household/RLS proof, migration approval, and Apollo approval as external gates.
+
 ## 2026-08-12 PWA scoped Care Pass identity boundary
 
 - DONE: `buildScopedCarePass` now resolves Dog Profile identity inside the
@@ -3111,6 +3136,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - STILL REQUIRED: live browser review, native owner-review and recipient
   handoff proof, provider-backed AI/sync evidence, veterinary safety review,
   store approval, and Apollo approval.
+
 ## 2026-08-13 PWA Notification Identity
 
 - DONE: Canonicalized Dog Profile identity inside the shared PWA Notification Center. Browser-blocked guidance, due-reminder guidance, and notification titles now use `Phoenix` for blank/`My Dog` profile identity and the trimmed current Dog Profile name for renamed dogs.
@@ -3135,11 +3161,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI, then capture browser/native Household Pulse review when tooling is available; otherwise continue bounded shared display/accessibility identity auditing.
 - CI PROOF: Dependency-complete `WoofWatcher Verify` run `31744066020`, job `94594216641`, passed implementation/docs commit `b460a08f` through pinned install, JSON doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
 ## 2026-08-14 PWA report privacy identity
 
 - DONE: Canonical Dog Profile identity now reaches durable report privacy copy; `My Dog` remains Phoenix and padded renamed identity is trimmed.
 - PROOF: WoofWatcher Verify run `31799022606`, job `94762394283`, passed implementation/docs commit `6ed93c4a`.
 - OPEN: Real browser/native download, share/reopen, recipient review, provider storage, veterinary review, store, and Apollo evidence remain required.
+
 # 2026-08-31 iOS numeric-keyboard completion
 
 - DONE: The app root now mounts the keyboard-controller completion toolbar only on iOS, with safe-area insets for landscape controls and a Done action for number/decimal keyboards that do not provide one.
@@ -3147,6 +3175,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED CI: Dependency-complete `WoofWatcher Verify` run `33370008141`, job `99418712173`, passed implementation/docs commit `bb481787` through install, doctor, focused tests, typecheck, CI-safe builds, and completion.
 - BOUNDARY: This is source-level reach and completion hardening. Real-iPhone compact-height reach, toolbar appearance, focus order/return, VoiceOver, screenshots, store review, and Apollo approval remain open.
 - NEXT: Rerun branch CI after this proof-record commit, then capture route-named iPhone numeric-keyboard and VoiceOver evidence when native tooling is available.
+
 ## 2026-08-31 Setup keyboard-aware reachability
 
 - DONE: Setup now keeps the complete onboarding form, numeric weight field, and save/later actions inside the shared native keyboard-aware scroller while preserving web fallback behavior.
@@ -3169,6 +3198,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Plans routine/event editor proof when native tooling is available.
 - CI PROOF: Dependency-complete `WoofWatcher Verify` run `33448190682`, job `99671899772`, passed implementation/docs commit `28630cf1` through pinned install, JSON doctor, focused behavior tests, typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
 # 2026-09-01 Training Quick Log keyboard accessibility
 
 - DONE: The Training Quick Log composer now gives the skill/cue and next-practice fields explicit accessibility labels, advances from cue to next practice, and exposes a final Done dismissal.
@@ -3195,6 +3225,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Run aggregate verification and dependency-complete branch CI, then capture route-named Alone Time departure proof when native tooling is available.
 - CI: `WoofWatcher Verify` run `33568887640`, job `100058260027`, passed implementation/docs commit `cc488985` through pinned install, JSON doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
 # 2026-09-03 Pack recovery-copy portability
 
 - DONE: Pack can export the first preserved corrupt payload as a versioned JSON recovery copy and import it as support evidence without replacing active Supplies or Travel Bag data.
@@ -3210,9 +3241,22 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI, then capture the route-named native recovery loop when tooling is available.
 - CI PROOF: `WoofWatcher Verify` run `33808014822`, job `100823014945`, passed implementation/docs commit `e042065e` through generated-client drift, doctor, focused tests, workspace typecheck, CI-safe builds, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
 ## 2026-09-04 Pack recovery transfer tap safety
 
 - DONE: Export and import now share an immediate ref-backed transfer lock, disable both actions, and show `Working…` while storage or sharing is in flight, preventing rapid taps from opening overlapping share sheets, writes, or result dialogs.
 - VERIFIED LOCALLY: Red-first readiness coverage failed before the transfer boundary and passes after implementation.
 - VERIFIED IN CI: `WoofWatcher Verify` run `33890168897`, job `101079628933`, passed implementation/docs commit `63031984` through generated-client drift, doctor, focused tests, workspace typecheck, and CI-safe builds.
 - NEXT: Capture route-named real-device export/share-cancel/manual-copy/clear/paste/import and VoiceOver/TalkBack evidence when native tooling is available.
+
+## 2026-09-04 Visible quality, navigation, performance, and reliability slice
+
+- DONE: The canonical navy tab bar is now Home / Log / Plans / Health / More; Pack, Story, and Records remain deep-linkable secondary routes.
+- DONE: Home now keeps the Phoenix room compact and in flow, places Quick Log and Next Up before Care Sense, collapses secondary modules, uses the shared 8px card/restrained-shadow treatment, and removes the dead fixed-hero utility.
+- DONE: Scene timers and animation loops pause while Home is inactive or scrolling; web exercises the same safe live/tap animation path, while reduced-motion remains static.
+- DONE: Final review hardened Pack legacy-wipe tombstoning against partial failures and made household names trimmed and limited to `80` characters.
+- VERIFIED FINAL: The latest exact-source Expo export completed `1,935` modules / `254` assets / `262` files. The full focused run passed all `1,221/1,221` tests across `146` files with zero fail/cancel/skip/todo in `12.456s`; runtime smoke passed `13/13`, PixelLab passed `ok=150 missing=0 invalid=0`, live-preview proof passed `19/19`, mobile and API TypeScript exited `0`, and diff validation passed with line-ending warnings only.
+- MANUAL BROWSER: Home / Log / Plans / Health / More and the complete Quick Log save -> History -> detail -> delete path passed. The destructive confirmation renders above the open detail sheet, and the bottom safety gutter remains clean beneath the floating tab bar. The Home diagnostic moved from `1,396` DOM elements / `2,948px` maximum scroll to `313` / `1,240px`; this remains browser diagnostic evidence only.
+- REBUILT WEB PREVIEW: The browser proves that Home fills its runtime phone frame end to end; the automated layout contract separately covers the `390x844` baseline. Top reset is gated on a real route blur, the room background stays edge-locked while Phoenix moves, the live/tap animation path runs, and the Next Up overflow action clears the floating navigation with a `48pt` target. This is browser/source evidence only; native iOS/device FPS remains unproved.
+- VISUAL REVIEW: The latest Home output passed a direct side-by-side comparison with the canonical light reference board for palette, typography, pixel art, spacing, hierarchy, and primary navigation.
+- BLOCKED/OPEN: Doctor source checks pass, but the overall local doctor remains `BLOCKED` solely because installed pnpm `11.19.0` differs from pinned `10.24.0`. This Windows host has no `xcrun` or `simctl`, so native iOS device/simulator behavior, VoiceOver, touch and performance evidence, provider credentials, signing/store review, and Apollo approval remain open external gates.

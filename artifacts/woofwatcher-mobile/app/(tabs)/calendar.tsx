@@ -943,7 +943,7 @@ export default function CalendarScreen() {
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
-            title="Plan"
+            title="Plans"
             subtitle={dateLabel}
             actionIcon="add"
             actionLabel="Add plan"
@@ -2030,9 +2030,20 @@ export default function CalendarScreen() {
               bounces={false}
             >
             <View style={s.modalHandle} />
-            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
-              {routineEditId ? "Edit Routine" : "New Routine"}
-            </Text>
+            <View style={s.modalTitleRow}>
+              <Text accessibilityRole="header" style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                {routineEditId ? "Edit Routine" : "New Routine"}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close routine editor"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => setRoutineOpen(false)}
+                style={s.modalCloseButton}
+              >
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LABEL</Text>
             <TextInput
@@ -2163,7 +2174,14 @@ export default function CalendarScreen() {
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={routineEditId ? "Save routine changes" : "Add routine"}
+              accessibilityState={{ disabled: !rLabel.trim() }}
+              disabled={!rLabel.trim()}
+              onPress={submitRoutine}
+              style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}
+            >
               <Text style={[s.saveBtnText, { color: rLabel.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
@@ -2199,7 +2217,18 @@ export default function CalendarScreen() {
               bounces={false}
             >
             <View style={s.modalHandle} />
-            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
+            <View style={s.modalTitleRow}>
+              <Text accessibilityRole="header" style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close event editor"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => setAddOpen(false)}
+                style={s.modalCloseButton}
+              >
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
             <TextInput
@@ -2283,7 +2312,14 @@ export default function CalendarScreen() {
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <Pressable onPress={submitEvent} disabled={!evTitle.trim()} style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add event to calendar"
+              accessibilityState={{ disabled: !evTitle.trim() }}
+              disabled={!evTitle.trim()}
+              onPress={submitEvent}
+              style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}
+            >
               <Text style={[s.saveBtnText, { color: evTitle.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
@@ -2925,7 +2961,9 @@ const s = StyleSheet.create({
   modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, maxHeight: "92%" },
   modalSheetScroll: { flexShrink: 1 },
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
-  modalTitle: { fontSize: 22, marginBottom: 16 },
+  modalTitleRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  modalTitle: { flex: 1, fontSize: 22 },
+  modalCloseButton: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   fieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
   field: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   fieldRow: { flexDirection: "row", gap: 12 },

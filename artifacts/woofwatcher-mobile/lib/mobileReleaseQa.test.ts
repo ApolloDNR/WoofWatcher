@@ -96,22 +96,23 @@ test("keeps route visual consistency as a launch-critical design QA gate", () =>
   assert.equal(surface.title, "Route Visual Consistency");
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /one planned premium neo-retro app/);
-  assert.match(surface.devicePrompt, /Log, Plan, Today, Pack, Story, Health, Records, and More/);
+  assert.match(
+    surface.devicePrompt,
+    /Home, Log, Plans, Health, More, Pack, Story, and Records/,
+  );
   assert.match(
     surface.acceptanceCriteria.join("\n"),
     /No first-screen text, card, sprite, tab, or bottom navigation element overlaps/,
   );
   assert.match(surface.failureEscalation, /Option B pixel app boards/);
-  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
-    "Log",
-    "Plan",
-    "Today",
-    "Pack",
-    "Story",
-    "Health",
-    "Records",
-    "More",
-  ]);
+  assert.deepEqual(
+    surface.routeChecklist?.map((item) => item.label),
+    ["Home", "Log", "Plans", "Health", "More", "Pack", "Story", "Records"],
+  );
+  assert.match(
+    surface.requiredEvidence.join("\n"),
+    /iOS screenshot of Home route top/,
+  );
   assert.match(
     surface.requiredEvidence.join("\n"),
     /iOS screenshot of Log route top/,
@@ -153,19 +154,19 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
   assert.equal(pending.status, "blocked");
   assert.equal(pending.statusLabel, "Native proof blocked");
   assert.equal(pending.rows.length, 8);
-  assert.deepEqual(pending.rows.map((row) => row.label), [
-    "Log",
-    "Plan",
-    "Today",
-    "Pack",
-    "Story",
-    "Health",
-    "Records",
-    "More",
-  ]);
-  assert.match(pending.rows[0]?.iosStatus ?? "", /iOS Log screenshot pending/);
-  assert.match(pending.rows[0]?.androidStatus ?? "", /Android Log screenshot pending/);
-  assert.match(pending.blockers.join("\n"), /Log: iOS Log screenshot pending/);
+  assert.deepEqual(
+    pending.rows.map((row) => row.label),
+    ["Home", "Log", "Plans", "Health", "More", "Pack", "Story", "Records"],
+  );
+  assert.match(pending.rows[0]?.iosStatus ?? "", /iOS Home screenshot pending/);
+  assert.match(
+    pending.rows[0]?.androidStatus ?? "",
+    /Android Home screenshot pending/,
+  );
+  assert.match(
+    pending.blockers.join("\n"),
+    /Home: iOS Home screenshot pending/,
+  );
   assert.match(pending.blockers.join("\n"), /QA note pending/);
   assert.match(pending.webPreviewBoundary, /does not replace native iOS\/Android route screenshots/);
 
@@ -173,14 +174,32 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
     surface,
     note: "No route-to-route design break found.",
     evidence: [
-      ...["log", "plan", "today", "pack", "story", "health", "records", "more"].map((route) => ({
+      ...[
+        "home",
+        "log",
+        "plans",
+        "health",
+        "more",
+        "pack",
+        "story",
+        "records",
+      ].map((route) => ({
         uri: `file:///qa/${route}-ios.png`,
         fileName: `${route}-ios.png`,
         source: "library" as const,
         targetPlatform: "ios" as const,
         capturedAtIso: "2026-07-03T12:00:00.000Z",
       })),
-      ...["log", "plan", "today", "pack", "story", "health", "records", "more"].map((route) => ({
+      ...[
+        "home",
+        "log",
+        "plans",
+        "health",
+        "more",
+        "pack",
+        "story",
+        "records",
+      ].map((route) => ({
         uri: `file:///qa/${route}-android.png`,
         fileName: `${route}-android.png`,
         source: "library" as const,
@@ -192,7 +211,10 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
   assert.equal(complete.status, "ready");
   assert.equal(complete.statusLabel, "Native visual proof complete");
   assert.equal(complete.blockers.length, 0);
-  assert.match(complete.rows[7]?.androidStatus ?? "", /Android More screenshot attached: more-android\.png/);
+  assert.match(
+    complete.rows[7]?.androidStatus ?? "",
+    /Android Records screenshot attached: records-android\.png/,
+  );
 });
 
 test("keeps route visual proof blocked until screenshots are route-named", () => {
@@ -223,10 +245,22 @@ test("keeps route visual proof blocked until screenshots are route-named", () =>
   assert.equal(manifest.attachedIosScreenshots, 8);
   assert.equal(manifest.attachedAndroidScreenshots, 8);
   assert.equal(manifest.status, "blocked");
-  assert.match(manifest.rows[2]?.iosStatus ?? "", /iOS Today screenshot pending/);
-  assert.match(manifest.rows[7]?.androidStatus ?? "", /Android More screenshot pending/);
-  assert.match(manifest.blockers.join("\n"), /Today: iOS Today screenshot pending/);
-  assert.match(manifest.blockers.join("\n"), /More: Android More screenshot pending/);
+  assert.match(
+    manifest.rows[2]?.iosStatus ?? "",
+    /iOS Plans screenshot pending/,
+  );
+  assert.match(
+    manifest.rows[7]?.androidStatus ?? "",
+    /Android Records screenshot pending/,
+  );
+  assert.match(
+    manifest.blockers.join("\n"),
+    /Plans: iOS Plans screenshot pending/,
+  );
+  assert.match(
+    manifest.blockers.join("\n"),
+    /Records: Android Records screenshot pending/,
+  );
 });
 
 test("routes Incident Composer QA into the detail-first incident flow", () => {
@@ -252,7 +286,10 @@ test("keeps Phoenix Home long-press to Avatar Studio in native QA", () => {
   assert.match(home.acceptanceCriteria.join("\n"), /long press opens Avatar Studio/);
   assert.match(home.requiredEvidence.join("\n"), /long-press-to-Studio/);
   assert.ok(ownerLoop);
-  assert.match(ownerLoop.routeChecklist?.[2]?.expected ?? "", /long-press-to-Studio/);
+  assert.match(
+    ownerLoop.routeChecklist?.[0]?.expected ?? "",
+    /long-press-to-Studio/,
+  );
 });
 
 test("keeps the Home mission deck as a launch-critical device QA target", () => {
@@ -264,13 +301,32 @@ test("keeps the Home mission deck as a launch-critical device QA target", () => 
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /care-RPG mission deck/);
   assert.match(surface.devicePrompt, /small iOS and Android phones/);
-  assert.match(surface.devicePrompt, /floating paw nav/);
-  assert.match(surface.setupSteps.join("\n"), /Create a meal served with outcome pending/);
-  assert.match(surface.setupSteps.join("\n"), /Start a walk or Alone Time session/);
-  assert.match(surface.verificationSteps.join("\n"), /Tap the pending meal mission/);
-  assert.match(surface.verificationSteps.join("\n"), /Adventure, Health, and Care Pass/);
-  assert.match(surface.acceptanceCriteria.join("\n"), /No mission row is hidden behind the floating paw nav/);
-  assert.match(surface.acceptanceCriteria.join("\n"), /Every mission row routes to the named care workflow/);
+  assert.match(surface.devicePrompt, /canonical bottom navigation/);
+  assert.match(
+    surface.setupSteps.join("\n"),
+    /Create a meal served with outcome pending/,
+  );
+  assert.match(
+    surface.setupSteps.join("\n"),
+    /Start a walk or Alone Time session/,
+  );
+  assert.match(surface.verificationSteps.join("\n"), /Show more from today/);
+  assert.match(
+    surface.verificationSteps.join("\n"),
+    /Tap the pending meal mission/,
+  );
+  assert.match(
+    surface.verificationSteps.join("\n"),
+    /Adventure, Health, and Care Pass/,
+  );
+  assert.match(
+    surface.acceptanceCriteria.join("\n"),
+    /No mission row is hidden behind the canonical bottom navigation/,
+  );
+  assert.match(
+    surface.acceptanceCriteria.join("\n"),
+    /Every mission row routes to the named care workflow/,
+  );
   assert.match(surface.failureEscalation, /Mark Needs tune/);
   assert.match(surface.failureEscalation, /first blocked row or overflow/);
   assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of the compact Home mission deck/);
@@ -288,14 +344,28 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.equal(surface.route, "/");
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /main beta loop/);
-  assert.match(surface.goal, /Log, Plan, Today, Pack, Story, Health, More/);
+  assert.match(surface.goal, /Home, Log, Plans, Health, More/);
+  assert.match(surface.goal, /Pack, Story/);
   assert.match(surface.goal, /Adventure/);
   assert.match(surface.devicePrompt, /bottom-nav owner preview/);
   assert.match(surface.devicePrompt, /Adventure Mode/);
   assert.match(surface.devicePrompt, /Launch Readiness/);
-  assert.match(surface.setupSteps.join("\n"), /provider, payment, storage, AI, and store gates/);
-  assert.match(surface.verificationSteps.join("\n"), /Open Log, Plan, Today, Pack, and Story in order/);
-  assert.match(surface.verificationSteps.join("\n"), /quick-log one safe care event/);
+  assert.match(
+    surface.setupSteps.join("\n"),
+    /provider, payment, storage, AI, and store gates/,
+  );
+  assert.match(
+    surface.verificationSteps.join("\n"),
+    /Open Home, Log, Plans, Health, and More in order/,
+  );
+  assert.match(
+    surface.verificationSteps.join("\n"),
+    /Open Pack, Story, and Records from More/,
+  );
+  assert.match(
+    surface.verificationSteps.join("\n"),
+    /quick-log one safe care event/,
+  );
   assert.match(surface.verificationSteps.join("\n"), /Pack links/);
   assert.match(surface.verificationSteps.join("\n"), /care career, adventure trail, memories, walk story, and badges/);
   assert.match(surface.verificationSteps.join("\n"), /Health Watch and Bile Watch/);
@@ -319,16 +389,44 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.match(surface.requiredEvidence.join("\n"), /Report History storage status/);
   assert.deepEqual(
     surface.routeChecklist?.map((item) => item.label),
-    ["Log", "Plan", "Today", "Pack", "Story", "Health", "More", "Adventure", "Records", "Avatar Studio", "Care Pass"],
+    [
+      "Home",
+      "Log",
+      "Plans",
+      "Health",
+      "More",
+      "Pack",
+      "Story",
+      "Adventure",
+      "Records",
+      "Avatar Studio",
+      "Care Pass",
+    ],
   );
-  assert.match(surface.routeChecklist?.[0]?.expected ?? "", /Quick-log one safe care event/);
-  assert.equal(surface.routeChecklist?.[3]?.route, "/pack");
-  assert.match(surface.routeChecklist?.[3]?.expected ?? "", /Care Pass hub/);
-  assert.equal(surface.routeChecklist?.[4]?.route, "/story");
-  assert.match(surface.routeChecklist?.[4]?.expected ?? "", /care career, adventure trail, memories, walk story, and badges/);
-  assert.match(surface.routeChecklist?.[5]?.expected ?? "", /Today's header bell or the Pack links/);
-  assert.match(surface.routeChecklist?.[6]?.expected ?? "", /Today's header menu or the Pack links/);
-  assert.match(surface.routeChecklist?.[6]?.proof ?? "", /Launch Readiness/);
+  assert.match(
+    surface.routeChecklist?.[0]?.expected ?? "",
+    /long-press-to-Studio/,
+  );
+  assert.match(
+    surface.routeChecklist?.[1]?.expected ?? "",
+    /Quick-log one safe care event/,
+  );
+  assert.equal(surface.routeChecklist?.[5]?.route, "/pack");
+  assert.match(surface.routeChecklist?.[5]?.expected ?? "", /Care Pass hub/);
+  assert.equal(surface.routeChecklist?.[6]?.route, "/story");
+  assert.match(
+    surface.routeChecklist?.[6]?.expected ?? "",
+    /care career, adventure trail, memories, walk story, and badges/,
+  );
+  assert.match(
+    surface.routeChecklist?.[3]?.expected ?? "",
+    /Home header bell or More/,
+  );
+  assert.match(
+    surface.routeChecklist?.[4]?.expected ?? "",
+    /canonical bottom navigation/,
+  );
+  assert.match(surface.routeChecklist?.[4]?.proof ?? "", /Launch Readiness/);
   assert.equal(surface.routeChecklist?.[7]?.route, "/adventure");
   assert.match(surface.routeChecklist?.[7]?.expected ?? "", /private care quests/);
   assert.match(surface.routeChecklist?.[10]?.expected ?? "", /sitter\/vet\/trainer handoff/);
@@ -962,7 +1060,7 @@ test("keeps passed release QA surfaces pending until required proof and notes ar
     requiredEvidence: [
       "iOS screenshot of Quick Log or Log.",
       "Android screenshot of Launch Readiness from More.",
-      "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+      "Note confirming Home, Log, Plans, Health, More, Pack, Story, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
     ],
     launchRisk: "This is the beta owner path.",
   } as const;
@@ -982,7 +1080,7 @@ test("keeps passed release QA surfaces pending until required proof and notes ar
   const completePass: MobileReleaseQaReview = {
     surfaceId: "owner-preview-core-loop",
     status: "pass",
-    note: "Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+    note: "Home, Log, Plans, Health, More, Pack, Story, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
     screenshotEvidence: [
       {
         uri: "file:///qa/ios-log.png",

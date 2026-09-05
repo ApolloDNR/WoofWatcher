@@ -97,6 +97,7 @@ import {
   buildReportArtifactShareContent,
   type ReportArtifactPrintableSource,
 } from "@/lib/reportArtifactExportFile";
+import { WOOFWATCHER_CREDENTIALS_DIRECTORY_NAME } from "@/lib/ownedLocalData";
 import {
   buildCarePassPdfArtifactSource,
   buildDogIdPngArtifactSource,
@@ -715,7 +716,7 @@ export default function RecordsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const printable = getPetCredentialPrintView(credential);
     await sharePrintableSourceFile(printable, {
-      directoryName: "WoofWatcherCredentials",
+      directoryName: WOOFWATCHER_CREDENTIALS_DIRECTORY_NAME,
       printableLabel: "Dog ID credential source",
       title: `${credential.name} Dog ID`,
     });
@@ -732,7 +733,7 @@ export default function RecordsScreen() {
         boundary: credentialImageView.boundary,
       },
       {
-        directoryName: "WoofWatcherCredentials",
+        directoryName: WOOFWATCHER_CREDENTIALS_DIRECTORY_NAME,
         printableLabel: "Dog ID SVG image source",
         title: `${credential.name} Dog ID`,
       },
@@ -742,7 +743,7 @@ export default function RecordsScreen() {
   const shareCredentialPngArtifact = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await shareGeneratedBinaryArtifactFile(credentialPngArtifactSource, {
-      directoryName: "WoofWatcherCredentials",
+      directoryName: WOOFWATCHER_CREDENTIALS_DIRECTORY_NAME,
       title: `${credential.name} Dog ID`,
     });
   };

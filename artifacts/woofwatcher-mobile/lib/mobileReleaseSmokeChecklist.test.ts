@@ -41,19 +41,19 @@ const ownerLoopSurface: MobileReleaseQaSurface = {
   priority: "launch-critical",
   goal: "Verify the real owner journey before beta sharing.",
   devicePrompt: "Run the owner route loop and attach proof.",
-  setupSteps: ["Use Phoenix demo care data.", "Confirm the app opens on Today (Phoenix's room)."],
-  verificationSteps: ["Open Today.", "Open Log.", "Open More Launch Readiness."],
+  setupSteps: ["Use Phoenix demo care data.", "Confirm the app opens on Home."],
+  verificationSteps: ["Open Home.", "Open Log.", "Open More Launch Readiness."],
   acceptanceCriteria: ["No route dead-ends.", "Primary controls are phone-sized."],
   failureEscalation: "Mark Needs tune if any route clips, dead-ends, or feels below App Store quality.",
   requiredEvidence: [
     "iOS screenshot of Quick Log or Log.",
     "Android screenshot of More Launch Readiness.",
-    "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+    "Note confirming Home, Log, Plans, Health, More, Pack, Story, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
   ],
   launchRisk: "This is the beta's real owner path.",
   routeChecklist: [
     {
-      label: "Today",
+      label: "Home",
       route: "/",
       expected: "Confirm Phoenix status, next care, and bottom navigation are clear.",
       proof: "Visual pass.",
@@ -139,7 +139,7 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Route rehearsal:/);
   assert.match(text, /Owner Preview Core Loop \(\/care-twin-qa\)/);
   assert.match(text, /Open with QA return: \/care-twin-qa\?qaReturn=care-twin-qa/);
-  assert.match(text, /Today \(\/\): Confirm Phoenix status/);
+  assert.match(text, /Home \(\/\): Confirm Phoenix status/);
   assert.match(text, /Records \(\/records\): Confirm Report History and Dog ID export copy stays local-file truthful/);
   assert.match(text, /Records and export truth:/);
   assert.match(text, /WoofWatcherReports/);
@@ -221,12 +221,12 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /public launch stays blocked/);
   assert.match(text, /Focused route visual consistency target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency/);
-  assert.match(text, /Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android/);
+  assert.match(text, /Home, Log, Plans, Health, More, Pack, Story, and Records on iOS and Android/);
   assert.match(text, /route-named iOS screenshots/);
-  assert.match(text, /Log-iOS/);
+  assert.match(text, /Home-iOS/);
   assert.match(text, /Pack-iOS/);
   assert.match(text, /Story-Android/);
-  assert.match(text, /More-Android/);
+  assert.match(text, /Records-Android/);
   assert.match(text, /Web preview screenshots do not replace native proof/);
   assert.match(text, /Native and store proof:/);
   assert.match(text, /iOS Quick Log\/Log proof/);
