@@ -3273,3 +3273,5 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - DONE: File actions expose disabled and busy accessibility state until the active request settles; success and failure both release the lock.
 - BOUNDARY: Source proof does not replace Android/iOS share cancellation, recipient reopen, TalkBack/VoiceOver, or route-named device screenshots.
 - NEXT: Require dependency-complete branch CI, then capture the rebuilt-device Records share matrix when native tooling is available.
+- CI PROOF: `WoofWatcher Verify` run `33975549241`, job `101331485463`, passed implementation/docs commit `9c79785f` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
