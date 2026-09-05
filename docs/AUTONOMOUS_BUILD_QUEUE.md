@@ -3266,3 +3266,10 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - REBUILT WEB PREVIEW: The browser proves that Home fills its runtime phone frame end to end; the automated layout contract separately covers the `390x844` baseline. Top reset is gated on a real route blur, the room background stays edge-locked while Phoenix moves, the live/tap animation path runs, and the Next Up overflow action clears the floating navigation with a `48pt` target. This is browser/source evidence only; native iOS/device FPS remains unproved.
 - VISUAL REVIEW: The latest Home output passed a direct side-by-side comparison with the canonical light reference board for palette, typography, pixel art, spacing, hierarchy, and primary navigation.
 - BLOCKED/OPEN: Doctor source checks pass, but the overall local doctor remains `BLOCKED` solely because installed pnpm `11.19.0` differs from pinned `10.24.0`. This Windows host has no `xcrun` or `simctl`, so native iOS device/simulator behavior, VoiceOver, touch and performance evidence, provider credentials, signing/store review, and Apollo approval remain open external gates.
+
+## 2026-09-05 Records file-share admission safety
+
+- DONE: One synchronous lock now fences Records HTML, SVG, PDF, and PNG writes/share requests so rapid taps cannot overlap private file work or open multiple native share sheets.
+- DONE: File actions expose disabled and busy accessibility state until the active request settles; success and failure both release the lock.
+- BOUNDARY: Source proof does not replace Android/iOS share cancellation, recipient reopen, TalkBack/VoiceOver, or route-named device screenshots.
+- NEXT: Require dependency-complete branch CI, then capture the rebuilt-device Records share matrix when native tooling is available.

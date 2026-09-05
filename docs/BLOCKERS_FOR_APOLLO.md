@@ -1344,3 +1344,8 @@ The explicit Pack recovery-copy clear action now has source-backed screen-reader
 - The Home reduction from `1,396` DOM elements / `2,948px` maximum scroll to `313` / `1,240px` is diagnostic browser evidence, not native performance proof.
 - Doctor source checks pass. The overall local doctor is `BLOCKED` solely by installed pnpm `11.19.0` versus pinned `10.24.0`.
 - Still open: this Windows host has no `xcrun` or `simctl`, so real iOS simulator/device behavior, VoiceOver, touch and performance evidence, provider credentials, signing/store review, and Apollo approval are unproved. The source/browser proof does not clear those gates.
+
+## 2026-09-05 Records file-share native proof
+
+- Source coverage now prevents overlapping Records HTML/SVG/PDF/PNG file writes and share requests and exposes busy state.
+- Still blocked externally: real iOS/Android rapid taps, share cancellation, receiving-app reopen, TalkBack/VoiceOver, and route-screenshot evidence.

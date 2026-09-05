@@ -6333,3 +6333,7 @@ The rebuilt browser proves that Home fills its runtime phone frame end to end; t
 Manual in-app-browser proof covers Home / Log / Plans / Health / More and the full Quick Log save -> History -> detail -> delete path. The destructive confirmation now layers visibly above the detail sheet, and the bottom safety gutter prevents clipped page content beneath the floating navigation. A direct side-by-side comparison of the latest Home output with the canonical light reference board passed for palette, typography, pixel art, spacing, hierarchy, and navigation. Home's browser diagnostic improved from `1,396` DOM elements / `2,948px` maximum scroll to `313` / `1,240px`; this is not native performance evidence.
 
 Doctor source checks pass, but the overall local doctor remains `BLOCKED` solely because installed pnpm `11.19.0` differs from pinned `10.24.0`. This Windows host has no `xcrun` or `simctl`; native iOS device/simulator behavior, VoiceOver, touch and performance evidence, provider credentials, signing/store review, and Apollo approval remain explicit open gates.
+
+## 2026-09-05 Records file-share admission safety
+
+Records local HTML, SVG, PDF, and PNG shares now share a synchronous admission fence with disabled/busy UI state. Rapid taps cannot overlap file writes or native share requests, and the fence releases after success or failure. Real-device cancellation, recipient reopen, TalkBack/VoiceOver, and route-named screenshots remain open.

@@ -3309,3 +3309,8 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Current visual proof: compare the canonical light reference board and the latest Home output side by side; palette, typography, pixel art, spacing, hierarchy, and navigation passed this review.
 - Tooling boundary: doctor source checks pass, while the overall local doctor is `BLOCKED` solely on pnpm `11.19.0` versus pinned `10.24.0`.
 - Still required: this Windows host has no `xcrun` or `simctl`, so route-named native iOS simulator/device behavior, VoiceOver, touch and scene-performance evidence, provider credentials, signing/store review, and Apollo approval remain external gates.
+
+## 2026-09-05 Records file-share rapid-tap safety
+
+- Automated: confirm only the first file-share task is admitted, overlapping requests are rejected, pending state is reported, and both success and error release the lock.
+- Device still required: rapid-tap HTML/SVG/PDF/PNG actions on Android and iOS; verify one share sheet, cancellation recovery, recipient reopen, and TalkBack/VoiceOver state.

@@ -111,6 +111,7 @@ import { resolvePetName } from "@/lib/petIdentity";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 import { shareTextPayload } from "@/lib/shareText";
 import { persistPickedMedia } from "@/lib/durablePickedMedia";
+import { createRecordsFileShareSession } from "@/lib/recordsFileShareSession";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -282,6 +283,8 @@ export default function RecordsScreen() {
   const carePassShareSessionRef = useRef(createSavedCarePassShareSession());
   const [carePassSaved, setCarePassSaved] = useState(false);
   const [carePassSharePending, setCarePassSharePending] = useState(false);
+  const recordsFileShareSessionRef = useRef(createRecordsFileShareSession());
+  const [recordsFileSharePending, setRecordsFileSharePending] = useState(false);
   const [carePassShareStatus, setCarePassShareStatus] = useState<string | null>(
     null,
   );
@@ -635,6 +638,7 @@ export default function RecordsScreen() {
     printable: ReportArtifactPrintableSource,
     options: { directoryName?: string; printableLabel?: string; title: string },
   ) => {
+    await recordsFileShareSessionRef.current.run(async () => {
     const plan = buildReportArtifactExportFilePlan(printable, {
       directoryName: options.directoryName,
       documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
@@ -677,12 +681,14 @@ export default function RecordsScreen() {
     }
 
     await shareFallback();
+    }, setRecordsFileSharePending);
   };
 
   const shareGeneratedBinaryArtifactFile = async (
     source: GeneratedBinaryArtifactSource,
     options: { directoryName?: string; title: string },
   ) => {
+    await recordsFileShareSessionRef.current.run(async () => {
     const plan = buildGeneratedBinaryArtifactFilePlan(source, {
       directoryName: options.directoryName,
       documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
@@ -726,6 +732,7 @@ export default function RecordsScreen() {
     }
 
     await shareFallback();
+    }, setRecordsFileSharePending);
   };
 
   const sharePrintableCredential = async () => {
@@ -1346,7 +1353,9 @@ export default function RecordsScreen() {
             </Pressable>
             <Pressable
               onPress={sharePrintableCredential}
+              disabled={recordsFileSharePending}
               accessibilityRole="button"
+              accessibilityState={{ disabled: recordsFileSharePending, busy: recordsFileSharePending }}
               accessibilityLabel="Share local printable Dog ID source file"
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={s.shareInline}
@@ -1356,7 +1365,9 @@ export default function RecordsScreen() {
             </Pressable>
             <Pressable
               onPress={shareCredentialImageSource}
+              disabled={recordsFileSharePending}
               accessibilityRole="button"
+              accessibilityState={{ disabled: recordsFileSharePending, busy: recordsFileSharePending }}
               accessibilityLabel="Share local SVG Dog ID image source"
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={s.shareInline}
@@ -1366,7 +1377,9 @@ export default function RecordsScreen() {
             </Pressable>
             <Pressable
               onPress={shareCredentialPngArtifact}
+              disabled={recordsFileSharePending}
               accessibilityRole="button"
+              accessibilityState={{ disabled: recordsFileSharePending, busy: recordsFileSharePending }}
               accessibilityLabel="Share generated Dog ID PNG"
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={s.shareInline}
@@ -2826,7 +2839,9 @@ export default function RecordsScreen() {
                         </Pressable>
                         <Pressable
                           onPress={() => sharePrintableReportArtifact(artifact)}
+                          disabled={recordsFileSharePending}
                           accessibilityRole="button"
+                          accessibilityState={{ disabled: recordsFileSharePending, busy: recordsFileSharePending }}
                           accessibilityLabel={`Share local printable report source file for ${artifact.title}`}
                           hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
@@ -2838,7 +2853,9 @@ export default function RecordsScreen() {
                         </Pressable>
                         <Pressable
                           onPress={() => shareGeneratedCarePassPdfArtifact(artifact)}
+                          disabled={recordsFileSharePending}
                           accessibilityRole="button"
+                          accessibilityState={{ disabled: recordsFileSharePending, busy: recordsFileSharePending }}
                           accessibilityLabel={`Share generated Care Pass PDF for ${artifact.title}`}
                           hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [

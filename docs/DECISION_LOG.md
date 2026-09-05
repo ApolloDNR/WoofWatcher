@@ -3935,3 +3935,7 @@ Decision: Use a synchronous ref as the authority for recovery export/import admi
 - Rebuilt-preview evidence: The browser proves that Home fills its runtime phone frame end to end; the automated layout contract separately covers the `390x844` baseline. Top reset is gated on route blur, the room background stays edge-locked while Phoenix moves, the live/tap animation path runs, and the Next Up overflow action clears floating navigation with a `48pt` target. This does not prove native iOS/device FPS.
 - Visual evidence: A direct side-by-side comparison of the latest Home output with the canonical light reference board passed for palette, typography, pixel art, spacing, hierarchy, and navigation. The `1,396` elements / `2,948px` to `313` / `1,240px` Home change remains diagnostic only.
 - Boundary: Doctor source checks pass, but local status remains `BLOCKED` solely on pnpm `11.19.0` versus pinned `10.24.0`. This Windows host lacks `xcrun` and `simctl`; native iOS/VoiceOver/device performance, provider credentials, signing/store review, and Apollo approval remain open.
+
+## 2026-09-05 - Fence Records file shares at admission
+
+Decision: Use one synchronous session lock across all Records local-file share helpers and mirror it into React disabled/busy state. React state alone is not the admission authority because rapid taps can arrive before a render commits.

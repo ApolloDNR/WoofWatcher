@@ -1043,3 +1043,9 @@ Source PASS requires the generated private JSON to remain visible and failed sha
 - PASS (visual comparison): The latest Home output matches the canonical light board's palette, typography, pixel art, spacing, hierarchy, and navigation in a direct side-by-side review.
 - BLOCKED (local doctor): Source checks pass; installed pnpm `11.19.0` does not match pinned `10.24.0`.
 - OPEN: The Windows host lacks `xcrun` and `simctl`; route-named native iOS device/simulator behavior, VoiceOver, touch/performance evidence, provider credentials, signing/store review, and Apollo approval remain unproved.
+
+## 2026-09-05 Records file-share admission gate
+
+- PASS (source): A synchronous session fence prevents overlapping Records HTML, SVG, PDF, and PNG file-share work and releases after success or failure.
+- PASS (accessibility source): File actions expose disabled and busy state while a request is active.
+- OPEN (native): Share cancellation, receiving-app reopen, TalkBack/VoiceOver, and route-named iOS/Android evidence remain unproved.
