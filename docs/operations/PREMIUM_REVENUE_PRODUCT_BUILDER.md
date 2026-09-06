@@ -2,7 +2,7 @@
 
 ## 2026-09-05 Consumer Home next-care speech truth
 
-The upbeat room fallback now asks `What's next?` instead of claiming `Walk time soon?` when no walk evidence exists. Home's existing live Next readout continues to carry the actual routine, active-walk, or alone-time state. Red-first focused coverage reproduces and protects the boundary; real-device copy fit, localization, accessibility, route screenshots, provider, store, public-launch, and Apollo approval remain open.
+The upbeat room fallback now asks `What's next?` instead of claiming `Walk time soon?` when no walk evidence exists. Home's existing live Next readout continues to carry the actual routine, active-walk, or alone-time state. Red-first focused coverage reproduces and protects the boundary. Dependency-complete `WoofWatcher Verify` [run `34001884726`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/34001884726), job `101402098721`, passed implementation commit `c2b51ba6` end to end in `2m14s`; real-device copy fit, localization, accessibility, route screenshots, provider, store, public-launch, and Apollo approval remain open.
 
 ## 2026-09-05 Consumer Home visual recovery and preview proof
 

@@ -4,6 +4,7 @@
 
 - DONE source: Upbeat fallback speech now asks `What's next?` instead of inventing an upcoming walk. Home's live Next readout remains responsible for the actual routine, active walk, or alone-time state.
 - VERIFIED red/green: The focused regression failed on the former `Walk time soon?` claim and passes after the minimal speech-policy change.
+- VERIFIED CI: Dependency-complete `WoofWatcher Verify` [run `34001884726`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/34001884726), job `101402098721`, passed implementation commit `c2b51ba6` end to end in `2m14s`.
 - BOUNDARY: This is source behavior only. Real-device copy fit, localization, VoiceOver/TalkBack, route screenshots, provider, store, public-launch, and Apollo approval remain open.
 - NEXT: Capture Home and the core care loop on a real iPhone; do not infer native polish from source tests.
 

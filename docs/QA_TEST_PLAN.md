@@ -3,6 +3,7 @@
 ## 2026-09-05 Consumer Home next-care speech QA
 
 - PASS red/green: Upbeat morning, afternoon, evening, and invalid-hour fallback cases no longer claim a walk is next; anxious and unwell care-aware speech is unchanged.
+- PASS CI: Dependency-complete `WoofWatcher Verify` run `34001884726`, job `101402098721`, passed implementation commit `c2b51ba6` through focused behavior, typecheck, and CI-safe builds.
 - OPEN native: Confirm copy fit and spoken order beside the live Next readout across active-walk, alone-time, routine, and empty-plan states on iOS and Android.
 
 ## 2026-09-05 Consumer Home preview QA

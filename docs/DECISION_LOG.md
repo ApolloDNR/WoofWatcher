@@ -4,6 +4,7 @@
 
 - Decision: Keep time-aware upbeat room speech generic and let Home's live Next readout identify the actual routine, active walk, or alone-time state.
 - Reason: `Walk time soon?` asserted a care event without schedule or log evidence and could contradict the owner's real plan.
+- Evidence: Dependency-complete `WoofWatcher Verify` run `34001884726`, job `101402098721`, passed implementation commit `c2b51ba6` end to end.
 - Boundary: Source copy does not establish native layout, localization, screen-reader order, provider behavior, store review, or Apollo approval.
 
 ## 2026-09-05 — Android Records files use native attachment sharing

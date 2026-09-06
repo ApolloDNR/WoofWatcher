@@ -3,6 +3,7 @@
 ## 2026-09-05 Consumer Home next-care truth gate
 
 - PASS source: Generic upbeat room speech no longer predicts a walk without routine evidence; the separate live Next readout owns real next-care truth.
+- PASS CI: Dependency-complete `WoofWatcher Verify` run `34001884726`, job `101402098721`, passed implementation commit `c2b51ba6` end to end.
 - OPEN native/release: Copy fit, localization, screen-reader order, platform screenshots, provider, store, public-launch, and Apollo approval remain required.
 
 ## 2026-09-05 Consumer Home preview gate
