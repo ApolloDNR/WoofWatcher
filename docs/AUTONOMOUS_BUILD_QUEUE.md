@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-09-05 Consumer Home next-care speech truth
+
+- DONE source: Upbeat fallback speech now asks `What's next?` instead of inventing an upcoming walk. Home's live Next readout remains responsible for the actual routine, active walk, or alone-time state.
+- VERIFIED red/green: The focused regression failed on the former `Walk time soon?` claim and passes after the minimal speech-policy change.
+- BOUNDARY: This is source behavior only. Real-device copy fit, localization, VoiceOver/TalkBack, route screenshots, provider, store, public-launch, and Apollo approval remain open.
+- NEXT: Capture Home and the core care loop on a real iPhone; do not infer native polish from source tests.
+
 ## 2026-09-05 Consumer Home visual recovery and preview boundary
 
 - DONE: Restored the approved full-phone day/night room and active-walk park artwork behind Home, separated the transparent living Phoenix layer from the scrolling care console, and kept focus/scroll motion pausing so the scene resumes without snapping or doing hidden background work.

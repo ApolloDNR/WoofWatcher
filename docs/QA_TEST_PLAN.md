@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-09-05 Consumer Home next-care speech QA
+
+- PASS red/green: Upbeat morning, afternoon, evening, and invalid-hour fallback cases no longer claim a walk is next; anxious and unwell care-aware speech is unchanged.
+- OPEN native: Confirm copy fit and spoken order beside the live Next readout across active-walk, alone-time, routine, and empty-plan states on iOS and Android.
+
 ## 2026-09-05 Consumer Home preview QA
 
 - PASS local/browser: The production-profile consumer preview rebuilds before serving, records its consumer identity, fills the phone with the day/night room or active-walk park, keeps the living Phoenix separate from the scrolling console, and pauses scene work during blur or scroll without snapping on resume.

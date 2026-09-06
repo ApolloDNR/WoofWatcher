@@ -17,5 +17,5 @@ export function getHomeRoomSpeech(mood: Mood, hour: number): string {
     return CONCERN_SPEECH[mood];
   }
 
-  return `${greetingForHour(hour)}!\nWalk time soon?\nI'm ready!`;
+  return `${greetingForHour(hour)}!\nWhat's next?\nI'm ready!`;
 }

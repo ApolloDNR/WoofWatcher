@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-09-05 Consumer Home next-care speech truth
+
+The upbeat room fallback now asks `What's next?` instead of claiming `Walk time soon?` when no walk evidence exists. Home's existing live Next readout continues to carry the actual routine, active-walk, or alone-time state. Red-first focused coverage reproduces and protects the boundary; real-device copy fit, localization, accessibility, route screenshots, provider, store, public-launch, and Apollo approval remain open.
+
 ## 2026-09-05 Consumer Home visual recovery and preview proof
 
 Production Home again uses the approved full-phone day/night room and active-walk park behind a separately animated Phoenix layer and scrolling care console. Scene work pauses while the route is unfocused or scrolling and resumes without snapping. Production More leads with the consumer Command Directory, while internal launch/QA operations remain confined to the owner profile. The `preview:consumer` command rebuilds with the production profile and writes an explicit consumer identity before serving.

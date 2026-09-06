@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-09-05 — Generic Home speech must not predict a care event
+
+- Decision: Keep time-aware upbeat room speech generic and let Home's live Next readout identify the actual routine, active walk, or alone-time state.
+- Reason: `Walk time soon?` asserted a care event without schedule or log evidence and could contradict the owner's real plan.
+- Boundary: Source copy does not establish native layout, localization, screen-reader order, provider behavior, store review, or Apollo approval.
+
 ## 2026-09-05 — Android Records files use native attachment sharing
 
 - Decision: route Android Records HTML, PDF, and PNG files through `expo-sharing`; retain `Share.share` on iOS and reviewed text as the failure/unavailable fallback.

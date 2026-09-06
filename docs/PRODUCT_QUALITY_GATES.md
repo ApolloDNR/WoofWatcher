@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-09-05 Consumer Home next-care truth gate
+
+- PASS source: Generic upbeat room speech no longer predicts a walk without routine evidence; the separate live Next readout owns real next-care truth.
+- OPEN native/release: Copy fit, localization, screen-reader order, platform screenshots, provider, store, public-launch, and Apollo approval remain required.
+
 ## 2026-09-05 Consumer Home preview gate
 
 - PASS source/browser: Production Home restores the approved immersive room and walk artwork, layers the living Phoenix independently from the care console, pauses hidden or scrolling scene work, and exposes a production-profile consumer preview that cannot silently serve the internal QA profile.

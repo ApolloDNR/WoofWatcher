@@ -6,16 +6,20 @@ import { getHomeRoomSpeech } from "./homeRoomSpeech.ts";
 test("keeps upbeat Phoenix room speech aligned with the local time of day", () => {
   assert.equal(
     getHomeRoomSpeech("happy", 8),
-    "Good morning!\nWalk time soon?\nI'm ready!",
+    "Good morning!\nWhat's next?\nI'm ready!",
   );
   assert.equal(
     getHomeRoomSpeech("calm", 14),
-    "Good afternoon!\nWalk time soon?\nI'm ready!",
+    "Good afternoon!\nWhat's next?\nI'm ready!",
   );
   assert.equal(
     getHomeRoomSpeech("excited", 21),
-    "Good evening!\nWalk time soon?\nI'm ready!",
+    "Good evening!\nWhat's next?\nI'm ready!",
   );
+});
+
+test("does not invent an upcoming walk when Home has no walk-specific speech", () => {
+  assert.doesNotMatch(getHomeRoomSpeech("calm", 14), /walk/i);
 });
 
 test("keeps concern speech care-aware instead of replacing it with a greeting", () => {
@@ -32,6 +36,6 @@ test("keeps concern speech care-aware instead of replacing it with a greeting", 
 test("normalizes invalid hours without producing misleading copy", () => {
   assert.equal(
     getHomeRoomSpeech("happy", Number.NaN),
-    "Hello!\nWalk time soon?\nI'm ready!",
+    "Hello!\nWhat's next?\nI'm ready!",
   );
 });
