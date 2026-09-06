@@ -3328,6 +3328,13 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Device still required: rapid-tap HTML/SVG/PDF/PNG actions on Android and iOS; verify one share sheet, cancellation recovery, recipient reopen, and TalkBack/VoiceOver state.
 ## 2026-09-05 Home room time-of-day speech coverage
 
+## 2026-09-06 Home room invalid-clock speech coverage
+
+- Verify non-finite, negative, and 24-plus hours render neutral Home speech,
+  not morning, afternoon, or evening copy.
+- Keep anxious and unwell care-aware language independent of clock input.
+- Native locale, device-clock, and screen-reader evidence remains required.
+
 - Verify upbeat Home fallback speech says good morning before noon, good
   afternoon before 6 PM, and good evening thereafter using the owner's local
   device hour.

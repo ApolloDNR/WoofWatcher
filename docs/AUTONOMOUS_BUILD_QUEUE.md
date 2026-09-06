@@ -3294,6 +3294,16 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 ## 2026-09-05 Home room time-aware speech
 
+## 2026-09-06 Home speech invalid-clock safety
+
+- DONE: Home treats non-finite and out-of-range local-hour values as an unknown
+  clock, using neutral copy instead of an incorrect time of day.
+- VERIFIED LOCALLY: The red-first room-speech regression failed for `-1`; the
+  focused policy test passes after the bounded fallback.
+- NEXT: Capture native clock-transition, localization, and VoiceOver/TalkBack
+  evidence when device tooling is available; source proof does not clear those
+  release gates.
+
 - DONE: The immersive Home fallback speech now uses the same local clock as the
   day/night room, so upbeat Phoenix copy says morning, afternoon, or evening
   instead of showing a night room with a morning greeting.

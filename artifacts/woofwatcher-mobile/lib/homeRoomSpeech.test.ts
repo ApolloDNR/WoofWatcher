@@ -38,4 +38,12 @@ test("normalizes invalid hours without producing misleading copy", () => {
     getHomeRoomSpeech("happy", Number.NaN),
     "Hello!\nWhat's next?\nI'm ready!",
   );
+  assert.equal(
+    getHomeRoomSpeech("happy", -1),
+    "Hello!\nWhat's next?\nI'm ready!",
+  );
+  assert.equal(
+    getHomeRoomSpeech("happy", 24),
+    "Hello!\nWhat's next?\nI'm ready!",
+  );
 });

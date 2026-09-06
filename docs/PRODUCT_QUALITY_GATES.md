@@ -1063,6 +1063,14 @@ Source PASS requires the generated private JSON to remain visible and failed sha
 - OPEN (native): Share cancellation, receiving-app reopen, TalkBack/VoiceOver, and route-named iOS/Android evidence remain unproved.
 ## 2026-09-05 Home scene and speech consistency
 
+## 2026-09-06 Home speech clock-input boundary
+
+- PASS (source): Home renders neutral copy for non-finite, negative, and
+  24-plus clock values instead of inventing a day-part greeting.
+- PASS (focused): A red regression for a negative hour now passes.
+- OPEN (native): Device clock, localization, VoiceOver/TalkBack, screenshots,
+  store review, and Apollo signoff remain unproved.
+
 - PASS at source level when the immersive room's local time-of-day state and
   upbeat Phoenix greeting cannot contradict one another.
 - BLOCKED at native proof until route-named iOS/Android captures verify local

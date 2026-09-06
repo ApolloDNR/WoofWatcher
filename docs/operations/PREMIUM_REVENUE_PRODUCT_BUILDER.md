@@ -6351,6 +6351,14 @@ Records local HTML, SVG, PDF, and PNG shares now share a synchronous admission f
 Dependency-complete `WoofWatcher Verify` run `33975549241`, job `101331485463`, passed implementation/docs commit `9c79785f` end to end.
 ## 2026-09-05 Home room time-aware speech slice
 
+## 2026-09-06 Home invalid-clock speech safety
+
+Home speech now recognizes only finite `0..23` local hours. Malformed,
+negative, and 24-plus values show neutral copy instead of asserting morning,
+afternoon, or evening. Focused red/green source coverage is complete; native
+clock-transition, localization, accessibility, screenshot, store, and Apollo
+approval evidence remains external.
+
 - Replaced the fixed morning fallback in the immersive Home room with a tested
   local-hour speech policy covering morning, afternoon, evening, concern states,
   and invalid clock input.

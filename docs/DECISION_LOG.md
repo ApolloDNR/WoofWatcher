@@ -3948,6 +3948,12 @@ Decision: Use a synchronous ref as the authority for recovery export/import admi
 Decision: Use one synchronous session lock across all Records local-file share helpers and mirror it into React disabled/busy state. React state alone is not the admission authority because rapid taps can arrive before a render commits.
 ## 2026-09-05 - Home fallback speech follows the local room clock
 
+## 2026-09-06 - Bound Home speech to valid local clock hours
+
+Decision: Only finite values in the half-open `0..24` range count as
+local-clock evidence. A malformed or out-of-range value must use neutral copy,
+because an incorrect day-part greeting is worse than no clock context.
+
 - Decision: Upbeat Phoenix fallback speech derives its greeting from the same
   local hour that drives the immersive Home scene. Anxious and unwell speech
   remains care-aware and non-diagnostic instead of being replaced by a greeting.

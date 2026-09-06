@@ -6,7 +6,7 @@ const CONCERN_SPEECH: Pick<Record<Mood, string>, "anxious" | "unwell"> = {
 };
 
 function greetingForHour(hour: number): string {
-  if (!Number.isFinite(hour)) return "Hello";
+  if (!Number.isFinite(hour) || hour < 0 || hour >= 24) return "Hello";
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
