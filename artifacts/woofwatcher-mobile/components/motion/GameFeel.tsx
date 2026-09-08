@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import React, { type ReactNode, useEffect } from "react";
+import React, { type ReactNode, useCallback, useEffect, useRef } from "react";
 import {
   Platform,
   Pressable,
@@ -8,6 +8,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import Animated, {
+  cancelAnimation,
   Easing,
   FadeInDown,
   ReduceMotion,
@@ -100,17 +101,95 @@ export function PressScale({
       }}
       onLongPress={onLongPress}
       onPressIn={(event) => {
-        if (!reduced) scale.value = withSpring(scaleTo, SPRING.pop);
+        if (!reduced) {
+          scale.value = withSpring(scaleTo, {
+            ...SPRING.pop,
+            reduceMotion: ReduceMotion.System,
+          });
+        }
         rest.onPressIn?.(event);
       }}
       onPressOut={(event) => {
-        if (!reduced) scale.value = withSpring(1, SPRING.default);
+        if (!reduced) {
+          scale.value = withSpring(1, {
+            ...SPRING.default,
+            reduceMotion: ReduceMotion.System,
+          });
+        }
         rest.onPressOut?.(event);
       }}
     >
       <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>
     </Pressable>
   );
+}
+
+/**
+ * A small, local acknowledgement for a real value or selection change.
+ *
+ * Unlike a route entrance, this never delays content or invents activity. It
+ * simply lets the control that changed settle into its new state. The first
+ * render stays still and the system Reduce Motion preference is authoritative.
+ */
+export function StateChangePulse({
+  children,
+  value,
+  style,
+  scaleFrom = 0.97,
+}: {
+  children: ReactNode;
+  value: string | number | boolean | null | undefined;
+  style?: StyleProp<ViewStyle>;
+  scaleFrom?: number;
+}) {
+  const reduced = useReducedMotion();
+  const previousValue = useRef(value);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    if (Object.is(previousValue.current, value)) return;
+    previousValue.current = value;
+
+    if (reduced) {
+      cancelAnimation(scale);
+      cancelAnimation(opacity);
+      scale.value = 1;
+      opacity.value = 1;
+      return;
+    }
+
+    scale.value = withSequence(
+      withTiming(scaleFrom, {
+        duration: 70,
+        easing: Easing.out(Easing.quad),
+        reduceMotion: ReduceMotion.System,
+      }),
+      withSpring(1, {
+        ...SPRING.default,
+        reduceMotion: ReduceMotion.System,
+      }),
+    );
+    opacity.value = withSequence(
+      withTiming(0.72, {
+        duration: 70,
+        easing: Easing.out(Easing.quad),
+        reduceMotion: ReduceMotion.System,
+      }),
+      withTiming(1, {
+        duration: 140,
+        easing: Easing.out(Easing.quad),
+        reduceMotion: ReduceMotion.System,
+      }),
+    );
+  }, [opacity, reduced, scale, scaleFrom, value]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
+  return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
 }
 
 /**
@@ -147,15 +226,28 @@ export function MeterPip({
     const delay = index * 40;
     fill.value = withDelay(
       delay,
-      withTiming(target, { duration: 140, easing: Easing.out(Easing.quad) }),
+      withTiming(target, {
+        duration: 140,
+        easing: Easing.out(Easing.quad),
+        reduceMotion: ReduceMotion.System,
+      }),
+      ReduceMotion.System,
     );
     if (filled) {
       pop.value = withDelay(
         delay,
         withSequence(
-          withTiming(1.22, { duration: 110, easing: Easing.out(Easing.quad) }),
-          withSpring(1, SPRING.pop),
+          withTiming(1.22, {
+            duration: 110,
+            easing: Easing.out(Easing.quad),
+            reduceMotion: ReduceMotion.System,
+          }),
+          withSpring(1, {
+            ...SPRING.pop,
+            reduceMotion: ReduceMotion.System,
+          }),
         ),
+        ReduceMotion.System,
       );
     }
   }, [filled, fill, index, pop, reduced]);
@@ -189,13 +281,20 @@ export function useBounce() {
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
-  const bounce = () => {
+  const bounce = useCallback(() => {
     if (reduced) return;
     scale.value = withSequence(
-      withTiming(1.12, { duration: 110, easing: Easing.out(Easing.quad) }),
-      withSpring(1, SPRING.pop),
+      withTiming(1.12, {
+        duration: 110,
+        easing: Easing.out(Easing.quad),
+        reduceMotion: ReduceMotion.System,
+      }),
+      withSpring(1, {
+        ...SPRING.pop,
+        reduceMotion: ReduceMotion.System,
+      }),
     );
-  };
+  }, [reduced, scale]);
   return { style, bounce };
 }
 
@@ -207,6 +306,8 @@ export function ProgressFill({
   radius = 999,
   trackColor,
   style,
+  accessibilityLabel,
+  accessibilityValueText,
 }: {
   ratio: number;
   color: string;
@@ -214,13 +315,20 @@ export function ProgressFill({
   radius?: number;
   trackColor: string;
   style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
+  accessibilityValueText?: string;
 }) {
   const reduced = useReducedMotion();
   const clamped = Math.max(0, Math.min(1, ratio));
   const progress = useSharedValue(reduced ? clamped : 0);
 
   useEffect(() => {
-    progress.value = reduced ? clamped : withSpring(clamped, SPRING.gentle);
+    progress.value = reduced
+      ? clamped
+      : withSpring(clamped, {
+          ...SPRING.gentle,
+          reduceMotion: ReduceMotion.System,
+        });
   }, [clamped, progress, reduced]);
 
   const fillStyle = useAnimatedStyle(() => ({
@@ -229,6 +337,15 @@ export function ProgressFill({
 
   return (
     <Animated.View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityValue={{
+        min: 0,
+        max: 100,
+        now: Math.round(clamped * 100),
+        text: accessibilityValueText,
+      }}
       style={[
         { height, borderRadius: radius, backgroundColor: trackColor, overflow: "hidden" },
         style,

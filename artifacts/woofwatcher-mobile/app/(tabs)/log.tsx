@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import {
@@ -1009,6 +1010,7 @@ function isPendingMealEntry(entry: Entry): boolean {
 
 export default function LogScreen() {
   const colors = useColors();
+  const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
@@ -1088,6 +1090,27 @@ export default function LogScreen() {
   );
 
   const [selectedType, setSelectedType] = useState<string>(() => routeSelectedType ?? "meal");
+  const careTypeRailRef = useRef<ScrollView>(null);
+  const careTypeRailLayouts = useRef<Record<string, { x: number; width: number }>>({});
+  const careTypeRailViewportWidth = useRef(0);
+  const revealSelectedCareType = useCallback(
+    (type: string) => {
+      const layout = careTypeRailLayouts.current[type];
+      const railViewportWidth = careTypeRailViewportWidth.current;
+      if (!layout || railViewportWidth <= 0) return;
+      const centeredX = layout.x - (railViewportWidth - layout.width) / 2;
+      careTypeRailRef.current?.scrollTo({
+        x: Math.max(0, centeredX),
+        y: 0,
+        animated: !reducedMotion,
+      });
+    },
+    [reducedMotion],
+  );
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => revealSelectedCareType(selectedType));
+    return () => task.cancel();
+  }, [revealSelectedCareType, selectedType]);
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [numeric, setNumeric] = useState("");
@@ -3147,32 +3170,31 @@ export default function LogScreen() {
 
           {!SYNC_PROVIDER_CONFIGURED && state.entries.length > 0 ? (
             // Local-first build: device storage is the success state, so the
-            // care record card confirms that instead of promising sync.
+            // compact status confirms that without competing with the Log form.
             <View
+              accessible
+              accessibilityLabel={`Care record saved on this device. Nothing waiting. ${petDisplayName}'s record is stored locally.`}
               style={[
-                s.outboxCard,
+                s.savedDeviceStatus,
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.sage + "33",
-                  shadowColor: colors.sage,
                 },
               ]}
             >
-              <View style={s.outboxTop}>
-                <View style={[s.outboxIcon, { backgroundColor: colors.sage + "18" }]}>
-                  <Ionicons name="shield-checkmark-outline" size={18} color={colors.sage} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.outboxEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    CARE RECORD
-                  </Text>
-                  <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    Saved on this device
-                  </Text>
-                  <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Nothing waiting. {petDisplayName}'s care record lives safely in this device's local storage.
-                  </Text>
-                </View>
+              <View style={[s.savedDeviceStatusIcon, { backgroundColor: colors.sage + "18" }]}>
+                <Ionicons name="shield-checkmark-outline" size={17} color={colors.sage} />
+              </View>
+              <View style={s.savedDeviceStatusCopy}>
+                <Text style={[s.savedDeviceStatusTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  Saved on this device
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[s.savedDeviceStatusMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                >
+                  Nothing waiting · {petDisplayName}'s record is stored locally.
+                </Text>
               </View>
             </View>
           ) : null}
@@ -3374,9 +3396,14 @@ export default function LogScreen() {
               style={s.composerSectionHeader}
             />
             <ScrollView
+              ref={careTypeRailRef}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={s.typeRow}
+              onLayout={(event) => {
+                careTypeRailViewportWidth.current = event.nativeEvent.layout.width;
+                revealSelectedCareType(selectedType);
+              }}
               style={{ marginHorizontal: -4 }}
             >
               {LOG_TYPES.map((q) => {
@@ -3385,9 +3412,15 @@ export default function LogScreen() {
                 return (
                   <Pressable
                     key={q.type}
-                    accessibilityRole="button"
+                    accessibilityRole="radio"
                     accessibilityLabel={`Log ${q.label}`}
+                    accessibilityState={{ checked: active, selected: active }}
                     aria-selected={active}
+                    onLayout={(event) => {
+                      const { x, width } = event.nativeEvent.layout;
+                      careTypeRailLayouts.current[q.type] = { x, width };
+                      if (active) revealSelectedCareType(q.type);
+                    }}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setSelectedLauncherKey(null);
@@ -3432,6 +3465,9 @@ export default function LogScreen() {
                     return (
                       <Pressable
                         key={o.id}
+                        accessibilityRole="radio"
+                        accessibilityLabel={`${g.label}: ${o.label}`}
+                        accessibilityState={{ checked: active, selected: active }}
                         onPress={() => {
                           Haptics.selectionAsync();
                           setChoices((prev) => ({ ...prev, [g.key]: o.id }));
@@ -3524,6 +3560,9 @@ export default function LogScreen() {
                     return (
                       <Pressable
                         key={v}
+                        accessibilityRole="radio"
+                        accessibilityLabel={`${config.stepper!.label}: ${v} ${config.stepper!.unit}`}
+                        accessibilityState={{ checked: active, selected: active }}
                         onPress={() => {
                           Haptics.selectionAsync();
                           setStepIndex(i);
@@ -5640,6 +5679,27 @@ const s = StyleSheet.create({
   outboxMetrics: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 },
   outboxMetric: { borderRadius: 11, paddingHorizontal: 10, paddingVertical: 6 },
   outboxMetricText: { fontSize: 11.5 },
+  savedDeviceStatus: {
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  savedDeviceStatusIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  savedDeviceStatusCopy: { flex: 1, minWidth: 0 },
+  savedDeviceStatusTitle: { fontSize: 13.5, lineHeight: 16 },
+  savedDeviceStatusMessage: { fontSize: 11, lineHeight: 14, marginTop: 1 },
 
   launcherCard: {
     marginBottom: 12,
@@ -6022,6 +6082,7 @@ const s = StyleSheet.create({
   loggerTitle: { fontSize: 16, marginBottom: 12 },
   typeRow: { gap: 8, paddingHorizontal: 4, paddingBottom: 4 },
   typeChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -6038,7 +6099,7 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 8 },
   segRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   segPill: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 14,

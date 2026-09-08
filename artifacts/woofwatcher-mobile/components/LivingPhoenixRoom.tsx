@@ -233,18 +233,18 @@ function getCompactSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   };
 }
 
-// Immersive Home stage: the twin is sized to sit believably inside the
-// full-bleed storybook room rather than dominate it (a larger rig read as
-// ~2x the window and overlapped the plant/shelf). 112px keeps the dog the
-// clear focal point while the room objects breathe; top 42% plants its paws
-// on the rug instead of floating above it.
+// One focal scale for the resting and roaming immersive twin. The percentage
+// anchor compensates for the larger square so Phoenix stays centered on the
+// rug and keeps the same floor line instead of drifting down and right.
+const IMMERSIVE_TWIN_SIZE = 136;
+
 function getImmersiveSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   return {
     ...zone,
-    left: "35%",
-    top: "42%",
-    width: 112,
-    height: 112,
+    left: "32%",
+    top: "34%",
+    width: IMMERSIVE_TWIN_SIZE,
+    height: IMMERSIVE_TWIN_SIZE,
   };
 }
 
@@ -1481,6 +1481,7 @@ export function LivingPhoenixRoom({
           <View
             style={[
               styles.speechTail,
+              compactChrome ? styles.speechTailCompact : null,
               {
                 backgroundColor: "rgba(255,249,239,0.94)",
                 borderColor: OVERLAY_INK,
@@ -1671,14 +1672,13 @@ export function LivingPhoenixRoom({
   );
 }
 
-// The roaming twin matches the resting twin's scale (getImmersiveSpriteZone)
-// so the dog is one consistent size whether it is curled up or pacing the
-// floor. ROAM_RIG_BASELINE is the size the floor waypoints were originally
-// tuned against; the rig is bottom-aligned, so nudging its `top` by the
-// (baseline - size) delta keeps the paws planted on the floor line when the
-// size shrinks (see styles.roamRig).
+// The roaming twin shares the resting twin's focal scale. Its waypoints were
+// composed around a 150px square, so the rig is centered and bottom-aligned
+// inside that baseline box; enlarging Phoenix does not move the waypoint or
+// make the paws float.
 const ROAM_RIG_BASELINE = 150;
-const ROAM_RIG_SIZE = 112;
+const ROAM_RIG_SIZE = IMMERSIVE_TWIN_SIZE;
+const ROAM_RIG_CENTER_OFFSET_X = (ROAM_RIG_BASELINE - ROAM_RIG_SIZE) / 2;
 const ROAM_BOB_MS = 340;
 
 /**
@@ -2103,9 +2103,9 @@ const styles = StyleSheet.create({
   },
   roamRig: {
     position: "absolute",
-    left: 0,
-    // Bottom-aligned rig: shifting top by the size delta keeps the paws on the
-    // same floor line as the old 150px rig now that the twin is smaller.
+    left: ROAM_RIG_CENTER_OFFSET_X,
+    // Bottom-align against the original waypoint box so every pose shares a
+    // stable floor line at the larger focal scale.
     top: ROAM_RIG_BASELINE - ROAM_RIG_SIZE,
     width: ROAM_RIG_SIZE,
     height: ROAM_RIG_SIZE,
@@ -2295,6 +2295,9 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     borderBottomWidth: 2,
     transform: [{ rotate: "-45deg" }],
+  },
+  speechTailCompact: {
+    left: "66%",
   },
   statusPatch: {
     position: "absolute",

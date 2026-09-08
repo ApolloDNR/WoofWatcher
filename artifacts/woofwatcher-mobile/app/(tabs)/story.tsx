@@ -497,11 +497,12 @@ export default function StoryScreen() {
                     {career.title}
                   </Text>
                   <ProgressFill
-                    ratio={Math.max(0.02, career.levelProgress)}
+                    ratio={career.levelProgress}
                     color={colors.forest}
                     trackColor={colors.muted}
                     height={10}
                     style={s.xpTrack}
+                    accessibilityLabel={`${career.levelXp} of ${career.levelSpanXp} experience toward level ${career.level + 1}`}
                   />
                   <Text style={[s.levelMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     +{career.todayXp} XP today - {careStreak > 0 ? `${careStreak}-day streak` : "start your streak"}
@@ -963,11 +964,12 @@ export default function StoryScreen() {
                     {career.title}
                   </Text>
                   <ProgressFill
-                    ratio={Math.max(0.02, career.levelProgress)}
+                    ratio={career.levelProgress}
                     color={colors.forest}
                     trackColor={colors.muted}
                     height={10}
                     style={s.xpTrack}
+                    accessibilityLabel={`${career.levelXp} of ${career.levelSpanXp} experience toward level ${career.level + 1}`}
                   />
                   <Text style={[s.levelMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     {career.levelXp.toLocaleString()} / {career.levelSpanXp.toLocaleString()} XP -{" "}

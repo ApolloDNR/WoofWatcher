@@ -53,6 +53,10 @@ import {
   isSameMoreEditorScope,
   type MoreEditorScope,
 } from "@/lib/moreEditorScope";
+import {
+  getMoreHydrationPresentation,
+  shouldLoadMoreOwnerQaSession,
+} from "@/lib/moreHydrationPresentation";
 import { getMorePrimarySectionOrder } from "@/lib/morePrimarySections";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
@@ -394,6 +398,8 @@ export default function MoreScreen() {
     updateCareDoc,
     syncOutbox,
     isLoaded,
+    hydrationStatus,
+    retryHydration,
     isSyncing,
     careStateWriteAccess,
     careDocSyncNotice,
@@ -981,6 +987,8 @@ export default function MoreScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
+      if (!shouldLoadMoreOwnerQaSession(ownerOps)) return;
+
       let cancelled = false;
 
       AsyncStorage.getItem(MOBILE_QA_SESSION_STORAGE_KEY)
@@ -1006,7 +1014,7 @@ export default function MoreScreen() {
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [ownerOps]),
   );
 
   const memberColor = (idx: number) => {
@@ -1850,6 +1858,24 @@ export default function MoreScreen() {
       : []),
   ];
 
+  const morePrimaryHydration = getMoreHydrationPresentation(
+    hydrationStatus,
+    {
+      careCareer: moreCareCareer,
+      careStreak: moreCareStreak,
+      careerWeek: moreCareerWeek,
+      directoryItems: moreDirectoryItems,
+    },
+    `${petName}'s care tools, records, household, and settings.`,
+  );
+  const hydratedMorePrimary = morePrimaryHydration.content;
+  const visibleMoreCommandHud = hydratedMorePrimary
+    ? moreCommandHud
+    : moreCommandHud.map(({ label }) => ({
+        label,
+        value: morePrimaryHydration.metricPlaceholder,
+      }));
+
   const H_PAD = 16;
 
   return (
@@ -1865,7 +1891,7 @@ export default function MoreScreen() {
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
-            subtitle={`${petName}'s care tools, records, household, and settings.`}
+            subtitle={morePrimaryHydration.routeSubtitle}
             plain
             style={s.moreRouteHeader}
           />
@@ -1900,18 +1926,24 @@ export default function MoreScreen() {
                   numberOfLines={3}
                   style={[s.moreCommandSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
                 >
-                  {moreCommandSpeech}
+                  {hydratedMorePrimary
+                    ? moreCommandSpeech
+                    : morePrimaryHydration.statusTitle}
                 </Text>
               </View>
               <BoardPill
-                label={moreCommandStatusLabel}
-                tone={readinessBadgeTone}
+                label={
+                  hydratedMorePrimary
+                    ? moreCommandStatusLabel
+                    : morePrimaryHydration.badgeLabel
+                }
+                tone={hydratedMorePrimary ? readinessBadgeTone : colors.amber}
                 style={{ alignSelf: "center" }}
               />
             </View>
 
             <View style={s.moreCommandStats}>
-              {moreCommandHud.map((metric) => (
+              {visibleMoreCommandHud.map((metric) => (
                 <View
                   key={metric.label}
                   style={[s.moreCommandStat, { backgroundColor: colors.background, borderColor: colors.border }]}
@@ -1936,150 +1968,442 @@ export default function MoreScreen() {
                 numberOfLines={1}
                 style={[s.moreCommandGatesText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}
               >
-                Open gates - {moreCommandOpenGates} launch / {moreCommandProviderOpen} provider
+                {hydratedMorePrimary
+                  ? `Open gates - ${moreCommandOpenGates} launch / ${moreCommandProviderOpen} provider`
+                  : morePrimaryHydration.statusDetail}
               </Text>
             </View>
 
-            <BoardActionButton
-              label={launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
-              icon={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
-              accessibilityLabel={
-                launchReleasePacket.betaShipStatus === "qa-first"
-                  ? "Open native QA cockpit from launch command hub"
-                  : "Share WoofWatcher beta handoff packet from launch command hub"
-              }
-              onPress={() => {
-                Haptics.selectionAsync();
-                if (launchReleasePacket.betaShipStatus === "qa-first") {
-                  router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
-                  return;
+            {hydratedMorePrimary ? (
+              <BoardActionButton
+                label={launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
+                icon={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
+                accessibilityLabel={
+                  launchReleasePacket.betaShipStatus === "qa-first"
+                    ? "Open native QA cockpit from launch command hub"
+                    : "Share WoofWatcher beta handoff packet from launch command hub"
                 }
-                shareBetaHandoffPacket();
-              }}
-            />
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  if (launchReleasePacket.betaShipStatus === "qa-first") {
+                    router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+                    return;
+                  }
+                  shareBetaHandoffPacket();
+                }}
+              />
+            ) : (
+              <View
+                accessible
+                accessibilityLabel={`${morePrimaryHydration.statusTitle}. Launch actions unavailable.`}
+                accessibilityState={{ disabled: true }}
+                style={[s.moreCommandDisabledAction, { backgroundColor: colors.muted, borderColor: colors.border }]}
+              >
+                <Ionicons
+                  name={morePrimaryHydration.isBusy ? "time-outline" : "alert-circle-outline"}
+                  size={17}
+                  color={colors.mutedForeground}
+                />
+                <Text style={[s.moreCommandDisabledActionText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  {morePrimaryHydration.isBusy ? "Waiting for saved care" : "Launch actions unavailable"}
+                </Text>
+              </View>
+            )}
           </BoardCard>
           ) : null}
 
-          {getMorePrimarySectionOrder(ownerOps).map((section) =>
-            section === "career" ? (
-              <React.Fragment key={section}>
-          <View collapsable={false} onLayout={registerSectionAnchor("career")} />
-          <BoardCard style={s.moreDirectoryCard}>
-            <BoardSectionHeader
-              title="Career & Stats"
-              accessory={
-                <BoardPill
-                  label={`Lv ${moreCareCareer.level} ${moreCareCareer.title}`}
-                  tone={colors.sage}
-                />
-              }
-            />
-            {/* XP toward the next level: real lifetime-care XP on the shared
-                gentle-spring progress fill. */}
-            <View style={s.careerXpBlock}>
-              <View style={s.careerXpHeader}>
-                <Text style={[s.careerXpLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  XP toward Lv {moreCareCareer.level + 1}
-                </Text>
-                <Text style={[s.careerXpValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {moreCareCareer.levelXp.toLocaleString()} / {moreCareCareer.levelSpanXp.toLocaleString()}
-                </Text>
-              </View>
-              <ProgressFill
-                ratio={Math.max(0.02, moreCareCareer.levelProgress)}
-                color={colors.forest}
-                trackColor={colors.muted}
-                height={9}
-              />
-            </View>
-            <View style={{ gap: 8 }}>
-              <BoardMetricTile
-                icon="note"
-                label="Logs this week"
-                value={String(moreCareerWeek.logsThisWeek)}
-                detail="Real care logs in the last 7 days"
-                tone={colors.sage}
-              />
-              <BoardMetricTile
-                icon="clock"
-                label="Active days"
-                value={`${moreCareerWeek.activeDays}/7`}
-                detail="Days with at least one real care log this week"
-                tone={colors.blueSignal}
-              />
-              <BoardMetricTile
-                icon="energy"
-                label="Care streak"
-                value={
-                  moreCareStreak > 0
-                    ? `${moreCareStreak} day${moreCareStreak === 1 ? "" : "s"}`
-                    : "Start today"
-                }
-                detail="Consecutive days of logged care"
-                tone={colors.amber}
-              />
-            </View>
-          </BoardCard>
-              </React.Fragment>
-            ) : (
-          <BoardCard key={section} style={s.moreDirectoryCard}>
-            <BoardSectionHeader
-              title="Command Directory"
-              accessory={<BoardPill label={`${moreDirectoryItems.length} hubs`} tone={colors.sage} />}
-            />
-            <View style={s.moreDirectoryList}>
-              {moreDirectoryItems.map((item, index) => (
-                <Pressable
-                  key={item.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${item.eyebrow}: ${item.label}. ${item.detail}`}
-                  onPress={item.onPress}
-                  style={({ pressed }) => [
-                    s.moreDirectoryRow,
-                    index < moreDirectoryItems.length - 1 && {
-                      borderBottomWidth: 1,
-                      borderBottomColor: colors.border,
-                    },
-                    {
-                      opacity: pressed ? 0.72 : 1,
-                    },
-                  ]}
+          <View
+            accessibilityLiveRegion="polite"
+            accessibilityState={{ busy: morePrimaryHydration.isBusy }}
+            aria-busy={morePrimaryHydration.isBusy}
+          >
+            {morePrimaryHydration.canRetry ? (
+              <BoardCard
+                style={[
+                  s.moreHydrationFailureCard,
+                  {
+                    backgroundColor: colors.amberSoft,
+                    borderColor: colors.amber + "66",
+                  },
+                ]}
+              >
+                <View
+                  accessibilityLiveRegion="assertive"
+                  accessibilityRole="alert"
                 >
-                  <View style={[s.moreDirectoryIcon, { backgroundColor: item.tone + "18" }]}>
-                    <Ionicons name={item.iconName} size={19} color={item.tone} />
-                  </View>
-                  <View style={s.moreDirectoryCopy}>
-                    <Text style={[s.moreDirectoryEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      {item.eyebrow}
-                    </Text>
-                    {/* Wraps to a 2nd line rather than clipping mid-word: the
-                        action chip squeezes this column, and the longest title
-                        ("Owner Preview Core Loop") overran ~7px on one line.
-                        Short titles still render on a single line. */}
-                    <Text numberOfLines={2} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {item.label}
-                    </Text>
-                    <Text numberOfLines={2} style={[s.moreDirectoryDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {item.detail}
-                    </Text>
-                  </View>
-                  <View style={[s.moreDirectoryAction, { borderColor: item.tone + "35", backgroundColor: item.tone + "10" }]}>
-                    <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      style={[s.moreDirectoryActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}
-                    >
-                      {item.actionLabel}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={14} color={item.tone} />
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          </BoardCard>
-            ),
-          )}
+                  <Text
+                    style={[
+                      s.moreHydrationFailureTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    {morePrimaryHydration.statusTitle}
+                  </Text>
+                  <Text
+                    style={[
+                      s.moreHydrationFailureDetail,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {morePrimaryHydration.statusDetail}
+                  </Text>
+                </View>
+                <BoardActionButton
+                  label="Retry loading"
+                  icon="refresh-outline"
+                  accessibilityLabel="Retry loading saved care"
+                  onPress={retryHydration}
+                />
+              </BoardCard>
+            ) : null}
 
+            {getMorePrimarySectionOrder(ownerOps).map((section) =>
+              section === "career" ? (
+                <React.Fragment key={section}>
+                  <View
+                    collapsable={false}
+                    onLayout={registerSectionAnchor("career")}
+                  />
+                  <BoardCard style={s.moreDirectoryCard}>
+                    <BoardSectionHeader
+                      title="Career & Stats"
+                      accessory={
+                        <BoardPill
+                          label={
+                            hydratedMorePrimary
+                              ? `Lv ${hydratedMorePrimary.careCareer.level} ${hydratedMorePrimary.careCareer.title}`
+                              : morePrimaryHydration.badgeLabel
+                          }
+                          tone={
+                            morePrimaryHydration.status === "failed"
+                              ? colors.amber
+                              : colors.sage
+                          }
+                        />
+                      }
+                    />
+                    <View style={s.careerXpBlock}>
+                      <View style={s.careerXpHeader}>
+                        <Text
+                          style={[
+                            s.careerXpLabel,
+                            {
+                              color: colors.sage,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {hydratedMorePrimary
+                            ? `XP toward Lv ${hydratedMorePrimary.careCareer.level + 1}`
+                            : "Saved care XP"}
+                        </Text>
+                        <Text
+                          style={[
+                            s.careerXpValue,
+                            {
+                              color: colors.foreground,
+                              fontFamily: DISPLAY_SEMI,
+                            },
+                          ]}
+                        >
+                          {hydratedMorePrimary
+                            ? `${hydratedMorePrimary.careCareer.levelXp.toLocaleString()} / ${hydratedMorePrimary.careCareer.levelSpanXp.toLocaleString()}`
+                            : morePrimaryHydration.metricPlaceholder}
+                        </Text>
+                      </View>
+                      <ProgressFill
+                        ratio={
+                          hydratedMorePrimary
+                            ? hydratedMorePrimary.careCareer.levelProgress
+                            : 0
+                        }
+                        color={colors.forest}
+                        trackColor={colors.muted}
+                        height={9}
+                        accessibilityLabel={
+                          hydratedMorePrimary
+                            ? `Care career XP toward level ${hydratedMorePrimary.careCareer.level + 1}`
+                            : morePrimaryHydration.isBusy
+                              ? "Loading saved care XP"
+                              : "Saved care XP unavailable"
+                        }
+                        accessibilityValueText={
+                          hydratedMorePrimary
+                            ? `${hydratedMorePrimary.careCareer.levelXp} of ${hydratedMorePrimary.careCareer.levelSpanXp} XP`
+                            : morePrimaryHydration.isBusy
+                              ? "Loading saved care"
+                              : "Unavailable"
+                        }
+                      />
+                    </View>
+                    <View style={{ gap: 8 }}>
+                      <BoardMetricTile
+                        icon="note"
+                        label="Logs this week"
+                        value={
+                          hydratedMorePrimary
+                            ? String(hydratedMorePrimary.careerWeek.logsThisWeek)
+                            : morePrimaryHydration.metricPlaceholder
+                        }
+                        detail={
+                          hydratedMorePrimary
+                            ? "Real care logs in the last 7 days"
+                            : morePrimaryHydration.statusDetail
+                        }
+                        tone={colors.sage}
+                      />
+                      <BoardMetricTile
+                        icon="clock"
+                        label="Active days"
+                        value={
+                          hydratedMorePrimary
+                            ? `${hydratedMorePrimary.careerWeek.activeDays}/7`
+                            : morePrimaryHydration.metricPlaceholder
+                        }
+                        detail={
+                          hydratedMorePrimary
+                            ? "Days with at least one real care log this week"
+                            : morePrimaryHydration.statusDetail
+                        }
+                        tone={colors.blueSignal}
+                      />
+                      <BoardMetricTile
+                        icon="energy"
+                        label="Care streak"
+                        value={
+                          hydratedMorePrimary
+                            ? hydratedMorePrimary.careStreak > 0
+                              ? `${hydratedMorePrimary.careStreak} day${hydratedMorePrimary.careStreak === 1 ? "" : "s"}`
+                              : "Start today"
+                            : morePrimaryHydration.metricPlaceholder
+                        }
+                        detail={
+                          hydratedMorePrimary
+                            ? "Consecutive days of logged care"
+                            : morePrimaryHydration.statusDetail
+                        }
+                        tone={colors.amber}
+                      />
+                    </View>
+                  </BoardCard>
+                </React.Fragment>
+              ) : (
+                <BoardCard key={section} style={s.moreDirectoryCard}>
+                  <BoardSectionHeader
+                    title="Command Directory"
+                    accessory={
+                      <BoardPill
+                        label={
+                          hydratedMorePrimary
+                            ? `${hydratedMorePrimary.directoryItems.length} hubs`
+                            : morePrimaryHydration.badgeLabel
+                        }
+                        tone={
+                          morePrimaryHydration.status === "failed"
+                            ? colors.amber
+                            : colors.sage
+                        }
+                      />
+                    }
+                  />
+                  <View style={s.moreDirectoryList}>
+                    {hydratedMorePrimary
+                      ? hydratedMorePrimary.directoryItems.map((item, index) => (
+                          <Pressable
+                            key={item.id}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${item.eyebrow}: ${item.label}. ${item.detail}`}
+                            onPress={item.onPress}
+                            style={({ pressed }) => [
+                              s.moreDirectoryRow,
+                              index < hydratedMorePrimary.directoryItems.length - 1 && {
+                                borderBottomWidth: 1,
+                                borderBottomColor: colors.border,
+                              },
+                              { opacity: pressed ? 0.72 : 1 },
+                            ]}
+                          >
+                            <View
+                              style={[
+                                s.moreDirectoryIcon,
+                                { backgroundColor: item.tone + "18" },
+                              ]}
+                            >
+                              <Ionicons
+                                name={item.iconName}
+                                size={19}
+                                color={item.tone}
+                              />
+                            </View>
+                            <View style={s.moreDirectoryCopy}>
+                              <Text
+                                style={[
+                                  s.moreDirectoryEyebrow,
+                                  {
+                                    color: colors.sage,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
+                                {item.eyebrow}
+                              </Text>
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.moreDirectoryTitle,
+                                  {
+                                    color: colors.foreground,
+                                    fontFamily: DISPLAY_SEMI,
+                                  },
+                                ]}
+                              >
+                                {item.label}
+                              </Text>
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.moreDirectoryDetail,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                {item.detail}
+                              </Text>
+                            </View>
+                            <View
+                              style={[
+                                s.moreDirectoryAction,
+                                {
+                                  borderColor: item.tone + "35",
+                                  backgroundColor: item.tone + "10",
+                                },
+                              ]}
+                            >
+                              <Text
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                style={[
+                                  s.moreDirectoryActionText,
+                                  {
+                                    color: item.tone,
+                                    fontFamily: "Inter_800ExtraBold",
+                                  },
+                                ]}
+                              >
+                                {item.actionLabel}
+                              </Text>
+                              <Ionicons
+                                name="chevron-forward"
+                                size={14}
+                                color={item.tone}
+                              />
+                            </View>
+                          </Pressable>
+                        ))
+                      : moreDirectoryItems.map((item, index) => (
+                          <View
+                            key={item.id}
+                            accessible={false}
+                            style={[
+                              s.moreDirectoryRow,
+                              index < moreDirectoryItems.length - 1 && {
+                                borderBottomWidth: 1,
+                                borderBottomColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <View
+                              style={[
+                                s.moreDirectoryIcon,
+                                { backgroundColor: colors.muted },
+                              ]}
+                            >
+                              <Ionicons
+                                name={
+                                  morePrimaryHydration.status === "failed"
+                                    ? "alert-circle-outline"
+                                    : "time-outline"
+                                }
+                                size={19}
+                                color={colors.mutedForeground}
+                              />
+                            </View>
+                            <View style={s.moreDirectoryCopy}>
+                              <Text
+                                style={[
+                                  s.moreDirectoryEyebrow,
+                                  {
+                                    color: colors.sage,
+                                    fontFamily: "Inter_700Bold",
+                                  },
+                                ]}
+                              >
+                                {item.eyebrow}
+                              </Text>
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.moreDirectoryTitle,
+                                  {
+                                    color: colors.foreground,
+                                    fontFamily: DISPLAY_SEMI,
+                                  },
+                                ]}
+                              >
+                                {morePrimaryHydration.statusTitle}
+                              </Text>
+                              <Text
+                                numberOfLines={2}
+                                style={[
+                                  s.moreDirectoryDetail,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_600SemiBold",
+                                  },
+                                ]}
+                              >
+                                {morePrimaryHydration.statusDetail}
+                              </Text>
+                            </View>
+                            <View
+                              style={[
+                                s.moreDirectoryAction,
+                                {
+                                  borderColor: colors.border,
+                                  backgroundColor: colors.muted,
+                                },
+                              ]}
+                            >
+                              <Text
+                                numberOfLines={1}
+                                style={[
+                                  s.moreDirectoryActionText,
+                                  {
+                                    color: colors.mutedForeground,
+                                    fontFamily: "Inter_800ExtraBold",
+                                  },
+                                ]}
+                              >
+                                {morePrimaryHydration.isBusy
+                                  ? "Waiting"
+                                  : "Unavailable"}
+                              </Text>
+                            </View>
+                          </View>
+                        ))}
+                  </View>
+                </BoardCard>
+              ),
+            )}
+          </View>
+
+          {hydratedMorePrimary ? (
+            <>
           {householdFocus && (
             <BoardCard style={[s.moreBoardCard, { borderColor: colors.sage + "66", backgroundColor: colors.sage + "10" }]}>
               <BoardSectionHeader
@@ -3758,6 +4082,73 @@ export default function MoreScreen() {
             <Ionicons name="shield-checkmark" size={16} color={colors.sage} />
             <Text style={[s.noticeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{profile.vetBoundary}</Text>
           </View>
+            </>
+          ) : (
+            <>
+              <View
+                accessible
+                accessibilityLabel={`${morePrimaryHydration.statusTitle}. ${morePrimaryHydration.statusDetail}`}
+                style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}
+              >
+                <LinearGradient
+                  colors={[colors.forest, colors.forestBright]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={s.profileBanner}
+                />
+                <View style={s.profileAvatarWrap}>
+                  <View style={[s.profileAvatar, { backgroundColor: colors.card, borderColor: colors.card }]}>
+                    <Ionicons name="paw-outline" size={34} color={colors.mutedForeground} />
+                  </View>
+                </View>
+                <View style={s.profileBody}>
+                  <Text style={[s.profileName, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                    {morePrimaryHydration.statusTitle}
+                  </Text>
+                  <Text style={[s.profileBreed, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {morePrimaryHydration.statusDetail}
+                  </Text>
+                  <View style={[s.profileStats, { borderTopColor: colors.border }]}>
+                    {["Weight", "Streak", "Routines"].map((label, index) => (
+                      <React.Fragment key={label}>
+                        {index > 0 ? <View style={[s.profileStatDivider, { backgroundColor: colors.border }]} /> : null}
+                        <View style={s.profileStat}>
+                          <Text style={[s.profileStatValue, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>—</Text>
+                          <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{label}</Text>
+                        </View>
+                      </React.Fragment>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              <View style={[s.statusStrip, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
+                {["Mood", "Energy level", "Logs today"].map((label, index) => (
+                  <View
+                    key={label}
+                    style={[
+                      s.statusCell,
+                      index === 0 && { borderRightWidth: 1, borderRightColor: colors.border },
+                      index === 2 && { borderLeftWidth: 1, borderLeftColor: colors.border },
+                    ]}
+                  >
+                    <Text style={[s.statusValue, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>—</Text>
+                    <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <BoardCard style={s.moreBoardCard}>
+                <BoardSectionHeader
+                  title="Saved care tools"
+                  accessory={<BoardPill label={morePrimaryHydration.badgeLabel} tone={colors.amber} />}
+                />
+                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {morePrimaryHydration.statusDetail}
+                </Text>
+              </BoardCard>
+            </>
+          )}
 
           {/* Sign out renders only when a real account provider is configured
               and someone is actually signed in; the local-first build has no
@@ -4487,6 +4878,19 @@ const s = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.2,
   },
+  moreCommandDisabledAction: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+  },
+  moreCommandDisabledActionText: {
+    fontSize: 13,
+  },
   /* Legacy full-bleed stage composition, superseded by the parchment console
      above. The blocks below stay only for the mobileReadiness launch-stage
      style contract; delete them together with that test's stage clauses. */
@@ -4567,6 +4971,9 @@ const s = StyleSheet.create({
   sectionLink: { fontSize: 14 },
   moreBoardCard: { marginTop: 14 },
   moreDirectoryCard: { marginTop: 12 },
+  moreHydrationFailureCard: { marginTop: 12, gap: 12 },
+  moreHydrationFailureTitle: { fontSize: 15, lineHeight: 20 },
+  moreHydrationFailureDetail: { fontSize: 12, lineHeight: 17, marginTop: 3 },
   careerXpBlock: { marginBottom: 12 },
   careerXpHeader: {
     flexDirection: "row",

@@ -70,6 +70,7 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const PLANS_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
 const PLANS_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const PLANS_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
+const SAMPLE_SCHEDULE_PREVIEW_LIMIT = 4;
 
 // Potty carries a green tint here (its glyph is drawn from the shared pixel
 // "pee" leaf at render time, matching every care timeline); the blue "drop"
@@ -412,6 +413,9 @@ export default function CalendarScreen() {
       : fallback;
     return rows;
   }, [routineBoard.items]);
+  const visibleScheduleRows = isSampleSchedule
+    ? scheduleRows.slice(0, SAMPLE_SCHEDULE_PREVIEW_LIMIT)
+    : scheduleRows;
 
   // Monday-start week containing today, for the mockup M T W T F S S dots.
   const weekDays = useMemo(() => {
@@ -933,9 +937,13 @@ export default function CalendarScreen() {
             title="Plans"
             subtitle={dateLabel}
             actionIcon="add"
-            actionLabel="Add plan"
+            actionLabel={isSampleSchedule ? "Add your first routine" : "Add plan"}
             onAction={() => {
               Haptics.selectionAsync();
+              if (isSampleSchedule) {
+                openNewRoutine();
+                return;
+              }
               openAddEvent();
             }}
           />
@@ -944,7 +952,7 @@ export default function CalendarScreen() {
             <View style={s.commandDeckStage} testID="plans-command-pixel-stage">
               <View style={s.commandDeckTop}>
                 <View style={s.commandDeckCopy}>
-                  <Text style={[s.commandDeckKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  <Text style={[s.commandDeckKicker, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
                     Plans Command Deck
                   </Text>
                   <Text style={[s.commandDeckSpeech, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -984,7 +992,7 @@ export default function CalendarScreen() {
                     accessibilityLabel={`${stat.label}: ${stat.value}`}
                     style={[s.commandDeckStatChip, { backgroundColor: colors.background, borderColor: colors.border }]}
                   >
-                    <Text style={[s.commandDeckStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.commandDeckStatLabel, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
                       {stat.label}
                     </Text>
                     <Text style={[s.commandDeckStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -997,7 +1005,7 @@ export default function CalendarScreen() {
                   accessibilityLabel={`Signal: ${isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1))} of 5`}
                   style={[s.commandDeckStatChip, { backgroundColor: colors.background, borderColor: colors.border }]}
                 >
-                  <Text style={[s.commandDeckStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Signal</Text>
+                  <Text style={[s.commandDeckStatLabel, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>Signal</Text>
                   <View style={s.commandDeckSignalRow}>
                     {[0, 1, 2, 3, 4].map((bar) => {
                       const activeBars = isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1));
@@ -1028,7 +1036,7 @@ export default function CalendarScreen() {
           <BoardCard style={s.scheduleCard}>
             <View style={s.scheduleCardHeader}>
               <View style={s.scheduleHeaderCopy}>
-                <Text style={[s.scheduleEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Mission Schedule</Text>
+                <Text style={[s.scheduleEyebrow, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>Mission Schedule</Text>
                 <Text style={[s.scheduleHeaderTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   {scheduleTab === "day" ? "Today's care plan" : scheduleTab === "week" ? "This week's plan" : "This month"}
                 </Text>
@@ -1060,11 +1068,22 @@ export default function CalendarScreen() {
               style={s.scheduleTabs}
             />
 
+            {isSampleSchedule && scheduleTab === "day" ? (
+              <BoardActionButton
+                label="Add your first routine"
+                icon="add"
+                accessibilityLabel="Add your first routine"
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  openNewRoutine();
+                }}
+                style={s.scheduleFirstRoutineButton}
+              />
+            ) : null}
+
             {scheduleTab === "week" ? (
               <>
                 <View
-                  accessible
-                  accessibilityLabel={`Weekly goal: ${weeklyGoalDays} of 7 days with care logged this week. Current streak ${careStreak} ${careStreak === 1 ? "day" : "days"}.`}
                   style={[s.weeklyGoalPanel, { backgroundColor: colors.background, borderColor: colors.border }]}
                 >
                   <View style={s.weeklyGoalTop}>
@@ -1084,6 +1103,7 @@ export default function CalendarScreen() {
                     </View>
                   </View>
                   <ProgressFill
+                    accessibilityLabel={`Weekly care rhythm, ${weeklyGoalDays} of 7 days`}
                     ratio={weeklyGoalDays / 7}
                     color={colors.forest}
                     trackColor={colors.muted}
@@ -1251,7 +1271,7 @@ export default function CalendarScreen() {
               </View>
             ) : (
             <View style={s.scheduleList}>
-              {scheduleRows.map((row, index) => {
+              {visibleScheduleRows.map((row, index) => {
                 const done = row.status === "done";
                 const pill = scheduleStatusPill(row.status, index === firstUpcomingScheduleIndex);
                 const showRowPill = pill.label !== "Upcoming";
@@ -1262,7 +1282,7 @@ export default function CalendarScreen() {
                   scheduleTab === "day" && !isSampleSchedule && index === firstUpcomingScheduleIndex;
                 const bandHeader = showBandHeader ? (
                   <View style={s.scheduleBand}>
-                    <Text style={[s.scheduleBandText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.scheduleBandText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
                       {band.toUpperCase()}
                     </Text>
                     <View style={[s.scheduleBandRule, { backgroundColor: colors.border }]} />
@@ -1289,7 +1309,6 @@ export default function CalendarScreen() {
                       accessibilityLabel={`Sample day preview: ${row.time} ${row.label}`}
                       style={[
                         s.scheduleRow,
-                        s.scheduleSampleRow,
                         index > 0 && !showBandHeader && { borderTopColor: colors.border, borderTopWidth: 1 },
                       ]}
                     >
@@ -1392,16 +1411,18 @@ export default function CalendarScreen() {
               </Text>
             ) : null}
 
-            <BoardActionButton
-              label={isSampleSchedule ? "Add your first routine" : "Add routine"}
-              icon="add"
-              accessibilityLabel={isSampleSchedule ? "Add your first routine" : "Add routine"}
-              onPress={() => {
-                Haptics.selectionAsync();
-                openNewRoutine();
-              }}
-              style={s.scheduleAddButton}
-            />
+            {!isSampleSchedule || scheduleTab !== "day" ? (
+              <BoardActionButton
+                label={isSampleSchedule ? "Add your first routine" : "Add routine"}
+                icon="add"
+                accessibilityLabel={isSampleSchedule ? "Add your first routine" : "Add routine"}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  openNewRoutine();
+                }}
+                style={s.scheduleAddButton}
+              />
+            ) : null}
           </BoardCard>
 
           <BoardCard style={s.planMissionBoard}>
@@ -2667,7 +2688,6 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   scheduleAddEventText: { fontSize: 13 },
-  scheduleSampleRow: { opacity: 0.62 },
   scheduleSampleNote: { fontSize: 11.5, lineHeight: 16, marginTop: 10, textAlign: "center" },
   scheduleStatus: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
@@ -2678,6 +2698,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   scheduleAddButton: { marginTop: 12 },
+  scheduleFirstRoutineButton: { marginTop: 2, marginBottom: 6 },
 
   weeklyGoalPanel: {
     borderRadius: 16,

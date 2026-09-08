@@ -28,6 +28,7 @@ function evaluateBoardPrimitives() {
   };
   const Pressable = Symbol("Pressable");
   const PressScale = Symbol("PressScale");
+  const StateChangePulse = Symbol("StateChangePulse");
   const react = {
     createElement(
       type: unknown,
@@ -80,6 +81,7 @@ function evaluateBoardPrimitives() {
         enterUp: () => undefined,
         MeterPip: "MeterPip",
         PressScale,
+        StateChangePulse,
         SPRING: { default: {} },
       };
     }
@@ -122,7 +124,7 @@ function evaluateBoardPrimitives() {
   };
   const run = new Function("require", "module", "exports", output);
   run(requireModule, module, module.exports);
-  return { exports: module.exports, Pressable, PressScale };
+  return { exports: module.exports, Pressable, PressScale, StateChangePulse };
 }
 
 function descendants(node: unknown): ElementNode[] {

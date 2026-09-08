@@ -17,6 +17,7 @@ import {
   enterUp,
   MeterPip,
   PressScale,
+  StateChangePulse,
 } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
@@ -286,7 +287,10 @@ export function BoardStatusPill({
   };
   const swatch = palette[tone];
   return (
-    <View style={[styles.statusPill, { backgroundColor: swatch.bg }, style]}>
+    <StateChangePulse
+      value={`${tone}:${label}`}
+      style={[styles.statusPill, { backgroundColor: swatch.bg }, style]}
+    >
       <Text
         style={[
           styles.statusPillText,
@@ -295,7 +299,7 @@ export function BoardStatusPill({
       >
         {label}
       </Text>
-    </View>
+    </StateChangePulse>
   );
 }
 
@@ -314,14 +318,15 @@ export function BoardSegmentTabs<T extends string>({
   const colors = useColors();
 
   return (
-    <View style={[styles.segmentRow, style]}>
+    <View accessibilityRole="tablist" style={[styles.segmentRow, style]}>
       {segments.map((segment) => {
         const isActive = segment.key === active;
         return (
           <Pressable
             key={segment.key}
-            accessibilityRole="button"
+            accessibilityRole="tab"
             accessibilityLabel={segment.label}
+            accessibilityState={{ selected: isActive }}
             aria-selected={isActive}
             onPress={() => {
               if (!isActive) hapticSelect();
@@ -330,7 +335,8 @@ export function BoardSegmentTabs<T extends string>({
             style={styles.segmentTarget}
           >
             {({ pressed }) => (
-              <View
+              <StateChangePulse
+                value={isActive}
                 style={[
                   styles.segmentChip,
                   {
@@ -359,7 +365,7 @@ export function BoardSegmentTabs<T extends string>({
                 >
                   {segment.label}
                 </Text>
-              </View>
+              </StateChangePulse>
             )}
           </Pressable>
         );
@@ -451,7 +457,8 @@ export function BoardPill({
   const colors = useColors();
   const pillTone = tone ?? colors.sage;
   return (
-    <View
+    <StateChangePulse
+      value={`${active ? "active" : "idle"}:${label}`}
       style={[
         styles.pill,
         {
@@ -472,7 +479,7 @@ export function BoardPill({
       >
         {label}
       </Text>
-    </View>
+    </StateChangePulse>
   );
 }
 
@@ -513,14 +520,16 @@ export function BoardMetricTile({
         >
           {label}
         </Text>
-        <Text
-          style={[
-            styles.metricValue,
-            { color: colors.foreground, fontFamily: DISPLAY_SEMI },
-          ]}
-        >
-          {value}
-        </Text>
+        <StateChangePulse value={value}>
+          <Text
+            style={[
+              styles.metricValue,
+              { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+            ]}
+          >
+            {value}
+          </Text>
+        </StateChangePulse>
         {detail ? (
           <Text
             style={[

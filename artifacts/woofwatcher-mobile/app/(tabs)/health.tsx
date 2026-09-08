@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import React, { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -221,7 +221,6 @@ export default function HealthScreen() {
       }),
     [healthWeek.start, now, state.entries],
   );
-  const scrollRef = useRef<ScrollView>(null);
   const tabParam = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   const requestedTab: HealthTab = tabParam === "bile" ? "bile" : "health";
   const [activeTab, setActiveTab] = useState<HealthTab>(() => requestedTab);
@@ -232,7 +231,6 @@ export default function HealthScreen() {
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
-  const isWebRoutePreview = (Platform.OS as string) === "web";
   const routeHorizontalPadding = 16;
 
   const healthWatch = useMemo(
@@ -415,6 +413,10 @@ export default function HealthScreen() {
     healthWatch.redFlags.length > 0;
   const loggedDays7 = healthRhythm.filter((day) => day.hasData).length;
   const logCoveragePercent = Math.round((loggedDays7 / 7) * 100);
+  const hasSparseHealthEvidence =
+    healthWatch.status === "good" &&
+    loggedDays7 >= 1 &&
+    loggedDays7 <= 2;
   const statusTone = !hasHealthSignalData
     ? colors.mutedForeground
     : healthWatch.status === "good"
@@ -424,6 +426,8 @@ export default function HealthScreen() {
         : colors.rose;
   const heroTitle = !hasHealthSignalData
     ? "No health logs yet"
+    : hasSparseHealthEvidence
+      ? "Building the picture"
     : healthWatch.status === "good"
       ? "Stable right now"
       : healthWatch.status === "alert"
@@ -431,6 +435,8 @@ export default function HealthScreen() {
         : "Worth watching";
   const heroCopy = !hasHealthSignalData
     ? "No logs yet - meals, potty, energy, and notes build the picture from your first log."
+    : hasSparseHealthEvidence
+      ? "A few recent owner notes are recorded. Keep logging to build a useful trend."
     : healthWatch.status === "good"
       ? "No active Health Watch signals are showing in the current window."
       : healthWatch.summary;
@@ -443,8 +449,10 @@ export default function HealthScreen() {
         : "REVIEW";
   const statusSupportCopy = !hasHealthSignalData
     ? "Health Watch starts with your first log."
+    : hasSparseHealthEvidence
+      ? `${loggedDays7} of 7 days logged. Keep adding daily notes so changes are easier to review.`
     : healthWatch.status === "good"
-      ? "You're on a roll. Keep the daily rhythm steady and share patterns when they matter."
+      ? "Recent owner notes look steady. Keep the daily rhythm going and share patterns when they matter."
       : healthWatch.status === "alert"
         ? "Consider sharing these observations with your vet, especially if patterns repeat."
         : "Pattern noticed. Keep logging food, stool, vomiting, energy, and timing.";
@@ -599,7 +607,6 @@ export default function HealthScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        ref={scrollRef}
         style={s.container}
         contentContainerStyle={{
           paddingTop: getRouteTopPadding({
@@ -785,27 +792,18 @@ export default function HealthScreen() {
             <BoardSectionHeader
               title={snapshotTitle}
               style={s.healthSnapshotHeader}
-              accessory={
-                <HealthHeaderAction
-                  label="7-day view"
-                  accessibilityLabel="Show Health 7-day rhythm"
-                  onPress={() => {
-                    setActiveTab("health");
-                    scrollRef.current?.scrollTo({ y: 0, animated: true });
-                  }}
-                />
-              }
+              accessory={<BoardPill label="Last 7 days" tone={colors.forest} />}
             />
             <View style={s.healthHeroStatusRow}>
               <View style={[s.healthScoreToken, { backgroundColor: statusTone + "14", borderColor: statusTone + "66" }]}>
                 <Text style={[s.healthScoreValue, { color: statusTone, fontFamily: DISPLAY }]}>{loggedDays7}/7</Text>
-                <Text style={[s.healthScoreLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                <Text style={[s.healthScoreLabel, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
                   Days logged
                 </Text>
               </View>
 
               <View style={s.healthHeroCopyStack}>
-                <Text style={[s.heroLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{heroStatusKicker}</Text>
+                <Text style={[s.heroLabel, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>{heroStatusKicker}</Text>
                 <Text style={[s.heroTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{heroPanelTitle}</Text>
                 <Text style={[s.heroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {heroPanelCopy}
@@ -823,7 +821,7 @@ export default function HealthScreen() {
               <>
                 <View style={[s.healthRhythmPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <View style={s.healthRhythmHeader}>
-                    <Text style={[s.healthRhythmTitle, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.healthRhythmTitle, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
                       7-day rhythm
                     </Text>
                     <Text style={[s.healthRhythmMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>

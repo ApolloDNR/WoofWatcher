@@ -3139,8 +3139,11 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /7-day bile log/);
   assert.match(health, /function HealthHeaderAction/);
   assert.match(health, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
-  assert.match(health, /accessibilityLabel="Show Health 7-day rhythm"/);
-  assert.match(
+  assert.match(health, /<BoardPill label="Last 7 days" tone=\{colors\.forest\} \/>/);
+  assert.match(health, /hasSparseHealthEvidence/);
+  assert.match(health, /Building the picture/);
+  assert.doesNotMatch(health, /accessibilityLabel="Show Health 7-day rhythm"/);
+  assert.doesNotMatch(
     health,
     /scrollRef\.current\?\.scrollTo\(\{ y: 0, animated: true \}\)/,
   );
@@ -7242,8 +7245,9 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /Command Directory/);
   assert.match(
     more,
-    /<BoardPill[\s\S]*?label=\{`\$\{moreDirectoryItems\.length\} hubs`\}/,
+    /hydratedMorePrimary[\s\S]*?`\$\{hydratedMorePrimary\.directoryItems\.length\} hubs`[\s\S]*?morePrimaryHydration\.badgeLabel/,
   );
+  assert.match(more, /getMoreHydrationPresentation\(\s*hydrationStatus,/);
   assert.match(more, /Care today/);
   assert.match(more, /Household/);
   assert.match(more, /Records & passes/);

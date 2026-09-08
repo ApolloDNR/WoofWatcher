@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-09-07 Core mobile polish and purposeful motion
+
+- DONE: Home now gives the living Phoenix a stronger room-scale focal point while preserving the full-phone artwork, focus/scroll pause behavior, and reduced-motion boundary. Shared pills, metrics, tabs, and progress feedback react only when their values change instead of replaying route-wide entrance fades.
+- DONE: Log keeps the selected care type visible in its horizontal rail, uses phone-sized radio semantics, and reduces calm device-save confirmation to a compact status row while preserving prominent retry/error states. Plans now leads truthfully with `Add your first routine`, shows a readable four-row sample without dimming it, and routes the primary CTA to routine creation. Health describes sparse evidence as `Building the picture` and presents the fixed seven-day range as noninteractive. More withholds career and command-directory claims until hydration resolves, preserves stable loading geometry, exposes retry on failure, and uses the real XP ratio.
+- VERIFIED LOCALLY: Red-first polish regressions pass; the complete behavior matrix passes `1,246/1,246`; the consumer-profile Expo web export bundles `1,945` modules and `258` assets into `266` files and records `ownerOpsVisible: false`; all `13` runtime routes and all `19` live preview routes pass; PixelLab verification reports `150/150` valid. Same-viewport screenshots of Home, Log, Plans, Health, and More were compared against the approved light reference board after export.
+- BOUNDARY: The local standalone TypeScript command is still blocked only by the partial Windows dependency graph missing `expo-modules-core`; no changed-file diagnostic was reported. Browser screenshots and tests do not establish real-iPhone frame pacing, haptics, safe-area behavior, Reduce Motion, VoiceOver, thermal behavior, provider approval, store readiness, public launch, or Apollo approval.
+- NEXT: Capture Home motion plus the Home -> Log -> Plans -> Health -> More loop on a real iPhone with Reduce Motion both off and on before calling native polish final.
+
 ## 2026-09-05 Consumer Home next-care speech truth
 
 - DONE source: Upbeat fallback speech now asks `What's next?` instead of inventing an upcoming walk. Home's live Next readout remains responsible for the actual routine, active walk, or alone-time state.
