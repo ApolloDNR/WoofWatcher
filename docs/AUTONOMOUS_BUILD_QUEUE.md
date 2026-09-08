@@ -3300,7 +3300,8 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - VISUAL-QA FOLLOW-UP: Home's Quick Log, Next Up, and Care Sense no longer stage into view; Plans' six and Health's four primary `BoardCard` entrances were removed. Remaining shared `enterUp` use now honors `ReduceMotion.System`.
 - VISUAL-QA FOLLOW-UP: BoardSegmentTabs now paints each active chip deterministically with its primary fill and border rather than waiting for a measured animated overlay, preserving visible Day/Week selection in web preview.
 - VERIFIED ROOT: Full behavior matrix `1233/1233`; runtime smoke `13/13` routes; live-preview handoff `19/19` routes PASS; PixelLab `150 ok / 0 missing / 0 invalid`; consumer export is current at `266` files / `1944` modules / bundle `aabe057a9ffd`.
-- TYPECHECK BOUNDARY: In this partial Windows checkout, only four `expo-file-system` imports cannot resolve `expo-modules-core`; exact-tip dependency-complete CI remains required.
+- CI PASS: `WoofWatcher Verify` run `34182055591`, job `101922963105`, passed exact implementation/docs commit `2e0aaefa80764368e358bca77fc81b7a297174a9` through install, generated-client drift, beta doctor, focused behavior, workspace typecheck, CI-safe builds, and completion.
+- TYPECHECK BOUNDARY: In this partial Windows checkout, only four `expo-file-system` imports cannot resolve `expo-modules-core`; that local limitation is distinct from the exact-tip dependency-complete CI proof.
 - OPEN: This source proof does not replace real-iPhone route-transition cadence, VoiceOver, thermal/performance, or route-named device-capture evidence; provider, store, and Apollo approval gates remain external.
 ## 2026-09-05 Home room time-aware speech
 
