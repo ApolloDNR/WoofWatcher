@@ -1077,3 +1077,13 @@ Source PASS requires the generated private JSON to remain visible and failed sha
   clock transitions, room art, speech presentation, and assistive technology.
 - CI PASS: `WoofWatcher Verify` run `33993721164`, job `101380365630`, passed
   exact implementation/docs commit `35bce4d5` end to end.
+
+## 2026-09-07 Primary-tab immediate-presentation gate
+
+- PASS (source): Home / Log / Plans / Health / More have no route-wide fade/translate wrapper; Log, Plans, and More now show their content on entry while preserving local feedback, modal transitions, and Log's below-fold deferral. Secondary preview guards remain outside this primary-tab cleanup.
+- PASS (source): Home Quick Log / Next Up / Care Sense plus Plans and Health primary cards no longer use staged entrances. The shared `enterUp` builder respects `ReduceMotion.System` for non-primary local motion.
+- PASS (source): BoardSegmentTabs paints its selected chip's primary fill and border directly, so Day/Week-style active text remains visible without a layout-measured animated overlay.
+- PASS (focused): The readiness contract failed red against the prior Home `enterUp` wrapper. The latest combined `boardPrimitiveTouchTargets` / `mobileReadiness` / `tabLayoutPresentation` proof passes `206/206`.
+- PASS (root): Full behavior matrix `1233/1233`; runtime smoke `13/13` routes; live-preview handoff `19/19` routes PASS; PixelLab `150 ok / 0 missing / 0 invalid`; consumer export is current at `266` files / `1944` modules / bundle `aabe057a9ffd`.
+- BLOCKED (local typecheck): The partial Windows checkout resolves every other mobile check; only four `expo-file-system` imports cannot resolve `expo-modules-core`. Exact-tip dependency-complete CI remains required.
+- OPEN (native): Real-iPhone route-transition cadence, VoiceOver, thermal/performance behavior, and route-named captures remain unproved. Provider, store, and Apollo approval are unchanged external gates.

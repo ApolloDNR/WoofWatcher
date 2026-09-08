@@ -3960,3 +3960,10 @@ because an incorrect day-part greeting is worse than no clock context.
 - Boundary: Source tests cover deterministic hour bands. Native locale, device
   clock changes, VoiceOver/TalkBack, screenshots, and Apollo approval remain
   separate evidence gates.
+
+## 2026-09-07 - Present primary tabs without route-entry decoration
+
+- Decision: Primary Home / Log / Plans / Health / More routes must present their content immediately. Keep motion as reduced-motion-aware local care feedback, not a route-wide fade or translate entrance.
+- Decision: The same immediate-presentation rule applies to primary card staging. Remove Home's Quick Log / Next Up / Care Sense entrances and Plans / Health `BoardCard enter` props; keep state and interaction feedback. Any remaining shared `enterUp` use must respect `ReduceMotion.System`.
+- Decision: BoardSegmentTabs' active chip must own a deterministic primary fill and border. Do not make selected-state contrast depend on a measured overlay that can fail to paint in a web preview.
+- Boundary: Preserve Log below-fold deferral, modal transitions, and secondary Records/Premium web-preview guards. Focused source proof does not establish real-iPhone transition cadence, VoiceOver, thermal behavior, route captures, provider/store readiness, or Apollo approval.

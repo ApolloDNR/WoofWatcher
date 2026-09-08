@@ -185,3 +185,34 @@ test("shared segment chips and compact action buttons keep 48pt interactive boun
     "compact action artwork should stay visually compact inside its target",
   );
 });
+
+test("shared segment tabs paint the active chip without waiting for a measured pill", () => {
+  const file = new URL("../components/board/BoardPrimitives.tsx", import.meta.url);
+  const source = readFileSync(file, "utf8");
+
+  assert.doesNotMatch(
+    source,
+    /measured\s*\?\s*"transparent"/,
+    "an active segment must not become transparent after layout",
+  );
+  assert.match(
+    source,
+    /backgroundColor:\s*isActive\s*\?\s*colors\.primary\s*:/,
+    "the active segment chip must paint its own primary background",
+  );
+  assert.match(
+    source,
+    /borderColor:\s*isActive\s*\?\s*colors\.primary\s*:/,
+    "the active segment chip must paint its own primary border",
+  );
+  const segmentTabs = source.match(
+    /export function BoardSegmentTabs[\s\S]*?\n}\n\n\/\*\* Storybook-mockup action button/,
+  )?.[0];
+
+  assert.ok(segmentTabs, "BoardSegmentTabs source should remain inspectable");
+  assert.doesNotMatch(
+    segmentTabs,
+    /\bsegmentPill\b|\bpillStyle\b|<Reanimated\.View/,
+    "BoardSegmentTabs must keep the active state on the chip instead of a separate animated overlay",
+  );
+});

@@ -3292,6 +3292,16 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Require dependency-complete branch CI, then capture the rebuilt-device Records share matrix when native tooling is available.
 - CI PROOF: `WoofWatcher Verify` run `33975549241`, job `101331485463`, passed implementation/docs commit `9c79785f` through generated-client drift, beta doctor, focused tests, workspace typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
+## 2026-09-07 Primary tabs present without route-entry fades
+
+- DONE (source): Log, Plans, and More render their route content immediately; motion remains limited to local control feedback and existing modal transitions. Log retains its below-fold deferral. Home and Health already render without a route-wide fade/translate wrapper, while secondary Records and Premium retain their web-preview guards.
+- VERIFIED LOCALLY: the new immediate-primary-tab readiness contract failed red on Log before the cleanup. The earlier route subset passed `204/204`; the latest combined `boardPrimitiveTouchTargets` / `mobileReadiness` / `tabLayoutPresentation` run passed `206/206`.
+- VISUAL-QA FOLLOW-UP: Home's Quick Log, Next Up, and Care Sense no longer stage into view; Plans' six and Health's four primary `BoardCard` entrances were removed. Remaining shared `enterUp` use now honors `ReduceMotion.System`.
+- VISUAL-QA FOLLOW-UP: BoardSegmentTabs now paints each active chip deterministically with its primary fill and border rather than waiting for a measured animated overlay, preserving visible Day/Week selection in web preview.
+- VERIFIED ROOT: Full behavior matrix `1233/1233`; runtime smoke `13/13` routes; live-preview handoff `19/19` routes PASS; PixelLab `150 ok / 0 missing / 0 invalid`; consumer export is current at `266` files / `1944` modules / bundle `aabe057a9ffd`.
+- TYPECHECK BOUNDARY: In this partial Windows checkout, only four `expo-file-system` imports cannot resolve `expo-modules-core`; exact-tip dependency-complete CI remains required.
+- OPEN: This source proof does not replace real-iPhone route-transition cadence, VoiceOver, thermal/performance, or route-named device-capture evidence; provider, store, and Apollo approval gates remain external.
 ## 2026-09-05 Home room time-aware speech
 
 ## 2026-09-06 Home speech invalid-clock safety

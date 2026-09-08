@@ -3344,3 +3344,13 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
   part of native QA rather than source-level proof.
 - Dependency-complete proof: `WoofWatcher Verify` run `33993721164`, job
   `101380365630`, passed implementation/docs commit `35bce4d5` end to end.
+
+## 2026-09-07 Primary-tab immediate-presentation coverage
+
+- Automated: run the source-backed immediate-primary-tab contract. It must reject route-wide preview guards, initial fade values, and fade/translate wrappers on Log / Plans / More; Home and Health must remain free of a route-wide fade/translate wrapper, while Records and Premium preview guards remain intact.
+- Automated: the same contract must reject Home `enterUp` / `BoardCard enter` staging and Plans / Health `BoardCard enter` staging, and verify shared `enterUp` respects `ReduceMotion.System`.
+- Automated: verify BoardSegmentTabs has no measured transparent active branch and paints the selected chip directly with primary background and border; retain 48pt hit bounds and 36pt visual chips.
+- Automated: run `boardPrimitiveTouchTargets.test.ts`, `tabLayoutPresentation.test.ts`, and `mobileReadiness.test.ts`; the latest combined focused result is `206/206` pass after red failures on the previous Log guard, Home staging, and measured transparent segment branch.
+- Current root evidence: full behavior matrix `1233/1233`; runtime smoke `13/13` routes; live-preview handoff `19/19` routes PASS; PixelLab `150 ok / 0 missing / 0 invalid`; current consumer export `266` files / `1944` modules / bundle `aabe057a9ffd`.
+- Local typecheck boundary: only four `expo-file-system` imports cannot resolve `expo-modules-core` in this partial Windows checkout. Treat exact-tip dependency-complete CI as required rather than inferring a full local typecheck pass.
+- Device still required: capture Home / Log / Plans / Health / More on a real iPhone, checking transition cadence, VoiceOver reading order, thermal/performance behavior, and that local control feedback remains responsive without a route-wide entrance.

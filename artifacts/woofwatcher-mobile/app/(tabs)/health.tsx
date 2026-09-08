@@ -665,7 +665,7 @@ export default function HealthScreen() {
         </View>
 
         {isBileTab ? (
-          <BoardCard style={s.bileCard} enter={0}>
+          <BoardCard style={s.bileCard}>
             <View style={s.sectionTop}>
               <BoardSectionHeader title="Bile Watch" style={s.boardSectionTop} />
               <BoardPill label={bileStatus} icon="water-outline" tone={bileTone} />
@@ -932,7 +932,7 @@ export default function HealthScreen() {
             {/* Mockup-board rhythm: Next reminder -> Health summary ->
                 Medications. Every row is real persisted data or an honest
                 empty state; nothing here is decorative or invented. */}
-            <BoardCard style={s.summaryCard} enter={1}>
+            <BoardCard style={s.summaryCard}>
               <BoardSectionHeader
                 title="Next reminder"
                 accessory={
@@ -998,7 +998,7 @@ export default function HealthScreen() {
               )}
             </BoardCard>
 
-            <BoardCard style={s.summaryCard} enter={2}>
+            <BoardCard style={s.summaryCard}>
               <BoardSectionHeader title="Health summary" />
               <View style={s.summaryList}>
                 <HealthSummaryRow
@@ -1060,7 +1060,7 @@ export default function HealthScreen() {
               </View>
             </BoardCard>
 
-            <BoardCard style={s.summaryCard} enter={3}>
+            <BoardCard style={s.summaryCard}>
               <BoardSectionHeader
                 title="Medications"
                 accessory={

@@ -5,7 +5,6 @@ import * as Haptics from "expo-haptics";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Animated,
   Image,
   ImageBackground,
   type LayoutChangeEvent,
@@ -1328,18 +1327,6 @@ export default function MoreScreen() {
     );
   };
 
-  // Mount animation
-  const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
-  useEffect(() => {
-    if (isWebRoutePreview) return;
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
-
   const generateCarePass = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
@@ -1874,7 +1861,7 @@ export default function MoreScreen() {
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+        <>
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
@@ -3790,7 +3777,7 @@ export default function MoreScreen() {
           <Text style={[s.footer, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             WoofWatcher · Happy dog, simplified care 💚
           </Text>
-        </Animated.View>
+        </>
       </ScrollView>
 
       {/* Diet profile edit modal */}

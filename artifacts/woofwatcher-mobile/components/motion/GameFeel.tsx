@@ -10,6 +10,7 @@ import {
 import Animated, {
   Easing,
   FadeInDown,
+  ReduceMotion,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -47,6 +48,7 @@ export const MOTION_MS = {
 /** Standard staggered card entrance: fade + rise with a soft spring. */
 export function enterUp(index = 0) {
   return FadeInDown.delay(Math.min(index, 8) * 50)
+    .reduceMotion(ReduceMotion.System)
     .springify()
     .damping(SPRING.default.damping)
     .stiffness(SPRING.default.stiffness);

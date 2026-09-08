@@ -3383,53 +3383,46 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
 });
 
-test("keeps web route previews visible before native entry animation starts", () => {
-  const home = readAppFile(join("(tabs)", "index.tsx"));
-  const routeSources: Record<string, string> = {
+test("presents primary tab routes immediately while preserving secondary preview guards", () => {
+  const primaryRoutes = {
+    home: readAppFile(join("(tabs)", "index.tsx")),
     log: readAppFile(join("(tabs)", "log.tsx")),
     plans: readAppFile(join("(tabs)", "calendar.tsx")),
-    records: readAppFile(join("(tabs)", "records.tsx")),
     more: readAppFile(join("(tabs)", "more.tsx")),
-    premium: readAppFile("premium.tsx"),
   };
 
-  for (const [route, source] of Object.entries(routeSources)) {
-    assert.match(
-      source,
-      /const isWebRoutePreview = \(Platform\.OS as string\) === "web"/,
-      `${route} should define a typed web-preview guard`,
-    );
-    assert.match(
-      source,
-      /new Animated\.Value\(isWebRoutePreview \? 1 : 0\)/,
-      `${route} should render visible immediately in web previews`,
-    );
-    assert.match(
-      source,
-      /if \(isWebRoutePreview\) return;/,
-      `${route} should skip native-style entrance animation on web`,
-    );
+  for (const [route, source] of Object.entries(primaryRoutes)) {
+    assert.doesNotMatch(source, /const isWebRoutePreview = \(Platform\.OS as string\) === "web"/, route + " should not gate route-wide motion");
+    assert.doesNotMatch(source, /new Animated\.Value\(isWebRoutePreview \? 1 : 0\)/, route + " should not fade the whole route");
+    assert.doesNotMatch(source, /<Animated\.View style=\{\{ opacity: fade, transform: \[\{ translateY: slide \}\] \}\}>/, route + " should render immediately");
+    assert.match(source, /backgroundColor: colors\.background/);
   }
 
-  assert.doesNotMatch(
-    home,
-    /const fade = useRef\(new Animated\.Value|<Animated\.View style=\{\{ opacity: fade \}\}/,
-    "Home should present its full-phone surface immediately instead of fading the entire route",
-  );
-  assert.match(home, /backgroundColor: colors\.background/);
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  assert.doesNotMatch(health, /<Animated\.View style=\{\{ opacity: fade, transform: \[\{ translateY: slide \}\] \}\}>/, "health should render immediately");
+  assert.match(health, /backgroundColor: colors\.background/);
 
-  for (const [route, source] of Object.entries({
-    log: routeSources.log,
-    plans: routeSources.plans,
-    records: routeSources.records,
-    more: routeSources.more,
-    premium: routeSources.premium,
-  })) {
-    assert.match(
-      source,
-      /new Animated\.Value\(isWebRoutePreview \? 0 : (?:16|18)\)/,
-      `${route} should keep web slide offset at rest for deterministic captures`,
-    );
+  assert.doesNotMatch(primaryRoutes.home, /enterUp\(/, "home should not stage primary cards behind a staggered entrance");
+  assert.doesNotMatch(primaryRoutes.home, /<BoardCard[\s\S]*?\senter=\{/, "home should not delay primary BoardCard content");
+  for (const [route, source] of Object.entries({ plans: primaryRoutes.plans, health })) {
+    assert.doesNotMatch(source, /<BoardCard[\s\S]*?\senter=\{/, route + " should not stage primary BoardCard content");
+  }
+
+  const gameFeel = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "motion", "GameFeel.tsx"),
+    "utf8",
+  );
+  assert.match(gameFeel, /import Animated, \{[\s\S]*\bReduceMotion,[\s\S]*\} from "react-native-reanimated"/);
+  assert.match(gameFeel, /export function enterUp\(index = 0\) \{[^}]*return FadeInDown[^}]*\.reduceMotion\(ReduceMotion\.System\)[^}]*\}/, "enterUp should honor the system Reduce Motion preference");
+
+  const secondaryRoutes = {
+    records: readAppFile(join("(tabs)", "records.tsx")),
+    premium: readAppFile("premium.tsx"),
+  };
+  for (const [route, source] of Object.entries(secondaryRoutes)) {
+    assert.match(source, /const isWebRoutePreview = \(Platform\.OS as string\) === "web"/, route + " should keep its preview guard");
+    assert.match(source, /new Animated\.Value\(isWebRoutePreview \? 1 : 0\)/, route + " should remain visible in web preview");
+    assert.match(source, /new Animated\.Value\(isWebRoutePreview \? 0 : (?:16|18)\)/, route + " should keep its preview offset at rest");
   }
 });
 

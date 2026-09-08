@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   ImageBackground,
   Keyboard,
   Modal,
@@ -913,23 +912,11 @@ export default function CalendarScreen() {
   const isAdded = (sug: SuggestedEvent) =>
     calendarEvents.some((e) => e.title === sug.title && e.date === sug.date);
 
-  // Mount animation
-  const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
   useEffect(() => {
     return () => {
       if (routineFeedbackTimer.current) clearTimeout(routineFeedbackTimer.current);
     };
   }, []);
-  useEffect(() => {
-    if (isWebRoutePreview) return;
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
-
   const dateLabel = new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
   const H_PAD = 16;
 
@@ -941,7 +928,7 @@ export default function CalendarScreen() {
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+        <>
           <BoardRouteHeader
             title="Plans"
             subtitle={dateLabel}
@@ -953,7 +940,7 @@ export default function CalendarScreen() {
             }}
           />
 
-          <BoardCard enter={0} style={s.commandDeckCard}>
+          <BoardCard style={s.commandDeckCard}>
             <View style={s.commandDeckStage} testID="plans-command-pixel-stage">
               <View style={s.commandDeckTop}>
                 <View style={s.commandDeckCopy}>
@@ -1038,7 +1025,7 @@ export default function CalendarScreen() {
             </View>
           </BoardCard>
 
-          <BoardCard enter={1} style={s.scheduleCard}>
+          <BoardCard style={s.scheduleCard}>
             <View style={s.scheduleCardHeader}>
               <View style={s.scheduleHeaderCopy}>
                 <Text style={[s.scheduleEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Mission Schedule</Text>
@@ -1417,7 +1404,7 @@ export default function CalendarScreen() {
             />
           </BoardCard>
 
-          <BoardCard enter={2} style={s.planMissionBoard}>
+          <BoardCard style={s.planMissionBoard}>
             <BoardSectionHeader
               title="Today's Missions"
               accessory={
@@ -1566,7 +1553,7 @@ export default function CalendarScreen() {
           ) : null}
 
           {/* Upcoming one-off events */}
-          <BoardCard enter={3} style={s.upcomingBoardCard}>
+          <BoardCard style={s.upcomingBoardCard}>
             <BoardSectionHeader
               title="Upcoming Events"
               accessory={<BoardPill label={upcoming.length ? `${upcoming.length} days` : "Add one"} tone={colors.primary} />}
@@ -1633,7 +1620,7 @@ export default function CalendarScreen() {
           </BoardCard>
 
           {/* Reminder Center */}
-          <BoardCard enter={4} style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
+          <BoardCard style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
             <BoardSectionHeader
               title="Reminder Center"
               accessory={<BoardPill label={reminderCount === 0 ? "Clear" : `${reminderCount} active`} tone={reminderTone} />}
@@ -1794,7 +1781,7 @@ export default function CalendarScreen() {
           </BoardCard>
 
           {/* Daily routine */}
-          <BoardCard enter={5} style={s.plansBoardCard}>
+          <BoardCard style={s.plansBoardCard}>
             <BoardSectionHeader
               title="Daily Routine"
               accessory={
@@ -1963,7 +1950,7 @@ export default function CalendarScreen() {
               </>
             )}
           </BoardCard>
-        </Animated.View>
+        </>
       </ScrollView>
 
       {routineFeedback ? (

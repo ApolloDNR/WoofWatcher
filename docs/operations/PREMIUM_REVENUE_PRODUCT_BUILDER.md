@@ -6344,6 +6344,18 @@ Manual in-app-browser proof covers Home / Log / Plans / Health / More and the fu
 
 Doctor source checks pass, but the overall local doctor remains `BLOCKED` solely because installed pnpm `11.19.0` differs from pinned `10.24.0`. This Windows host has no `xcrun` or `simctl`; native iOS device/simulator behavior, VoiceOver, touch and performance evidence, provider credentials, signing/store review, and Apollo approval remain explicit open gates.
 
+## 2026-09-07 Primary-tab immediate presentation
+
+Log, Plans, and More no longer wrap their complete route trees in mount-time fade/translate animations. Home and Health already have no route-wide fade/translate wrapper. Primary content therefore presents immediately; local control feedback, modal transitions, and Log's below-fold deferral remain. Records and Premium preserve their secondary web-preview guards.
+
+Visual QA also removed delayed card staging: Home Quick Log, Next Up, and Care Sense no longer enter late, and Plans' six plus Health's four primary `BoardCard` `enter` props are gone. Shared non-primary `enterUp` motion now honors `ReduceMotion.System`.
+
+BoardSegmentTabs now gives every active Day/Week-style chip its own primary fill and border. The selected state no longer depends on a layout-measured animated overlay, so it remains visible in web preview while preserving the existing touch, selected-state, haptic, and press feedback contract.
+
+The source-backed readiness contract failed red on the previous Log preview guard and again on Home's staged entrance; the active-segment contract also failed red on the measured transparent branch. The latest combined `boardPrimitiveTouchTargets.test.ts`, `mobileReadiness.test.ts`, and `tabLayoutPresentation.test.ts` run passed `206/206`. This is not native proof: real-iPhone cadence, VoiceOver, thermal/performance, and route-named screenshots remain required, as do provider, store, and Apollo gates.
+
+Fresh root verification recorded full behavior matrix `1233/1233`, runtime smoke `13/13` routes, live-preview handoff `19/19` routes PASS, and PixelLab `150 ok / 0 missing / 0 invalid`. The consumer export is current at `266` files / `1944` modules / bundle `aabe057a9ffd`. Local mobile typecheck remains bounded: in this partial Windows checkout, only four `expo-file-system` imports cannot resolve `expo-modules-core`; exact-tip dependency-complete CI remains required.
+
 ## 2026-09-05 Records file-share admission safety
 
 Records local HTML, SVG, PDF, and PNG shares now share a synchronous admission fence with disabled/busy UI state. Rapid taps cannot overlap file writes or native share requests, and the fence releases after success or failure. Real-device cancellation, recipient reopen, TalkBack/VoiceOver, and route-named screenshots remain open.

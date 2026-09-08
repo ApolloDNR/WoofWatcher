@@ -5,7 +5,6 @@ import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Animated,
   ImageBackground,
   InteractionManager,
   Keyboard,
@@ -1354,18 +1353,6 @@ export default function LogScreen() {
     setPottyDetailDraft(pottyDraftFromEntry(detailEntry));
   }, [detailEntry, detailType]);
 
-  // Mount animation
-  const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
-  useEffect(() => {
-    if (isWebRoutePreview) return;
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
-
   // Two-phase mount: the console stage and quick-log launcher (the whole
   // first screenful) render on the tab-press frame; the composer, search,
   // and timeline - all below the fold - mount right after the transition
@@ -2558,7 +2545,7 @@ export default function LogScreen() {
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+        <>
           <BoardRouteHeader
             title="Log"
             actionIcon="notifications-outline"
@@ -4504,7 +4491,7 @@ export default function LogScreen() {
           )}
             </>
           ) : null}
-        </Animated.View>
+        </>
       </KeyboardAwareScrollViewCompat>
 
       {/* Launcher detail sheet */}

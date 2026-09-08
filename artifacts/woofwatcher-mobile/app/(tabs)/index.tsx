@@ -47,7 +47,7 @@ import {
   QuickActionTile,
   StatusMeter,
 } from "@/components/board/BoardPrimitives";
-import { enterUp, PressScale } from "@/components/motion/GameFeel";
+import { PressScale } from "@/components/motion/GameFeel";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
   LivingPhoenixRoom,
@@ -2160,7 +2160,7 @@ export default function HomeScreen() {
             {/* Mock-board Quick Log card: Meal · Potty · Walk · Meds · More
                 as springy medallion tiles inside one cream card. More opens
                 the fast-log sheet where Water, Note, and the rest live. */}
-            <Reanimated.View entering={enterUp(1)}>
+            <>
               <BoardCard style={s.quickHomeCard}>
                 <View style={s.quickSectionHeader}>
                   <Text
@@ -2276,9 +2276,9 @@ export default function HomeScreen() {
                   </PressScale>
                 </View>
               </BoardCard>
-            </Reanimated.View>
+            </>
 
-            <BoardCard style={s.nextCard} enter={2}>
+            <BoardCard style={s.nextCard}>
               <BoardSectionHeader
                 title="Next Up"
                 accessory={
@@ -2568,7 +2568,7 @@ export default function HomeScreen() {
           {/* Care Sense stays one scroll below the primary care actions. Its
               meters still derive only from real logs, but Quick Log and Next
               Up now own the first usable screen instead of being buried. */}
-          <Reanimated.View entering={enterUp(3)}>
+          <>
             <BoardCard style={s.careSenseCard}>
               <View style={s.careSenseHeader}>
                 <Text
@@ -2739,7 +2739,7 @@ export default function HomeScreen() {
                 />
               </View>
             </BoardCard>
-          </Reanimated.View>
+          </>
 
           <Pressable
             accessibilityRole="button"
