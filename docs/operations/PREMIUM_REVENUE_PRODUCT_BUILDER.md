@@ -1,5 +1,24 @@
 # Premium Revenue Product Builder
 
+## 2026-09-07 Core mobile polish and purposeful motion
+
+Home, Log, Plans, Health, and More now carry the latest consumer-facing polish
+slice: the living Phoenix is room-scale without cropping the full-phone scene;
+shared feedback animates only when values change; Log keeps the selected care
+type visible and compacts calm save status; Plans exposes a truthful first
+routine action; Health treats sparse evidence as a picture still forming; and
+More waits for hydration before presenting owner data or failure recovery.
+
+Red-first regressions and the full local behavior/export/runtime/preview/asset
+matrix are recorded in the autonomous queue. Dependency-complete
+`WoofWatcher Verify` [run `34188238867`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/34188238867),
+job `101940804770`, passed exact implementation commit
+`71876688d02eda5248a755bf00fd58325e8f22db` through dependency install,
+generated-client drift, beta doctor, focused behavior, workspace typecheck,
+CI-safe builds, and completion. Real-iPhone motion, haptics, safe-area,
+Reduce Motion, VoiceOver, thermal, provider, store, public-launch, and Apollo
+approval evidence remains open.
+
 ## 2026-09-05 Consumer Home next-care speech truth
 
 The upbeat room fallback now asks `What's next?` instead of claiming `Walk time soon?` when no walk evidence exists. Home's existing live Next readout continues to carry the actual routine, active-walk, or alone-time state. Red-first focused coverage reproduces and protects the boundary. Dependency-complete `WoofWatcher Verify` [run `34001884726`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/34001884726), job `101402098721`, passed implementation commit `c2b51ba6` end to end in `2m14s`; real-device copy fit, localization, accessibility, route screenshots, provider, store, public-launch, and Apollo approval remain open.

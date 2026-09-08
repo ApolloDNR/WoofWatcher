@@ -1,5 +1,14 @@
 # Blockers For Apollo
 
+## 2026-09-07 Core mobile polish native proof
+
+The latest Home, Log, Plans, Health, More, and shared purposeful-motion slice is
+source-, browser-, export-, asset-, and dependency-CI verified at commit
+`71876688`. Real-iPhone proof is still required for motion cadence, haptics,
+safe areas, Reduce Motion, VoiceOver, thermal behavior, and the complete
+primary-tab loop. Provider, store, public-launch, and Apollo approval remain
+separate open gates.
+
 ## 2026-09-05 Consumer Home native proof
 
 The restored production consumer Home and explicit consumer-preview boundary passed dependency-complete `WoofWatcher Verify` [run `33980516066`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/33980516066), job `101344792628`, on exact implementation commit `4806bd1e278b12d280e38041b9985a816cffaaca`. This clears source, test, typecheck, and build proof only. A real iPhone or native helper is still required for safe-area, touch, scroll/pause/resume, background recovery, animation cadence and thermal behavior, VoiceOver, and route-named screenshot evidence; provider, signing/store, public-launch, and Apollo approval remain open.

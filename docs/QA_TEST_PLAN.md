@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-09-07 Core mobile polish QA
+
+- PASS local: Red-first screen and motion regressions pass, the complete behavior matrix passes `1,246/1,246`, the consumer export completes at `1,945` modules / `258` assets / `266` files, runtime smoke passes `13/13`, live-preview proof passes `19/19`, and PixelLab passes `150/150`.
+- PASS CI: Dependency-complete `WoofWatcher Verify` [run `34188238867`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/34188238867), job `101940804770`, passed exact implementation commit `71876688d02eda5248a755bf00fd58325e8f22db` through generated-client drift, doctor, focused behavior, workspace typecheck, and CI-safe builds.
+- OPEN native: Exercise Home -> Log -> Plans -> Health -> More on a real iPhone with Reduce Motion off and on. Confirm Phoenix framing, motion cadence, haptics, safe areas, selected-care visibility, loading/failure transitions, VoiceOver order, and thermal behavior before calling native polish final.
+
 ## 2026-09-05 Consumer Home next-care speech QA
 
 - PASS red/green: Upbeat morning, afternoon, evening, and invalid-hour fallback cases no longer claim a walk is next; anxious and unwell care-aware speech is unchanged.
