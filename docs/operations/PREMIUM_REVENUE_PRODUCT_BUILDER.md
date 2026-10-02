@@ -11,6 +11,8 @@ Avatar Room, care-twin asset/choreography, and readiness coverage passed
 locally; device rendering and the remaining template state-strip production
 are still open.
 
+Dependency-complete `WoofWatcher Verify` [run `37002923508`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/37002923508) passed the exact implementation commit `b32f67c4` through pinned dependency installation, generated-client drift, the JSON beta doctor, focused behavior tests, workspace typecheck, CI-safe builds, and completion. It is source/CI evidence only; semantically matched non-Phoenix strips and phone-size native animation/accessibility review remain open.
+
 ## 2026-09-07 Core mobile polish and purposeful motion
 
 Home, Log, Plans, Health, and More now carry the latest consumer-facing polish

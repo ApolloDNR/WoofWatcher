@@ -6,6 +6,7 @@
 - VERIFIED LOCALLY: Red-first `avatarRoomRuntime` coverage now distinguishes exact idle/walk motion from every unsupported care action. The focused Avatar Room / care-twin asset / choreography / mobile-readiness set passes `229/229`.
 - NEXT: Extend each non-Phoenix PixelLab template with semantically matched meal, water, rest, comfort, celebration, attention, and Health Watch strips, then promote those state routes from `static-fallback` only after phone-size visual QA.
 - BOUNDARY: This keeps the local visual state truthful; it does not replace real iOS/Android animation, accessibility, thermal, provider, store, public-launch, or Apollo approval evidence.
+- CI PROOF: Dependency-complete `WoofWatcher Verify` [run `37002923508`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/37002923508) passed `b32f67c4` with pinned dependency install, generated-client drift, the JSON beta doctor, focused behavior tests, workspace typecheck, CI-safe builds, and completion. This CI proof does not clear the phone-size device or asset-production gates above.
 
 ## 2026-09-07 Core mobile polish and purposeful motion
 
