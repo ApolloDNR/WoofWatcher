@@ -52,12 +52,31 @@ test("uses selected live template sprite packs in the main care room", () => {
   assert.equal(walk.templateLabel, "Retriever");
   assert.equal(walk.spriteMode, "template-idle-walk-pack");
   assert.equal(walk.templateSpriteAction, "walk-loop");
+  assert.equal(walk.motionFidelity, "exact");
   assert.equal(walk.spriteTrack.key, "retriever:walk-loop");
   assert.match(walk.spriteLabel, /Retriever walk/i);
 
   assert.equal(meal.spriteMode, "template-idle-walk-pack");
   assert.equal(meal.templateSpriteAction, "idle-tail-wag");
+  assert.equal(meal.motionFidelity, "static-fallback");
   assert.equal(meal.spriteTrack.key, "retriever:idle-tail-wag");
   assert.equal(meal.overlayLayers.length, 0);
   assert.equal(meal.underlayLayers.length, 0);
+
+  for (const action of [
+    "eat-loop",
+    "drink-loop",
+    "sleep-loop",
+    "comfort-loop",
+    "celebrate-hop",
+    "health-watch",
+    "bark-loop",
+    "ear-perk",
+  ] as const) {
+    assert.equal(
+      deriveAvatarRoomRuntime(config, action).motionFidelity,
+      "static-fallback",
+      action,
+    );
+  }
 });

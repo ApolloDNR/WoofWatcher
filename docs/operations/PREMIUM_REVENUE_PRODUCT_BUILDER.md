@@ -1,5 +1,16 @@
 # Premium Revenue Product Builder
 
+## 2026-10-02 Template-avatar care-state fidelity
+
+Selected breed templates only have approved idle and walk strips today. Their
+runtime now stops on a visible `still care pose` when a requested care state
+does not have semantically matched template art, rather than falsely animating
+a tail wag or walk for meals, hydration, rest, comfort, celebration, attention,
+or Health Watch. Phoenix remains on its fully mapped action pack. Focused
+Avatar Room, care-twin asset/choreography, and readiness coverage passed
+locally; device rendering and the remaining template state-strip production
+are still open.
+
 ## 2026-09-07 Core mobile polish and purposeful motion
 
 Home, Log, Plans, Health, and More now carry the latest consumer-facing polish

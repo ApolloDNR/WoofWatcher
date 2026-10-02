@@ -29,6 +29,13 @@ export type AvatarRoomSpriteMode =
   | "phoenix-action-pack"
   | "template-idle-walk-pack";
 
+/**
+ * Template packs currently ship idle and walk strips.  A static fallback is
+ * deliberately preferable to playing a tail-wag or walk loop that claims to
+ * depict a meal, rest, or Health Watch state it does not actually depict.
+ */
+export type AvatarRoomMotionFidelity = "exact" | "static-fallback";
+
 export interface AvatarRoomAccessoryLayer extends AvatarPreviewAccessoryLayer {
   source: ImageSourcePropType | undefined;
 }
@@ -37,6 +44,7 @@ export interface AvatarRoomRuntime {
   templateId: AvatarTemplateId;
   templateLabel: string;
   spriteMode: AvatarRoomSpriteMode;
+  motionFidelity: AvatarRoomMotionFidelity;
   spriteLabel: string;
   spriteAsset: CareTwinSpriteAsset | null;
   spriteTrack: SpriteSheetTrack & { key: string };
@@ -46,10 +54,12 @@ export interface AvatarRoomRuntime {
   activeSlots: (keyof AvatarAccessorySlots)[];
 }
 
-const TEMPLATE_WALK_ACTIONS = new Set<CareTwinSpriteAction>([
+const TEMPLATE_WALK_ACTIONS = new Set<CareTwinSpriteAction>(["walk-loop"]);
+
+const TEMPLATE_EXACT_ACTIONS = new Set<CareTwinSpriteAction>([
+  "idle-breathe",
+  "tail-wag",
   "walk-loop",
-  "celebrate-hop",
-  "bark-loop",
 ]);
 
 function mapRuntimeActionToTemplateAction(
@@ -89,10 +99,14 @@ export function deriveAvatarRoomRuntime(
   );
 
   if (templateSprite) {
+    const motionFidelity = TEMPLATE_EXACT_ACTIONS.has(action)
+      ? "exact"
+      : "static-fallback";
     return {
       templateId: config.templateId,
       templateLabel: template.label,
       spriteMode: "template-idle-walk-pack",
+      motionFidelity,
       spriteLabel: templateSprite.label,
       spriteAsset: templateSprite.asset,
       spriteTrack: templateSprite.track,
@@ -107,6 +121,7 @@ export function deriveAvatarRoomRuntime(
     templateId: config.templateId,
     templateLabel: template.label,
     spriteMode: "phoenix-action-pack",
+    motionFidelity: "exact",
     spriteLabel: CARE_TWIN_SPRITE_MANIFEST[action].notes,
     spriteAsset: getCareTwinSpriteAsset(action),
     spriteTrack: CARE_TWIN_SPRITE_MANIFEST[action],

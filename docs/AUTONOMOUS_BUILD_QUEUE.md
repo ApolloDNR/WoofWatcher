@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-10-02 Template-avatar care-state fidelity
+
+- DONE: Phoenix retains its complete twelve-state action pack. Breed-template rigs now label and hold a still care pose whenever their current idle/walk-only asset pack cannot truthfully depict meal, hydration, rest, comfort, celebration, attention, or Health Watch. They no longer animate a generic tail wag or walk as if it were that care state.
+- VERIFIED LOCALLY: Red-first `avatarRoomRuntime` coverage now distinguishes exact idle/walk motion from every unsupported care action. The focused Avatar Room / care-twin asset / choreography / mobile-readiness set passes `229/229`.
+- NEXT: Extend each non-Phoenix PixelLab template with semantically matched meal, water, rest, comfort, celebration, attention, and Health Watch strips, then promote those state routes from `static-fallback` only after phone-size visual QA.
+- BOUNDARY: This keeps the local visual state truthful; it does not replace real iOS/Android animation, accessibility, thermal, provider, store, public-launch, or Apollo approval evidence.
+
 ## 2026-09-07 Core mobile polish and purposeful motion
 
 - DONE: Home now gives the living Phoenix a stronger room-scale focal point while preserving the full-phone artwork, focus/scroll pause behavior, and reduced-motion boundary. Shared pills, metrics, tabs, and progress feedback react only when their values change instead of replaying route-wide entrance fades.

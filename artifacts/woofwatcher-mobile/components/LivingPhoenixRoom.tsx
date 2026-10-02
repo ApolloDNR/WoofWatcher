@@ -557,13 +557,15 @@ export function LivingPhoenixRoom({
     [avatarConfig, shouldUseAvatarRuntime, stagePoseAction],
   );
   const avatarAccessoryCount = avatarRoomRuntime?.activeSlots.length ?? 0;
+  const avatarUsesStillCarePose =
+    avatarRoomRuntime?.motionFidelity === "static-fallback";
   const roomLiveTitle = isStudio
     ? "STUDIO RIG"
     : buildCareTwinLiveTitle(petName);
   const roomLiveDetail = avatarRoomRuntime
     ? avatarAccessoryCount > 0
-      ? `${avatarRoomRuntime.templateLabel} - ${avatarAccessoryCount} add-ons`
-      : `${avatarRoomRuntime.templateLabel} rig`
+      ? `${avatarRoomRuntime.templateLabel} - ${avatarAccessoryCount} add-ons${avatarUsesStillCarePose ? " - still care pose" : ""}`
+      : `${avatarRoomRuntime.templateLabel}${avatarUsesStillCarePose ? " - still care pose" : " rig"}`
     : "Pixel room";
   const activeZoneKey =
     compactChrome && !transparentScene
@@ -1258,7 +1260,7 @@ export function LivingPhoenixRoom({
                   : "care-twin-sprite-player"
               }
               track={activeSpriteTrack}
-              playing={continuousMotionEnabled}
+              playing={continuousMotionEnabled && !avatarUsesStillCarePose}
               width={activeSpriteZone.width}
             />
             {showStageAccessoryLayers
@@ -2003,7 +2005,9 @@ function RoamingTwinRig({
             height={ROAM_RIG_SIZE}
             testID="care-twin-roaming-sprite-player"
             track={spriteTrack}
-            playing={motionActive && !reduced}
+            playing={
+              motionActive && !reduced && runtime?.motionFidelity !== "static-fallback"
+            }
             width={ROAM_RIG_SIZE}
           />
           {showAccessoryLayers
