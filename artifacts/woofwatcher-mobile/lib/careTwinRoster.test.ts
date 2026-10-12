@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildCareTwinRosterDraft,
   deriveCareTwinRoster,
+  removeFutureCareTwinRosterDraft,
   validateFutureCareTwinRosterName,
 } from "./careTwinRoster.ts";
 
@@ -91,4 +92,17 @@ test("rejects blank and duplicate planned-dog names before they can become hidde
     valid: true,
     name: "Maple",
   });
+});
+
+test("removes only the selected planned slot and preserves the remaining local roster", () => {
+  const pets = [
+    buildCareTwinRosterDraft({ name: "London", nowIso: "2026-06-19T20:00:00.000Z" }),
+    buildCareTwinRosterDraft({ name: "Maple", nowIso: "2026-06-19T20:01:00.000Z" }),
+  ];
+
+  assert.deepEqual(
+    removeFutureCareTwinRosterDraft(pets, pets[0].id).map((pet) => pet.name),
+    ["Maple"],
+  );
+  assert.deepEqual(removeFutureCareTwinRosterDraft(pets, "unknown"), pets);
 });

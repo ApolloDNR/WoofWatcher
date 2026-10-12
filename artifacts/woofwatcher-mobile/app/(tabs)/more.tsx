@@ -61,6 +61,7 @@ import { getMorePrimarySectionOrder } from "@/lib/morePrimarySections";
 import {
   buildCareTwinRosterDraft,
   deriveCareTwinRoster,
+  removeFutureCareTwinRosterDraft,
   validateFutureCareTwinRosterName,
 } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
@@ -1069,6 +1070,31 @@ export default function MoreScreen() {
     activeMoreEditorScopeRef.current = null;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPetRosterOpen(false);
+  };
+
+  const confirmRemoveFuturePet = (pet: { id: string; name: string }) => {
+    if (!captureMoreEditorScope("future-pet")) return;
+    confirmThroughSteps(
+      [
+        {
+          title: `Remove ${pet.name}?`,
+          message:
+            "This removes only the planned slot from this device. It does not delete your live dog's care data.",
+          confirmLabel: "Remove planned slot",
+          destructive: true,
+        },
+      ],
+      () => {
+        if (!moreEditorScopeIsCurrent("future-pet")) return;
+        const saved = updateCareDoc((doc) => ({
+          ...doc,
+          pets: removeFutureCareTwinRosterDraft(doc.pets ?? [], pet.id),
+        }));
+        if (!saved) return;
+        activeMoreEditorScopeRef.current = null;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      },
+    );
   };
 
   const openAccessPassSheet = () => {
@@ -2614,13 +2640,10 @@ export default function MoreScreen() {
                     key={pet.id}
                     onPress={() => {
                       Haptics.selectionAsync();
-                      notifyDialog(
-                        "Multi-dog switching is coming soon",
-                        "This dog is saved as a planned slot. Separate logs, routines, records, and reports aren't ready yet - for now everything stays with your current dog on this device.",
-                      );
+                      confirmRemoveFuturePet(pet);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
+                    accessibilityLabel={`Remove ${pet.name} planned slot. ${pet.detail}`}
                     style={({ pressed }) => [
                       s.rosterRow,
                       rowBorder,

@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-10-12 Planned-dog slot recovery
+
+- DONE: Planned CareTwin slots can now be removed through an explicit, accessible destructive confirmation. Removal is local-only and strictly filters the staged roster collection; it cannot remove the live Dog Profile or alter the live dog's logs, routines, records, or avatar.
+- VERIFIED LOCALLY: Red-first roster behavior passes `5/5`; the More/CareTwin source-readiness contract passes `206/206`.
+- NEXT: Capture the core care loop and future-dog add/remove flow on real iOS and Android before calling native polish final; keep planned slots local-only until genuine dog-scoped care isolation is designed and verified.
+
 ## 2026-10-12 Planned-dog roster integrity
 
 - DONE: More's local-only CareTwin roster now rejects blank planned-dog names and duplicate names (including the live dog) before persistence. The sheet gives an accessible inline explanation instead of saving a row that the roster later hides during its duplicate cleanup.

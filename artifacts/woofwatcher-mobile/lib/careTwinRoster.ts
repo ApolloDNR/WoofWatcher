@@ -149,6 +149,19 @@ export function buildCareTwinRosterDraft(input: {
   };
 }
 
+/**
+ * Planned slots are local-only until care data can be isolated per dog. Keep
+ * removal equally narrow: it can only remove a staged row, never the live
+ * profile or its routines, logs, records, or avatar.
+ */
+export function removeFutureCareTwinRosterDraft<
+  T extends { id?: string | null },
+>(pets: readonly T[], id: string): T[] {
+  const targetId = clean(id);
+  if (!targetId) return [...pets];
+  return pets.filter((pet) => clean(pet.id) !== targetId);
+}
+
 export function validateFutureCareTwinRosterName(
   value: string,
   roster: CareTwinRoster,

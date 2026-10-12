@@ -1,5 +1,15 @@
 # Premium Revenue Product Builder
 
+## 2026-10-12 Planned-dog slot recovery
+
+More now lets an owner remove a local-only planned CareTwin slot after an
+explicit confirmation. The write only filters the staged `pets` collection;
+the confirmation makes clear that the live Dog Profile and its routines, logs,
+records, and avatar are not deleted. Red-first roster coverage (`5/5`) and the
+More readiness contract (`206/206`) pass locally. This does not enable
+multi-dog switching, dog-scoped data, remote sync, device accessibility proof,
+or Apollo approval.
+
 ## 2026-10-12 Planned-dog roster integrity
 
 The local-only CareTwin roster now validates a planned dog's name before any
