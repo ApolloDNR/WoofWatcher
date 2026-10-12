@@ -57,6 +57,10 @@ export interface CareTwinRosterDraft {
   createdAt: string;
 }
 
+export type FutureCareTwinRosterNameValidation =
+  | { valid: true; name: string }
+  | { valid: false; message: string };
+
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
@@ -142,6 +146,28 @@ export function buildCareTwinRosterDraft(input: {
     breed: titleCase(clean(input.breed) || "Breed not set"),
     status: "provider-gated",
     createdAt: nowIso,
+  };
+}
+
+export function validateFutureCareTwinRosterName(
+  value: string,
+  roster: CareTwinRoster,
+): FutureCareTwinRosterNameValidation {
+  const name = titleCase(clean(value));
+  if (!name) {
+    return { valid: false, message: "Add a name for the planned dog." };
+  }
+
+  const matchingPet = roster.pets.find(
+    (pet) => pet.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+  );
+  if (!matchingPet) return { valid: true, name };
+
+  return {
+    valid: false,
+    message: matchingPet.isActive
+      ? `${matchingPet.name} is already the live care twin.`
+      : `${matchingPet.name} is already saved as a planned dog.`,
   };
 }
 

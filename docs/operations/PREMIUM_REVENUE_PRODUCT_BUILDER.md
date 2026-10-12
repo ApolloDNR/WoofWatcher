@@ -1,5 +1,16 @@
 # Premium Revenue Product Builder
 
+## 2026-10-12 Planned-dog roster integrity
+
+The local-only CareTwin roster now validates a planned dog's name before any
+Care document write. Blank names and case/whitespace-insensitive duplicates of
+the live or a staged dog remain in the editor with an accessible inline error,
+so the persistence layer cannot accumulate planned rows that the visible roster
+would subsequently suppress. Focused roster coverage (`4/4`) and mobile
+readiness (`201/201`) pass locally. This does not enable multi-dog switching,
+dog-scoped care data, remote sync, device accessibility proof, or Apollo
+approval; planned slots remain explicitly local-only.
+
 ## 2026-10-02 Template-avatar care-state fidelity
 
 Selected breed templates only have approved idle and walk strips today. Their

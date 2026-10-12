@@ -7231,8 +7231,11 @@ test("keeps CareTwin roster readiness visible without fake multi-dog switching",
   assert.match(careContext, /pets: PetProfile\[\]/);
   assert.match(more, /deriveCareTwinRoster/);
   assert.match(more, /buildCareTwinRosterDraft/);
+  assert.match(more, /validateFutureCareTwinRosterName/);
   assert.match(more, /CareTwin Roster/);
   assert.match(more, /Add future dog/);
+  assert.match(more, /setPetRosterError\(nameValidation\.message\)/);
+  assert.match(more, /accessibilityRole="alert"/);
   assert.match(more, /stays with your current dog on this device/);
   assert.match(more, /Multi-dog switching is coming soon/);
 });

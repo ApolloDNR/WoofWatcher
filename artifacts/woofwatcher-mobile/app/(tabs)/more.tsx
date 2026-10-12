@@ -58,7 +58,11 @@ import {
   shouldLoadMoreOwnerQaSession,
 } from "@/lib/moreHydrationPresentation";
 import { getMorePrimarySectionOrder } from "@/lib/morePrimarySections";
-import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
+import {
+  buildCareTwinRosterDraft,
+  deriveCareTwinRoster,
+  validateFutureCareTwinRosterName,
+} from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
   buildBetaHandoffPacketShareText,
@@ -808,6 +812,7 @@ export default function MoreScreen() {
   const [petRosterOpen, setPetRosterOpen] = useState(false);
   const [petRosterName, setPetRosterName] = useState("");
   const [petRosterBreed, setPetRosterBreed] = useState("");
+  const [petRosterError, setPetRosterError] = useState<string | null>(null);
   const [accessPassOpen, setAccessPassOpen] = useState(false);
   const [accessPassName, setAccessPassName] = useState("");
   const [accessPassKind, setAccessPassKind] = useState<AccessPassKind>("sitter");
@@ -1037,13 +1042,19 @@ export default function MoreScreen() {
     if (!captureMoreEditorScope("future-pet")) return;
     setPetRosterName("");
     setPetRosterBreed("");
+    setPetRosterError(null);
     setPetRosterOpen(true);
   };
 
   const saveFuturePet = () => {
     if (!moreEditorScopeIsCurrent("future-pet")) return;
+    const nameValidation = validateFutureCareTwinRosterName(petRosterName, careTwinRoster);
+    if (!nameValidation.valid) {
+      setPetRosterError(nameValidation.message);
+      return;
+    }
     const draft = buildCareTwinRosterDraft({
-      name: petRosterName,
+      name: nameValidation.name,
       breed: petRosterBreed,
     });
     const saved = updateCareDoc((doc) => ({
@@ -4298,11 +4309,19 @@ export default function MoreScreen() {
               <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
               <TextInput
                 value={petRosterName}
-                onChangeText={setPetRosterName}
+                onChangeText={(value) => {
+                  setPetRosterName(value);
+                  if (petRosterError) setPetRosterError(null);
+                }}
                 placeholder="e.g. London"
                 placeholderTextColor={colors.mutedForeground}
                 style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
               />
+              {petRosterError ? (
+                <Text accessibilityRole="alert" style={{ color: colors.rose, fontFamily: "Inter_600SemiBold", marginTop: 8 }}>
+                  {petRosterError}
+                </Text>
+              ) : null}
 
               <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>BREED</Text>
               <TextInput

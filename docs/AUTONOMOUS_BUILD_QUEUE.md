@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-10-12 Planned-dog roster integrity
+
+- DONE: More's local-only CareTwin roster now rejects blank planned-dog names and duplicate names (including the live dog) before persistence. The sheet gives an accessible inline explanation instead of saving a row that the roster later hides during its duplicate cleanup.
+- VERIFIED LOCALLY: Red-first roster coverage passes `4/4`; mobile readiness passes `201/201`. This protects local planning slots only; multi-dog switching, separate routines/logs/records, provider sync, device accessibility review, and Apollo approval remain intentionally deferred.
+- NEXT: Capture the core care loop and future-dog editor on real iOS and Android before calling native polish final; keep planned slots local-only until genuine dog-scoped care isolation is designed and verified.
+
 ## 2026-10-02 Template-avatar care-state fidelity
 
 - DONE: Phoenix retains its complete twelve-state action pack. Breed-template rigs now label and hold a still care pose whenever their current idle/walk-only asset pack cannot truthfully depict meal, hydration, rest, comfort, celebration, attention, or Health Watch. They no longer animate a generic tail wag or walk as if it were that care state.

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildCareTwinRosterDraft,
   deriveCareTwinRoster,
+  validateFutureCareTwinRosterName,
 } from "./careTwinRoster.ts";
 
 test("derives the primary dog as the only live care twin by default", () => {
@@ -66,4 +67,28 @@ test("builds a sanitized planned pet draft for the local roster", () => {
   assert.equal(draft.breed, "Golden Retriever");
   assert.equal(draft.status, "provider-gated");
   assert.equal(draft.createdAt, "2026-06-19T20:00:00.000Z");
+});
+
+test("rejects blank and duplicate planned-dog names before they can become hidden roster rows", () => {
+  const roster = deriveCareTwinRoster({
+    profile: { name: "Phoenix", publicLabel: "Phoenix" },
+    pets: [{ id: "london", name: "London", status: "provider-gated" }],
+  });
+
+  assert.deepEqual(validateFutureCareTwinRosterName("   ", roster), {
+    valid: false,
+    message: "Add a name for the planned dog.",
+  });
+  assert.deepEqual(validateFutureCareTwinRosterName(" phoenix ", roster), {
+    valid: false,
+    message: "Phoenix is already the live care twin.",
+  });
+  assert.deepEqual(validateFutureCareTwinRosterName("LONDON", roster), {
+    valid: false,
+    message: "London is already saved as a planned dog.",
+  });
+  assert.deepEqual(validateFutureCareTwinRosterName("  maple  ", roster), {
+    valid: true,
+    name: "Maple",
+  });
 });
