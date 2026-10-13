@@ -1,5 +1,15 @@
 # Premium Revenue Product Builder
 
+## 2026-10-13 Planned-slot removal boundary
+
+CareTwin planned-slot removal now fail-closes on status as well as identifier:
+only an explicitly local-only `provider-gated` row can be filtered from the
+staged `pets` collection. This prevents a stale or future `setup-needed` row
+from being treated like a disposable plan before dog-scoped care data exists.
+The focused mobile/domain behavior suite passes `1,142/1,142` locally. This is
+source proof only; it does not enable multi-dog switching, dog-scoped data,
+remote sync, device accessibility proof, or Apollo approval.
+
 ## 2026-10-12 Planned-dog slot recovery
 
 More now lets an owner remove a local-only planned CareTwin slot after an

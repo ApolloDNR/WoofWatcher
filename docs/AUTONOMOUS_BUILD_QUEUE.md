@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-10-13 Planned-slot removal boundary
+
+- DONE: Removing a CareTwin roster row now requires the row to remain explicitly `provider-gated`, the local-only planned-slot state. A future `setup-needed` or live row is preserved even if a stale remove request reaches the shared helper.
+- VERIFIED LOCALLY: The red-first roster regression passes alongside the root mobile/domain focused suite (`1,142/1,142`).
+- NEXT: Keep planned slots local-only until genuine dog-scoped care isolation is designed and verified; capture the future-dog add/remove path on iOS and Android before calling native polish final.
+
 ## 2026-10-12 Planned-dog slot recovery
 
 - DONE: Planned CareTwin slots can now be removed through an explicit, accessible destructive confirmation. Removal is local-only and strictly filters the staged roster collection; it cannot remove the live Dog Profile or alter the live dog's logs, routines, records, or avatar.

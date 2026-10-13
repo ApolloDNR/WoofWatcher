@@ -106,3 +106,18 @@ test("removes only the selected planned slot and preserves the remaining local r
   );
   assert.deepEqual(removeFutureCareTwinRosterDraft(pets, "unknown"), pets);
 });
+
+test("never removes a non-planned roster row", () => {
+  const pets = [
+    { id: "planned", name: "London", status: "provider-gated" as const },
+    { id: "setup", name: "Maple", status: "setup-needed" as const },
+    { id: "live", name: "Nova", status: "live" as const },
+  ];
+
+  assert.deepEqual(
+    removeFutureCareTwinRosterDraft(pets, "planned").map((pet) => pet.id),
+    ["setup", "live"],
+  );
+  assert.deepEqual(removeFutureCareTwinRosterDraft(pets, "setup"), pets);
+  assert.deepEqual(removeFutureCareTwinRosterDraft(pets, "live"), pets);
+});

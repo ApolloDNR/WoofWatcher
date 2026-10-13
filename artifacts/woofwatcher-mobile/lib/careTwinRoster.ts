@@ -155,11 +155,14 @@ export function buildCareTwinRosterDraft(input: {
  * profile or its routines, logs, records, or avatar.
  */
 export function removeFutureCareTwinRosterDraft<
-  T extends { id?: string | null },
+  T extends { id?: string | null; status?: string | null },
 >(pets: readonly T[], id: string): T[] {
   const targetId = clean(id);
   if (!targetId) return [...pets];
-  return pets.filter((pet) => clean(pet.id) !== targetId);
+  return pets.filter(
+    (pet) =>
+      clean(pet.id) !== targetId || clean(pet.status).toLowerCase() !== "provider-gated",
+  );
 }
 
 export function validateFutureCareTwinRosterName(
