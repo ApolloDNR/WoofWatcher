@@ -1,5 +1,16 @@
 # Premium Revenue Product Builder
 
+## 2026-10-13 Planned-slot duplicate-ID removal boundary
+
+CareTwin planned-slot removal now consumes only the first matching local-only
+`provider-gated` row. If stale or corrupted local state contains duplicate
+planned-slot IDs, one explicit owner confirmation preserves the later row
+instead of erasing every matching slot. Red-first roster coverage and the full
+focused mobile/domain suite pass locally (`1,143/1,143`); PixelLab verification
+reports `ok=150 missing=0 invalid=0`. This remains local source proof only and
+does not enable multi-dog switching, dog-scoped data, remote sync, device
+accessibility proof, or Apollo approval.
+
 ## 2026-10-13 Planned-slot removal boundary
 
 CareTwin planned-slot removal now fail-closes on status as well as identifier:

@@ -159,10 +159,15 @@ export function removeFutureCareTwinRosterDraft<
 >(pets: readonly T[], id: string): T[] {
   const targetId = clean(id);
   if (!targetId) return [...pets];
-  return pets.filter(
-    (pet) =>
-      clean(pet.id) !== targetId || clean(pet.status).toLowerCase() !== "provider-gated",
-  );
+  let removed = false;
+  return pets.filter((pet) => {
+    const canRemove =
+      !removed &&
+      clean(pet.id) === targetId &&
+      clean(pet.status).toLowerCase() === "provider-gated";
+    if (canRemove) removed = true;
+    return !canRemove;
+  });
 }
 
 export function validateFutureCareTwinRosterName(

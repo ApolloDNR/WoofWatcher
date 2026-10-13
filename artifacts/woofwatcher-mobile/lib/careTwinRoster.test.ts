@@ -121,3 +121,16 @@ test("never removes a non-planned roster row", () => {
   assert.deepEqual(removeFutureCareTwinRosterDraft(pets, "setup"), pets);
   assert.deepEqual(removeFutureCareTwinRosterDraft(pets, "live"), pets);
 });
+
+test("removes at most one planned slot when corrupted roster ids collide", () => {
+  const pets = [
+    { id: "duplicate", name: "London", status: "provider-gated" as const },
+    { id: "duplicate", name: "Maple", status: "provider-gated" as const },
+    { id: "live", name: "Phoenix", status: "live" as const },
+  ];
+
+  assert.deepEqual(
+    removeFutureCareTwinRosterDraft(pets, "duplicate").map((pet) => pet.name),
+    ["Maple", "Phoenix"],
+  );
+});

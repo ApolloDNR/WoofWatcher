@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-10-13 Planned-slot duplicate-ID removal boundary
+
+- DONE: Removing a local-only planned CareTwin slot now deletes at most one matching `provider-gated` row. A corrupted duplicate ID can no longer turn one owner-confirmed removal into deletion of multiple planned slots.
+- VERIFIED LOCALLY: Red-first roster coverage failed with both duplicate planned slots removed, then passed alongside the root mobile/domain focused suite (`1,143/1,143`). PixelLab verification also passes (`ok=150 missing=0 invalid=0`).
+- NEXT: Keep planned slots local-only until genuine dog-scoped care isolation is designed and verified; capture future-dog add/remove behavior on iOS and Android before calling native polish final.
+
 ## 2026-10-13 Planned-slot removal boundary
 
 - DONE: Removing a CareTwin roster row now requires the row to remain explicitly `provider-gated`, the local-only planned-slot state. A future `setup-needed` or live row is preserved even if a stale remove request reaches the shared helper.
