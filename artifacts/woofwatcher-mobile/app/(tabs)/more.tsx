@@ -1054,16 +1054,16 @@ export default function MoreScreen() {
       setPetRosterError(nameValidation.message);
       return;
     }
-    const draft = buildCareTwinRosterDraft({
-      name: nameValidation.name,
-      breed: petRosterBreed,
-    });
     const saved = updateCareDoc((doc) => ({
       ...doc,
       activePetId: "primary",
       pets: [
         ...(doc.pets ?? []),
-        draft,
+        buildCareTwinRosterDraft({
+          name: nameValidation.name,
+          breed: petRosterBreed,
+          existingIds: (doc.pets ?? []).map((pet) => pet.id ?? ""),
+        }),
       ],
     }));
     if (!saved) return;

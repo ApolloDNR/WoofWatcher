@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-10-13 Planned-slot rapid-save ID boundary
+
+- DONE: A local-only CareTwin planned slot now selects a collision-free ID from the current document at write time. Two rapid same-name saves that share a millisecond cannot silently produce the same planned-row ID.
+- VERIFIED LOCALLY: The red-first roster regression failed with the duplicate base ID, then passed; the root mobile/domain focused suite passes `1,144/1,144`.
+- ASSET BOUNDARY: A first retriever eating-strip concept was rejected because it did not preserve the required eight equal `256px` frames. No misaligned/generated asset was added; template care states stay in their honest still-pose fallback until PixelLab-ready strips pass frame and phone-size visual QA.
+- NEXT: Keep planned slots local-only until genuine dog-scoped care isolation is designed and verified; capture future-dog add/remove behavior on iOS and Android before calling native polish final.
+
 ## 2026-10-13 Planned-slot duplicate-ID removal boundary
 
 - DONE: Removing a local-only planned CareTwin slot now deletes at most one matching `provider-gated` row. A corrupted duplicate ID can no longer turn one owner-confirmed removal into deletion of multiple planned slots.

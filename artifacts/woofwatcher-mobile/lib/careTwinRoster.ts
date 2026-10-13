@@ -137,11 +137,22 @@ export function buildCareTwinRosterDraft(input: {
   name: string;
   breed?: string;
   nowIso?: string;
+  existingIds?: readonly string[];
 }): CareTwinRosterDraft {
   const nowIso = clean(input.nowIso) || new Date().toISOString();
   const name = titleCase(clean(input.name) || "Future Dog");
+  const baseId = `pet_${slugify(name)}_${safeTimestamp(nowIso)}`;
+  const existingIds = new Set(
+    (input.existingIds ?? []).map((id) => clean(id)).filter(Boolean),
+  );
+  let id = baseId;
+  let collision = 2;
+  while (existingIds.has(id)) {
+    id = `${baseId}_${collision}`;
+    collision += 1;
+  }
   return {
-    id: `pet_${slugify(name)}_${safeTimestamp(nowIso)}`,
+    id,
     name,
     breed: titleCase(clean(input.breed) || "Breed not set"),
     status: "provider-gated",

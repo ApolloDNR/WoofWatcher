@@ -70,6 +70,21 @@ test("builds a sanitized planned pet draft for the local roster", () => {
   assert.equal(draft.createdAt, "2026-06-19T20:00:00.000Z");
 });
 
+test("gives a rapid same-name planned slot a collision-free local id", () => {
+  const first = buildCareTwinRosterDraft({
+    name: "London",
+    nowIso: "2026-06-19T20:00:00.000Z",
+  });
+  const retry = buildCareTwinRosterDraft({
+    name: "London",
+    nowIso: "2026-06-19T20:00:00.000Z",
+    existingIds: [first.id],
+  });
+
+  assert.equal(retry.id, "pet_london_1781899200000_2");
+  assert.notEqual(retry.id, first.id);
+});
+
 test("rejects blank and duplicate planned-dog names before they can become hidden roster rows", () => {
   const roster = deriveCareTwinRoster({
     profile: { name: "Phoenix", publicLabel: "Phoenix" },

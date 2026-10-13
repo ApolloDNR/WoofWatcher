@@ -1,5 +1,17 @@
 # Premium Revenue Product Builder
 
+## 2026-10-13 Planned-slot rapid-save ID boundary
+
+CareTwin planned-slot drafts now resolve their identifier against the latest
+local `pets` array inside the care-document write. Same-name rapid saves that
+land in the same millisecond receive a deterministic suffix instead of sharing
+an ID and weakening later remove/recovery safeguards. Red-first roster proof
+and the root mobile/domain focused suite pass `1,144/1,144` locally. A first
+generated retriever eating-strip candidate was intentionally rejected: it did
+not satisfy the eight equal `256px` frame contract, so no unverified asset was
+wired. Non-Phoenix care states remain an honest still pose until valid strips
+and phone-size visual QA exist.
+
 ## 2026-10-13 Planned-slot duplicate-ID removal boundary
 
 CareTwin planned-slot removal now consumes only the first matching local-only
