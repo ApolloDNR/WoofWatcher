@@ -6466,3 +6466,19 @@ approval evidence remains external.
   accessibility, screenshot, provider, store, public-launch, and Apollo proof.
 - Dependency-complete `WoofWatcher Verify` run `33993721164`, job
   `101380365630`, passed implementation/docs commit `35bce4d5` end to end.
+
+## 2026-10-13 Planned CareTwin stale-save integrity
+
+Future-dog planning now revalidates the requested name against the current
+care document inside the accepted `updateCareDoc` callback. This prevents a
+stale open editor from appending a second planned slot with a name another
+accepted save already used. The shared roster helper is covered red-first and
+retains the existing collision-safe IDs and provider-gated/local-only boundary.
+This does not enable multi-dog logs, routines, records, switching, remote sync,
+or provider-backed care data.
+
+Local verification: the complete focused suite passed `1,252/1,252`, root
+TypeScript build passed, and the PixelLab verifier reported `ok=150`,
+`missing=0`, `invalid=0`. `pnpm run typecheck` remains host-blocked because
+pnpm refuses the existing external `node_modules` target; this does not replace
+dependency-complete branch CI.

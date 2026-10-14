@@ -59,10 +59,9 @@ import {
 } from "@/lib/moreHydrationPresentation";
 import { getMorePrimarySectionOrder } from "@/lib/morePrimarySections";
 import {
-  buildCareTwinRosterDraft,
+  appendFutureCareTwinRosterDraft,
   deriveCareTwinRoster,
   removeFutureCareTwinRosterDraft,
-  validateFutureCareTwinRosterName,
 } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
@@ -1049,24 +1048,28 @@ export default function MoreScreen() {
 
   const saveFuturePet = () => {
     if (!moreEditorScopeIsCurrent("future-pet")) return;
-    const nameValidation = validateFutureCareTwinRosterName(petRosterName, careTwinRoster);
-    if (!nameValidation.valid) {
-      setPetRosterError(nameValidation.message);
+    let validationError: string | null = null;
+    const saved = updateCareDoc((doc) => {
+      const appendResult = appendFutureCareTwinRosterDraft({
+        doc,
+        name: petRosterName,
+        breed: petRosterBreed,
+      });
+      if (!appendResult.valid) {
+        validationError = appendResult.message;
+        return doc;
+      }
+      return {
+        ...doc,
+        activePetId: "primary",
+        pets: [...(doc.pets ?? []), appendResult.draft],
+      };
+    });
+    if (!saved) return;
+    if (validationError) {
+      setPetRosterError(validationError);
       return;
     }
-    const saved = updateCareDoc((doc) => ({
-      ...doc,
-      activePetId: "primary",
-      pets: [
-        ...(doc.pets ?? []),
-        buildCareTwinRosterDraft({
-          name: nameValidation.name,
-          breed: petRosterBreed,
-          existingIds: (doc.pets ?? []).map((pet) => pet.id ?? ""),
-        }),
-      ],
-    }));
-    if (!saved) return;
     activeMoreEditorScopeRef.current = null;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPetRosterOpen(false);

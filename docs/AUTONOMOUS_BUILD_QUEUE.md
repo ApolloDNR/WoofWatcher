@@ -3374,3 +3374,23 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - CI PROOF: `WoofWatcher Verify` run `33993721164`, job `101380365630`,
   passed implementation/docs commit `35bce4d5` through generated-client drift,
   beta doctor, focused tests, workspace typecheck, CI-safe builds, and completion.
+
+## 2026-10-13 Planned CareTwin stale-save integrity
+
+- DONE: Future-dog slot creation now validates against the current care document
+  inside the accepted save callback, rather than only the roster captured when
+  the editor opened. A stale editor cannot add a duplicate planned dog after a
+  concurrent/local roster update.
+- VERIFIED LOCALLY: Red-first `careTwinRoster` coverage reproduced a stale
+  `London` save and now passes along with the existing collision and narrow
+  removal protections. The complete focused suite passes `1,252/1,252`, root
+  TypeScript build passes, and PixelLab asset verification reports `ok=150`,
+  `missing=0`, `invalid=0`.
+- BOUNDARY: Planned slots remain device-local and provider-gated. This does not
+  enable multi-dog switching, separate care data, remote sync, or provider
+  configuration.
+- NEXT: Run the full focused suite, typecheck, PixelLab verifier, and branch CI
+  before treating this exact tip as dependency-complete proof; the full focused
+  suite and PixelLab verifier are now current, while pnpm workspace typecheck
+  remains blocked by this checkout's external `node_modules` link. Native and
+  provider/store gates remain external.

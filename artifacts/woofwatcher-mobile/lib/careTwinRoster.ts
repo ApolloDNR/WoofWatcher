@@ -61,6 +61,10 @@ export type FutureCareTwinRosterNameValidation =
   | { valid: true; name: string }
   | { valid: false; message: string };
 
+export type FutureCareTwinRosterAppendResult =
+  | { valid: true; draft: CareTwinRosterDraft }
+  | { valid: false; message: string };
+
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
@@ -201,6 +205,33 @@ export function validateFutureCareTwinRosterName(
       ? `${matchingPet.name} is already the live care twin.`
       : `${matchingPet.name} is already saved as a planned dog.`,
   };
+}
+
+/**
+ * Validate and append a planned slot from the current document in one shared
+ * step. Editors can outlive a roster update, so validating against a render
+ * snapshot alone could otherwise store a duplicate planned dog.
+ */
+export function appendFutureCareTwinRosterDraft(input: {
+  doc: CareTwinRosterDoc;
+  name: string;
+  breed?: string;
+  nowIso?: string;
+}): FutureCareTwinRosterAppendResult {
+  const validation = validateFutureCareTwinRosterName(
+    input.name,
+    deriveCareTwinRoster(input.doc),
+  );
+  if (!validation.valid) return validation;
+
+  const pets = [...(input.doc.pets ?? [])];
+  const draft = buildCareTwinRosterDraft({
+    name: validation.name,
+    breed: input.breed,
+    nowIso: input.nowIso,
+    existingIds: pets.map((pet) => pet.id ?? ""),
+  });
+  return { valid: true, draft };
 }
 
 export function deriveCareTwinRoster(doc: CareTwinRosterDoc): CareTwinRoster {

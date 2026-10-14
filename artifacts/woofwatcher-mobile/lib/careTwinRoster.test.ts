@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  appendFutureCareTwinRosterDraft,
   buildCareTwinRosterDraft,
   deriveCareTwinRoster,
   removeFutureCareTwinRosterDraft,
@@ -83,6 +84,23 @@ test("gives a rapid same-name planned slot a collision-free local id", () => {
 
   assert.equal(retry.id, "pet_london_1781899200000_2");
   assert.notEqual(retry.id, first.id);
+});
+
+test("rejects a stale duplicate planned-dog save against the current care document", () => {
+  const result = appendFutureCareTwinRosterDraft({
+    doc: {
+      profile: { name: "Phoenix", publicLabel: "Phoenix" },
+      pets: [{ id: "london", name: "London", status: "provider-gated" }],
+    },
+    name: " london ",
+    breed: "Golden Retriever",
+    nowIso: "2026-06-19T20:00:00.000Z",
+  });
+
+  assert.deepEqual(result, {
+    valid: false,
+    message: "London is already saved as a planned dog.",
+  });
 });
 
 test("rejects blank and duplicate planned-dog names before they can become hidden roster rows", () => {

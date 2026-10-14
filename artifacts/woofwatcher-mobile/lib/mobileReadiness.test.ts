@@ -7230,12 +7230,12 @@ test("keeps CareTwin roster readiness visible without fake multi-dog switching",
   assert.match(careContext, /activePetId/);
   assert.match(careContext, /pets: PetProfile\[\]/);
   assert.match(more, /deriveCareTwinRoster/);
-  assert.match(more, /buildCareTwinRosterDraft/);
+  assert.match(more, /appendFutureCareTwinRosterDraft/);
   assert.match(more, /removeFutureCareTwinRosterDraft/);
-  assert.match(more, /validateFutureCareTwinRosterName/);
+  assert.match(more, /doc,\s*name: petRosterName/);
   assert.match(more, /CareTwin Roster/);
   assert.match(more, /Add future dog/);
-  assert.match(more, /setPetRosterError\(nameValidation\.message\)/);
+  assert.match(more, /setPetRosterError\(validationError\)/);
   assert.match(more, /accessibilityRole="alert"/);
   assert.match(more, /Remove planned slot/);
   assert.match(more, /does not delete your live dog's care data/);
