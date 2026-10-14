@@ -79,6 +79,10 @@ import {
   type CarePassArtifact,
 } from "@workspace/care-domain";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
+import {
+  shouldSkipCareDocWrite,
+  type CareDocUpdateOptions,
+} from "@/lib/careDocUpdatePolicy";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
   CARE_DOC_CHECKING_MESSAGE,
@@ -749,7 +753,7 @@ interface CareContextValue {
   /** Returns false when a signed-in membership cannot edit the shared doc. */
   updateCareDoc: (
     updater: (doc: CareDoc) => CareDoc,
-    options?: { blockedMessage?: string },
+    options?: CareDocUpdateOptions,
   ) => boolean;
   /**
    * Applies the same local/provider update as updateCareDoc, but resolves true
@@ -758,7 +762,7 @@ interface CareContextValue {
    */
   updateCareDocDurably: (
     updater: (doc: CareDoc) => CareDoc,
-    options?: { blockedMessage?: string },
+    options?: CareDocUpdateOptions,
   ) => Promise<boolean>;
   refresh: () => void;
   /**
@@ -3355,7 +3359,7 @@ function CareProviderSession({
   const updateCareDoc = useCallback(
     (
       updater: (doc: CareDoc) => CareDoc,
-      options?: { blockedMessage?: string },
+      options?: CareDocUpdateOptions,
     ) => {
       const access = careStateWriteAccessRef.current;
       if (
@@ -3380,8 +3384,10 @@ function CareProviderSession({
       // synchronous back-to-back updates compose instead of the second one
       // reading a stale base.
       const previous = docRef.current;
+      const updated = updater(previous);
+      if (shouldSkipCareDocWrite(previous, updated, options)) return true;
       const next: CareDoc = {
-        ...updater(previous),
+        ...updated,
         updatedAt: new Date().toISOString(),
       };
       careDocMutationRevisionRef.current += 1;
@@ -3435,7 +3441,7 @@ function CareProviderSession({
   const updateCareDocDurably = useCallback(
     async (
       updater: (doc: CareDoc) => CareDoc,
-      options?: { blockedMessage?: string },
+      options?: CareDocUpdateOptions,
     ): Promise<boolean> => {
       const accepted = updateCareDoc(updater, options);
       if (!accepted || storageUserId === undefined) return false;

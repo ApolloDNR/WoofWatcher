@@ -6498,3 +6498,19 @@ root mobile/domain focused suite passed `1,146/1,146`, root TypeScript build
 passed, and PixelLab reported `ok=150`, `missing=0`, `invalid=0`. The prior
 dependency-complete branch CI run `38496123978` passed `e9078aa2`; fresh branch
 CI is required for this new commit.
+
+## 2026-10-14 Planned CareTwin no-op write boundary
+
+Care-document writers now support an explicit unchanged-document acceptance
+mode. More uses it only where the current-document CareTwin revalidation may
+intentionally return the same document: an already-duplicate planned-dog save
+keeps its inline error without a timestamp/provider write, and a stale removal
+keeps its truthful unchanged notice without manufacturing a shared update.
+This preserves the provider-gated/local-only planning boundary and does not
+enable multi-dog switching, dog-scoped logs, routines, records, provider sync,
+or remote deletion.
+
+Local verification: the no-op update-policy and CareTwin roster tests pass;
+the root focused suite passes `1,254/1,254`, root TypeScript build passes, and
+PixelLab reports `ok=150`, `missing=0`, `invalid=0`. Fresh branch CI is still
+required for the implementation commit.

@@ -1064,7 +1064,7 @@ export default function MoreScreen() {
         activePetId: "primary",
         pets: [...(doc.pets ?? []), appendResult.draft],
       };
-    });
+    }, { skipUnchangedWrite: true });
     if (!saved) return;
     if (validationError) {
       setPetRosterError(validationError);
@@ -1094,7 +1094,7 @@ export default function MoreScreen() {
           const removal = removeFutureCareTwinRosterDraftResult(doc.pets ?? [], pet.id);
           removed = removal.removed;
           return removal.removed ? { ...doc, pets: removal.pets } : doc;
-        });
+        }, { skipUnchangedWrite: true });
         if (!saved) return;
         activeMoreEditorScopeRef.current = null;
         if (!removed) {

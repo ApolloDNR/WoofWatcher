@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-10-14 Planned-slot no-op write boundary
+
+- DONE: Care-document callbacks can now explicitly accept an unchanged current document without advancing its timestamp or sending a provider write. More opts into that narrow boundary when a future-dog save revalidates as duplicate or a confirmed removal becomes protected/absent.
+- VERIFIED LOCALLY: The new no-op policy and roster coverage pass; the root mobile/domain/API/PWA focused suite passes `1,254/1,254`; root TypeScript and PixelLab asset verification pass (`ok=150 missing=0 invalid=0`).
+- NEXT: Keep planned slots local-only until genuine dog-scoped care isolation is designed and verified; capture future-dog add/remove behavior on iOS and Android before calling native polish final.
+
 ## 2026-10-13 Planned-slot stale-removal truth
 
 - DONE: An owner-confirmed CareTwin planned-slot removal now reports whether the current care document actually removed the local-only `provider-gated` row. If a concurrent update protected or already removed the row, More gives a clear "Planned slot unchanged" notice instead of success haptics.
