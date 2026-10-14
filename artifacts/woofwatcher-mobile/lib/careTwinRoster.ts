@@ -65,6 +65,11 @@ export type FutureCareTwinRosterAppendResult =
   | { valid: true; draft: CareTwinRosterDraft }
   | { valid: false; message: string };
 
+export interface FutureCareTwinRosterRemoveResult<T> {
+  pets: T[];
+  removed: boolean;
+}
+
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
@@ -172,10 +177,21 @@ export function buildCareTwinRosterDraft(input: {
 export function removeFutureCareTwinRosterDraft<
   T extends { id?: string | null; status?: string | null },
 >(pets: readonly T[], id: string): T[] {
+  return removeFutureCareTwinRosterDraftResult(pets, id).pets;
+}
+
+/**
+ * Keep the removal result explicit for an owner-confirmed action. A stale
+ * confirmation must not imply success when the target became a protected row
+ * or disappeared before the write reached the current care document.
+ */
+export function removeFutureCareTwinRosterDraftResult<
+  T extends { id?: string | null; status?: string | null },
+>(pets: readonly T[], id: string): FutureCareTwinRosterRemoveResult<T> {
   const targetId = clean(id);
-  if (!targetId) return [...pets];
+  if (!targetId) return { pets: [...pets], removed: false };
   let removed = false;
-  return pets.filter((pet) => {
+  const nextPets = pets.filter((pet) => {
     const canRemove =
       !removed &&
       clean(pet.id) === targetId &&
@@ -183,6 +199,7 @@ export function removeFutureCareTwinRosterDraft<
     if (canRemove) removed = true;
     return !canRemove;
   });
+  return { pets: nextPets, removed };
 }
 
 export function validateFutureCareTwinRosterName(

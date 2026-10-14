@@ -61,7 +61,7 @@ import { getMorePrimarySectionOrder } from "@/lib/morePrimarySections";
 import {
   appendFutureCareTwinRosterDraft,
   deriveCareTwinRoster,
-  removeFutureCareTwinRosterDraft,
+  removeFutureCareTwinRosterDraftResult,
 } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
@@ -1089,12 +1089,21 @@ export default function MoreScreen() {
       ],
       () => {
         if (!moreEditorScopeIsCurrent("future-pet")) return;
-        const saved = updateCareDoc((doc) => ({
-          ...doc,
-          pets: removeFutureCareTwinRosterDraft(doc.pets ?? [], pet.id),
-        }));
+        let removed = false;
+        const saved = updateCareDoc((doc) => {
+          const removal = removeFutureCareTwinRosterDraftResult(doc.pets ?? [], pet.id);
+          removed = removal.removed;
+          return removal.removed ? { ...doc, pets: removal.pets } : doc;
+        });
         if (!saved) return;
         activeMoreEditorScopeRef.current = null;
+        if (!removed) {
+          notifyDialog(
+            "Planned slot unchanged",
+            `${pet.name} was already changed or removed. Your live dog's care data is untouched.`,
+          );
+          return;
+        }
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       },
     );

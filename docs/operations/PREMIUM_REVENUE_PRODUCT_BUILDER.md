@@ -6482,3 +6482,19 @@ TypeScript build passed, and the PixelLab verifier reported `ok=150`,
 `missing=0`, `invalid=0`. `pnpm run typecheck` remains host-blocked because
 pnpm refuses the existing external `node_modules` target; this does not replace
 dependency-complete branch CI.
+
+## 2026-10-13 Planned CareTwin stale-removal truth
+
+The local-only CareTwin removal helper now returns the actual removal outcome
+alongside the protected roster. More re-evaluates that result inside the current
+`updateCareDoc` callback: when a confirmed row has become `setup-needed`, live,
+or is already absent, it remains untouched and the owner receives a truthful
+"Planned slot unchanged" notice rather than success haptics. This preserves the
+provider-gated/local-only boundary and does not enable multi-dog switching,
+dog-scoped logs, routines, records, provider sync, or remote deletion.
+
+Local verification: red-first roster coverage passed after implementation; the
+root mobile/domain focused suite passed `1,146/1,146`, root TypeScript build
+passed, and PixelLab reported `ok=150`, `missing=0`, `invalid=0`. The prior
+dependency-complete branch CI run `38496123978` passed `e9078aa2`; fresh branch
+CI is required for this new commit.

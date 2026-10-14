@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-10-13 Planned-slot stale-removal truth
+
+- DONE: An owner-confirmed CareTwin planned-slot removal now reports whether the current care document actually removed the local-only `provider-gated` row. If a concurrent update protected or already removed the row, More gives a clear "Planned slot unchanged" notice instead of success haptics.
+- VERIFIED LOCALLY: Red-first roster coverage reproduces a stale `setup-needed` target and passes after the explicit result boundary. The root mobile/domain focused suite passes `1,146/1,146`; root TypeScript and PixelLab asset verification pass (`ok=150 missing=0 invalid=0`).
+- NEXT: Keep planned slots local-only until genuine dog-scoped care isolation is designed and verified; capture future-dog add/remove behavior on iOS and Android before calling native polish final.
+
 ## 2026-10-13 Planned-slot rapid-save ID boundary
 
 - DONE: A local-only CareTwin planned slot now selects a collision-free ID from the current document at write time. Two rapid same-name saves that share a millisecond cannot silently produce the same planned-row ID.

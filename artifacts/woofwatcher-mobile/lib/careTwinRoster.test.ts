@@ -5,6 +5,7 @@ import {
   appendFutureCareTwinRosterDraft,
   buildCareTwinRosterDraft,
   deriveCareTwinRoster,
+  removeFutureCareTwinRosterDraftResult,
   removeFutureCareTwinRosterDraft,
   validateFutureCareTwinRosterName,
 } from "./careTwinRoster.ts";
@@ -153,6 +154,18 @@ test("never removes a non-planned roster row", () => {
   );
   assert.deepEqual(removeFutureCareTwinRosterDraft(pets, "setup"), pets);
   assert.deepEqual(removeFutureCareTwinRosterDraft(pets, "live"), pets);
+});
+
+test("reports when a stale removal no longer targets a local-only planned slot", () => {
+  const pets = [
+    { id: "planned", name: "London", status: "setup-needed" as const },
+    { id: "live", name: "Phoenix", status: "live" as const },
+  ];
+
+  assert.deepEqual(removeFutureCareTwinRosterDraftResult(pets, "planned"), {
+    pets,
+    removed: false,
+  });
 });
 
 test("removes at most one planned slot when corrupted roster ids collide", () => {
