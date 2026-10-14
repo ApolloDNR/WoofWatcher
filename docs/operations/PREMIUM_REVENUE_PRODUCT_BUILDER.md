@@ -6514,3 +6514,20 @@ Local verification: the no-op update-policy and CareTwin roster tests pass;
 the root focused suite passes `1,254/1,254`, root TypeScript build passes, and
 PixelLab reports `ok=150`, `missing=0`, `invalid=0`. Fresh branch CI is still
 required for the implementation commit.
+
+## 2026-10-14 CareTwin removal-action admission
+
+The shared roster now exposes `canRemove` separately from the always-false
+multi-dog switching capability. More renders a destructive planned-slot action
+only for a local-only `provider-gated` row. A `setup-needed` row remains a
+read-only status row, matching the removal helper's protected boundary and
+avoiding a misleading control for VoiceOver/TalkBack users.
+
+Verification: red-first `careTwinRoster` tests now cover both removable and
+informational statuses; focused roster/readiness tests pass; the root
+mobile/domain suite passes `1,148/1,148`; direct root TypeScript build passes;
+and PixelLab reports `ok=150`, `missing=0`, `invalid=0`. The pnpm workspace
+typecheck remains host-blocked by the inherited external `node_modules`
+junction. Fresh `WoofWatcher Verify` is required for this exact commit. Native
+iOS/Android interaction, screen-reader, provider, store, and Apollo approval
+remain separate open gates.

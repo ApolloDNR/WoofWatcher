@@ -2633,10 +2633,11 @@ export default function MoreScreen() {
                     <Ionicons name={pet.canSwitch ? "checkmark-circle-outline" : "lock-closed-outline"} size={19} color={pet.canSwitch ? colors.sage : colors.amber} />
                   </>
                 );
-                // The live care twin row is informational: no tap action, so no
-                // button semantics for screen readers to announce. Staged slots
-                // stay pressable to explain the provider gate.
-                if (pet.canSwitch) {
+                // Only device-local planned slots can be removed. Live and
+                // setup-needed rows are informational, so screen readers never
+                // receive a destructive action that the current data boundary
+                // would deliberately reject.
+                if (!pet.canRemove) {
                   return (
                     <View
                       key={pet.id}

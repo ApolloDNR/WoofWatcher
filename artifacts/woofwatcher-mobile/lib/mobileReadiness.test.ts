@@ -7239,6 +7239,7 @@ test("keeps CareTwin roster readiness visible without fake multi-dog switching",
   assert.match(more, /accessibilityRole="alert"/);
   assert.match(more, /Remove planned slot/);
   assert.match(more, /does not delete your live dog's care data/);
+  assert.match(more, /if \(!pet\.canRemove\)/);
 });
 
 test("keeps More organized around a grouped command directory", () => {

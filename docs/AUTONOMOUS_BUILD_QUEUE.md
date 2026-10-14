@@ -3406,3 +3406,19 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   suite and PixelLab verifier are now current, while pnpm workspace typecheck
   remains blocked by this checkout's external `node_modules` link. Native and
   provider/store gates remain external.
+
+## 2026-10-14 CareTwin removal-action admission
+
+- DONE: CareTwin roster rows now expose an explicit removal capability. Only a
+  device-local `provider-gated` planned slot is pressable as removable;
+  `setup-needed` and live rows remain informational, so the owner and
+  assistive technology never receive a destructive action that the protected
+  write boundary would refuse.
+- VERIFIED LOCALLY: Red-first roster/readiness coverage, the root
+  mobile/domain suite (`1,148/1,148`), direct root TypeScript build, and
+  PixelLab verification (`ok=150`, `missing=0`, `invalid=0`) pass.
+- NEXT: Require fresh branch CI, then capture native iOS/Android evidence for
+  core-care and CareTwin roster safe areas/touch targets. Keep planned slots
+  local-only and provider-gated; do not enable multi-dog switching, dog-scoped
+  care data, provider sync, or remote deletion without approved architecture
+  and provider proof.

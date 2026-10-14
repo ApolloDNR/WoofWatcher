@@ -35,6 +35,8 @@ export interface CareTwinRosterPet {
   detail: string;
   isActive: boolean;
   canSwitch: boolean;
+  /** Only device-local planned slots can be removed from this surface. */
+  canRemove: boolean;
   avatarTemplateId?: string;
   createdAt?: string;
 }
@@ -137,6 +139,7 @@ function petFromProfile(profile: CareTwinRosterProfile | null | undefined, isPri
     detail: statusDetail(status, name),
     isActive: isPrimary,
     canSwitch: isPrimary,
+    canRemove: !isPrimary && status === "provider-gated",
     avatarTemplateId: clean(profile?.avatarTemplateId) || undefined,
     createdAt: clean(profile?.createdAt) || undefined,
   };

@@ -54,8 +54,20 @@ test("keeps future pet slots provider-gated so logs do not mix across dogs", () 
   assert.equal(roster.pets[1].status, "provider-gated");
   assert.equal(roster.pets[1].isActive, false);
   assert.equal(roster.pets[1].canSwitch, false);
+  assert.equal(roster.pets[1].canRemove, true);
   assert.equal(roster.futureCount, 1);
   assert.match(roster.nextStep, /Multi-dog care is coming soon - planned pets stay as slots on this device/);
+});
+
+test("keeps setup-needed rows informational until their care boundary is ready", () => {
+  const roster = deriveCareTwinRoster({
+    profile: { name: "Phoenix", publicLabel: "Phoenix" },
+    pets: [{ id: "maple", name: "Maple", status: "setup-needed" }],
+  });
+
+  assert.equal(roster.pets[1].status, "setup-needed");
+  assert.equal(roster.pets[1].canSwitch, false);
+  assert.equal(roster.pets[1].canRemove, false);
 });
 
 test("builds a sanitized planned pet draft for the local roster", () => {
