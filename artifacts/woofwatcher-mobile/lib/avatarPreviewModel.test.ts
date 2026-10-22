@@ -100,7 +100,7 @@ test("uses live template sprite packs for completed launch breed previews", () =
   assert.equal(motion.spriteAction, null);
 });
 
-test("uses live template sprite packs for every non-Phoenix launch template", () => {
+test("uses live template strips only for non-Phoenix moods the pack actually depicts", () => {
   const liveTemplateIds = AVATAR_TEMPLATES.map((template) => template.id).filter(
     (templateId) => templateId !== "shepherd",
   );
@@ -120,11 +120,15 @@ test("uses live template sprite packs for every non-Phoenix launch template", ()
   ]);
 
   for (const templateId of liveTemplateIds) {
-    const motion = deriveAvatarPreviewMotion(templateId, "calm");
+    const calm = deriveAvatarPreviewMotion(templateId, "calm");
+    const unwell = deriveAvatarPreviewMotion(templateId, "not_feeling_well");
 
-    assert.equal(motion.mode, "sprite");
-    assert.equal(motion.label, "Live template sprite pack");
-    assert.equal(motion.spriteAction, null);
+    assert.equal(calm.mode, "sprite");
+    assert.equal(calm.label, "Live template sprite pack");
+    assert.equal(calm.spriteAction, null);
+    assert.equal(unwell.mode, "still");
+    assert.match(unwell.label, /still pose/i);
+    assert.equal(unwell.spriteAction, null);
   }
 });
 

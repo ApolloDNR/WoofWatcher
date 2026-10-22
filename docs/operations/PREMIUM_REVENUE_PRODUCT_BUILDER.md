@@ -6531,3 +6531,14 @@ typecheck remains host-blocked by the inherited external `node_modules`
 junction. Fresh `WoofWatcher Verify` is required for this exact commit. Native
 iOS/Android interaction, screen-reader, provider, store, and Apollo approval
 remain separate open gates.
+
+## 2026-10-21 Avatar Studio truthful template motion
+
+The non-Phoenix Avatar Studio templates now claim live motion only when their
+current pack actually depicts it: happy/calm uses the shipped idle/tail-wag
+strip. Other mood previews deliberately render as a labeled still pose rather
+than repurposing generic idle or walk footage as hunger, anxiety, sleep,
+health-watch, reward, or care-specific motion. The contract has focused
+red-first model and source-readiness coverage. Matching template strips, native
+iOS/Android crop/gait/overlay/VoiceOver review, store capture, and Apollo
+approval remain external gates.

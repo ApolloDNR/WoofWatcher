@@ -4268,7 +4268,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   );
   assert.match(avatarPreviewModel, /Animated Phoenix pack/);
   assert.match(avatarPreviewModel, /Live template sprite pack/);
-  assert.match(avatarPreviewModel, /Starter still preview/);
+  assert.match(avatarPreviewModel, /Still pose - matching animation pending/);
   assert.match(avatarTemplateSpriteAssets, /AVATAR_TEMPLATE_SPRITE_ASSETS/);
   assert.match(avatarTemplateSpriteAssets, /hasAvatarTemplateSpritePack/);
   assert.match(avatarStudio, /liveTemplateCount/);
@@ -4307,7 +4307,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarTemplateSpriteAssets, /getAvatarTemplateSpritePreview/);
   assert.match(
     avatarTemplateSpriteAssets,
-    /case "hungry":[\s\S]*case "anxious":[\s\S]*case "sleepy":[\s\S]*case "home_alone":[\s\S]*case "not_feeling_well":[\s\S]*return "idle-tail-wag"/,
+    /case "happy":[\s\S]*case "calm":[\s\S]*return "idle-tail-wag"[\s\S]*default:[\s\S]*return null/,
   );
   for (const templateId of [
     "bully",

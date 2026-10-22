@@ -3422,3 +3422,14 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   local-only and provider-gated; do not enable multi-dog switching, dog-scoped
   care data, provider sync, or remote deletion without approved architecture
   and provider proof.
+
+## 2026-10-21 Avatar Studio motion truthfulness
+
+- DONE: Non-Phoenix Avatar Studio previews now animate only the template pack's
+  actual happy/calm idle strip. Hungry, anxious, sleepy, health-watch, reward,
+  and other unmatched mood previews remain visibly labeled still poses until a
+  state-specific sprite strip is produced; generic idle or walk loops no longer
+  masquerade as those care states.
+- NEXT: Add each template's state-specific PixelLab strip only after it exists
+  and has iOS/Android crop, gait, overlay, and accessibility review. Do not
+  turn a metadata-only preview into native QA or store-readiness evidence.

@@ -9,7 +9,10 @@ import {
   deriveAvatarAccessoryFit,
 } from "./avatarStudio.ts";
 import type { CareTwinSpriteAction } from "./avatarLifeEngine.ts";
-import type { AvatarTemplateSpriteAction } from "./avatarTemplateSpriteAssets.ts";
+import {
+  getAvatarTemplateSpritePreview,
+  type AvatarTemplateSpriteAction,
+} from "./avatarTemplateSpriteAssets.ts";
 
 export type AvatarPreviewLayerKind = "bandana" | "collar" | "hat" | "mask" | "vest" | "bed" | "sparkles";
 
@@ -222,7 +225,7 @@ export function deriveAvatarPreviewMotion(
   emote: AvatarEmoteState,
 ): AvatarPreviewMotionModel {
   if (templateId !== "shepherd") {
-    if (LIVE_TEMPLATE_PACKS.has(templateId)) {
+    if (LIVE_TEMPLATE_PACKS.has(templateId) && getAvatarTemplateSpritePreview(templateId, emote)) {
       return {
         mode: "sprite",
         label: "Live template sprite pack",
@@ -232,7 +235,7 @@ export function deriveAvatarPreviewMotion(
 
     return {
       mode: "still",
-      label: "Starter still preview",
+      label: "Still pose - matching animation pending",
       spriteAction: null,
     };
   }

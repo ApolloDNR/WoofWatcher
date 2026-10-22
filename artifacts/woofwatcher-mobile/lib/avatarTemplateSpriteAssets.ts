@@ -626,17 +626,12 @@ export function mapAvatarEmoteToTemplateSpriteAction(
   switch (emote) {
     case "happy":
     case "calm":
-    case "proud":
-    case "hungry":
-    case "anxious":
-    case "sleepy":
-    case "home_alone":
-    case "not_feeling_well":
       return "idle-tail-wag";
-    case "excited":
-    case "bored":
-      return "walk-loop";
     default:
+      // The production template packs currently contain only a general
+      // idle/tail-wag and a walk loop. Do not relabel either as hunger,
+      // anxiety, rest, health, or a reward reaction: those states remain
+      // intentionally still until a matching strip is available.
       return null;
   }
 }
