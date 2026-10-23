@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-10-22 Avatar Studio still-pose CI proof
+
+- DONE: Pending template mood previews remain genuinely still until a registered strip can depict that exact care state. The generic preview lift is admitted only for a real sprite track, so the `Still` label is not contradicted by decorative motion.
+- VERIFIED: Focused Avatar/readiness coverage passes `209/209`; the complete mobile/domain focused suite passes `1,148/1,148`; PixelLab reports `ok=150 missing=0 invalid=0`; direct TypeScript build completes without output. Dependency-complete `WoofWatcher Verify` [run `39892104615`](https://github.com/ApolloDNR/WoofWatcher/actions/runs/39892104615) passed `d9b15497` through frozen install, generated-client drift, beta doctor, focused behavior, workspace typecheck, CI-safe builds, and completion.
+- NEXT: Keep unsupported template states static until semantically matched PixelLab strips pass equal-frame and phone-size visual QA. Real iOS/Android crop, gait, overlay, accessibility, thermal, store, provider, and Apollo approval remain separate gates.
+
 ## 2026-10-14 Planned-slot no-op write boundary
 
 - DONE: Care-document callbacks can now explicitly accept an unchanged current document without advancing its timestamp or sending a provider write. More opts into that narrow boundary when a future-dog save revalidates as duplicate or a confirmed removal becomes protected/absent.

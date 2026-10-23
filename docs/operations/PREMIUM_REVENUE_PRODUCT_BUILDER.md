@@ -6552,3 +6552,10 @@ track remains the sole admission path for preview motion. The red-first
 readiness contract and focused Avatar model tests pass `209/209`. This is
 source proof only: native iOS/Android crop, gait, overlay, VoiceOver, store,
 provider, and Apollo evidence remains outstanding.
+
+Dependency-complete `WoofWatcher Verify` run `39892104615`, job
+`120214027129`, passed implementation commit `d9b15497` end to end through
+frozen install, generated-client drift, beta doctor, focused behavior,
+workspace typecheck, CI-safe builds, and completion. That CI proof does not
+clear the distinct asset-production, phone-size visual, native accessibility,
+provider, store, or Apollo gates.
