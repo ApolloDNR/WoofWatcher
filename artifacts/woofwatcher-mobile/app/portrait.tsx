@@ -578,6 +578,12 @@ export default function PortraitScreen() {
     inputRange: [0, 1],
     outputRange: [1, 1.018],
   });
+  // A mood waiting on a state-specific PixelLab strip must be a real still
+  // preview. The generic breathing lift is reserved for a preview with an
+  // actual sprite track, so the visual behavior matches its Live/Still label.
+  const templateHeroTransform = previewIsSprite
+    ? [{ translateY: templateLift }, { scale: templateScale }]
+    : undefined;
   const heroSpeech =
     activeTab === "emotes"
       ? previewMood.copy
@@ -1329,10 +1335,7 @@ export default function PortraitScreen() {
                     style={[
                       s.templateHeroDogWrap,
                       {
-                        transform: [
-                          { translateY: templateLift },
-                          { scale: templateScale },
-                        ],
+                        transform: templateHeroTransform,
                       },
                     ]}
                   >

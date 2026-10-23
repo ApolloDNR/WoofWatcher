@@ -3433,3 +3433,16 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Add each template's state-specific PixelLab strip only after it exists
   and has iOS/Android crop, gait, overlay, and accessibility review. Do not
   turn a metadata-only preview into native QA or store-readiness evidence.
+
+## 2026-10-22 Avatar Studio still-pose truthfulness
+
+- DONE: A pending non-Phoenix mood now holds fully still in the Avatar Studio
+  hero. The generic breathing/lift transform is applied only when the selected
+  preview has a real registered sprite track, so a visible `Still` badge cannot
+  be contradicted by decorative motion.
+- VERIFIED LOCALLY: The red-first Avatar Studio source-readiness check failed
+  before the preview transform was gated. `avatarPreviewModel` plus
+  `mobileReadiness` now pass `209/209` tests.
+- NEXT: Add state-specific PixelLab strips only after production assets and
+  native crop/gait/overlay/VoiceOver review exist. This source-level proof does
+  not substitute for native iOS/Android, provider, store, or Apollo approval.

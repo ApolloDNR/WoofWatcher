@@ -4269,6 +4269,16 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarPreviewModel, /Animated Phoenix pack/);
   assert.match(avatarPreviewModel, /Live template sprite pack/);
   assert.match(avatarPreviewModel, /Still pose - matching animation pending/);
+  assert.match(
+    avatarStudio,
+    /const templateHeroTransform = previewIsSprite[\s\S]*\? \[\{ translateY: templateLift \}, \{ scale: templateScale \}\][\s\S]*: undefined/,
+    "a mood labeled Still must not receive the generic live preview lift",
+  );
+  assert.match(
+    avatarStudio,
+    /transform: templateHeroTransform/,
+    "the hero preview must apply lift only when a real sprite is rendered",
+  );
   assert.match(avatarTemplateSpriteAssets, /AVATAR_TEMPLATE_SPRITE_ASSETS/);
   assert.match(avatarTemplateSpriteAssets, /hasAvatarTemplateSpritePack/);
   assert.match(avatarStudio, /liveTemplateCount/);

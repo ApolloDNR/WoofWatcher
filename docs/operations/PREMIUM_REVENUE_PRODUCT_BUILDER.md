@@ -6542,3 +6542,13 @@ health-watch, reward, or care-specific motion. The contract has focused
 red-first model and source-readiness coverage. Matching template strips, native
 iOS/Android crop/gait/overlay/VoiceOver review, store capture, and Apollo
 approval remain external gates.
+
+## 2026-10-22 Avatar Studio still-pose truthfulness
+
+Pending non-Phoenix mood previews now remove the hero's generic breathing/lift
+transform as well as the sprite loop. The selected pose is therefore genuinely
+still until a matching PixelLab animation strip is registered; a real sprite
+track remains the sole admission path for preview motion. The red-first
+readiness contract and focused Avatar model tests pass `209/209`. This is
+source proof only: native iOS/Android crop, gait, overlay, VoiceOver, store,
+provider, and Apollo evidence remains outstanding.
