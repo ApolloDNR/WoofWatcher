@@ -3484,3 +3484,19 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   motion for those states; require iOS/Android crop, gait, overlay, reduced-
   motion, and VoiceOver/TalkBack evidence. This does not clear native, store,
   provider, or Apollo approval gates.
+
+## 2026-11-04 Avatar Studio manual-playback status
+
+- DONE: Selecting a registered template idle or walk strip now exposes a
+  concise live status that identifies it as a manual playback preview. It
+  explicitly confirms that the strip does not alter the selected dog's saved
+  mood or avatar, so production-review controls cannot be mistaken for a care
+  state or persistent change.
+- VERIFIED LOCALLY: A red-first Avatar preview-model test failed without the
+  playback-status resolver and then passed with focused model coverage
+  (`10/10`). PixelLab asset verification remains clean (`ok=150`, `missing=0`,
+  `invalid=0`).
+- NEXT: Capture iOS/Android crop, gait, touch-target, reduced-motion, and
+  VoiceOver/TalkBack evidence for the manual strips. This source-level status
+  does not approve native QA, provider services, store submission, or Apollo
+  release.

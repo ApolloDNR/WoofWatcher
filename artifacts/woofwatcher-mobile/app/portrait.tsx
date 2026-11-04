@@ -47,6 +47,7 @@ import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
   deriveAvatarPreviewMotion,
+  deriveAvatarStudioPreviewPlayback,
 } from "@/lib/avatarPreviewModel";
 import {
   buildAvatarSpriteProductionQaSummary,
@@ -554,6 +555,16 @@ export default function PortraitScreen() {
   const previewIsSprite = Boolean(previewSpriteTrack && previewSpriteAsset);
   const previewMotionLabel =
     templateSpritePreview?.label ?? previewMotion.label;
+  const previewPlayback = useMemo(
+    () =>
+      deriveAvatarStudioPreviewPlayback(
+        draft.templateId,
+        petName,
+        previewEmote,
+        previewSpriteAction,
+      ),
+    [draft.templateId, petName, previewEmote, previewSpriteAction],
+  );
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const avatarMotion = useMemo(
@@ -2219,6 +2230,37 @@ export default function PortraitScreen() {
                   </PressScale>
                 ))}
               </View>
+
+              {previewPlayback.kind === "manual-sprite" ? (
+                <View
+                  accessibilityLiveRegion="polite"
+                  accessibilityLabel={previewPlayback.accessibilityLabel}
+                  style={[
+                    s.productionReviewPanel,
+                    {
+                      backgroundColor: colors.secondary,
+                      borderColor: colors.primary,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.productionActionTitle,
+                      { color: colors.foreground, fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
+                    {previewPlayback.label}
+                  </Text>
+                  <Text
+                    style={[
+                      s.productionActionNotes,
+                      { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {previewPlayback.detail}
+                  </Text>
+                </View>
+              ) : null}
 
               <View style={s.productionCheckList}>
                 <Text

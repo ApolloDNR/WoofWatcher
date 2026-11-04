@@ -6596,3 +6596,21 @@ passes `230/230`. This is only source proof: production strips still need
 template-specific art plus iOS/Android crop, gait, accessory-overlay,
 reduced-motion, and VoiceOver/TalkBack review before they are enabled. It does
 not grant native QA, provider, store, or Apollo approval.
+
+## 2026-11-04 Avatar Studio manual playback status
+
+The Avatar Studio production-review controls now expose an owner- and
+screen-reader-facing status whenever a registered idle or walk strip is played
+manually. The status names the template and strip and states that it is a
+manual playback preview, not a persisted mood or avatar edit. Selecting a
+mood or template still exits manual playback, so the normal mood preview
+remains the only state represented by the hero outside an explicit review
+choice.
+
+Local verification was red-first: the new Avatar preview-model contract
+initially failed because no playback-status resolver existed; the focused model
+test now passes `10/10`, and the PixelLab verifier remains clean at `ok=150`,
+`missing=0`, `invalid=0`. Native iOS/Android crop, gait, touch-target,
+reduced-motion, and VoiceOver/TalkBack proof is still required. This status
+copy is source-level behavior only; it does not grant native, provider, store,
+or Apollo approval.

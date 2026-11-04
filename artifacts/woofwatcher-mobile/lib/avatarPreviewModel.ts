@@ -7,6 +7,7 @@ import {
   type AvatarEmoteState,
   type PetAvatarConfig,
   deriveAvatarAccessoryFit,
+  getAvatarTemplate,
 } from "./avatarStudio.ts";
 import type { CareTwinSpriteAction } from "./avatarLifeEngine.ts";
 import {
@@ -53,6 +54,13 @@ export interface AvatarPreviewMotionModel {
   mode: "sprite" | "still";
   label: string;
   spriteAction: CareTwinSpriteAction | null;
+}
+
+export interface AvatarStudioPreviewPlaybackModel {
+  kind: "mood" | "manual-sprite";
+  label: string;
+  detail: string;
+  accessibilityLabel: string;
 }
 
 export type AvatarStudioMotionPreviewId =
@@ -176,6 +184,35 @@ export function getAvatarStudioMotionPreviewState(
     AVATAR_STUDIO_MOTION_PREVIEW_STATES.find((state) => state.id === id) ??
     AVATAR_STUDIO_MOTION_PREVIEW_STATES[0]
   );
+}
+
+export function deriveAvatarStudioPreviewPlayback(
+  templateId: AvatarTemplateId,
+  petName: string,
+  emote: AvatarEmoteState,
+  manualSpriteAction: AvatarTemplateSpriteAction | null,
+): AvatarStudioPreviewPlaybackModel {
+  if (manualSpriteAction) {
+    const templateLabel = getAvatarTemplate(templateId).label;
+    const actionLabel =
+      manualSpriteAction === "walk-loop" ? "walk loop" : "idle loop";
+    const stripLabel =
+      manualSpriteAction === "walk-loop" ? "walk" : "idle";
+
+    return {
+      kind: "manual-sprite",
+      label: `${templateLabel} ${actionLabel} preview`,
+      detail: `Previewing the registered ${stripLabel} strip. This does not change ${petName}'s saved mood or avatar.`,
+      accessibilityLabel: `Manual ${templateLabel} ${actionLabel} playback preview. ${petName}'s saved mood and avatar are unchanged.`,
+    };
+  }
+
+  return {
+    kind: "mood",
+    label: "Mood preview",
+    detail: `Previewing ${emote.replaceAll("_", " ")} for ${petName}.`,
+    accessibilityLabel: `Mood preview for ${petName}: ${emote.replaceAll("_", " ")}.`,
+  };
 }
 
 export function deriveAvatarPreviewAccessories(config: PetAvatarConfig): AvatarPreviewAccessoryLayer[] {

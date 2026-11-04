@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { AVATAR_TEMPLATES, createDefaultAvatarConfig } from "./avatarStudio.ts";
 import {
+  deriveAvatarStudioPreviewPlayback,
   getAvatarStudioMotionPreviewState,
   listAvatarStudioMotionPreviewStates,
   deriveAvatarPreviewAccessories,
@@ -142,6 +143,23 @@ test("resolves an explicitly requested registered walk strip without relabeling 
     getAvatarTemplateSpritePreviewByAction("retriever", "idle-tail-wag")?.action,
     "idle-tail-wag",
   );
+});
+
+test("labels an explicit template strip as a manual playback preview instead of a saved mood", () => {
+  const playback = deriveAvatarStudioPreviewPlayback(
+    "retriever",
+    "Scout",
+    "not_feeling_well",
+    "walk-loop",
+  );
+
+  assert.deepEqual(playback, {
+    kind: "manual-sprite",
+    label: "Retriever walk loop preview",
+    detail: "Previewing the registered walk strip. This does not change Scout's saved mood or avatar.",
+    accessibilityLabel:
+      "Manual Retriever walk loop playback preview. Scout's saved mood and avatar are unchanged.",
+  });
 });
 
 test("defines Avatar Studio motion preview states for the living care twin", () => {
