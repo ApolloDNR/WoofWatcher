@@ -642,6 +642,19 @@ export function getAvatarTemplateSpritePreview(
 ): AvatarTemplateSpritePackItem | null {
   const action = mapAvatarEmoteToTemplateSpriteAction(templateId, emote);
   if (!action) return null;
+  return getAvatarTemplateSpritePreviewByAction(templateId, action);
+}
+
+/**
+ * Resolves a known production strip for an explicit studio preview action.
+ * This deliberately does not infer a care mood: callers use it for an owner
+ * or QA-selected idle/walk playback control, while mood previews retain their
+ * stricter state-to-strip admission policy above.
+ */
+export function getAvatarTemplateSpritePreviewByAction(
+  templateId: AvatarTemplateId,
+  action: AvatarTemplateSpriteAction,
+): AvatarTemplateSpritePackItem | null {
   return AVATAR_TEMPLATE_SPRITE_ASSETS[templateId]?.[action] ?? null;
 }
 

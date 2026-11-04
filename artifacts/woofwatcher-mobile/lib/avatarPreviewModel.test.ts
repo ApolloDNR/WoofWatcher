@@ -9,6 +9,7 @@ import {
   deriveAvatarPreviewMood,
   deriveAvatarPreviewMotion,
 } from "./avatarPreviewModel.ts";
+import { getAvatarTemplateSpritePreviewByAction } from "./avatarTemplateSpriteAssets.ts";
 
 test("derives layered preview accessories from configured slots", () => {
   const config = createDefaultAvatarConfig("Phoenix");
@@ -130,6 +131,17 @@ test("uses live template strips only for non-Phoenix moods the pack actually dep
     assert.match(unwell.label, /still pose/i);
     assert.equal(unwell.spriteAction, null);
   }
+});
+
+test("resolves an explicitly requested registered walk strip without relabeling it as a mood", () => {
+  const walk = getAvatarTemplateSpritePreviewByAction("retriever", "walk-loop");
+
+  assert.equal(walk?.action, "walk-loop");
+  assert.equal(walk?.track.key, "retriever:walk-loop");
+  assert.equal(
+    getAvatarTemplateSpritePreviewByAction("retriever", "idle-tail-wag")?.action,
+    "idle-tail-wag",
+  );
 });
 
 test("defines Avatar Studio motion preview states for the living care twin", () => {

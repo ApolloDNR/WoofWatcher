@@ -6559,3 +6559,22 @@ frozen install, generated-client drift, beta doctor, focused behavior,
 workspace typecheck, CI-safe builds, and completion. That CI proof does not
 clear the distinct asset-production, phone-size visual, native accessibility,
 provider, store, or Apollo gates.
+
+## 2026-11-03 Avatar Studio explicit sprite playback
+
+Avatar Studio now exposes each registered production-review strip as a
+non-persistent hero playback action. This gives the owner or QA reviewer a
+truthful way to inspect a real template walk loop rather than relying solely
+on mood-based playback, which deliberately refuses to represent a walk loop
+as hunger, anxiety, sleep, health, or reward motion. Selecting a mood or a
+different template exits explicit-strip playback and restores the stricter
+mood contract.
+
+Local verification was red-first: the missing explicit action resolver failed
+before implementation; Avatar model, sprite-production, and mobile readiness
+coverage passed `221/221` after it. Direct mobile TypeScript reported existing
+inherited dependency/type-environment failures (generated query types,
+`expo-modules-core`, and pre-existing implicit-any diagnostics), with no
+diagnostic in changed files. Real device crop, gait, touch-target, and
+VoiceOver/TalkBack proof remains required; no source-level playback result is
+native QA, store, provider, or Apollo approval.

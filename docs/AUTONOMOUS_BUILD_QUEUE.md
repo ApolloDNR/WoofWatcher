@@ -3452,3 +3452,20 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Add state-specific PixelLab strips only after production assets and
   native crop/gait/overlay/VoiceOver review exist. This source-level proof does
   not substitute for native iOS/Android, provider, store, or Apollo approval.
+
+## 2026-11-03 Avatar Studio explicit sprite playback
+
+- DONE: Avatar Studio's production-review rows now play the exact registered
+  idle or walk strip in the hero without changing the saved dog profile. The
+  explicit action resolver prevents a real walk strip from being stranded
+  behind the mood-only admission policy.
+- DONE: Mood previews remain intentionally strict: an unmatched hunger,
+  anxiety, rest, health, or reward mood is still shown as a labeled still pose
+  instead of being relabeled as idle or walk motion.
+- VERIFIED LOCALLY: The new resolver test failed before implementation and
+  passes with Avatar model/production/readiness coverage (221 tests). Direct
+  mobile TypeScript remains host-blocked by inherited dependency type drift;
+  no changed-file error was reported.
+- NEXT: Capture real iOS/Android crop, gait, touch target, and VoiceOver/
+  TalkBack evidence for both explicit strips. Do not claim native, store, or
+  Apollo approval from source-level playback.

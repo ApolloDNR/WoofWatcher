@@ -77,7 +77,9 @@ import {
 } from "@/lib/avatarTemplateAssets";
 import {
   getAvatarTemplateSpritePreview,
+  getAvatarTemplateSpritePreviewByAction,
   hasAvatarTemplateSpritePack,
+  type AvatarTemplateSpriteAction,
 } from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
@@ -249,6 +251,8 @@ export default function PortraitScreen() {
   const [avatarOperation, setAvatarOperation] =
     useState<AvatarStudioOperation | null>(null);
   const [previewEmote, setPreviewEmote] = useState<AvatarEmoteState>("happy");
+  const [previewSpriteAction, setPreviewSpriteAction] =
+    useState<AvatarTemplateSpriteAction | null>(null);
   const [sourceUri, setSourceUri] = useState<string | null>(null);
   const [scanLine, setScanLine] = useState(0);
   const [savedToast, setSavedToast] = useState<string | null>(null);
@@ -531,8 +535,11 @@ export default function PortraitScreen() {
     [draft.templateId, previewEmote],
   );
   const templateSpritePreview = useMemo(
-    () => getAvatarTemplateSpritePreview(draft.templateId, previewEmote),
-    [draft.templateId, previewEmote],
+    () =>
+      previewSpriteAction
+        ? getAvatarTemplateSpritePreviewByAction(draft.templateId, previewSpriteAction)
+        : getAvatarTemplateSpritePreview(draft.templateId, previewEmote),
+    [draft.templateId, previewEmote, previewSpriteAction],
   );
   const careTwinPreviewTrack = previewMotion.spriteAction
     ? CARE_TWIN_SPRITE_MANIFEST[previewMotion.spriteAction]
@@ -700,6 +707,7 @@ export default function PortraitScreen() {
     if (!getActiveStudioSession()) return;
     const template = getAvatarTemplate(templateId);
     Haptics.selectionAsync().catch(() => {});
+    setPreviewSpriteAction(null);
     applyAvatarDraftEdit((current) =>
       updateConfig(current, {
         templateId,
@@ -762,7 +770,17 @@ export default function PortraitScreen() {
     if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
     if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
+    setPreviewSpriteAction(null);
     setPreviewEmote(emote);
+  };
+
+  const previewProductionSpriteAction = (action: AvatarTemplateSpriteAction) => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
+    if (!getAvatarTemplateSpritePreviewByAction(draft.templateId, action)) return;
+    Haptics.selectionAsync().catch(() => {});
+    setPreviewSpriteAction(action);
   };
 
   const openAvatarSpriteProductionQa = () => {
@@ -2117,13 +2135,29 @@ export default function PortraitScreen() {
 
               <View style={s.productionActionList}>
                 {productionTemplateReview.template.actions.map((action) => (
-                  <View
+                  <PressScale
                     key={action.action}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Preview ${action.label}`}
+                    accessibilityHint="Plays this registered PixelLab sprite strip in the Avatar Studio hero without changing the saved dog profile."
+                    accessibilityState={{
+                      selected: previewSpriteAction === action.action,
+                      disabled: avatarStudioBusy,
+                    }}
+                    disabled={avatarStudioBusy}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    haptic="none"
+                    scaleTo={0.98}
+                    onPress={() => previewProductionSpriteAction(action.action)}
                     style={[
                       s.productionActionRow,
                       {
                         backgroundColor: colors.background,
-                        borderColor: colors.border,
+                        borderColor:
+                          previewSpriteAction === action.action
+                            ? colors.primary
+                            : colors.border,
+                        opacity: avatarStudioBusy ? 0.55 : 1,
                       },
                     ]}
                   >
@@ -2182,7 +2216,7 @@ export default function PortraitScreen() {
                         {action.notes}
                       </Text>
                     </View>
-                  </View>
+                  </PressScale>
                 ))}
               </View>
 
