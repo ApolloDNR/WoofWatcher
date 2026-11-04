@@ -152,19 +152,23 @@ test("defines Avatar Studio motion preview states for the living care twin", () 
     [
       ["idle", "idle-breathe", "idle-tail-wag"],
       ["walk", "walk-loop", "walk-loop"],
-      ["meal", "eat-loop", "idle-tail-wag"],
-      ["water", "drink-loop", "idle-tail-wag"],
-      ["rest", "sleep-loop", "idle-tail-wag"],
-      ["comfort", "comfort-loop", "idle-tail-wag"],
-      ["health", "health-watch", "idle-tail-wag"],
-      ["celebrate", "celebrate-hop", "walk-loop"],
+      ["meal", "eat-loop", null],
+      ["water", "drink-loop", null],
+      ["rest", "sleep-loop", null],
+      ["comfort", "comfort-loop", null],
+      ["health", "health-watch", null],
+      ["celebrate", "celebrate-hop", null],
     ],
   );
 
   assert.equal(getAvatarStudioMotionPreviewState("walk").emote, "excited");
-  assert.equal(getAvatarStudioMotionPreviewState("meal").statusLabel, "Bowl loop");
+  assert.equal(getAvatarStudioMotionPreviewState("meal").statusLabel, "Bowl state");
+  assert.match(
+    getAvatarStudioMotionPreviewState("meal").accessibilityLabel,
+    /meal state/i,
+  );
   assert.match(
     getAvatarStudioMotionPreviewState("health").accessibilityLabel,
-    /health watch animation/i,
+    /health watch state/i,
   );
 });

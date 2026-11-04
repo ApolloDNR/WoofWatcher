@@ -3469,3 +3469,18 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Capture real iOS/Android crop, gait, touch target, and VoiceOver/
   TalkBack evidence for both explicit strips. Do not claim native, store, or
   Apollo approval from source-level playback.
+
+## 2026-11-04 Avatar Studio state-specific playback truth
+
+- DONE: Non-Phoenix template previews now reserve their two shipped strips for
+  the states they actually depict: idle/tail-wag and walking. Meal, hydration,
+  rest, comfort, Health Watch, and reward previews select the correct care
+  state but hold a truthful still/emote pose until a matching PixelLab strip is
+  registered.
+- VERIFIED LOCALLY: The red-first Avatar Studio motion-state contract failed
+  while those states borrowed idle/walk playback, then passed with focused
+  Avatar model, sprite-production, studio, and readiness coverage (`230/230`).
+- NEXT: Produce and review state-specific strips per template before enabling
+  motion for those states; require iOS/Android crop, gait, overlay, reduced-
+  motion, and VoiceOver/TalkBack evidence. This does not clear native, store,
+  provider, or Apollo approval gates.

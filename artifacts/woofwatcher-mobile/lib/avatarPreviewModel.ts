@@ -72,7 +72,13 @@ export interface AvatarStudioMotionPreviewState {
   statusLabel: string;
   emote: AvatarEmoteState;
   spriteAction: CareTwinSpriteAction;
-  templateSpriteAction: AvatarTemplateSpriteAction;
+  /**
+   * A strip that actually depicts this state for non-Phoenix templates.
+   * Keep this empty instead of substituting idle or walk footage for a
+   * different care state; the still emote/base art is more honest until a
+   * matching PixelLab strip ships.
+   */
+  templateSpriteAction: AvatarTemplateSpriteAction | null;
   accessibilityLabel: string;
 }
 
@@ -100,62 +106,62 @@ const AVATAR_STUDIO_MOTION_PREVIEW_STATES: readonly AvatarStudioMotionPreviewSta
   {
     id: "meal",
     label: "Meal",
-    detail: "Bowl-facing loop for meals served, grazing, and food outcomes.",
-    statusLabel: "Bowl loop",
+    detail: "Bowl-facing state for meals served, grazing, and food outcomes.",
+    statusLabel: "Bowl state",
     emote: "hungry",
     spriteAction: "eat-loop",
-    templateSpriteAction: "idle-tail-wag",
-    accessibilityLabel: "Preview meal animation",
+    templateSpriteAction: null,
+    accessibilityLabel: "Preview meal state",
   },
   {
     id: "water",
     label: "Water",
-    detail: "Hydration loop for water reminders and care confirmations.",
-    statusLabel: "Hydration",
+    detail: "Hydration state for water reminders and care confirmations.",
+    statusLabel: "Hydration state",
     emote: "calm",
     spriteAction: "drink-loop",
-    templateSpriteAction: "idle-tail-wag",
-    accessibilityLabel: "Preview water animation",
+    templateSpriteAction: null,
+    accessibilityLabel: "Preview water state",
   },
   {
     id: "rest",
     label: "Rest",
-    detail: "Settled sleep loop for bedtime, alone time, and recovery.",
-    statusLabel: "Sleep loop",
+    detail: "Settled sleep state for bedtime, alone time, and recovery.",
+    statusLabel: "Sleep state",
     emote: "sleepy",
     spriteAction: "sleep-loop",
-    templateSpriteAction: "idle-tail-wag",
-    accessibilityLabel: "Preview rest animation",
+    templateSpriteAction: null,
+    accessibilityLabel: "Preview rest state",
   },
   {
     id: "comfort",
     label: "Comfort",
-    detail: "Gentle loop for anxious, home-alone, or reassurance moments.",
-    statusLabel: "Comfort",
+    detail: "Gentle state for anxious, home-alone, or reassurance moments.",
+    statusLabel: "Comfort state",
     emote: "home_alone",
     spriteAction: "comfort-loop",
-    templateSpriteAction: "idle-tail-wag",
-    accessibilityLabel: "Preview comfort animation",
+    templateSpriteAction: null,
+    accessibilityLabel: "Preview comfort state",
   },
   {
     id: "health",
     label: "Health",
-    detail: "Low-posture health-watch loop for careful, non-diagnostic follow-up.",
-    statusLabel: "Health watch",
+    detail: "Low-posture health-watch state for careful, non-diagnostic follow-up.",
+    statusLabel: "Health watch state",
     emote: "not_feeling_well",
     spriteAction: "health-watch",
-    templateSpriteAction: "idle-tail-wag",
-    accessibilityLabel: "Preview health watch animation",
+    templateSpriteAction: null,
+    accessibilityLabel: "Preview health watch state",
   },
   {
     id: "celebrate",
     label: "Celebrate",
-    detail: "Reward beat for care complete, training wins, and level ups.",
-    statusLabel: "Reward",
+    detail: "Reward state for care complete, training wins, and level ups.",
+    statusLabel: "Reward state",
     emote: "proud",
     spriteAction: "celebrate-hop",
-    templateSpriteAction: "walk-loop",
-    accessibilityLabel: "Preview celebration animation",
+    templateSpriteAction: null,
+    accessibilityLabel: "Preview celebration state",
   },
 ];
 

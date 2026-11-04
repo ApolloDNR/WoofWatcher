@@ -6578,3 +6578,21 @@ inherited dependency/type-environment failures (generated query types,
 diagnostic in changed files. Real device crop, gait, touch-target, and
 VoiceOver/TalkBack proof remains required; no source-level playback result is
 native QA, store, provider, or Apollo approval.
+
+## 2026-11-04 Avatar Studio state-specific playback truth
+
+The Avatar Studio motion matrix now distinguishes a selected care state from a
+registered animation strip. For non-Phoenix templates, only idle/tail-wag and
+walk controls can request their corresponding shipped strips. Meal, hydration,
+rest, comfort, Health Watch, and reward controls now select their correct emote
+or base still instead of reusing an unrelated idle or walk loop. Their labels
+and accessibility text say “state,” not “animation” or “loop,” until matching
+PixelLab assets exist.
+
+The focused red-first `avatarPreviewModel` test failed with the prior borrowed
+strip mapping and then passed after the admission policy became nullable.
+Focused Avatar model, sprite-production, studio, and mobile-readiness coverage
+passes `230/230`. This is only source proof: production strips still need
+template-specific art plus iOS/Android crop, gait, accessory-overlay,
+reduced-motion, and VoiceOver/TalkBack review before they are enabled. It does
+not grant native QA, provider, store, or Apollo approval.
