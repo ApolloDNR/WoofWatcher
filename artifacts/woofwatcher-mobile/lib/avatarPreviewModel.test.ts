@@ -156,9 +156,9 @@ test("labels an explicit template strip as a manual playback preview instead of 
   assert.deepEqual(playback, {
     kind: "manual-sprite",
     label: "Retriever walk loop preview",
-    detail: "Previewing the registered walk strip. This does not change Scout's saved mood or avatar.",
+    detail: "Previewing the registered walk strip. This does not change Scout's care status or saved avatar.",
     accessibilityLabel:
-      "Manual Retriever walk loop playback preview. Scout's saved mood and avatar are unchanged.",
+      "Manual Retriever walk loop playback preview. Scout's care status and saved avatar are unchanged.",
     returnLabel: "Return to not feeling well mood",
     returnAccessibilityLabel:
       "Return to Scout's not feeling well mood preview without saving any changes.",

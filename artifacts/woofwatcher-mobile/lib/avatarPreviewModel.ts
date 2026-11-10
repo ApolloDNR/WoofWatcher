@@ -204,8 +204,8 @@ export function deriveAvatarStudioPreviewPlayback(
     return {
       kind: "manual-sprite",
       label: `${templateLabel} ${actionLabel} preview`,
-      detail: `Previewing the registered ${stripLabel} strip. This does not change ${petName}'s saved mood or avatar.`,
-      accessibilityLabel: `Manual ${templateLabel} ${actionLabel} playback preview. ${petName}'s saved mood and avatar are unchanged.`,
+      detail: `Previewing the registered ${stripLabel} strip. This does not change ${petName}'s care status or saved avatar.`,
+      accessibilityLabel: `Manual ${templateLabel} ${actionLabel} playback preview. ${petName}'s care status and saved avatar are unchanged.`,
       returnLabel: `Return to ${emote.replaceAll("_", " ")} mood`,
       returnAccessibilityLabel: `Return to ${petName}'s ${emote.replaceAll("_", " ")} mood preview without saving any changes.`,
     };

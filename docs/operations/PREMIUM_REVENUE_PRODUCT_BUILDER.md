@@ -6626,3 +6626,17 @@ The added model and source-control tests were written first and now pass
 `12/12`. This remains source-level proof only. Dependency-complete branch CI,
 route-named iOS/Android enter-return screenshots, reduced-motion review, touch
 targets, and VoiceOver/TalkBack traversal are still required before native QA.
+
+## 2026-11-10 Avatar Studio manual-playback truth copy
+
+Manual template-strip review now describes its non-mutating boundary against
+real product state: it leaves the selected dog's derived care status and saved
+avatar unchanged. It does not claim a saved mood exists, since Studio mood
+selection is a temporary preview and must not be confused with care evidence.
+
+The model expectation was written first, observed failing on the old copy, and
+then passed with the minimal resolver change. Focused model/source-control tests
+passed `12/12`, the full zero-dependency mobile/domain suite passed `1152/1152`,
+and PixelLab validation passed `ok=150`, `missing=0`, `invalid=0`. A direct
+mobile typecheck remains host/dependency blocked by inherited Expo and generated
+client diagnostics; the changed model files did not appear in that output.

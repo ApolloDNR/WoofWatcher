@@ -3489,9 +3489,9 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 
 - DONE: Selecting a registered template idle or walk strip now exposes a
   concise live status that identifies it as a manual playback preview. It
-  explicitly confirms that the strip does not alter the selected dog's saved
-  mood or avatar, so production-review controls cannot be mistaken for a care
-  state or persistent change.
+  explicitly confirms that the strip does not alter the selected dog's care
+  status or saved avatar, so production-review controls cannot be mistaken for
+  a care state or persistent change.
 - VERIFIED LOCALLY: A red-first Avatar preview-model test failed without the
   playback-status resolver and then passed with focused model coverage
   (`10/10`). PixelLab asset verification remains clean (`ok=150`, `missing=0`,
@@ -3514,3 +3514,18 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   Android manual-playback enter/return, reduced-motion, crop, touch-target, and
   VoiceOver/TalkBack evidence. Do not treat this source-level control as native,
   provider, store, or Apollo approval.
+
+## 2026-11-10 Avatar Studio manual-playback truth copy
+
+- DONE: Manual template-strip playback now says exactly what remains unchanged:
+  the selected dog's care status and saved avatar. It no longer refers to a
+  “saved mood,” because Avatar Studio moods are preview-only and care state is
+  derived from real logs.
+- VERIFIED LOCALLY: The new red-first preview-model expectation failed against
+  the old wording, then focused model/source-control coverage passed (`12/12`).
+  The full zero-dependency mobile/domain suite passed (`1152/1152`) and PixelLab
+  asset verification passed (`ok=150`, `missing=0`, `invalid=0`).
+- NEXT: Capture route-named iOS/Android manual-playback enter/return,
+  reduced-motion, crop, touch-target, and VoiceOver/TalkBack evidence. The
+  direct mobile typecheck remains host/dependency blocked by inherited Expo and
+  generated-client diagnostics; no changed-file diagnostic was reported.
