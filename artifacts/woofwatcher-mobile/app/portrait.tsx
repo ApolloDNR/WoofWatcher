@@ -794,6 +794,14 @@ export default function PortraitScreen() {
     setPreviewSpriteAction(action);
   };
 
+  const returnToMoodPreview = () => {
+    if (!avatarStudioReady) return;
+    if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
+    if (!getActiveStudioSession()) return;
+    Haptics.selectionAsync().catch(() => {});
+    setPreviewSpriteAction(null);
+  };
+
   const openAvatarSpriteProductionQa = () => {
     if (!avatarStudioReady) return;
     if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
@@ -2259,6 +2267,34 @@ export default function PortraitScreen() {
                   >
                     {previewPlayback.detail}
                   </Text>
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={previewPlayback.returnAccessibilityLabel ?? undefined}
+                    accessibilityHint="Returns to the selected mood preview without changing the saved avatar."
+                    accessibilityState={{ disabled: avatarStudioBusy }}
+                    disabled={avatarStudioBusy}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    haptic="none"
+                    scaleTo={0.97}
+                    onPress={returnToMoodPreview}
+                    style={[
+                      s.productionReviewReturn,
+                      {
+                        backgroundColor: colors.primary,
+                        opacity: avatarStudioBusy ? 0.55 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="arrow-undo-outline" size={16} color={colors.primaryForeground} />
+                    <Text
+                      style={[
+                        s.productionReviewReturnText,
+                        { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      {previewPlayback.returnLabel}
+                    </Text>
+                  </PressScale>
                 </View>
               ) : null}
 
@@ -3367,6 +3403,16 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
   },
+  productionReviewReturn: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 7,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  productionReviewReturnText: { fontSize: 12.5 },
   productionHeadline: { fontSize: 19, lineHeight: 23 },
   productionCopy: { fontSize: 12.5, lineHeight: 18 },
   productionMetricGrid: {

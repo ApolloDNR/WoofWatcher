@@ -159,7 +159,18 @@ test("labels an explicit template strip as a manual playback preview instead of 
     detail: "Previewing the registered walk strip. This does not change Scout's saved mood or avatar.",
     accessibilityLabel:
       "Manual Retriever walk loop playback preview. Scout's saved mood and avatar are unchanged.",
+    returnLabel: "Return to not feeling well mood",
+    returnAccessibilityLabel:
+      "Return to Scout's not feeling well mood preview without saving any changes.",
   });
+});
+
+test("keeps the mood preview state free of an unnecessary return control", () => {
+  const playback = deriveAvatarStudioPreviewPlayback("retriever", "Scout", "calm", null);
+
+  assert.equal(playback.kind, "mood");
+  assert.equal(playback.returnLabel, null);
+  assert.equal(playback.returnAccessibilityLabel, null);
 });
 
 test("defines Avatar Studio motion preview states for the living care twin", () => {

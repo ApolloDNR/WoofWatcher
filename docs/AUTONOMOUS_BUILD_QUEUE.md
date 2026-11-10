@@ -3500,3 +3500,17 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   VoiceOver/TalkBack evidence for the manual strips. This source-level status
   does not approve native QA, provider services, store submission, or Apollo
   release.
+
+## 2026-11-10 Avatar Studio manual-playback return
+
+- DONE: Manual PixelLab strip playback now has an explicit, minimum-touch-target
+  return action that restores the selected mood preview without saving or
+  mutating the avatar. Its visual and screen-reader copy names the mood that
+  will be restored, so a reviewer does not need to infer how to leave a manual
+  idle/walk loop.
+- VERIFIED LOCALLY: Red-first playback-model and Avatar Studio source-control
+  tests pass (`12/12`).
+- NEXT: Require dependency-complete branch CI, then capture route-named iOS and
+  Android manual-playback enter/return, reduced-motion, crop, touch-target, and
+  VoiceOver/TalkBack evidence. Do not treat this source-level control as native,
+  provider, store, or Apollo approval.

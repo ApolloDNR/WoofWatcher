@@ -6614,3 +6614,15 @@ test now passes `10/10`, and the PixelLab verifier remains clean at `ok=150`,
 reduced-motion, and VoiceOver/TalkBack proof is still required. This status
 copy is source-level behavior only; it does not grant native, provider, store,
 or Apollo approval.
+
+## 2026-11-10 Avatar Studio manual playback return
+
+Manual template-strip playback now has an explicit return control. It clears
+only the temporary manual strip selection and restores the selected mood preview;
+it does not save, reset, or otherwise mutate the dog avatar. The control uses a
+minimum mobile touch target and names its target mood for screen readers.
+
+The added model and source-control tests were written first and now pass
+`12/12`. This remains source-level proof only. Dependency-complete branch CI,
+route-named iOS/Android enter-return screenshots, reduced-motion review, touch
+targets, and VoiceOver/TalkBack traversal are still required before native QA.
