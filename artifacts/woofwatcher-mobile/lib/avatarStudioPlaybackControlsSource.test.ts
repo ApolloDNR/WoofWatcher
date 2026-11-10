@@ -13,4 +13,9 @@ test("Avatar Studio provides an accessible return from a manual sprite playback 
   assert.match(source, /accessibilityLabel=\{previewPlayback\.returnAccessibilityLabel \?\? undefined\}/);
   assert.match(source, /\{previewPlayback\.returnLabel\}/);
   assert.match(source, /onPress=\{returnToMoodPreview\}/);
+  assert.match(source, /import \{ announce \} from "@\/lib\/announce"/);
+  assert.match(
+    source,
+    /setPreviewSpriteAction\(null\);\s*announce\(previewPlayback\.returnAnnouncement \?\? "Returned to the mood preview\. No avatar changes were saved\."\)/,
+  );
 });

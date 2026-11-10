@@ -3529,3 +3529,19 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   reduced-motion, crop, touch-target, and VoiceOver/TalkBack evidence. The
   direct mobile typecheck remains host/dependency blocked by inherited Expo and
   generated-client diagnostics; no changed-file diagnostic was reported.
+
+## 2026-11-10 Avatar Studio manual-playback return announcement
+
+- DONE: Returning from a manually selected template strip now announces the
+  restored mood preview and confirms that no avatar change was saved. This
+  keeps the production-review playback loop truthful and gives screen-reader
+  users an explicit completion cue when the manual panel disappears.
+- VERIFIED LOCALLY: Red-first preview-model and source-control coverage failed
+  before the return announcement existed, then passed (`12/12`) after the
+  minimal implementation. The complete zero-dependency suite passed
+  (`1259/1259`) and PixelLab verification passed (`ok=150`, `missing=0`,
+  `invalid=0`).
+- NEXT: Capture route-named iOS/Android manual-playback enter/return,
+  reduced-motion, crop, touch-target, and VoiceOver/TalkBack evidence. This
+  source-level announcement does not constitute native, provider, store, or
+  Apollo approval.

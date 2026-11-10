@@ -6640,3 +6640,13 @@ passed `12/12`, the full zero-dependency mobile/domain suite passed `1152/1152`,
 and PixelLab validation passed `ok=150`, `missing=0`, `invalid=0`. A direct
 mobile typecheck remains host/dependency blocked by inherited Expo and generated
 client diagnostics; the changed model files did not appear in that output.
+
+## 2026-11-10 Avatar Studio return announcement
+
+Returning from manual template-strip playback now announces the restored mood
+preview and confirms that no avatar changes were saved. The model and source
+control tests were red first and pass `12/12` after the implementation. The
+complete zero-dependency suite passes `1259/1259`; PixelLab verification passes
+`ok=150`, `missing=0`, `invalid=0`. Native iOS/Android enter-return,
+reduced-motion, touch-target, and VoiceOver/TalkBack evidence remain required
+before treating this as native QA.

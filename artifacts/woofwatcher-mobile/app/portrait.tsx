@@ -38,6 +38,7 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { announce } from "@/lib/announce";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import {
   createAvatarStudioDraftAuthority,
@@ -800,6 +801,7 @@ export default function PortraitScreen() {
     if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
     setPreviewSpriteAction(null);
+    announce(previewPlayback.returnAnnouncement ?? "Returned to the mood preview. No avatar changes were saved.");
   };
 
   const openAvatarSpriteProductionQa = () => {

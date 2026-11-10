@@ -162,6 +162,8 @@ test("labels an explicit template strip as a manual playback preview instead of 
     returnLabel: "Return to not feeling well mood",
     returnAccessibilityLabel:
       "Return to Scout's not feeling well mood preview without saving any changes.",
+    returnAnnouncement:
+      "Returned to Scout's not feeling well mood preview. No avatar changes were saved.",
   });
 });
 
@@ -171,6 +173,7 @@ test("keeps the mood preview state free of an unnecessary return control", () =>
   assert.equal(playback.kind, "mood");
   assert.equal(playback.returnLabel, null);
   assert.equal(playback.returnAccessibilityLabel, null);
+  assert.equal(playback.returnAnnouncement, null);
 });
 
 test("defines Avatar Studio motion preview states for the living care twin", () => {

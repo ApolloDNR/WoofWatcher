@@ -63,6 +63,7 @@ export interface AvatarStudioPreviewPlaybackModel {
   accessibilityLabel: string;
   returnLabel: string | null;
   returnAccessibilityLabel: string | null;
+  returnAnnouncement: string | null;
 }
 
 export type AvatarStudioMotionPreviewId =
@@ -208,6 +209,7 @@ export function deriveAvatarStudioPreviewPlayback(
       accessibilityLabel: `Manual ${templateLabel} ${actionLabel} playback preview. ${petName}'s care status and saved avatar are unchanged.`,
       returnLabel: `Return to ${emote.replaceAll("_", " ")} mood`,
       returnAccessibilityLabel: `Return to ${petName}'s ${emote.replaceAll("_", " ")} mood preview without saving any changes.`,
+      returnAnnouncement: `Returned to ${petName}'s ${emote.replaceAll("_", " ")} mood preview. No avatar changes were saved.`,
     };
   }
 
@@ -218,6 +220,7 @@ export function deriveAvatarStudioPreviewPlayback(
     accessibilityLabel: `Mood preview for ${petName}: ${emote.replaceAll("_", " ")}.`,
     returnLabel: null,
     returnAccessibilityLabel: null,
+    returnAnnouncement: null,
   };
 }
 
