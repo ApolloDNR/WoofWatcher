@@ -61,6 +61,7 @@ export interface AvatarStudioPreviewPlaybackModel {
   label: string;
   detail: string;
   accessibilityLabel: string;
+  activationAnnouncement: string | null;
   returnLabel: string | null;
   returnAccessibilityLabel: string | null;
   returnAnnouncement: string | null;
@@ -207,6 +208,7 @@ export function deriveAvatarStudioPreviewPlayback(
       label: `${templateLabel} ${actionLabel} preview`,
       detail: `Previewing the registered ${stripLabel} strip. This does not change ${petName}'s care status or saved avatar.`,
       accessibilityLabel: `Manual ${templateLabel} ${actionLabel} playback preview. ${petName}'s care status and saved avatar are unchanged.`,
+      activationAnnouncement: `Previewing ${templateLabel} ${actionLabel}. ${petName}'s care status and saved avatar are unchanged.`,
       returnLabel: `Return to ${emote.replaceAll("_", " ")} mood`,
       returnAccessibilityLabel: `Return to ${petName}'s ${emote.replaceAll("_", " ")} mood preview without saving any changes.`,
       returnAnnouncement: `Returned to ${petName}'s ${emote.replaceAll("_", " ")} mood preview. No avatar changes were saved.`,
@@ -218,6 +220,7 @@ export function deriveAvatarStudioPreviewPlayback(
     label: "Mood preview",
     detail: `Previewing ${emote.replaceAll("_", " ")} for ${petName}.`,
     accessibilityLabel: `Mood preview for ${petName}: ${emote.replaceAll("_", " ")}.`,
+    activationAnnouncement: null,
     returnLabel: null,
     returnAccessibilityLabel: null,
     returnAnnouncement: null,

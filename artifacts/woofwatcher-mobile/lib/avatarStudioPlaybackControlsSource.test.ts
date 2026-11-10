@@ -18,4 +18,8 @@ test("Avatar Studio provides an accessible return from a manual sprite playback 
     source,
     /setPreviewSpriteAction\(null\);\s*announce\(previewPlayback\.returnAnnouncement \?\? "Returned to the mood preview\. No avatar changes were saved\."\)/,
   );
+  assert.match(
+    source,
+    /const nextPreviewPlayback = deriveAvatarStudioPreviewPlayback\([\s\S]*?action,[\s\S]*?\);\s*setPreviewSpriteAction\(action\);\s*announce\([\s\S]*?nextPreviewPlayback\.activationAnnouncement/,
+  );
 });

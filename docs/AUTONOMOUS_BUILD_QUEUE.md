@@ -3545,3 +3545,18 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   reduced-motion, crop, touch-target, and VoiceOver/TalkBack evidence. This
   source-level announcement does not constitute native, provider, store, or
   Apollo approval.
+
+## 2026-11-10 Avatar Studio manual-playback entry announcement
+
+- DONE: Selecting a registered template idle or walk strip now announces that
+  manual review playback has started and explicitly confirms that the selected
+  dog's care status and saved avatar remain unchanged. This pairs the existing
+  return announcement without turning a temporary review choice into care data.
+- VERIFIED LOCALLY: Red-first preview-model and source-control coverage failed
+  without the entry announcement, then passed (`12/12`) after the minimal
+  implementation. The complete zero-dependency suite passed (`1259/1259`) and
+  PixelLab verification passed (`ok=150`, `missing=0`, `invalid=0`).
+- NEXT: Capture route-named iOS/Android manual-playback enter/return,
+  reduced-motion, crop, touch-target, and VoiceOver/TalkBack evidence. This
+  source-level announcement does not constitute native, provider, store, or
+  Apollo approval.

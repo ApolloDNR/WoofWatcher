@@ -159,6 +159,8 @@ test("labels an explicit template strip as a manual playback preview instead of 
     detail: "Previewing the registered walk strip. This does not change Scout's care status or saved avatar.",
     accessibilityLabel:
       "Manual Retriever walk loop playback preview. Scout's care status and saved avatar are unchanged.",
+    activationAnnouncement:
+      "Previewing Retriever walk loop. Scout's care status and saved avatar are unchanged.",
     returnLabel: "Return to not feeling well mood",
     returnAccessibilityLabel:
       "Return to Scout's not feeling well mood preview without saving any changes.",
@@ -173,6 +175,7 @@ test("keeps the mood preview state free of an unnecessary return control", () =>
   assert.equal(playback.kind, "mood");
   assert.equal(playback.returnLabel, null);
   assert.equal(playback.returnAccessibilityLabel, null);
+  assert.equal(playback.activationAnnouncement, null);
   assert.equal(playback.returnAnnouncement, null);
 });
 

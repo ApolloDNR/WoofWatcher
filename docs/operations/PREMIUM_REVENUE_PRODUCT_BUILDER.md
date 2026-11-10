@@ -6650,3 +6650,16 @@ complete zero-dependency suite passes `1259/1259`; PixelLab verification passes
 `ok=150`, `missing=0`, `invalid=0`. Native iOS/Android enter-return,
 reduced-motion, touch-target, and VoiceOver/TalkBack evidence remain required
 before treating this as native QA.
+
+## 2026-11-10 Avatar Studio entry announcement
+
+Starting a manual template idle or walk strip review now announces the selected
+template and strip while confirming that the selected dog's derived care status
+and saved avatar are unchanged. This keeps the temporary production-review
+control distinct from real care evidence for screen-reader users as well as
+visual users. The resolver/model test and source-control test were red first,
+then pass `12/12` after the minimal entry-announcement wiring. The complete
+zero-dependency suite passes `1259/1259`, and PixelLab validation passes
+`ok=150`, `missing=0`, `invalid=0`. Native iOS/Android manual-playback entry
+and return, reduced-motion, crop, touch-target, and VoiceOver/TalkBack evidence
+remain required before this can be treated as native QA.

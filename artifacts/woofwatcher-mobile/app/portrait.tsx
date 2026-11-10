@@ -792,7 +792,17 @@ export default function PortraitScreen() {
     if (!getActiveStudioSession()) return;
     if (!getAvatarTemplateSpritePreviewByAction(draft.templateId, action)) return;
     Haptics.selectionAsync().catch(() => {});
+    const nextPreviewPlayback = deriveAvatarStudioPreviewPlayback(
+      draft.templateId,
+      petName,
+      previewEmote,
+      action,
+    );
     setPreviewSpriteAction(action);
+    announce(
+      nextPreviewPlayback.activationAnnouncement ??
+        "Manual playback preview started. Care status and saved avatar are unchanged.",
+    );
   };
 
   const returnToMoodPreview = () => {
