@@ -220,7 +220,7 @@ export function deriveAvatarStudioPreviewPlayback(
     label: "Mood preview",
     detail: `Previewing ${emote.replaceAll("_", " ")} for ${petName}.`,
     accessibilityLabel: `Mood preview for ${petName}: ${emote.replaceAll("_", " ")}.`,
-    activationAnnouncement: null,
+    activationAnnouncement: `Previewing ${petName}'s ${emote.replaceAll("_", " ")} mood. No avatar changes were saved.`,
     returnLabel: null,
     returnAccessibilityLabel: null,
     returnAnnouncement: null,

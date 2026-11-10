@@ -22,4 +22,8 @@ test("Avatar Studio provides an accessible return from a manual sprite playback 
     source,
     /const nextPreviewPlayback = deriveAvatarStudioPreviewPlayback\([\s\S]*?action,[\s\S]*?\);\s*setPreviewSpriteAction\(action\);\s*announce\([\s\S]*?nextPreviewPlayback\.activationAnnouncement/,
   );
+  assert.match(
+    source,
+    /const nextPreviewPlayback = deriveAvatarStudioPreviewPlayback\([\s\S]*?emote,[\s\S]*?null,[\s\S]*?\);\s*setPreviewSpriteAction\(null\);\s*setPreviewEmote\(emote\);\s*announce\([\s\S]*?nextPreviewPlayback\.activationAnnouncement/,
+  );
 });

@@ -1,5 +1,16 @@
 # Premium Revenue Product Builder
 
+## 2026-11-10 Avatar Studio mood-preview announcement
+
+Avatar Studio now announces each selected temporary mood preview with the
+dog's resolved name and a clear no-save boundary. The same model already
+described manual strip playback, so the two owner-review paths now offer
+consistent assistive feedback without mutating the saved avatar or care
+status. Red-first model and source-control tests failed for the missing mood
+announcement and then passed `12/12` locally. Real iOS/Android
+VoiceOver/TalkBack behavior still requires native proof; this source change
+does not establish device accessibility, store readiness, or Apollo approval.
+
 ## 2026-10-13 Planned-slot rapid-save ID boundary
 
 CareTwin planned-slot drafts now resolve their identifier against the latest

@@ -169,13 +169,16 @@ test("labels an explicit template strip as a manual playback preview instead of 
   });
 });
 
-test("keeps the mood preview state free of an unnecessary return control", () => {
+test("announces a temporary mood preview without offering an unnecessary return control", () => {
   const playback = deriveAvatarStudioPreviewPlayback("retriever", "Scout", "calm", null);
 
   assert.equal(playback.kind, "mood");
   assert.equal(playback.returnLabel, null);
   assert.equal(playback.returnAccessibilityLabel, null);
-  assert.equal(playback.activationAnnouncement, null);
+  assert.equal(
+    playback.activationAnnouncement,
+    "Previewing Scout's calm mood. No avatar changes were saved.",
+  );
   assert.equal(playback.returnAnnouncement, null);
 });
 

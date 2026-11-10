@@ -782,8 +782,18 @@ export default function PortraitScreen() {
     if (avatarOperationGateRef.current.isBusy() || phase === "working") return;
     if (!getActiveStudioSession()) return;
     Haptics.selectionAsync().catch(() => {});
+    const nextPreviewPlayback = deriveAvatarStudioPreviewPlayback(
+      draft.templateId,
+      petName,
+      emote,
+      null,
+    );
     setPreviewSpriteAction(null);
     setPreviewEmote(emote);
+    announce(
+      nextPreviewPlayback.activationAnnouncement ??
+        "Mood preview updated. No avatar changes were saved.",
+    );
   };
 
   const previewProductionSpriteAction = (action: AvatarTemplateSpriteAction) => {

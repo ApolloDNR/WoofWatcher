@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-11-10 Avatar Studio mood-preview announcement
+
+- DONE: Selecting an Avatar Studio mood now gives a direct announcement naming the selected dog's temporary mood preview and confirming that no avatar changes were saved. This closes the parity gap with manual template-strip playback without treating a preview as care evidence or persistence.
+- VERIFIED LOCALLY: Red-first preview-model and source-control coverage failed for the absent mood announcement, then passed `12/12` after the minimal model and entry-point wiring.
+- NEXT: Keep unsupported template states static until semantically matched PixelLab strips pass equal-frame and phone-size visual QA. Real iOS/Android VoiceOver/TalkBack proof for the preview announcements remains a separate gate.
+
 ## 2026-10-22 Avatar Studio still-pose CI proof
 
 - DONE: Pending template mood previews remain genuinely still until a registered strip can depict that exact care state. The generic preview lift is admitted only for a real sprite track, so the `Still` label is not contradicted by decorative motion.
