@@ -3566,3 +3566,17 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   reduced-motion, crop, touch-target, and VoiceOver/TalkBack evidence. This
   source-level announcement does not constitute native, provider, store, or
   Apollo approval.
+
+## 2026-11-10 Native Avatar Studio proof environment check
+
+- VERIFIED LOCALLY: The complete zero-dependency API/mobile/PWA/care-domain
+  suite passes `1259/1259` on the automation branch. Avatar Studio's focused
+  preview and source-control coverage passes `12/12`.
+- BLOCKED: This Windows automation host cannot collect the required native
+  evidence: `doctor:native-qa:json` reports no `adb`, Android emulator, Java,
+  `ANDROID_HOME`/`ANDROID_SDK_ROOT`, or `JAVA_HOME`; it also cannot provide an
+  iOS simulator. This is an environment limitation, not a product failure.
+- NEXT: On a configured Android/iOS device environment, capture route-named
+  manual-playback enter and return proof with reduced motion, crop, 48px touch
+  targets, and VoiceOver/TalkBack. Keep the existing truth boundary: source
+  tests and web evidence do not clear native, provider, store, or Apollo gates.
