@@ -717,6 +717,14 @@ test("keeps Dog Profile identity canonical at the hosted nudge provider boundary
   assert.equal(renamed.petName, "Mochi");
 });
 
+test("keeps the PWA Home presence label behind the Dog Profile identity boundary", () => {
+  assert.match(appEntry, /function getPresenceLabel\(pulse, avatar, caregiverName\) \{/);
+  assert.match(appEntry, /const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.doesNotMatch(appEntry, /return `\$\{state\.profile\.name\} is home alone`/);
+  assert.doesNotMatch(appEntry, /return `\$\{state\.profile\.name\} is with \$\{activeHuman\.name\}`/);
+  assert.doesNotMatch(appEntry, /return `\$\{state\.profile\.name\} status unknown`/);
+});
+
 test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /records: "records"/);
   assert.match(appEntry, /reports: "reports"/);

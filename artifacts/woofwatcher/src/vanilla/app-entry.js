@@ -1552,11 +1552,12 @@ function renderSideNav(item) {
 }
 
 function getPresenceLabel(pulse, avatar, caregiverName) {
-  if (avatar?.mood === "home-alone") return `${state.profile.name} is home alone`;
+  const petName = buildHomeIdentityCopy(state).petName;
+  if (avatar?.mood === "home-alone") return `${petName} is home alone`;
   const activeHuman = (pulse?.humans || []).find((human) => human.todayLogs > 0);
-  if (activeHuman?.name) return `${state.profile.name} is with ${activeHuman.name}`;
-  if (caregiverName) return `${state.profile.name} is with ${caregiverName}`;
-  return `${state.profile.name} status unknown`;
+  if (activeHuman?.name) return `${petName} is with ${activeHuman.name}`;
+  if (caregiverName) return `${petName} is with ${caregiverName}`;
+  return `${petName} status unknown`;
 }
 
 function dogMoodClass(mood) {

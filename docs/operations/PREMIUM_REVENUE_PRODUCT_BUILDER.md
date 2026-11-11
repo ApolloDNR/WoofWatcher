@@ -6674,3 +6674,15 @@ zero-dependency suite passes `1259/1259`, and PixelLab validation passes
 `ok=150`, `missing=0`, `invalid=0`. Native iOS/Android manual-playback entry
 and return, reduced-motion, crop, touch-target, and VoiceOver/TalkBack evidence
 remain required before this can be treated as native QA.
+
+## 2026-11-11 PWA Home presence identity hardening
+
+The PWA Home presence label now resolves the active Dog Profile through the
+existing `buildHomeIdentityCopy(state)` boundary before announcing whether the
+dog is home alone, with a caregiver, or of unknown presence. This prevents a
+raw `My Dog` starter profile or padded rename from leaking into the first
+five-second Home answer. The new source-level regression first failed on the
+raw interpolation, then PWA readiness passed `38/38` and the aggregate
+zero-dependency mobile/domain/PWA suite passed `1192/1192`. Native
+VoiceOver/TalkBack and route-named device evidence remain required; this does
+not approve provider services, store submission, or Apollo release.

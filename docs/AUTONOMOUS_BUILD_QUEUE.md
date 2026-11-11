@@ -3580,3 +3580,17 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   manual-playback enter and return proof with reduced motion, crop, 48px touch
   targets, and VoiceOver/TalkBack. Keep the existing truth boundary: source
   tests and web evidence do not clear native, provider, store, or Apollo gates.
+
+## 2026-11-11 PWA Home presence identity boundary
+
+- DONE: PWA Home's presence label now resolves Dog Profile identity through
+  `buildHomeIdentityCopy(state)` before rendering home-alone, caregiver, or
+  unknown status. A stored starter label (`My Dog`) therefore renders as
+  Phoenix, and padded renamed dogs render as their trimmed name consistently
+  with the rest of the care loop.
+- VERIFIED LOCALLY: The regression test first failed against the raw profile
+  interpolation, then the PWA readiness suite passed `38/38`; the aggregate
+  zero-dependency mobile/domain/PWA suite passed `1192/1192`.
+- NEXT: Capture the existing route-named native PWA/mobile identity and
+  VoiceOver/TalkBack evidence when device tooling is available. Keep source
+  behavior distinct from native, provider, store, and Apollo approval gates.
