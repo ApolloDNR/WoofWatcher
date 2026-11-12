@@ -1,5 +1,17 @@
 # Premium Revenue Product Builder
 
+## 2026-11-11 PWA Home portrait identity fallback
+
+PWA Home now keeps the dog portrait's accessibility fallback on the same Dog
+Profile identity boundary as visible Home copy. If a future caller omits the
+explicit display name, the image announces Phoenix for a stored `My Dog`
+starter profile and the trimmed name for a renamed dog, rather than exposing
+raw persisted identity. The red-first regression failed before the fallback
+was corrected; PWA readiness passed `39/39`, the full focused suite passed
+`1261/1261`, and PixelLab passed `ok=150 missing=0 invalid=0`. Native
+VoiceOver/TalkBack, route screenshots, provider, store, and Apollo approval
+remain external evidence gates.
+
 ## 2026-11-10 Avatar Studio mood-preview announcement
 
 Avatar Studio now announces each selected temporary mood preview with the

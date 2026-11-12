@@ -725,6 +725,11 @@ test("keeps the PWA Home presence label behind the Dog Profile identity boundary
   assert.doesNotMatch(appEntry, /return `\$\{state\.profile\.name\} status unknown`/);
 });
 
+test("keeps the PWA Home portrait fallback behind the Dog Profile identity boundary", () => {
+  assert.match(appEntry, /function renderDogScene\(mood, petName = buildHomeIdentityCopy\(state\)\.petName\) \{/);
+  assert.doesNotMatch(appEntry, /function renderDogScene\(mood, petName = state\.profile\.name\) \{/);
+});
+
 test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /records: "records"/);
   assert.match(appEntry, /reports: "reports"/);

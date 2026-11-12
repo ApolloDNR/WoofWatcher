@@ -1567,7 +1567,7 @@ function dogMoodClass(mood) {
   return "m-happy";
 }
 
-function renderDogScene(mood, petName = state.profile.name) {
+function renderDogScene(mood, petName = buildHomeIdentityCopy(state).petName) {
   return `
     <img class="dog-art" src="${phoenixArt(mood)}" alt="Painted portrait of ${escapeAttribute(petName)} reflecting their current mood" />
   `;

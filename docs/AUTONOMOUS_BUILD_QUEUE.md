@@ -3594,3 +3594,17 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Capture the existing route-named native PWA/mobile identity and
   VoiceOver/TalkBack evidence when device tooling is available. Keep source
   behavior distinct from native, provider, store, and Apollo approval gates.
+
+## 2026-11-11 PWA Home portrait identity fallback
+
+- DONE: The PWA Home portrait's accessible-name fallback now resolves through
+  `buildHomeIdentityCopy(state).petName`. A future caller that omits an
+  explicit display name therefore announces `Phoenix` for the stored `My Dog`
+  placeholder and trims a renamed dog's name instead of bypassing Dog Profile.
+- VERIFIED LOCALLY: The red-first source regression failed against the raw
+  `state.profile.name` default, then PWA readiness passed `39/39`. The complete
+  focused suite passed `1261/1261`, and PixelLab verification passed
+  `ok=150`, `missing=0`, `invalid=0`.
+- NEXT: Capture route-named iOS/Android Home identity and VoiceOver/TalkBack
+  evidence when tooling is available. Source and CI coverage remain distinct
+  from native, provider, store, and Apollo approval gates.
