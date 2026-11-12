@@ -1,5 +1,20 @@
 # Premium Revenue Product Builder
 
+## 2026-11-11 PWA Home shell identity boundary
+
+PWA Home now derives its desktop navigation label, active page title, and
+avatar accessibility name from the same Dog Profile identity boundary as its
+visible care copy. A stored `My Dog` stays Phoenix and a padded renamed dog is
+trimmed before either display or assistive output; the underlying Phoenix art
+asset remains a visual fallback rather than an owner-facing identity claim.
+Red-first PWA readiness coverage failed before the shell wiring and passes
+`40/40` after it. The direct focused mobile/domain/API/PWA suite passes
+`1,262/1,262` with localhost fixtures enabled, and PixelLab verification
+passes `ok=150 missing=0 invalid=0`. The local pnpm-focused wrapper remains
+blocked by inherited Windows reparse-point `EPERM` during pnpm realpath;
+dependency-complete CI and native VoiceOver/TalkBack remain separate proof
+gates.
+
 ## 2026-11-11 PWA Home portrait identity fallback
 
 PWA Home now keeps the dog portrait's accessibility fallback on the same Dog

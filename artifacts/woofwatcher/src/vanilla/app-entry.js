@@ -505,10 +505,10 @@ function renderProfileCard(health, avatar) {
   `;
 }
 
-function renderPhoenixAvatar(avatar, size = "hero") {
+function renderPhoenixAvatar(avatar, size = "hero", petName = buildHomeIdentityCopy(state).petName) {
   const evidence = (avatar.evidence || []).slice(0, 2);
   return `
-    <div class="phoenix-avatar-stage ${escapeAttribute(size)} mood-${escapeAttribute(avatar.mood)} urgency-${escapeAttribute(avatar.urgency)}" aria-label="Phoenix avatar state: ${escapeAttribute(avatar.mood)}">
+    <div class="phoenix-avatar-stage ${escapeAttribute(size)} mood-${escapeAttribute(avatar.mood)} urgency-${escapeAttribute(avatar.urgency)}" aria-label="${escapeAttribute(petName)} avatar state: ${escapeAttribute(avatar.mood)}">
       <div class="avatar-sky" aria-hidden="true">
         <span></span>
         <span></span>
@@ -787,7 +787,7 @@ function renderGlyph(type) {
 
 function renderTabHeader(tab) {
   const labels = {
-    phoenix: ["Phoenix", "A shared care home that turns the next best action into one calm screen."],
+    phoenix: [buildHomeIdentityCopy(state).petName, "A shared care home that turns the next best action into one calm screen."],
     log: ["Effortless Log", "Tap fast, add detail only when it matters, and keep both humans aligned."],
     plans: ["Plans", "Meals, walks, bedtime snack, training, reminders, and goals in one routine lane."],
     health: ["Health Watch", "Pattern support for appetite, bile, weight, medication, and vet review."],
@@ -1548,7 +1548,8 @@ function renderSideNav(item) {
   const tab = item.tab;
   const normalized = normalizeTab(tab);
   const isActive = !item.secondary && activeTab === normalized;
-  return `<button class="side-link ${item.secondary ? "secondary" : ""} ${isActive ? "active" : ""}"${isActive ? ' aria-current="page"' : ""} data-tab="${escapeAttribute(tab)}">${item.icon}<span>${escapeHtml(item.label)}</span></button>`;
+  const label = item.tab === "phoenix" ? `${buildHomeIdentityCopy(state).petName} Home` : item.label;
+  return `<button class="side-link ${item.secondary ? "secondary" : ""} ${isActive ? "active" : ""}"${isActive ? ' aria-current="page"' : ""} data-tab="${escapeAttribute(tab)}">${item.icon}<span>${escapeHtml(label)}</span></button>`;
 }
 
 function getPresenceLabel(pulse, avatar, caregiverName) {

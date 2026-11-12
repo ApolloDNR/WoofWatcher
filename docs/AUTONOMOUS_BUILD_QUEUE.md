@@ -1,5 +1,16 @@
 # Autonomous Build Queue
 
+## 2026-11-11 PWA Home shell identity boundary
+
+- DONE: PWA Home's desktop navigation, page title, and avatar accessibility
+  fallback now resolve Dog Profile identity, preserving Phoenix only for blank
+  or starter placeholder data and trimming a renamed dog before display.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage passes `40/40`; the
+  direct focused suite passes `1,262/1,262`; PixelLab reports `ok=150
+  missing=0 invalid=0`.
+- NEXT: Continue identity audits only at unprotected owner-facing seams; native
+  VoiceOver/TalkBack and dependency-complete final-tip CI remain separate gates.
+
 ## 2026-11-10 Avatar Studio mood-preview announcement
 
 - DONE: Selecting an Avatar Studio mood now gives a direct announcement naming the selected dog's temporary mood preview and confirming that no avatar changes were saved. This closes the parity gap with manual template-strip playback without treating a preview as care evidence or persistence.

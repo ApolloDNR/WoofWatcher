@@ -730,6 +730,27 @@ test("keeps the PWA Home portrait fallback behind the Dog Profile identity bound
   assert.doesNotMatch(appEntry, /function renderDogScene\(mood, petName = state\.profile\.name\) \{/);
 });
 
+test("keeps PWA Home navigation and avatar accessibility behind the Dog Profile identity boundary", () => {
+  assert.match(
+    appEntry,
+    /function renderPhoenixAvatar\(avatar, size = "hero", petName = buildHomeIdentityCopy\(state\)\.petName\) \{/,
+  );
+  assert.match(
+    appEntry,
+    /aria-label="\$\{escapeAttribute\(petName\)\} avatar state: \$\{escapeAttribute\(avatar\.mood\)\}"/,
+  );
+  assert.match(
+    appEntry,
+    /const label = item\.tab === "phoenix" \? `\$\{buildHomeIdentityCopy\(state\)\.petName\} Home` : item\.label;/,
+  );
+  assert.match(
+    appEntry,
+    /phoenix: \[buildHomeIdentityCopy\(state\)\.petName,/,
+  );
+  assert.doesNotMatch(appEntry, /aria-label="Phoenix avatar state:/);
+  assert.doesNotMatch(appEntry, /phoenix: \["Phoenix",/);
+});
+
 test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /records: "records"/);
   assert.match(appEntry, /reports: "reports"/);
