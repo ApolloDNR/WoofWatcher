@@ -1,5 +1,20 @@
 # Autonomous Build Queue
 
+## 2026-11-12 PWA Diet & Treats identity boundary
+
+- DONE: Diet & Treats now takes its hero heading and empty-meals guidance from
+  the shared Dog Profile identity boundary. A blank or `My Dog` profile shows
+  Phoenix intentionally, while a padded renamed dog is trimmed before the
+  owner sees food-care copy.
+- VERIFIED LOCALLY: The red-first PWA source contract passes `42/42`; the
+  complete focused API/mobile/domain/PWA/release-tool suite passes
+  `1,264/1,264` when localhost fixtures are allowed; PixelLab reports
+  `ok=150 missing=0 invalid=0`.
+- NEXT: Continue identity audits only at unprotected owner-facing seams. The
+  direct PWA Vite build remains host-blocked by the missing local Vite package;
+  final-tip dependency-complete CI and native VoiceOver/TalkBack remain
+  separate gates.
+
 ## 2026-11-12 PWA log and household-return identity boundary
 
 - DONE: Quick Log, Household Pulse's return form, and the newly created

@@ -2217,6 +2217,7 @@ function renderPlansTab(context) {
 }
 
 function renderDietTreatsTab(context) {
+  const petName = buildHomeIdentityCopy(state).petName;
   const review = getDietDayReview(context);
   return `
     <div class="dashboard-grid diet-treats-screen">
@@ -2224,7 +2225,7 @@ function renderDietTreatsTab(context) {
         <div class="section-heading">
           <div>
             <p class="micro">Diet & Treats</p>
-            <h3>Daily food proof for Phoenix</h3>
+            <h3>Daily food proof for ${escapeHtml(petName)}</h3>
             <p>Meals, treats, water context, avoid notes, and appetite quirks stay connected to household logs and Care Pass exports.</p>
           </div>
           <span class="status-chip ${review.openMeal ? "watch" : "steady"}">${review.openMeal ? "Outcome pending" : "Care proof current"}</span>
@@ -2237,7 +2238,7 @@ function renderDietTreatsTab(context) {
       </section>
 
       ${renderDietDailyProgress(review)}
-      ${renderMealsTodayPanel(review)}
+      ${renderMealsTodayPanel(review, petName)}
       ${renderTreatsTodayPanel(review)}
       ${renderHydrationContextPanel(review)}
       ${renderDietAvoidList(review)}
@@ -2318,7 +2319,7 @@ function renderDietDailyProgress(review) {
   `;
 }
 
-function renderMealsTodayPanel(review) {
+function renderMealsTodayPanel(review, petName) {
   return `
     <section class="panel diet-meals-panel">
       <div class="section-heading">
@@ -2329,7 +2330,7 @@ function renderMealsTodayPanel(review) {
         <button class="button ghost" data-action="open-diet-log-meal">Log Meal</button>
       </div>
       <div class="diet-log-list">
-        ${review.meals.length ? review.meals.map(renderDietMealRow).join("") : `<p class="empty-state">No meals logged today. Use Log Meal when Phoenix is served.</p>`}
+        ${review.meals.length ? review.meals.map(renderDietMealRow).join("") : `<p class="empty-state">No meals logged today. Use Log Meal when ${escapeHtml(petName)} is served.</p>`}
       </div>
     </section>
   `;

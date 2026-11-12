@@ -522,6 +522,16 @@ test("keeps Diet & Treats wired as a first-class PWA route", () => {
   assert.match(appEntry, /data-action="edit-diet-profile"/);
 });
 
+test("keeps Diet & Treats owner copy behind the Dog Profile identity boundary", () => {
+  assert.match(appEntry, /function renderDietTreatsTab\(context\) \{\s+const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.match(appEntry, /<h3>Daily food proof for \$\{escapeHtml\(petName\)\}<\/h3>/);
+  assert.match(appEntry, /renderMealsTodayPanel\(review, petName\)/);
+  assert.match(appEntry, /function renderMealsTodayPanel\(review, petName\) \{/);
+  assert.match(appEntry, /Use Log Meal when \$\{escapeHtml\(petName\)\} is served\./);
+  assert.doesNotMatch(appEntry, /<h3>Daily food proof for Phoenix<\/h3>/);
+  assert.doesNotMatch(appEntry, /Use Log Meal when Phoenix is served\./);
+});
+
 test("keeps WoofGuide wired to owner-reviewed action routing", () => {
   assert.match(appEntry, /woofguide: "woofguide"/);
   assert.match(appEntry, /assistant: "woofguide"/);

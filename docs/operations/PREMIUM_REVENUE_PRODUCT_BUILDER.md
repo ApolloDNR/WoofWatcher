@@ -1,5 +1,21 @@
 # Premium Revenue Product Builder
 
+## 2026-11-12 PWA Diet & Treats identity hardening
+
+Diet & Treats now resolves Dog Profile identity before rendering its daily
+food-proof heading and its no-meals owner guidance. Stored blank or `My Dog`
+values still render the intentional Phoenix fallback; renamed dogs render the
+trimmed name. This preserves the real meal served-to-outcome care loop without
+turning a display fallback into an identity write.
+
+The source contract was red first and now passes `42/42`; the complete
+zero-dependency API/mobile/domain/PWA/release-tool suite passes `1,264/1,264`
+when localhost fixtures are allowed, and PixelLab asset verification reports
+`ok=150 missing=0 invalid=0`. The direct PWA Vite build remains host-blocked
+because this checkout lacks `node_modules/vite/bin/vite.js`. Native
+VoiceOver/TalkBack, dependency-complete final-tip CI, provider, store, and
+Apollo approval remain separate gates.
+
 ## 2026-11-12 PWA log and household-return identity boundary
 
 PWA Quick Log and the Household Pulse return flow now resolve their dog name
