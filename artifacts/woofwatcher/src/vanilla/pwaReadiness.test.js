@@ -18,6 +18,7 @@ import {
   buildCareHelperInput,
   buildCareHelperInstructions,
   compactAssistantContext,
+  ensureVeterinaryBoundary,
 } from "./openai-care-helper.js";
 import {
   buildCareRoomTransfer,
@@ -407,6 +408,10 @@ test("keeps Dog Profile identity canonical in owner-reviewed PWA AI context", ()
   assert.match(buildCareHelperInstructions(renamed), /Care Helper for Mochi/);
   assert.match(buildCareHelperInput({ question: "Review today", context: renamed }), /Mochi context:/);
   assert.doesNotMatch(buildCareHelperInstructions(renamed), /Care Helper for Phoenix/);
+  assert.match(ensureVeterinaryBoundary("", renamed), /Mochi's logged care context/);
+  assert.doesNotMatch(ensureVeterinaryBoundary("", renamed), /Phoenix/);
+  assert.match(ensureVeterinaryBoundary("", placeholder), /Phoenix's logged care context/);
+  assert.doesNotMatch(ensureVeterinaryBoundary("", placeholder), /My Dog/);
 });
 
 function extractConstArray(source, name) {

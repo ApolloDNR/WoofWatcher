@@ -3694,3 +3694,21 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Capture route-named iOS/Android Home identity and VoiceOver/TalkBack
   evidence when tooling is available. Source and CI coverage remain distinct
   from native, provider, store, and Apollo approval gates.
+
+## 2026-11-12 PWA WoofGuide fallback identity boundary
+
+- DONE: A blank OpenAI response now builds its safe local WoofGuide fallback
+  from the canonical Dog Profile name. A `My Dog` starter profile remains
+  Phoenix, while a padded renamed profile is trimmed before the fallback is
+  shown to the household.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage reproduced a renamed
+  dog receiving the hard-coded Phoenix fallback, then passed for both the
+  Phoenix starter fallback and trimmed `Mochi` identity. The complete focused
+  API/mobile/domain/PWA/release-tool suite passed `1267/1267` when localhost
+  fixtures were permitted.
+- BOUNDARY: The response remains owner-reviewed and non-diagnostic, directing
+  urgent concerns to veterinary care. This does not configure a provider,
+  enable live AI, or clear native, store, legal, or Apollo approval gates.
+- NEXT: Require dependency-complete branch CI, then capture browser/native
+  owner-review and accessibility evidence when tooling is available. Keep live
+  AI disabled until its structured provider and safety proof is complete.

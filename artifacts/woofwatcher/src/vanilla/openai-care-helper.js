@@ -53,7 +53,7 @@ export async function createOpenAICareAnswer({ question, context, env = process.
     throw error;
   }
 
-  const answer = ensureVeterinaryBoundary(extractOpenAIText(responseBody));
+  const answer = ensureVeterinaryBoundary(extractOpenAIText(responseBody), context);
   return {
     answer,
     mode: "openai",
@@ -115,10 +115,11 @@ export function extractOpenAIText(responseBody = {}) {
   return text.join("\n").trim();
 }
 
-export function ensureVeterinaryBoundary(answer) {
+export function ensureVeterinaryBoundary(answer, context = {}) {
   const clean = cleanText(answer);
+  const petName = resolvePetName(context?.profile?.name);
   const fallback =
-    "I can help summarize Phoenix's logged care context, but I cannot diagnose her. Track meals, timing, appetite, vomit events, stool, energy, and any red flags.";
+    `I can help summarize ${petName}'s logged care context, but I cannot diagnose them. Track meals, timing, appetite, vomit events, stool, energy, and any red flags.`;
   const base = clean || fallback;
   return /veterinarian|urgent care/i.test(base) ? base : `${base} ${CARE_HELPER_BOUNDARY}`;
 }

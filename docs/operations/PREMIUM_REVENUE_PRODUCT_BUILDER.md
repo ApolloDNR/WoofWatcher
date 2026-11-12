@@ -6773,3 +6773,18 @@ raw interpolation, then PWA readiness passed `38/38` and the aggregate
 zero-dependency mobile/domain/PWA suite passed `1192/1192`. Native
 VoiceOver/TalkBack and route-named device evidence remain required; this does
 not approve provider services, store submission, or Apollo release.
+
+## 2026-11-12 PWA WoofGuide fallback identity boundary
+
+WoofGuide's provider-response safety fallback now receives the same canonical
+Dog Profile context as the requested answer. If an OpenAI response has no
+usable text, its bounded non-diagnostic fallback uses `Phoenix` for blank or
+`My Dog` starter identity and the trimmed renamed dog name otherwise, rather
+than leaking the Phoenix demo identity into a real household's review.
+
+Red-first PWA readiness coverage reproduced the renamed fallback leak, then
+passed for both placeholder and padded renamed profiles. The full focused
+API/mobile/domain/PWA/release-tool suite passed `1267/1267` with localhost
+fixtures available. This changes no provider configuration and keeps the
+veterinary-care escalation boundary intact; browser/native owner-review,
+provider proof, store, legal, and Apollo approval remain separate gates.
