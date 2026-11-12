@@ -1,5 +1,21 @@
 # Premium Revenue Product Builder
 
+## 2026-11-12 PWA owner-tools identity hardening
+
+Avatar Studio, Goals, Household Pulse, Diet Profile, Care Pass, Care Team,
+WoofGuide, Health Watch, test notifications, and the owner-downloadable
+backup/report/Care Pass filenames now resolve Dog Profile identity at the PWA
+display/export boundary. Stored blank or `My Dog` values retain the intentional
+Phoenix starter fallback; renamed dogs render the trimmed profile name without
+turning a display fallback into a persistent write. Health wording remains
+non-diagnostic and WoofGuide remains owner-reviewed.
+
+The red-first source contract now passes `43/43`; the complete zero-dependency
+API/mobile/domain/PWA/release-tool suite passes `1,265/1,265` when localhost
+fixtures are allowed; PixelLab asset verification reports `ok=150 missing=0
+invalid=0`. Dependency-complete final-tip CI, native VoiceOver/TalkBack,
+provider, store, and Apollo approval remain separate gates.
+
 ## 2026-11-12 PWA Diet & Treats identity hardening
 
 Diet & Treats now resolves Dog Profile identity before rendering its daily

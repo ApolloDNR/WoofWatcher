@@ -772,6 +772,27 @@ test("keeps PWA log and household-return copy behind the Dog Profile identity bo
   assert.doesNotMatch(appEntry, /<h3>Log Phoenix's care<\/h3>/);
 });
 
+test("keeps owner-facing PWA tools and exports behind the Dog Profile identity boundary", () => {
+  assert.match(appEntry, /function renderAvatarStudioTab\(context\) \{\s+const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.match(appEntry, /function renderWoofGuidePanel\(\) \{\s+const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.match(appEntry, /function renderCarePassPanel\(summary\) \{\s+const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.match(appEntry, /function renderCareTeamPanel\(handoff\) \{\s+const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.match(appEntry, /function renderSettingsBackupPanel\(\) \{\s+const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.match(appEntry, /getPetFileStem\(\)/);
+  assert.match(appEntry, /\$\{escapeHtml\(petName\)\}'s care context/);
+  assert.match(appEntry, /woofwatcher-\$\{getPetFileStem\(\)\}-backup\.json/);
+  assert.match(appEntry, /woofwatcher-\$\{getPetFileStem\(\)\}-report\.txt/);
+  assert.match(appEntry, /woofwatcher-\$\{getPetFileStem\(\)\}-\$\{audience\}-care-pass\.json/);
+  assert.doesNotMatch(appEntry, /<h3>Bring Phoenix into the app<\/h3>/);
+  assert.doesNotMatch(appEntry, /<h3>Ask with Phoenix context<\/h3>/);
+  assert.doesNotMatch(appEntry, /Care Pass packages Phoenix's care context/);
+  assert.doesNotMatch(appEntry, /<h3>Humans caring for Phoenix<\/h3>/);
+  assert.doesNotMatch(appEntry, /<h3>Move Phoenix data intentionally<\/h3>/);
+  assert.doesNotMatch(appEntry, /woofwatcher-phoenix-backup\.json/);
+  assert.doesNotMatch(appEntry, /woofwatcher-phoenix-report\.txt/);
+  assert.doesNotMatch(appEntry, /woofwatcher-phoenix-\$\{audience\}-care-pass\.json/);
+});
+
 test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /records: "records"/);
   assert.match(appEntry, /reports: "reports"/);

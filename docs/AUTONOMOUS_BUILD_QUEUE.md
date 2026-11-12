@@ -1,5 +1,21 @@
 # Autonomous Build Queue
 
+## 2026-11-12 PWA owner-tools identity boundary
+
+- DONE: Avatar Studio, Goals, Household Pulse, Diet Profile, Care Pass, Care
+  Team, WoofGuide, Health Watch, notifications, and downloadable
+  backup/report/Care Pass filenames now resolve their dog name at the shared
+  Dog Profile identity boundary. Blank or `My Dog` profiles intentionally show
+  Phoenix; padded renamed profiles show the trimmed owner-provided name.
+- VERIFIED LOCALLY: The red-first PWA source contract passes `43/43`; the
+  complete focused API/mobile/domain/PWA/release-tool suite passes
+  `1,265/1,265` when localhost fixtures are allowed; PixelLab reports
+  `ok=150 missing=0 invalid=0`.
+- NEXT: Continue identity audits only at unprotected owner-facing seams. The
+  direct PWA Vite build remains host-blocked by the missing local Vite package;
+  final-tip dependency-complete CI and native VoiceOver/TalkBack remain
+  separate gates.
+
 ## 2026-11-12 PWA Diet & Treats identity boundary
 
 - DONE: Diet & Treats now takes its hero heading and empty-meals guidance from

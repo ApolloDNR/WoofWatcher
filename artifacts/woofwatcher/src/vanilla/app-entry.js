@@ -253,7 +253,7 @@ const WOOFGUIDE_ACTIONS = [
   {
     id: "vet-note",
     label: "Draft vet note",
-    detail: "Create an owner-reviewed note from Phoenix's current pattern context.",
+    detail: "Create an owner-reviewed note from the current pattern context.",
     action: "woofguide-draft-vet-note",
     cta: "Draft note"
   }
@@ -561,6 +561,7 @@ function renderCareStats(summary) {
 }
 
 function renderPulseRail(pulse, handoff) {
+  const petName = buildHomeIdentityCopy(state).petName;
   return `
     <section class="panel handoff-card">
       <div class="section-heading">
@@ -574,7 +575,7 @@ function renderPulseRail(pulse, handoff) {
       <article class="next-action-mini">
         <span>${escapeHtml(pulse.nextAction.time || "Today")}</span>
         <strong>${escapeHtml(pulse.nextAction.label)}</strong>
-        <small>${escapeHtml(pulse.nextAction.owner || "Phoenix's humans")}</small>
+        <small>${escapeHtml(pulse.nextAction.owner || `${petName}'s humans`)}</small>
       </article>
       <div class="button-row">
         <button class="button ghost" data-action="export-transfer">Care Pass</button>
@@ -589,6 +590,7 @@ function renderPulseRail(pulse, handoff) {
 function renderHouseholdPulseTab(context) {
   const activeAlone = getActiveAloneEntry();
   const status = getHouseholdPresenceStatus(activeAlone);
+  const petName = buildHomeIdentityCopy(state).petName;
   return `
     <div class="dashboard-grid household-pulse-screen">
       <section class="panel span-2 household-status-panel">
@@ -601,7 +603,7 @@ function renderHouseholdPulseTab(context) {
           <span class="status-chip ${status.className}">${escapeHtml(status.statusLabel)}</span>
         </div>
         <div class="household-status-grid">
-          ${renderStatusAnswer("Phoenix status", status.statusLabel)}
+          ${renderStatusAnswer(`${petName} status`, status.statusLabel)}
           ${renderStatusAnswer("Supervised by", status.supervisedBy)}
           ${renderStatusAnswer("Since", status.sinceLabel)}
           ${renderStatusAnswer("Timer", status.timerLabel)}
@@ -1010,6 +1012,7 @@ function renderCaregiverForm(caregiver = {}) {
 }
 
 function renderGoalsTab(goalReview) {
+  const petName = buildHomeIdentityCopy(state).petName;
   return `
     <div class="dashboard-grid">
       <section class="panel span-2">
@@ -1025,7 +1028,7 @@ function renderGoalsTab(goalReview) {
         </div>
       </section>
       <section class="panel span-2">
-        <p class="micro">Phoenix goals</p>
+        <p class="micro">${escapeHtml(petName)} goals</p>
         <h3>Weight, training, social, anxiety, health</h3>
         <div class="goal-list">
           ${goalReview.goals.map(renderGoalEditor).join("")}
@@ -2143,6 +2146,7 @@ function renderEntryForm(prefill = {}) {
 
 function renderPlansTab(context) {
   const { plan, reminders, notifications, goalReview } = context;
+  const petName = buildHomeIdentityCopy(state).petName;
   const bedtimeRoutine = (state.routines || []).find((routine) => /bed|snack/i.test(`${routine.label} ${routine.note}`));
   return `
     <div class="dashboard-grid plans-screen">
@@ -2202,7 +2206,7 @@ function renderPlansTab(context) {
       </section>
 
       <section class="panel span-2">
-        <p class="micro">Phoenix goals</p>
+        <p class="micro">${escapeHtml(petName)} goals</p>
         <h3>Weight, training, social, anxiety, health</h3>
         <div class="goal-list compact">
           ${goalReview.goals.map(renderGoalEditor).join("")}
@@ -2487,13 +2491,14 @@ function renderCarePassTab(context) {
 }
 
 function renderAvatarStudioTab(context) {
+  const petName = buildHomeIdentityCopy(state).petName;
   const studio = state.avatarStudio || {};
   const selected = AVATAR_STATES.find((item) => item.id === studio.selectedState) || AVATAR_STATES[0];
   const previewAvatar = {
     ...context.avatar,
     mood: selected.mood,
     urgency: selected.id === "not-feeling-well" ? "review" : selected.id === "home-alone" ? "watch" : "steady",
-    speech: `${selected.label} state selected for Phoenix.`,
+    speech: `${selected.label} state selected for ${petName}.`,
     suggestedAction: selected.motion,
     evidence: [selected.use]
   };
@@ -2503,14 +2508,14 @@ function renderAvatarStudioTab(context) {
         <div class="section-heading">
           <div>
             <p class="micro">Avatar Studio</p>
-            <h3>Bring Phoenix into the app</h3>
+            <h3>Bring ${escapeHtml(petName)} into the app</h3>
             <p>Prototype state inventory for future pixel sprite, Rive, Lottie, or Reanimated assets. Current mode uses local template states and optional uploaded reference photo memory.</p>
           </div>
           <span class="status-chip watch">Template mode</span>
         </div>
         <div class="avatar-studio-preview">
           <div>
-            ${studio.sourceImage ? `<img class="avatar-reference-photo" src="${escapeAttribute(studio.sourceImage)}" alt="Uploaded Phoenix reference" />` : renderPhoenixAvatar(previewAvatar, "rail")}
+            ${studio.sourceImage ? `<img class="avatar-reference-photo" src="${escapeAttribute(studio.sourceImage)}" alt="Uploaded ${escapeAttribute(petName)} reference" />` : renderPhoenixAvatar(previewAvatar, "rail", petName)}
           </div>
           <div>
             <p class="micro">Selected state</p>
@@ -2529,7 +2534,7 @@ function renderAvatarStudioTab(context) {
         <div class="section-heading">
           <div>
             <p class="micro">State inventory</p>
-            <h3>Required Phoenix states</h3>
+            <h3>Required ${escapeHtml(petName)} states</h3>
           </div>
           <span class="status-chip steady">${AVATAR_STATES.length} states</span>
         </div>
@@ -2658,12 +2663,13 @@ function renderSettingsTab(context) {
 }
 
 function renderSettingsBackupPanel() {
+  const petName = buildHomeIdentityCopy(state).petName;
   return `
     <section class="panel span-2 settings-backup-panel">
       <div class="section-heading">
         <div>
           <p class="micro">Backup and transfer</p>
-          <h3>Move Phoenix data intentionally</h3>
+          <h3>Move ${escapeHtml(petName)} data intentionally</h3>
           <p>Full backup is for the household. Care room transfer is for same-household device moves. Scoped Care Pass stays under Reports.</p>
         </div>
         <span class="status-chip steady">Local file</span>
@@ -2741,13 +2747,14 @@ function renderMoreTab(context) {
 }
 
 function renderMoreDirectoryPanel() {
+  const petName = buildHomeIdentityCopy(state).petName;
   const items = [
-    { tab: "household-pulse", label: "Household Pulse", detail: "Who is home, whether Phoenix is alone, and return outcomes." },
+    { tab: "household-pulse", label: "Household Pulse", detail: `Who is home, whether ${petName} is alone, and return outcomes.` },
     { tab: "diet-treats", label: "Diet & Treats", detail: "Food baseline, portions, treats, notes, and avoid list." },
     { tab: "records", label: "Records", detail: "Vaccines, visits, insurance, receipts, and dog ID." },
     { tab: "reports", label: "Reports", detail: "Care Pass exports and monthly progress." },
     { tab: "woofguide", label: "WoofGuide", detail: "Owner-reviewed assistant drafts and summaries." },
-    { tab: "avatar-studio", label: "Avatar Studio", detail: "Pixel Phoenix states and future asset pipeline." },
+    { tab: "avatar-studio", label: "Avatar Studio", detail: `Pixel ${petName} states and future asset pipeline.` },
     { tab: "achievements", label: "Achievements", detail: "Meaningful care milestones from real logs and records." },
     { tab: "settings", label: "Settings", detail: "Backup, import, privacy, safety, and provider readiness." }
   ];
@@ -2773,13 +2780,14 @@ function renderMoreDirectoryPanel() {
 }
 
 function renderDietProfilePanel() {
+  const petName = buildHomeIdentityCopy(state).petName;
   const profile = state.dietProfile || {};
   return `
     <section class="panel span-2 diet-profile-panel">
       <div class="section-heading">
         <div>
           <p class="micro">Diet Profile</p>
-          <h3>What helps Phoenix eat calmly</h3>
+          <h3>What helps ${escapeHtml(petName)} eat calmly</h3>
         </div>
         <span class="status-chip steady">Editable</span>
       </div>
@@ -2828,6 +2836,7 @@ function renderDietField(name, label, value) {
 }
 
 function renderCarePassPanel(summary) {
+  const petName = buildHomeIdentityCopy(state).petName;
   const report = buildReportText(state);
   return `
     <section class="panel span-2 care-pass-panel">
@@ -2843,7 +2852,7 @@ function renderCarePassPanel(summary) {
           <button class="button primary" data-action="print-report">Print/PDF</button>
         </div>
       </div>
-      <p>Care Pass packages Phoenix's care context for a caregiver, sitter, vet conversation, or monthly review.</p>
+      <p>Care Pass packages ${escapeHtml(petName)}'s care context for a caregiver, sitter, vet conversation, or monthly review.</p>
       ${renderScopedCarePassPanel()}
       <pre class="report-box compact">${escapeHtml(report)}</pre>
     </section>
@@ -2902,12 +2911,13 @@ function buildScopedCarePassText(audience) {
 }
 
 function renderCareTeamPanel(handoff) {
+  const petName = buildHomeIdentityCopy(state).petName;
   return `
     <section class="panel span-2 care-team-panel">
       <div class="section-heading">
         <div>
           <p class="micro">Care Team</p>
-          <h3>Humans caring for Phoenix</h3>
+          <h3>Humans caring for ${escapeHtml(petName)}</h3>
         </div>
         <span class="status-chip steady">${state.caregivers.length} active</span>
       </div>
@@ -3004,6 +3014,7 @@ function renderWoofGuideTab(context) {
 }
 
 function renderWoofGuidePanel() {
+  const petName = buildHomeIdentityCopy(state).petName;
   const context = getAssistantContext(state, "");
   const answer = assistantAnswer || context.localAnswer;
   const chipLabel = getAssistantChipLabel();
@@ -3013,22 +3024,22 @@ function renderWoofGuidePanel() {
       <div class="section-heading">
         <div>
           <p class="micro">WoofGuide</p>
-          <h3>Ask with Phoenix context</h3>
+          <h3>Ask with ${escapeHtml(petName)} context</h3>
         </div>
         <span class="status-chip ${chipClass}">${chipLabel}</span>
       </div>
       <form class="assistant-form" data-form="assistant">
         <label>
           <span>Question</span>
-          <textarea name="question" rows="4" placeholder="Phoenix threw up yellow again. What should we track before calling the vet?"></textarea>
+          <textarea name="question" rows="4" placeholder="${escapeAttribute(petName)} threw up yellow again. What should we track before calling the vet?"></textarea>
         </label>
-        <button class="button primary" type="submit">Review Phoenix context</button>
+        <button class="button primary" type="submit">Review ${escapeHtml(petName)} context</button>
       </form>
       <div class="assistant-answer" aria-live="polite">
         <p>${escapeHtml(answer)}</p>
       </div>
       ${renderWoofGuideActionCards(context)}
-      <p class="notification-boundary">WoofGuide can organize Phoenix's logs and caregiver notes. It does not diagnose, replace a veterinarian, or decide urgent care.</p>
+      <p class="notification-boundary">WoofGuide can organize ${escapeHtml(petName)}'s logs and caregiver notes. It does not diagnose, replace a veterinarian, or decide urgent care.</p>
     </section>
   `;
 }
@@ -3077,6 +3088,7 @@ function renderWoofGuideActionButton(dataAction, label, tone) {
 }
 
 function renderHealthTab(health, bileWatch) {
+  const petName = buildHomeIdentityCopy(state).petName;
   return `
     <div class="dashboard-grid">
       <section class="panel span-2">
@@ -3090,7 +3102,7 @@ function renderHealthTab(health, bileWatch) {
         <div class="signal-list">
           ${health.signals.map((signal) => `<p>${escapeHtml(signal)}</p>`).join("")}
         </div>
-        <p class="notification-boundary">This is pattern support, not a diagnosis. Use it to decide what to track, what to share, and when Phoenix needs a veterinarian.</p>
+        <p class="notification-boundary">This is pattern support, not a diagnosis. Use it to decide what to track, what to share, and when ${escapeHtml(petName)} needs a veterinarian.</p>
       </section>
       <section class="panel alert-panel">
         <p class="micro">Vet boundary</p>
@@ -3236,6 +3248,7 @@ function renderReportTab(summary) {
 }
 
 function renderAssistantTab() {
+  const petName = buildHomeIdentityCopy(state).petName;
   const context = getAssistantContext(state, "");
   const answer = assistantAnswer || context.localAnswer;
   const chipLabel = getAssistantChipLabel();
@@ -3246,16 +3259,16 @@ function renderAssistantTab() {
         <div class="section-heading">
           <div>
             <p class="micro">AI-ready care helper</p>
-            <h3>Ask with Phoenix context</h3>
+            <h3>Ask with ${escapeHtml(petName)} context</h3>
           </div>
           <span class="status-chip ${chipClass}">${chipLabel}</span>
         </div>
         <form class="assistant-form" data-form="assistant">
           <label>
             <span>Question</span>
-            <textarea name="question" rows="4" placeholder="Phoenix threw up yellow again. What should we track before calling the vet?"></textarea>
+            <textarea name="question" rows="4" placeholder="${escapeAttribute(petName)} threw up yellow again. What should we track before calling the vet?"></textarea>
           </label>
-          <button class="button primary" type="submit">Review Phoenix context</button>
+          <button class="button primary" type="submit">Review ${escapeHtml(petName)} context</button>
         </form>
         <div class="assistant-answer" aria-live="polite">
           <p>${escapeHtml(answer)}</p>
@@ -3623,7 +3636,7 @@ function buildReturnHomeNote({ caregiver, outcome, recoveryMinutes, note }) {
 
 async function handleAction(action, button) {
   if (action === "reset-demo") {
-    const confirmed = window.confirm("Reset WoofWatcher to the Phoenix demo state? This clears local logs on this device.");
+    const confirmed = window.confirm("Reset WoofWatcher to the starter demo state? This clears local logs on this device.");
     if (!confirmed) return;
     saveState(getDefaultState());
     activeTab = "phoenix";
@@ -3782,7 +3795,7 @@ async function handleAction(action, button) {
   }
 
   if (action === "download-report") {
-    downloadText("woofwatcher-phoenix-report.txt", buildReportText(state));
+    downloadText(`woofwatcher-${getPetFileStem()}-report.txt`, buildReportText(state));
   }
 
   if (action === "copy-report") {
@@ -3796,7 +3809,7 @@ async function handleAction(action, button) {
 
   if (action === "download-care-pass") {
     const audience = button?.dataset.carePassAudience || "sitter";
-    const filename = `woofwatcher-phoenix-${audience}-care-pass.json`;
+    const filename = `woofwatcher-${getPetFileStem()}-${audience}-care-pass.json`;
     downloadText(filename, JSON.stringify(buildScopedCarePass(state, { audience }), null, 2), "application/json");
   }
 
@@ -3846,9 +3859,10 @@ async function handleAction(action, button) {
   }
 
   if (action === "test-notification") {
+    const petName = buildHomeIdentityCopy(state).petName;
     await showCareNotification({
       title: "WoofWatcher test alert",
-      body: "Phoenix care alerts are ready while WoofWatcher is open.",
+      body: `${petName} care alerts are ready while WoofWatcher is open.`,
       tag: "woofwatcher-test"
     });
   }
@@ -3858,11 +3872,11 @@ async function handleAction(action, button) {
   }
 
   if (action === "export-json") {
-    downloadText("woofwatcher-phoenix-backup.json", JSON.stringify(state, null, 2), "application/json");
+    downloadText(`woofwatcher-${getPetFileStem()}-backup.json`, JSON.stringify(state, null, 2), "application/json");
   }
 
   if (action === "export-transfer") {
-    downloadText("woofwatcher-phoenix-care-pass.json", JSON.stringify(buildCareRoomTransfer(state), null, 2), "application/json");
+    downloadText(`woofwatcher-${getPetFileStem()}-care-pass.json`, JSON.stringify(buildCareRoomTransfer(state), null, 2), "application/json");
   }
 
   if (action === "import-json") {
@@ -3912,7 +3926,7 @@ function handleAvatarPhotoInput(event) {
       avatarStudio: {
         ...(state.avatarStudio || {}),
         sourceImage: String(reader.result || ""),
-        sourceImageName: file.name || "Phoenix reference",
+        sourceImageName: file.name || `${buildHomeIdentityCopy(state).petName} reference`,
         updatedAt: new Date().toISOString()
       }
     });
@@ -3931,6 +3945,13 @@ function downloadText(filename, text, type = "text/plain") {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function getPetFileStem() {
+  return buildHomeIdentityCopy(state).petName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "phoenix";
 }
 
 function isBrowserNotificationSupported() {
@@ -4020,7 +4041,7 @@ async function checkAssistantStatus() {
 async function reviewAssistantQuestion(question) {
   const context = getAssistantContext(state, question);
   assistantBusy = true;
-  assistantAnswer = "Reviewing Phoenix context. If structured AI proof is not attached, WoofWatcher will use the local care review.";
+  assistantAnswer = `Reviewing ${buildHomeIdentityCopy(state).petName} context. If structured AI proof is not attached, WoofWatcher will use the local care review.`;
   render();
 
   const liveAnswer = isAssistantLiveReady() ? await requestLiveAssistant(question, context) : null;
