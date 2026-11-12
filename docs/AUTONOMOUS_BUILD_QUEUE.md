@@ -1,5 +1,19 @@
 # Autonomous Build Queue
 
+## 2026-11-12 PWA document identity boundary
+
+- DONE: Browser tab and description metadata now resolve Dog Profile identity
+  through the PWA's shared Home identity boundary. Blank or `My Dog` values
+  intentionally show Phoenix; padded renamed profiles show the trimmed name.
+  Initial static metadata is dog-generic until local care state is available.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage passes `44/44`; the
+  complete focused API/mobile/domain/PWA/release-tool suite passes
+  `1,266/1,266` when localhost fixtures are allowed.
+- NEXT: Continue identity audits only at unprotected owner-facing seams. The
+  direct PWA Vite build is host-blocked by the missing optional
+  `@rollup/rollup-win32-x64-msvc` binary; final-tip dependency-complete CI and
+  native VoiceOver/TalkBack remain separate gates.
+
 ## 2026-11-12 PWA owner-tools identity boundary
 
 - DONE: Avatar Studio, Goals, Household Pulse, Diet Profile, Care Pass, Care

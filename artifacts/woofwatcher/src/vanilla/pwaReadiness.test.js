@@ -41,6 +41,7 @@ const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const app = readFileSync(join(here, "app.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
+const index = readFileSync(join(here, "../../index.html"), "utf8");
 
 test("keeps Dog Profile identity canonical in the Today handoff prompt", () => {
   const placeholder = getTodayPlan(
@@ -791,6 +792,15 @@ test("keeps owner-facing PWA tools and exports behind the Dog Profile identity b
   assert.doesNotMatch(appEntry, /woofwatcher-phoenix-backup\.json/);
   assert.doesNotMatch(appEntry, /woofwatcher-phoenix-report\.txt/);
   assert.doesNotMatch(appEntry, /woofwatcher-phoenix-\$\{audience\}-care-pass\.json/);
+});
+
+test("keeps PWA document identity behind the Dog Profile identity boundary", () => {
+  assert.match(appEntry, /function applyDocumentIdentity\(petName\) \{/);
+  assert.match(appEntry, /document\.title = `WoofWatcher \| \$\{petName\} Care`;/);
+  assert.match(appEntry, /description\?\.setAttribute\("content", `WoofWatcher is a shared \$\{petName\} care app for meals, walks, training, health notes, records, reports, and caregiver handoffs\.`\);/);
+  assert.match(appEntry, /applyDocumentIdentity\(shellHomeCopy\.petName\);/);
+  assert.match(index, /<title>WoofWatcher \| Dog Care<\/title>/);
+  assert.doesNotMatch(index, /Phoenix Care/);
 });
 
 test("keeps records and reports tools directly routable in the PWA", () => {

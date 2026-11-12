@@ -1,5 +1,20 @@
 # Premium Revenue Product Builder
 
+## 2026-11-12 PWA document identity hardening
+
+The PWA browser title and description now resolve Dog Profile identity during
+every render. A stored blank or `My Dog` name keeps the intentional Phoenix
+starter fallback; a renamed padded name is trimmed before it reaches a browser
+tab or browser-owned description. The static first-load metadata is now
+dog-generic, so it does not claim Phoenix before local care state hydrates.
+
+The red-first PWA source contract passes `44/44`; the complete zero-dependency
+API/mobile/domain/PWA/release-tool suite passes `1,266/1,266` when localhost
+fixtures are allowed. PixelLab verification passes `ok=150 missing=0
+invalid=0`. The direct PWA Vite build is host-blocked by the missing optional
+`@rollup/rollup-win32-x64-msvc` binary; fresh dependency-complete CI, native
+VoiceOver/TalkBack, provider, store, and Apollo approval remain separate gates.
+
 ## 2026-11-12 PWA owner-tools identity hardening
 
 Avatar Studio, Goals, Household Pulse, Diet Profile, Care Pass, Care Team,

@@ -392,6 +392,12 @@ function applyTheme(nextTheme) {
   if (app) app.dataset.theme = resolved;
 }
 
+function applyDocumentIdentity(petName) {
+  document.title = `WoofWatcher | ${petName} Care`;
+  const description = document.querySelector('meta[name="description"]');
+  description?.setAttribute("content", `WoofWatcher is a shared ${petName} care app for meals, walks, training, health notes, records, reports, and caregiver handoffs.`);
+}
+
 function normalizeTab(tab) {
   const normalized = String(tab || "").trim().toLowerCase();
   if (PRIMARY_TABS.has(normalized)) return normalized;
@@ -419,6 +425,7 @@ function render() {
 
   const caregiverName = (state.caregivers && state.caregivers[0] && state.caregivers[0].name) || "there";
   const shellHomeCopy = buildHomeIdentityCopy(state, { avatar, pulse, caregiverName });
+  applyDocumentIdentity(shellHomeCopy.petName);
   const presenceLabel = shellHomeCopy.presenceLabel;
   const clock = new Date();
   const hour = clock.getHours();
