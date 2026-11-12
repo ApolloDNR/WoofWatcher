@@ -42,6 +42,7 @@ const app = readFileSync(join(here, "app.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
 const index = readFileSync(join(here, "../../index.html"), "utf8");
+const manifest = readFileSync(join(here, "../../public/manifest.webmanifest"), "utf8");
 
 test("keeps Dog Profile identity canonical in the Today handoff prompt", () => {
   const placeholder = getTodayPlan(
@@ -801,6 +802,16 @@ test("keeps PWA document identity behind the Dog Profile identity boundary", () 
   assert.match(appEntry, /applyDocumentIdentity\(shellHomeCopy\.petName\);/);
   assert.match(index, /<title>WoofWatcher \| Dog Care<\/title>/);
   assert.doesNotMatch(index, /Phoenix Care/);
+});
+
+test("keeps static installed-app metadata dog-generic before local state hydrates", () => {
+  assert.match(manifest, /Shared dog care logging, health watch, reports, and caregiver handoffs\./);
+  assert.match(manifest, /Open active caregiver profiles\./);
+  assert.match(manifest, /Open due and overdue care reminders\./);
+  assert.match(manifest, /Open an editable care schedule\./);
+  assert.match(manifest, /Review training and social progress\./);
+  assert.match(manifest, /Open WoofWatcher to log dog care\./);
+  assert.doesNotMatch(manifest, /Phoenix/);
 });
 
 test("keeps records and reports tools directly routable in the PWA", () => {

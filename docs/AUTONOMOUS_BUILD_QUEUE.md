@@ -1,5 +1,19 @@
 # Autonomous Build Queue
 
+## 2026-11-12 PWA installed-app identity boundary
+
+- DONE: Static web-app manifest and installed shortcut descriptions are now
+  dog-generic, rather than claiming the starter name Phoenix. Dynamic PWA
+  surfaces continue to resolve the Dog Profile identity after local state
+  hydrates; static installed metadata intentionally never guesses an owner
+  name.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage protects the manifest
+  boundary alongside the existing document-identity contract.
+- NEXT: Continue identity audits only at unprotected owner-facing seams. The
+  direct PWA Vite build remains host-blocked by the missing optional
+  `@rollup/rollup-win32-x64-msvc` binary; dependency-complete final-tip CI and
+  native VoiceOver/TalkBack remain separate gates.
+
 ## 2026-11-12 PWA document identity boundary
 
 - DONE: Browser tab and description metadata now resolve Dog Profile identity
