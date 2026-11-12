@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-11-12 PWA log and household-return identity boundary
+
+PWA Quick Log and the Household Pulse return flow now resolve their dog name
+through `buildHomeIdentityCopy(state)`, including the alone-time note stored as
+household care evidence. A stored `My Dog` profile remains Phoenix only as the
+intentional starter fallback; a padded renamed profile is trimmed before it
+reaches the visible form, placeholder, log title, or saved note. The red-first
+readiness contract passes `41/41`; the complete focused suite passes
+`1,263/1,263` with localhost fixtures enabled; PixelLab verification passes
+`ok=150 missing=0 invalid=0`. The local PWA Vite build remains host-blocked by
+the missing Vite package in this checkout. Final-tip dependency-complete CI and
+native VoiceOver/TalkBack remain distinct evidence gates.
+
 ## 2026-11-11 PWA Home shell identity boundary
 
 PWA Home now derives its desktop navigation label, active page title, and

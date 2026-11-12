@@ -493,7 +493,7 @@ test("keeps Household Pulse wired to manual alone-time workflow", () => {
   assert.match(appEntry, /data-form="return-home"/);
   assert.match(appEntry, /function handleLeavingHomeSubmit/);
   assert.match(appEntry, /function handleReturnHomeSubmit/);
-  assert.match(appEntry, /Phoenix is home alone/);
+  assert.match(appEntry, /note: leaving \? `\$\{petName\} is home alone\. Return outcome pending\.`/);
   assert.match(appEntry, /Return outcomes/);
   assert.match(appEntry, /function renderMoreDirectoryPanel/);
 });
@@ -749,6 +749,17 @@ test("keeps PWA Home navigation and avatar accessibility behind the Dog Profile 
   );
   assert.doesNotMatch(appEntry, /aria-label="Phoenix avatar state:/);
   assert.doesNotMatch(appEntry, /phoenix: \["Phoenix",/);
+});
+
+test("keeps PWA log and household-return copy behind the Dog Profile identity boundary", () => {
+  assert.match(appEntry, /function renderReturnHomeForm\(activeAlone\) \{\s+const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.match(appEntry, /<span>How was \$\{escapeHtml\(petName\)\}\?<\/span>/);
+  assert.match(appEntry, /whether \$\{escapeHtml\(petName\)\} settled/);
+  assert.match(appEntry, /function renderLogTab\(\) \{\s+const petName = buildHomeIdentityCopy\(state\)\.petName;/);
+  assert.match(appEntry, /<h3>Log \$\{escapeHtml\(petName\)\}'s care<\/h3>/);
+  assert.match(appEntry, /note: leaving \? `\$\{petName\} is home alone\. Return outcome pending\.` : `Returned home\. Add how \$\{petName\} was\.`/);
+  assert.doesNotMatch(appEntry, /<span>How was Phoenix\?<\/span>/);
+  assert.doesNotMatch(appEntry, /<h3>Log Phoenix's care<\/h3>/);
 });
 
 test("keeps records and reports tools directly routable in the PWA", () => {

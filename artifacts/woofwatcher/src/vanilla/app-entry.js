@@ -671,8 +671,8 @@ function renderCaregiverOptionList() {
 }
 
 function renderReturnHomeForm(activeAlone) {
+  const petName = buildHomeIdentityCopy(state).petName;
   if (!activeAlone) {
-    const petName = buildHomeIdentityCopy(state).petName;
     return `<p class="quick-flow-empty">No active alone timer. Use Leaving Home when ${escapeHtml(petName)} is actually home alone.</p>`;
   }
   return `
@@ -683,7 +683,7 @@ function renderReturnHomeForm(activeAlone) {
         <select name="caregiver">${renderCaregiverOptionList()}</select>
       </label>
       <label>
-        <span>How was Phoenix?</span>
+        <span>How was ${escapeHtml(petName)}?</span>
         <select name="aloneOutcome">
           <option>Calm</option>
           <option>Excited</option>
@@ -701,7 +701,7 @@ function renderReturnHomeForm(activeAlone) {
       </label>
       <label class="wide">
         <span>Return note</span>
-        <textarea name="note" rows="3" placeholder="What you saw, what helped, and whether Phoenix settled."></textarea>
+        <textarea name="note" rows="3" placeholder="What you saw, what helped, and whether ${escapeHtml(petName)} settled."></textarea>
       </label>
       <button class="button primary wide" type="submit">Save return outcome</button>
     </form>
@@ -1844,6 +1844,7 @@ function renderPottyOutcomeFlow() {
 }
 
 function renderLogTab() {
+  const petName = buildHomeIdentityCopy(state).petName;
   const visibleEntries = getVisibleLogEntries();
   const searchNote = logSearchQuery
     ? `<div class="search-result-note"><span>Showing ${visibleEntries.length} result${visibleEntries.length === 1 ? "" : "s"} for "${escapeHtml(logSearchQuery)}"</span><button class="card-link" data-action="clear-log-search">Clear</button></div>`
@@ -1864,7 +1865,7 @@ function renderLogTab() {
       </section>
       <section class="panel span-2">
         <p class="micro">New care event</p>
-        <h3>Log Phoenix's care</h3>
+        <h3>Log ${escapeHtml(petName)}'s care</h3>
         ${renderEntryForm()}
       </section>
       <section class="panel span-2">
@@ -1915,6 +1916,7 @@ function entryMatchesSearch(entry, query) {
 }
 
 function getQuickEntryDefaults(type, title, now) {
+  const petName = buildHomeIdentityCopy(state).petName;
   if (type === "meal") {
     return {
       mealType: title,
@@ -1941,7 +1943,7 @@ function getQuickEntryDefaults(type, title, now) {
     return {
       trustState: leaving ? "Confirmed" : "Pending",
       visibility: "Household",
-      note: leaving ? "Phoenix is home alone. Return outcome pending." : "Returned home. Add how Phoenix was."
+      note: leaving ? `${petName} is home alone. Return outcome pending.` : `Returned home. Add how ${petName} was.`
     };
   }
   return {

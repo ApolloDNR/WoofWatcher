@@ -1,5 +1,21 @@
 # Autonomous Build Queue
 
+## 2026-11-12 PWA log and household-return identity boundary
+
+- DONE: Quick Log, Household Pulse's return form, and the newly created
+  alone-time note now derive the active Dog Profile identity through
+  `buildHomeIdentityCopy(state)`. A blank or `My Dog` profile still uses the
+  intentional Phoenix fallback, while a padded renamed dog is trimmed in both
+  rendered owner copy and saved household evidence.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage passes `41/41`; the
+  complete focused API/mobile/domain/PWA/release-tool suite passes
+  `1,263/1,263` when localhost fixtures are allowed; PixelLab reports
+  `ok=150 missing=0 invalid=0`.
+- NEXT: Continue identity audits only at unprotected owner-facing seams; the
+  direct PWA Vite build is host-blocked because this checkout has no local
+  Vite package, while final-tip dependency-complete CI and native
+  VoiceOver/TalkBack remain separate gates.
+
 ## 2026-11-11 PWA Home shell identity boundary
 
 - DONE: PWA Home's desktop navigation, page title, and avatar accessibility
