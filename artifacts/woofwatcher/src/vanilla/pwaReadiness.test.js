@@ -766,6 +766,7 @@ test("keeps PWA Home navigation and avatar accessibility behind the Dog Profile 
   );
   assert.doesNotMatch(appEntry, /aria-label="Phoenix avatar state:/);
   assert.doesNotMatch(appEntry, /phoenix: \["Phoenix",/);
+  assert.doesNotMatch(appEntry, /\{ tab: "phoenix", label: "Phoenix Home", icon: ICONS\.dashboard \}/);
 });
 
 test("keeps PWA log and household-return copy behind the Dog Profile identity boundary", () => {

@@ -156,7 +156,7 @@ const DESKTOP_NAV_GROUPS = [
   {
     label: "Care & Wellbeing",
     items: [
-      { tab: "phoenix", label: "Phoenix Home", icon: ICONS.dashboard },
+      { tab: "phoenix", label: "Home", icon: ICONS.dashboard },
       { tab: "log", label: "Quick Log", icon: ICONS.log },
       { tab: "household-pulse", label: "Household Pulse", icon: ICONS.walk, secondary: true },
       { tab: "plans", label: "Plans", icon: ICONS.plans },

@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-11-12 PWA desktop-navigation identity config
+
+- DONE: The live PWA desktop navigation configuration now uses a neutral Home
+  fallback label. The render path continues to substitute the canonical Dog
+  Profile name, so a blank or `My Dog` profile intentionally displays Phoenix
+  while a padded renamed profile displays the trimmed owner-provided name.
+  Removing the stale `Phoenix Home` config value prevents a future renderer
+  from reintroducing a starter-name leak.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage passes `45/45`; the
+  complete API/mobile/domain/PWA/release-tool focused suite passes
+  `1,267/1,267` with loopback fixtures enabled; PixelLab reports
+  `ok=150 missing=0 invalid=0`.
+- NEXT: Continue identity audits only at unprotected owner-facing seams. The
+  direct PWA Vite build remains host-blocked by the missing optional
+  `@rollup/rollup-win32-x64-msvc` binary; dependency-complete final-tip CI and
+  native VoiceOver/TalkBack remain separate gates.
+
 ## 2026-11-12 PWA installed-app identity boundary
 
 - DONE: Static web-app manifest and installed shortcut descriptions are now

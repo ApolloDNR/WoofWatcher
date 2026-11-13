@@ -1,5 +1,22 @@
 # Premium Revenue Product Builder
 
+## 2026-11-12 PWA desktop-navigation identity config
+
+The PWA desktop-navigation configuration now defaults to the neutral `Home`
+label rather than retaining a dormant `Phoenix Home` literal. Rendering still
+substitutes the canonical Dog Profile identity, preserving Phoenix only for
+blank or `My Dog` starter data and trimming renamed dogs before display. This
+is a preventive source boundary: future navigation renderers cannot fall back
+to the starter identity.
+
+The red-first PWA readiness contract passes `45/45`; the complete
+zero-dependency API/mobile/domain/PWA/release-tool suite passes
+`1,267/1,267` with localhost fixtures enabled; PixelLab asset verification
+reports `ok=150 missing=0 invalid=0`. Direct PWA Vite build remains host-blocked
+by the missing optional `@rollup/rollup-win32-x64-msvc` binary. Final-tip
+dependency-complete CI, native VoiceOver/TalkBack, provider, store, and Apollo
+approval remain separate gates.
+
 ## 2026-11-12 PWA document identity hardening
 
 The PWA browser title and description now resolve Dog Profile identity during
