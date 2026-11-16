@@ -3756,3 +3756,14 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Continue identity audits only at unprotected owner-facing seams. Keep
   native PWA/mobile and VoiceOver/TalkBack evidence as environment-gated,
   separate release proof.
+
+## 2026-11-16 PWA Care Pass access identity boundary
+
+- DONE: Generated Care Pass privacy copy and household access-role descriptions
+  now use the canonical Dog Profile name. A trimmed renamed dog no longer
+  receives the Phoenix starter identity in these owner-facing share artifacts.
+- VERIFIED LOCALLY: Red-first coverage reproduced `Scoped Phoenix care context`
+  for a padded `Mochi` profile. Historic owner-authored routine and diet notes
+  remain unchanged; the regression covers only generated identity copy.
+- NEXT: Run the complete focused suite and exact-tip branch CI. Native PWA/mobile
+  and VoiceOver/TalkBack evidence remain separate environment-gated proof.

@@ -107,7 +107,7 @@ export function buildScopedCarePass(input = {}, options = {}, now = new Date().t
     privacy: {
       includesFullState: false,
       importableAsBackup: false,
-      privateData: "Scoped Phoenix care context only. Do not publish without household consent."
+      privateData: `Scoped ${petName} care context only. Do not publish without household consent.`
     }
   };
 
@@ -192,7 +192,7 @@ export function buildCaregiverAccessModel(input = {}, now = new Date().toISOStri
       petName,
       recommendedNextStep: "Choose private local-only, protected preview, or account-backed cloud sync before inviting external caregivers."
     },
-    roles: CAREGIVER_ROLES,
+    roles: buildCaregiverRoles(petName),
     scopeCatalog: ACCESS_SCOPES,
     members: (state.caregivers || []).map((caregiver, index) => ({
       name: caregiver.name,
@@ -353,4 +353,11 @@ function cleanText(value) {
 function resolvePetName(value) {
   const cleaned = cleanText(value);
   return !cleaned || cleaned.toLowerCase() === "my dog" ? "Phoenix" : cleaned;
+}
+
+function buildCaregiverRoles(petName) {
+  return CAREGIVER_ROLES.map((role) => ({
+    ...role,
+    description: role.description.replaceAll("Phoenix", petName)
+  }));
 }
