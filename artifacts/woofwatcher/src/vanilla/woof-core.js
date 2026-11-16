@@ -557,6 +557,7 @@ export function getTodayPlan(state, now = new Date().toISOString()) {
 }
 
 export function getReminderCenter(state, now = new Date().toISOString()) {
+  const petName = resolvePetName(state.profile?.name);
   const target = new Date(now);
   const currentMinutes = target.getHours() * 60 + target.getMinutes();
   const todayEntries = entriesForLocalDay(state.entries || [], now);
@@ -593,7 +594,7 @@ export function getReminderCenter(state, now = new Date().toISOString()) {
     unscheduledCount: items.filter((item) => item.status === "unscheduled").length,
     nextReminder,
     items,
-    message: buildReminderMessage({ items, nextReminder })
+    message: buildReminderMessage({ items, nextReminder, petName })
   };
 }
 
@@ -1651,7 +1652,7 @@ function sortReminderItems(left, right) {
   return left.label.localeCompare(right.label);
 }
 
-function buildReminderMessage({ items, nextReminder }) {
+function buildReminderMessage({ items, nextReminder, petName = "Phoenix" }) {
   const dueCount = items.filter((item) => item.status === "due").length;
   const overdueCount = items.filter((item) => item.status === "overdue").length;
   if (dueCount || overdueCount) {
@@ -1662,7 +1663,7 @@ function buildReminderMessage({ items, nextReminder }) {
   }
 
   if (nextReminder) {
-    return `Next Phoenix reminder: ${nextReminder.label} at ${nextReminder.time} (${nextReminder.owner}).`;
+    return `Next ${petName} reminder: ${nextReminder.label} at ${nextReminder.time} (${nextReminder.owner}).`;
   }
 
   return "Today's scheduled care is covered.";

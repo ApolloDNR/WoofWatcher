@@ -3729,3 +3729,16 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Require dependency-complete branch CI, then capture browser/native
   owner-review and accessibility evidence when tooling is available. Keep live
   AI disabled until its structured provider and safety proof is complete.
+
+## 2026-11-16 PWA Reminder Center identity boundary
+
+- DONE: Reminder Center now builds its next-routine headline from the canonical
+  Dog Profile name. A padded renamed dog receives its trimmed name in the
+  owner-facing reminder summary instead of the starter/demo identity.
+- VERIFIED LOCALLY: The regression test failed against `Next Phoenix reminder`
+  for a renamed dog, then the PWA readiness suite passed `46/46`, the complete
+  focused API/mobile/PWA/domain/release-tool suite passed `1,268/1,268`, and
+  PixelLab verification reported `ok=150`, `missing=0`, `invalid=0`.
+- NEXT: Run dependency-complete branch CI for this exact tip. Native PWA/mobile
+  identity and VoiceOver/TalkBack proof remain separate environment-gated
+  evidence.

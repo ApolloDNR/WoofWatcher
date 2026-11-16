@@ -33,6 +33,7 @@ import {
   getDefaultState,
   getHouseholdPulse,
   getNotificationCenter,
+  getReminderCenter,
   getTodayPlan,
 } from "./woof-core.js";
 import { buildProductViewModel } from "./woof-product-view-model.js";
@@ -266,6 +267,19 @@ test("keeps Dog Profile identity canonical in PWA notification guidance", () => 
   assert.doesNotMatch(renamed.message, /Phoenix/);
   assert.match(renamed.nextNotification.title, /Mochi care/);
   assert.doesNotMatch(renamed.nextNotification.title, /Phoenix/);
+});
+
+test("keeps Dog Profile identity canonical in PWA reminder guidance", () => {
+  const now = "2026-08-13T12:00:00.000Z";
+  const input = {
+    profile: { name: "  Mochi  ", publicLabel: "  Mochi  " },
+    routines: [{ id: "routine_lunch", label: "Lunch", type: "meal", time: "12:30 PM" }],
+    entries: [],
+  };
+
+  const reminders = getReminderCenter(input, now);
+  assert.match(reminders.message, /Next Mochi reminder: Lunch/);
+  assert.doesNotMatch(reminders.message, /Phoenix/);
 });
 
 test("keeps imported Dog Profile identity canonical in recovery review guidance", () => {

@@ -6805,3 +6805,18 @@ API/mobile/domain/PWA/release-tool suite passed `1267/1267` with localhost
 fixtures available. This changes no provider configuration and keeps the
 veterinary-care escalation boundary intact; browser/native owner-review,
 provider proof, store, legal, and Apollo approval remain separate gates.
+
+## 2026-11-16 PWA Reminder Center identity boundary
+
+The PWA Reminder Center now passes the canonical Dog Profile name into its
+owner-facing next-routine summary. This prevents the fixed Phoenix demo label
+from appearing after a household has renamed its dog, while preserving the
+starter `My Dog` fallback as Phoenix and keeping routine/log behavior intact.
+
+The regression was red first (`Next Phoenix reminder` for padded `Mochi`) and
+then passed with the PWA readiness suite at `46/46` and complete focused
+API/mobile/PWA/domain/release-tool coverage at `1,268/1,268`. PixelLab asset
+verification also remained clean at `ok=150`, `missing=0`, `invalid=0`. This
+is source-level local-first proof only: route-named native PWA/mobile,
+VoiceOver/TalkBack, provider, store, legal, and Apollo approval remain
+independent gates.
