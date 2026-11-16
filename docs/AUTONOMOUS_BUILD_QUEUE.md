@@ -3749,8 +3749,10 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   the canonical Dog Profile name. A padded renamed dog receives its trimmed
   identity in both owner-facing summaries rather than the Phoenix demo label.
 - VERIFIED LOCALLY: Red-first coverage reproduced the renamed-dog streak leak,
-  then focused achievement/training tests passed `2/2`. Complete focused-suite
-  and branch-CI proof remain required for this exact follow-up commit.
+  then focused achievement/training tests passed `2/2`. The first exact-tip
+  CI run exposed a UTC-sensitive Reminder Center expectation; due-state copy
+  now also names the canonical dog so the test and owner guidance are stable.
+  Complete focused-suite and fresh branch-CI proof remain required.
 - NEXT: Continue identity audits only at unprotected owner-facing seams. Keep
   native PWA/mobile and VoiceOver/TalkBack evidence as environment-gated,
   separate release proof.

@@ -6831,6 +6831,9 @@ copy; it does not alter logs, routines, health conclusions, provider behavior,
 or notifications.
 
 Focused red-first regression coverage now proves a renamed `Mochi` never
-receives Phoenix copy in either builder (`2/2`). Complete focused-suite,
-dependency-complete CI, and route-named native PWA/mobile VoiceOver/TalkBack
-evidence remain separate gates.
+receives Phoenix copy in either builder (`2/2`). The first exact-tip CI run
+also revealed that a Reminder Center expectation depended on the runner's
+local clock; its due-state owner summary now identifies the canonical dog,
+which makes identity guidance stable for both due and upcoming states. Complete
+focused-suite, dependency-complete CI, and route-named native PWA/mobile
+VoiceOver/TalkBack evidence remain separate gates.

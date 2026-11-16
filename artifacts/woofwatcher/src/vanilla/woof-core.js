@@ -1661,7 +1661,7 @@ function buildReminderMessage({ items, nextReminder, petName = "Phoenix" }) {
     const parts = [];
     if (overdueCount) parts.push(`${overdueCount} overdue`);
     if (dueCount) parts.push(`${dueCount} due now`);
-    return `${parts.join(" and ")}. Next: ${nextReminder.label} at ${nextReminder.time} (${nextReminder.owner}).`;
+    return `${petName}: ${parts.join(" and ")}. Next: ${nextReminder.label} at ${nextReminder.time} (${nextReminder.owner}).`;
   }
 
   if (nextReminder) {

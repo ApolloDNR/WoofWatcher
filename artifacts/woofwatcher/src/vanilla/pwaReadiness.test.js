@@ -278,7 +278,7 @@ test("keeps Dog Profile identity canonical in PWA reminder guidance", () => {
   };
 
   const reminders = getReminderCenter(input, now);
-  assert.match(reminders.message, /Next Mochi reminder: Lunch/);
+  assert.match(reminders.message, /Mochi.*Lunch/);
   assert.doesNotMatch(reminders.message, /Phoenix/);
 });
 
