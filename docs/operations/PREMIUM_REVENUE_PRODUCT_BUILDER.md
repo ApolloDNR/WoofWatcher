@@ -6820,3 +6820,17 @@ verification also remained clean at `ok=150`, `missing=0`, `invalid=0`. This
 is source-level local-first proof only: route-named native PWA/mobile,
 VoiceOver/TalkBack, provider, store, legal, and Apollo approval remain
 independent gates.
+
+## 2026-11-16 PWA achievement and training identity boundary
+
+The shared PWA achievement and training builders now resolve Dog Profile
+identity at their presentation boundary. Earned streak copy and recovery-focus
+guidance therefore use the trimmed renamed dog's name, while the starter `My
+Dog` profile continues to resolve to Phoenix. This only changes owner-facing
+copy; it does not alter logs, routines, health conclusions, provider behavior,
+or notifications.
+
+Focused red-first regression coverage now proves a renamed `Mochi` never
+receives Phoenix copy in either builder (`2/2`). Complete focused-suite,
+dependency-complete CI, and route-named native PWA/mobile VoiceOver/TalkBack
+evidence remain separate gates.

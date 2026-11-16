@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import {
   createEntry,
   getAchievementReview,
-  getDefaultState
+  getDefaultState,
+  getTrainingProgress
 } from "./woof-core.js";
 
 function daysAgo(now, days, hour = 12) {
@@ -69,4 +70,35 @@ test("derives meaningful care achievements from household evidence", () => {
     ["routine_streak", "training_consistency", "happy_tummy_week", "calm_alone_time", "records_complete"]
   );
   assert.equal(review.achievements.find((achievement) => achievement.id === "bedtime_snack_proof").status, "progress");
+});
+
+test("keeps achievement and training recovery copy behind the Dog Profile identity boundary", () => {
+  const now = "2026-06-13T18:00:00.000Z";
+  const renamedState = {
+    ...getDefaultState(now),
+    profile: { name: "  Mochi  " },
+    entries: [
+      ...Array.from({ length: 7 }, (_, index) => createEntry({
+        type: "walk",
+        title: "Morning walk",
+        occurredAt: daysAgo(now, index)
+      })),
+      createEntry({
+        type: "training",
+        title: "Leash reset",
+        note: "Mochi seemed anxious and pulled toward home.",
+        occurredAt: daysAgo(now, 0, 15)
+      })
+    ]
+  };
+
+  const achievements = getAchievementReview(renamedState, now);
+  const training = getTrainingProgress(renamedState, now);
+
+  assert.equal(
+    achievements.achievements.find((achievement) => achievement.id === "routine_streak").summary,
+    "Mochi has care proof on every day of the last week.",
+  );
+  assert.match(training.focusAreas.join(" "), /what helped Mochi recover/);
+  assert.doesNotMatch(JSON.stringify({ achievements, training }), /Phoenix|My Dog/);
 });

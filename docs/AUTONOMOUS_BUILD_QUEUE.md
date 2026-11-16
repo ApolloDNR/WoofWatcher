@@ -3742,3 +3742,15 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Run dependency-complete branch CI for this exact tip. Native PWA/mobile
   identity and VoiceOver/TalkBack proof remain separate environment-gated
   evidence.
+
+## 2026-11-16 PWA achievement and training identity boundary
+
+- DONE: Shared achievement streak copy and training recovery guidance now use
+  the canonical Dog Profile name. A padded renamed dog receives its trimmed
+  identity in both owner-facing summaries rather than the Phoenix demo label.
+- VERIFIED LOCALLY: Red-first coverage reproduced the renamed-dog streak leak,
+  then focused achievement/training tests passed `2/2`. Complete focused-suite
+  and branch-CI proof remain required for this exact follow-up commit.
+- NEXT: Continue identity audits only at unprotected owner-facing seams. Keep
+  native PWA/mobile and VoiceOver/TalkBack evidence as environment-gated,
+  separate release proof.

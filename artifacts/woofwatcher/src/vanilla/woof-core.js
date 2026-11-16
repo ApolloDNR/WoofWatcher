@@ -1107,6 +1107,7 @@ export function getGoalReview(state, now = new Date().toISOString()) {
 }
 
 export function getTrainingProgress(state, now = new Date().toISOString()) {
+  const petName = resolvePetName(state.profile?.name);
   const target = new Date(now);
   const monthEntries = entriesForCurrentMonth(state.entries || [], now);
   const trainingEntries = monthEntries.filter((entry) => entry.type === "training");
@@ -1130,13 +1131,14 @@ export function getTrainingProgress(state, now = new Date().toISOString()) {
     calmSignals: calmEntries.length,
     struggleSignals: struggleEntries.length,
     wins: buildProgressWins(calmEntries),
-    focusAreas: buildProgressFocusAreas(struggleEntries, progressEntries),
+    focusAreas: buildProgressFocusAreas(struggleEntries, progressEntries, petName),
     recentEntries: progressEntries.slice(0, 6)
   };
 }
 
 export function getAchievementReview(state, now = new Date().toISOString()) {
   const normalized = normalizeState(state, now);
+  const petName = resolvePetName(normalized.profile?.name);
   const visibleEntries = (normalized.entries || []).filter((entry) => entry.visibility !== "Private");
   const recentEntries = entriesWithinDays(visibleEntries, now, 7);
   const monthEntries = entriesForCurrentMonth(visibleEntries, now);
@@ -1158,7 +1160,7 @@ export function getAchievementReview(state, now = new Date().toISOString()) {
       target: 7,
       status: routineStreak >= 7 ? "earned" : routineStreak > 0 ? "progress" : "needs_log",
       summary: routineStreak >= 7
-        ? "Phoenix has care proof on every day of the last week."
+        ? `${petName} has care proof on every day of the last week.`
         : "Log at least one household-visible care event each day to build this streak.",
       evidence: `${routineStreak}/7 days with household-visible logs.`
     }),
@@ -1495,11 +1497,11 @@ function buildProgressWins(entries) {
     .map((entry) => `${entry.title}: ${cleanText(entry.note || entry.mood || "calm progress logged")}`);
 }
 
-function buildProgressFocusAreas(struggleEntries, progressEntries) {
+function buildProgressFocusAreas(struggleEntries, progressEntries, petName) {
   if (struggleEntries.length) {
     return sortProgressWins(struggleEntries)
       .slice(0, 3)
-      .map((entry) => `${entry.title}: keep this short, low-pressure, and log what helped Phoenix recover.`);
+      .map((entry) => `${entry.title}: keep this short, low-pressure, and log what helped ${petName} recover.`);
   }
 
   if (!progressEntries.length) {
