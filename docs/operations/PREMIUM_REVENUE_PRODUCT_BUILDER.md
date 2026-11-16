@@ -1,5 +1,19 @@
 # Premium Revenue Product Builder
 
+## 2026-11-16 PWA desktop-navigation contract identity boundary
+
+The PWA product contract now exports the neutral `Home` desktop-navigation label
+instead of a dormant `Phoenix Home` literal. Live navigation continues to resolve
+the canonical Dog Profile identity where a dog name is useful, while consumers
+of the shared contract no longer inherit a demo-dog label.
+
+The red-first PWA readiness contract failed for the legacy literal and now passes
+`46/46`. The complete API/mobile/PWA/domain/release-tool suite passes
+`1,270/1,270` with localhost fixtures enabled, and PixelLab reports
+`ok=150 missing=0 invalid=0`. Dependency-complete branch CI remains required
+for the final tip; native VoiceOver/TalkBack, provider, store, and Apollo
+approval are separate gates.
+
 ## 2026-11-12 PWA desktop-navigation identity config
 
 The PWA desktop-navigation configuration now defaults to the neutral `Home`

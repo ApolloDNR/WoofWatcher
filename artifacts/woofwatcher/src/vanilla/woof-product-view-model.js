@@ -46,7 +46,7 @@ export const PRODUCT_NAVIGATION = [
 export const DESKTOP_NAVIGATION_GROUPS = [
   {
     label: "Care & Wellbeing",
-    items: ["Phoenix Home", "Quick Log", "Household Pulse", "Plans", "Health Watch", "Bile Watch", "Diet & Treats"]
+    items: ["Home", "Quick Log", "Household Pulse", "Plans", "Health Watch", "Bile Watch", "Diet & Treats"]
   },
   {
     label: "More Tools",

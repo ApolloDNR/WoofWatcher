@@ -122,6 +122,9 @@ test("keeps Dog Profile identity canonical in the shared PWA product contract", 
   assert.equal(renamed.phoenix.profile.publicLabel, "Mochi");
   assert.match(renamed.health.boundary, /Mochi needs a veterinarian/);
   assert.match(renamed.more.woofGuide.boundary, /Mochi's logs/);
+  assert.deepEqual(placeholder.desktopNavigationGroups[0].items.slice(0, 2), ["Home", "Quick Log"]);
+  assert.deepEqual(renamed.desktopNavigationGroups[0].items.slice(0, 2), ["Home", "Quick Log"]);
+  assert.doesNotMatch(JSON.stringify(renamed.desktopNavigationGroups), /Phoenix Home/);
   assert.doesNotMatch(renamed.health.boundary, /Phoenix/);
   assert.doesNotMatch(renamed.more.woofGuide.boundary, /Phoenix/);
 });
