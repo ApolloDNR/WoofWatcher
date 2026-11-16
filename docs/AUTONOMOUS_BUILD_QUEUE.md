@@ -3767,3 +3767,16 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   remain unchanged; the regression covers only generated identity copy.
 - NEXT: Run the complete focused suite and exact-tip branch CI. Native PWA/mobile
   and VoiceOver/TalkBack evidence remain separate environment-gated proof.
+
+## 2026-11-16 PWA exported redesign-contract identity boundary
+
+- DONE: The PWA's exported UI guidance no longer carries the Phoenix starter
+  identity into downstream redesign work. Its privacy contract is now explicitly
+  Dog Profile-scoped, while the anti-exposure guard stays dog-first and generic.
+- VERIFIED LOCALLY: A red-first renamed-dog regression failed on the stale
+  `Phoenix privacy boundaries` copy, then PWA readiness passed `47/47`; the
+  complete focused API/mobile/PWA/domain/release-tool suite passed `1,271/1,271`
+  with temporary localhost fixtures enabled, and PixelLab reported `ok=150`,
+  `missing=0`, `invalid=0`.
+- NEXT: Run the complete focused suite and exact-tip branch CI. Native PWA/mobile
+  and VoiceOver/TalkBack evidence remain separate environment-gated proof.

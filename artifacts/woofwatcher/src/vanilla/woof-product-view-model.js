@@ -232,11 +232,11 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
     uiGuidance: {
       visualStatus: "v1.5-shell-in-progress",
       redesignInstruction:
-        "Use this view model as the data contract. Replace the current CSS/HTML look freely, but keep localStorage, non-diagnostic health language, five-tab navigation, and Phoenix privacy boundaries intact.",
+        "Use this view model as the data contract. Replace the current CSS/HTML look freely, but keep localStorage, non-diagnostic health language, five-tab navigation, and Dog Profile privacy boundaries intact.",
       preferredDirection: "Premium Neo-Retro Pixel Care",
       coreLine: "Real care. Pixel heart.",
       tagline: "Your dog's day, brought to life.",
-      avoid: ["publicly exposing private Phoenix details without consent", "diagnostic health claims", "removing backup/import/export", "top-level pee/poop quick actions"]
+      avoid: ["publicly exposing private dog details without consent", "diagnostic health claims", "removing backup/import/export", "top-level pee/poop quick actions"]
     }
   };
 }

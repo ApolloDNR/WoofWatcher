@@ -837,6 +837,18 @@ test("keeps static installed-app metadata dog-generic before local state hydrate
   assert.doesNotMatch(manifest, /Phoenix/);
 });
 
+test("keeps the exported PWA redesign contract dog-generic", () => {
+  const renamed = buildProductViewModel(
+    { profile: { name: "  Mochi  ", publicLabel: "  Mochi  " } },
+    "2026-11-16T21:00:00.000Z",
+  );
+
+  assert.doesNotMatch(renamed.uiGuidance.redesignInstruction, /Phoenix/);
+  assert.doesNotMatch(renamed.uiGuidance.avoid.join(" "), /Phoenix/);
+  assert.match(renamed.uiGuidance.redesignInstruction, /Dog Profile privacy boundaries/);
+  assert.match(renamed.uiGuidance.avoid.join(" "), /private dog details/);
+});
+
 test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /records: "records"/);
   assert.match(appEntry, /reports: "reports"/);
