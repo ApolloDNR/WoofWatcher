@@ -59,6 +59,16 @@ test("uses selected live template sprite packs in the main care room", () => {
   assert.equal(meal.spriteMode, "template-idle-walk-pack");
   assert.equal(meal.templateSpriteAction, "idle-tail-wag");
   assert.equal(meal.motionFidelity, "static-fallback");
+  assert.equal(meal.staticPoseEmote, "happy");
+  assert.match(meal.staticPoseAsset?.path ?? "", /retriever\/emotes\/happy\.png$/);
+
+  const health = deriveAvatarRoomRuntime(config, "health-watch");
+  assert.equal(health.motionFidelity, "static-fallback");
+  assert.equal(health.staticPoseEmote, "not_feeling_well");
+  assert.match(
+    health.staticPoseAsset?.path ?? "",
+    /retriever\/emotes\/not-feeling-well\.png$/,
+  );
   assert.equal(meal.spriteTrack.key, "retriever:idle-tail-wag");
   assert.equal(meal.overlayLayers.length, 0);
   assert.equal(meal.underlayLayers.length, 0);

@@ -605,6 +605,7 @@ export function LivingPhoenixRoom({
     avatarRoomRuntime?.spriteAsset ??
     getCareTwinSpriteAsset(stagePoseAction) ??
     spriteAsset;
+  const activeStaticPoseSource = avatarRoomRuntime?.staticPoseAsset?.source;
   const layeredStageReady =
     (!compactChrome || transparentScene) &&
     layerReadiness.roomReady &&
@@ -1250,19 +1251,29 @@ export function LivingPhoenixRoom({
                   ) : null,
                 )
               : null}
-            <SpriteSheetPlayer
-              key={displayedStagePose.reactionKey ?? activeSpriteTrack.key}
-              asset={activeSpriteAsset}
-              height={activeSpriteZone.height}
-              testID={
-                avatarRoomRuntime?.spriteMode === "template-idle-walk-pack"
-                  ? "care-twin-template-sprite-player"
-                  : "care-twin-sprite-player"
-              }
-              track={activeSpriteTrack}
-              playing={continuousMotionEnabled && !avatarUsesStillCarePose}
-              width={activeSpriteZone.width}
-            />
+            {activeStaticPoseSource ? (
+              <Animated.Image
+                accessible={false}
+                source={activeStaticPoseSource}
+                resizeMode="contain"
+                style={[styles.fallbackAvatar, pixelImageStyle]}
+                testID="care-twin-template-static-pose"
+              />
+            ) : (
+              <SpriteSheetPlayer
+                key={displayedStagePose.reactionKey ?? activeSpriteTrack.key}
+                asset={activeSpriteAsset}
+                height={activeSpriteZone.height}
+                testID={
+                  avatarRoomRuntime?.spriteMode === "template-idle-walk-pack"
+                    ? "care-twin-template-sprite-player"
+                    : "care-twin-sprite-player"
+                }
+                track={activeSpriteTrack}
+                playing={continuousMotionEnabled && !avatarUsesStillCarePose}
+                width={activeSpriteZone.width}
+              />
+            )}
             {showStageAccessoryLayers
               ? avatarRoomRuntime?.overlayLayers.map((layer) =>
                   layer.source ? (
@@ -1929,6 +1940,7 @@ function RoamingTwinRig({
     runtime?.spriteAsset ?? getCareTwinSpriteAsset(activeAction);
   const spriteTrack =
     runtime?.spriteTrack ?? CARE_TWIN_SPRITE_MANIFEST[activeAction];
+  const staticPoseSource = runtime?.staticPoseAsset?.source;
   // Accessory art is fitted to the template sprite-pack geometry; over the
   // Phoenix action strips it lands at the wrong scale, so it only rides
   // along when the runtime actually uses the template pack.
@@ -1995,21 +2007,31 @@ function RoamingTwinRig({
                 ) : null,
               )
             : null}
-          <SpriteSheetPlayer
-            key={
-              overrideKey !== null && activeAction === overrideAction
-                ? `roam-${overrideKey}-${activeAction}`
-                : `roam-${activeAction}`
-            }
-            asset={spriteAsset}
-            height={ROAM_RIG_SIZE}
-            testID="care-twin-roaming-sprite-player"
-            track={spriteTrack}
-            playing={
-              motionActive && !reduced && runtime?.motionFidelity !== "static-fallback"
-            }
-            width={ROAM_RIG_SIZE}
-          />
+          {staticPoseSource ? (
+            <Animated.Image
+              accessible={false}
+              source={staticPoseSource}
+              resizeMode="contain"
+              style={[styles.fallbackAvatar, pixelImageStyle]}
+              testID="care-twin-roaming-static-pose"
+            />
+          ) : (
+            <SpriteSheetPlayer
+              key={
+                overrideKey !== null && activeAction === overrideAction
+                  ? `roam-${overrideKey}-${activeAction}`
+                  : `roam-${activeAction}`
+              }
+              asset={spriteAsset}
+              height={ROAM_RIG_SIZE}
+              testID="care-twin-roaming-sprite-player"
+              track={spriteTrack}
+              playing={
+                motionActive && !reduced && runtime?.motionFidelity !== "static-fallback"
+              }
+              width={ROAM_RIG_SIZE}
+            />
+          )}
           {showAccessoryLayers
             ? runtime?.overlayLayers.map((layer) =>
                 layer.source ? (

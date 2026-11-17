@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-11-17 Template care-state pose fidelity
+
+- DONE: Non-Shepherd care twins now use a matching bundled PixelLab still when
+  their template lacks the requested animated state. Meals show the happy pose,
+  hydration the calm pose, rest the sleepy pose, comfort the anxious pose, and
+  Health Watch the non-diagnostic not-feeling-well pose instead of a frozen
+  idle strip that suggests the wrong care state. Idle and walk retain their
+  registered live strips; templates without a matching still retain the
+  explicit static fallback.
+- VERIFIED LOCALLY: The red-first runtime regression passes with the focused
+  avatar suite, the full API/mobile/PWA/domain/release-tool suite passes
+  `1,273/1,273`, PixelLab reports `ok=150 missing=0 invalid=0`, and mobile
+  TypeScript passes through the local bundled CLI.
+- NEXT: Capture the native iOS/Android crop, gait, touch, and overlay review;
+  then add remaining template emote and accessory packs without representing
+  any missing animation as live.
+
 ## 2026-11-16 PWA backend-seed privacy-mode identity boundary
 
 - DONE: Backend seed drafts now store dog-neutral `private_dog` privacy metadata instead of leaking the Phoenix starter identity into provider-review rows. Seed rows still resolve the canonical Dog Profile name, retaining Phoenix only for blank or `My Dog` fallback data and trimming owner-renamed dogs.

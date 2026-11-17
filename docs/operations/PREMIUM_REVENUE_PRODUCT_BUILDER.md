@@ -1,5 +1,22 @@
 # Premium Revenue Product Builder
 
+## 2026-11-17 Template care-state pose fidelity
+
+The live room and roaming care twin now prefer a matching PixelLab template
+emote still whenever a non-Shepherd template has no animation for the requested
+care state. This keeps a meal, hydration, rest, comfort, celebration, alert,
+or Health Watch state semantically honest rather than freezing the template's
+idle sprite and implying it is the requested action. Registered idle and walk
+strips remain live; templates without a corresponding still stay on the
+explicit static fallback.
+
+The runtime regression was red first and now verifies Retriever meal and Health
+Watch pose mapping. Focused avatar coverage passed, the full zero-dependency
+API/mobile/PWA/domain/release-tool suite passed `1,273/1,273`, PixelLab passed
+`ok=150 missing=0 invalid=0`, and mobile TypeScript passed through the bundled
+CLI. Native iOS/Android crop, gait, tap, VoiceOver/TalkBack, store, provider,
+and Apollo approvals remain distinct external gates.
+
 ## 2026-11-16 PWA backend-seed privacy-mode identity boundary
 
 Backend seed drafts now keep their durable household privacy metadata dog-neutral:

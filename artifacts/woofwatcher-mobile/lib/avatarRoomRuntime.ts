@@ -8,10 +8,15 @@ import {
 import {
   getAvatarTemplate,
   type AvatarAccessorySlots,
+  type AvatarEmoteState,
   type AvatarTemplateId,
   type PetAvatarConfig,
 } from "./avatarStudio.ts";
-import { getAvatarTemplateAccessorySource } from "./avatarTemplateAssets.ts";
+import {
+  getAvatarTemplateAccessorySource,
+  getAvatarTemplateEmoteAsset,
+  type AvatarTemplateEmoteAsset,
+} from "./avatarTemplateAssets.ts";
 import {
   AVATAR_TEMPLATE_SPRITE_ASSETS,
   type AvatarTemplateSpriteAction,
@@ -49,6 +54,8 @@ export interface AvatarRoomRuntime {
   spriteAsset: CareTwinSpriteAsset | null;
   spriteTrack: SpriteSheetTrack & { key: string };
   templateSpriteAction: AvatarTemplateSpriteAction | null;
+  staticPoseEmote: AvatarEmoteState | null;
+  staticPoseAsset: AvatarTemplateEmoteAsset | null;
   overlayLayers: AvatarRoomAccessoryLayer[];
   underlayLayers: AvatarRoomAccessoryLayer[];
   activeSlots: (keyof AvatarAccessorySlots)[];
@@ -66,6 +73,22 @@ function mapRuntimeActionToTemplateAction(
   action: CareTwinSpriteAction,
 ): AvatarTemplateSpriteAction {
   return TEMPLATE_WALK_ACTIONS.has(action) ? "walk-loop" : "idle-tail-wag";
+}
+
+function staticPoseEmoteForAction(
+  action: CareTwinSpriteAction,
+): AvatarEmoteState | null {
+  switch (action) {
+    case "ear-perk": return "hungry";
+    case "eat-loop": return "happy";
+    case "drink-loop": return "calm";
+    case "sleep-loop": return "sleepy";
+    case "comfort-loop": return "anxious";
+    case "celebrate-hop": return "proud";
+    case "health-watch": return "not_feeling_well";
+    case "bark-loop": return "excited";
+    default: return null;
+  }
 }
 
 function fittedTemplateLayers(
@@ -102,6 +125,8 @@ export function deriveAvatarRoomRuntime(
     const motionFidelity = TEMPLATE_EXACT_ACTIONS.has(action)
       ? "exact"
       : "static-fallback";
+    const staticPoseEmote =
+      motionFidelity === "static-fallback" ? staticPoseEmoteForAction(action) : null;
     return {
       templateId: config.templateId,
       templateLabel: template.label,
@@ -111,6 +136,10 @@ export function deriveAvatarRoomRuntime(
       spriteAsset: templateSprite.asset,
       spriteTrack: templateSprite.track,
       templateSpriteAction: templateAction,
+      staticPoseEmote,
+      staticPoseAsset: staticPoseEmote
+        ? (getAvatarTemplateEmoteAsset(config.templateId, staticPoseEmote) ?? null)
+        : null,
       overlayLayers,
       underlayLayers,
       activeSlots: accessoryLayers.map((layer) => layer.slot),
@@ -126,6 +155,8 @@ export function deriveAvatarRoomRuntime(
     spriteAsset: getCareTwinSpriteAsset(action),
     spriteTrack: CARE_TWIN_SPRITE_MANIFEST[action],
     templateSpriteAction: null,
+    staticPoseEmote: null,
+    staticPoseAsset: null,
     overlayLayers,
     underlayLayers,
     activeSlots: accessoryLayers.map((layer) => layer.slot),
