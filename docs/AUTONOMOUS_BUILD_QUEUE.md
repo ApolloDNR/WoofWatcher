@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-11-17 Shared care-domain starter identity parity
+
+- DONE: Shared care-domain handoff builders now match the mobile identity rule:
+  a blank, padded, or mixed-case `My Dog` starter profile resolves to Phoenix,
+  while a trimmed owner-selected name is retained. Care Pass, Health Watch,
+  Access Pass, records, and other shared artifacts therefore cannot leak a
+  legacy starter placeholder when mobile would show Phoenix.
+- VERIFIED LOCALLY: Red-first shared-domain regression passes; prescribed
+  mobile/domain focused tests pass `1,155/1,155`; PixelLab reports
+  `ok=150 missing=0 invalid=0`.
+- BOUNDARY: The full root suite is sandbox-blocked only where API fixture tests
+  bind localhost ports (`EACCES`); dependency-complete CI and native evidence
+  remain the final authorities.
+- NEXT: Continue identity audits only at unprotected owner-facing or exported
+  planning seams. Provider configuration, real household sync, native
+  VoiceOver/TalkBack, store, and Apollo approvals remain separate gates.
+
 ## 2026-11-17 Template care-state pose fidelity
 
 - DONE: Non-Shepherd care twins now use a matching bundled PixelLab still when

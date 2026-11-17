@@ -6909,3 +6909,15 @@ placeholder through the app's owner-facing copy. The red-first identity test
 now covers that persisted-value variant, and the zero-dependency mobile/domain
 focused suite passed `1,153/1,153`. Dependency-complete CI plus native
 iOS/Android and VoiceOver/TalkBack evidence remain separate required gates.
+
+## 2026-11-17 Shared care-domain starter identity parity
+
+The reusable care-domain identity boundary now applies the same trimmed,
+case-insensitive starter-placeholder rule as mobile. Shared owner-facing
+handoffs such as Care Pass therefore render Phoenix for legacy values like
+`  my dog  `, while preserving a real renamed dog. A red-first regression and
+the prescribed zero-dependency mobile/domain suite passed `1,155/1,155`;
+PixelLab asset verification reports `ok=150`, `missing=0`, `invalid=0`.
+The sandbox prevents the API fixture subset of the root suite from opening
+localhost ports, so dependency-complete CI and native evidence remain the
+release authority.
