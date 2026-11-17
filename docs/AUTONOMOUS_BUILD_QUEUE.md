@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-11-16 PWA backend-seed privacy-mode identity boundary
+
+- DONE: Backend seed drafts now store dog-neutral `private_dog` privacy metadata instead of leaking the Phoenix starter identity into provider-review rows. Seed rows still resolve the canonical Dog Profile name, retaining Phoenix only for blank or `My Dog` fallback data and trimming owner-renamed dogs.
+- VERIFIED LOCALLY: The red-first backend-schema regression protects both the canonical renamed dog and the neutral metadata boundary. Dependency-complete CI remains the final authority because this Windows checkout cannot provide a reliable full workspace typecheck.
+- NEXT: Continue identity audits only at unprotected owner-facing or exported planning seams. Provider configuration, real household sync, native VoiceOver/TalkBack, store, and Apollo approvals remain separate gates.
+
 ## 2026-11-16 PWA backend-sync planning identity boundary
 
 - DONE: The exported backend schema planning package now describes dog data,

@@ -1,5 +1,19 @@
 # Premium Revenue Product Builder
 
+## 2026-11-16 PWA backend-seed privacy-mode identity boundary
+
+Backend seed drafts now keep their durable household privacy metadata dog-neutral:
+`private_dog` replaces the stale `private_phoenix` value. The seed still
+resolves the canonical Dog Profile identity for actual rows, preserving Phoenix
+only for a blank or `My Dog` starter profile and trimming an owner-renamed dog.
+This remains a planning-only package and does not create accounts, enable sync,
+or write database rows.
+
+The backend-schema regression was red first for the stale privacy mode and now
+protects the renamed-dog export boundary. Dependency-complete CI, native
+VoiceOver/TalkBack, provider, store, legal, and Apollo approval remain separate
+gates.
+
 ## 2026-11-16 PWA desktop-navigation contract identity boundary
 
 The PWA product contract now exports the neutral `Home` desktop-navigation label

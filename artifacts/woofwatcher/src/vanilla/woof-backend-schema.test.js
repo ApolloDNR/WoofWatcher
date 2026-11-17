@@ -54,4 +54,6 @@ test("backend seed drafts resolve the Dog Profile identity before creating durab
 
   assert.equal(renamedDraft.pet.name, "Mochi");
   assert.equal(renamedDraft.rows.pets[0].profile_json.publicLabel, "Mochi");
+  assert.equal(renamedDraft.rows.households[0].privacy_mode, "private_dog");
+  assert.doesNotMatch(JSON.stringify(renamedDraft), /private_phoenix/);
 });

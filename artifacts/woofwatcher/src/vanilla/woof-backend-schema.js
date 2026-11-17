@@ -209,7 +209,7 @@ export function buildBackendSeedDraft(input = {}, options = {}, now = new Date()
           {
             id: householdId,
             name: `${petName} household`,
-            privacy_mode: "private_phoenix",
+            privacy_mode: "private_dog",
             timezone: cleanText(options.timezone, 80) || "America/Los_Angeles",
             created_at: normalizeTimestamp(state.createdAt || now),
             updated_at: generatedAt
