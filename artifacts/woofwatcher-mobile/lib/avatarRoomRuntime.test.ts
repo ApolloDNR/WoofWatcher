@@ -90,3 +90,21 @@ test("uses selected live template sprite packs in the main care room", () => {
     );
   }
 });
+
+test("uses the selected template base when its requested care pose is not bundled", () => {
+  const runtime = deriveAvatarRoomRuntime(
+    {
+      ...createDefaultAvatarConfig("Mochi"),
+      templateId: "doodle" as const,
+      emotePackId: "starter-care-twin" as const,
+    },
+    "eat-loop",
+  );
+
+  assert.equal(runtime.motionFidelity, "static-fallback");
+  assert.equal(runtime.staticPoseEmote, "happy");
+  assert.match(
+    runtime.staticPoseAsset?.path ?? "",
+    /doodle\/base\.png$/,
+  );
+});

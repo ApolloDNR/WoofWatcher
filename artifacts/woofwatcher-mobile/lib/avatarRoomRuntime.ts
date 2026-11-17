@@ -13,8 +13,10 @@ import {
   type PetAvatarConfig,
 } from "./avatarStudio.ts";
 import {
+  getAvatarTemplateBaseAsset,
   getAvatarTemplateAccessorySource,
   getAvatarTemplateEmoteAsset,
+  type AvatarTemplateBaseAsset,
   type AvatarTemplateEmoteAsset,
 } from "./avatarTemplateAssets.ts";
 import {
@@ -45,6 +47,10 @@ export interface AvatarRoomAccessoryLayer extends AvatarPreviewAccessoryLayer {
   source: ImageSourcePropType | undefined;
 }
 
+export type AvatarRoomStaticPoseAsset =
+  | AvatarTemplateBaseAsset
+  | AvatarTemplateEmoteAsset;
+
 export interface AvatarRoomRuntime {
   templateId: AvatarTemplateId;
   templateLabel: string;
@@ -55,7 +61,7 @@ export interface AvatarRoomRuntime {
   spriteTrack: SpriteSheetTrack & { key: string };
   templateSpriteAction: AvatarTemplateSpriteAction | null;
   staticPoseEmote: AvatarEmoteState | null;
-  staticPoseAsset: AvatarTemplateEmoteAsset | null;
+  staticPoseAsset: AvatarRoomStaticPoseAsset | null;
   overlayLayers: AvatarRoomAccessoryLayer[];
   underlayLayers: AvatarRoomAccessoryLayer[];
   activeSlots: (keyof AvatarAccessorySlots)[];
@@ -127,6 +133,11 @@ export function deriveAvatarRoomRuntime(
       : "static-fallback";
     const staticPoseEmote =
       motionFidelity === "static-fallback" ? staticPoseEmoteForAction(action) : null;
+    const staticPoseAsset = staticPoseEmote
+      ? (getAvatarTemplateEmoteAsset(config.templateId, staticPoseEmote) ??
+        getAvatarTemplateBaseAsset(config.templateId) ??
+        null)
+      : null;
     return {
       templateId: config.templateId,
       templateLabel: template.label,
@@ -137,9 +148,7 @@ export function deriveAvatarRoomRuntime(
       spriteTrack: templateSprite.track,
       templateSpriteAction: templateAction,
       staticPoseEmote,
-      staticPoseAsset: staticPoseEmote
-        ? (getAvatarTemplateEmoteAsset(config.templateId, staticPoseEmote) ?? null)
-        : null,
+      staticPoseAsset,
       overlayLayers,
       underlayLayers,
       activeSlots: accessoryLayers.map((layer) => layer.slot),

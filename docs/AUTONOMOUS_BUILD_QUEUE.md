@@ -3818,3 +3818,19 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   `missing=0`, `invalid=0`.
 - NEXT: Run the complete focused suite and exact-tip branch CI. Native PWA/mobile
   and VoiceOver/TalkBack evidence remain separate environment-gated proof.
+
+## 2026-11-17 Template base-pose fallback
+
+- DONE: A template without the requested bundled care emote now renders its
+  own static base pose instead of a frozen idle/tail-wag strip. This keeps a
+  Doodle meal, hydration, rest, comfort, health-watch, reward, alert, or bark
+  state visibly non-animated without implying an unrelated care action.
+- VERIFIED LOCALLY: The Doodle meal fallback regression failed before the
+  runtime change, then focused avatar coverage passed. The complete
+  API/mobile/PWA/domain/release-tool suite passed `1,274/1,274` with localhost
+  fixtures enabled, and PixelLab reported `ok=150`, `missing=0`, `invalid=0`.
+- NEXT: Run exact-tip dependency-complete branch CI, then capture native
+  iOS/Android crop, gait, overlay, touch-target, reduced-motion, and
+  VoiceOver/TalkBack evidence. Add template-specific state strips only after
+  production art is reviewed; source fallback does not clear native, store,
+  provider, or Apollo gates.

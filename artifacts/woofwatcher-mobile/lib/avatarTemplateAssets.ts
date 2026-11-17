@@ -641,7 +641,13 @@ export function getAvatarTemplatePreviewSource(
 export function getAvatarTemplateBaseSource(
   templateId: AvatarTemplateId,
 ): ImageSourcePropType | undefined {
-  return AVATAR_TEMPLATE_BASE_ASSETS[templateId]?.source;
+  return getAvatarTemplateBaseAsset(templateId)?.source;
+}
+
+export function getAvatarTemplateBaseAsset(
+  templateId: AvatarTemplateId,
+): AvatarTemplateBaseAsset | undefined {
+  return AVATAR_TEMPLATE_BASE_ASSETS[templateId];
 }
 
 export function getAvatarTemplateDisplaySource(

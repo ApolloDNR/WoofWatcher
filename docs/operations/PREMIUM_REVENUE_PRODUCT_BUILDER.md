@@ -6882,3 +6882,20 @@ local clock; its due-state owner summary now identifies the canonical dog,
 which makes identity guidance stable for both due and upcoming states. Complete
 focused-suite, dependency-complete CI, and route-named native PWA/mobile
 VoiceOver/TalkBack evidence remain separate gates.
+
+## 2026-11-17 Template base-pose fallback
+
+Non-Shepherd template packs retain their strict animation admission policy:
+only matching idle and walk strips play. When a requested care state has a
+bundled semantic emote, the room shows that still; when it does not, it now
+shows the selected template's static base rather than freezing the first frame
+of an unrelated idle strip. This is a visual truth boundary, not a claim that
+a missing state animation exists.
+
+The Doodle meal regression was red first and now passes with the focused
+runtime suite. The complete zero-dependency API/mobile/PWA/domain/release-tool
+suite passed `1,274/1,274` with localhost fixtures enabled and PixelLab passed
+`ok=150`, `missing=0`, `invalid=0`. Exact-tip dependency CI and real iOS/Android
+crop, gait, overlay, touch-target, reduced-motion, and VoiceOver/TalkBack
+evidence remain required; this does not grant native, provider, store, or
+Apollo approval.
