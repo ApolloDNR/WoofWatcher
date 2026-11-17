@@ -1,10 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildBackendSeedDraft } from "./woof-backend-schema.js";
+import { buildBackendSchemaPlan, buildBackendSeedDraft } from "./woof-backend-schema.js";
 import { getDefaultState } from "./woof-core.js";
 
 const NOW = "2026-08-12T18:00:00.000Z";
+
+test("backend schema planning metadata stays dog-generic before a profile seed is reviewed", () => {
+  const plan = buildBackendSchemaPlan();
+  const serializedPlan = JSON.stringify(plan);
+
+  assert.doesNotMatch(serializedPlan, /Phoenix/);
+  assert.match(plan.tables.find((table) => table.name === "pets").description, /Dog profile/);
+  assert.match(plan.rlsPolicies.find((policy) => policy.table === "care_entries").summary, /dog care entries/);
+  assert.match(plan.migrationSteps.join(" "), /private dog data/);
+  assert.match(plan.secretPolicy.join(" "), /dog-specific data/);
+});
 
 test("backend seed drafts resolve the Dog Profile identity before creating durable rows", () => {
   const placeholderState = getDefaultState(NOW);

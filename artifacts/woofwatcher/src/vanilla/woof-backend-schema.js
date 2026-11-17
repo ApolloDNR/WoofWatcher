@@ -32,7 +32,7 @@ export function buildBackendSchemaPlan(options = {}, now = new Date().toISOStrin
         column("created_at", "timestamptz"),
         column("updated_at", "timestamptz")
       ]),
-      table("pets", "Phoenix profile, care focus, diet profile, and non-secret pet settings.", [
+      table("pets", "Dog profile, care focus, diet profile, and non-secret pet settings.", [
         column("id", "text", { primaryKey: true }),
         column("household_id", "text", { references: "households.id" }),
         column("name", "text"),
@@ -148,7 +148,7 @@ export function buildBackendSchemaPlan(options = {}, now = new Date().toISOStrin
       policy("households", "Household members can read only households they belong to."),
       policy("members", "Household owners can manage members; invited members can read their own membership."),
       policy("pets", "Household members can read pets for households they belong to."),
-      policy("care_entries", "Household members with entry scopes can read or create Phoenix care entries."),
+      policy("care_entries", "Household members with entry scopes can read or create dog care entries."),
       policy("records", "Records require records_read or records_write scope because they can include medical context."),
       policy("care_passes", "Care Pass rows are owner-managed and scoped by audience before sharing externally."),
       policy("audit_events", "Audit events are append-only and readable by owners for accountability."),
@@ -157,9 +157,9 @@ export function buildBackendSchemaPlan(options = {}, now = new Date().toISOStrin
     ],
     migrationSteps: [
       "Create tables in dependency order: households, members, pets, routines, records, goals, care_entries, care_passes, audit_events, nudge_jobs, report_artifacts.",
-      "Enable row-level security or equivalent access control before inserting private Phoenix data.",
+      "Enable row-level security or equivalent access control before inserting private dog data.",
       "Create indexes for household membership, pet timelines, audit timelines, nudge schedules, and report artifact lookup.",
-      "Seed one private household, Phoenix profile, current caregivers, routines, records, goals, and care entries from a reviewed local backup.",
+      "Seed one private household, dog profile, current caregivers, routines, records, goals, and care entries from a reviewed local backup.",
       "Run read-only verification that every row belongs to the intended household before enabling sync."
     ],
     syncPolicy: {
@@ -173,7 +173,7 @@ export function buildBackendSchemaPlan(options = {}, now = new Date().toISOStrin
       "Keep model/provider keys server-side only.",
       "Never ship privileged database credentials to client JavaScript.",
       "Store caregiver invites as pending records until real auth and expiry are implemented.",
-      "Keep Phoenix-specific data private unless Apollo explicitly approves a public demo split."
+      "Keep dog-specific data private unless Apollo explicitly approves a public demo split."
     ],
     deploymentGates: [
       "Backend provider selected.",

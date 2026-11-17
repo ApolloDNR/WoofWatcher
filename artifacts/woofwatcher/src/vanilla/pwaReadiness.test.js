@@ -849,6 +849,18 @@ test("keeps the exported PWA redesign contract dog-generic", () => {
   assert.match(renamed.uiGuidance.avoid.join(" "), /private dog details/);
 });
 
+test("keeps exported backend sync planning metadata dog-generic", () => {
+  const view = buildProductViewModel(
+    { profile: { name: "  Mochi  ", publicLabel: "  Mochi  " } },
+    "2026-11-16T21:00:00.000Z",
+  );
+  const schema = view.backend.schema;
+
+  assert.doesNotMatch(JSON.stringify(schema), /Phoenix/);
+  assert.match(schema.tables.find((table) => table.name === "pets").description, /Dog profile/);
+  assert.match(schema.rlsPolicies.find((policy) => policy.table === "care_entries").summary, /dog care entries/);
+});
+
 test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /records: "records"/);
   assert.match(appEntry, /reports: "reports"/);

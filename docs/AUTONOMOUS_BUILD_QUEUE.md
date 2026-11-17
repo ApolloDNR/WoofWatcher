@@ -1,5 +1,20 @@
 # Autonomous Build Queue
 
+## 2026-11-16 PWA backend-sync planning identity boundary
+
+- DONE: The exported backend schema planning package now describes dog data,
+  dog care entries, and private dog data generically instead of carrying the
+  Phoenix starter identity into a provider-review artifact. Actual seed rows
+  still resolve the canonical Dog Profile identity, retaining Phoenix only
+  for blank or `My Dog` fallback data and trimming owner-renamed dogs.
+- VERIFIED LOCALLY: The new schema-plan regression and exported PWA view-model
+  regression pass alongside the PWA readiness contract. Dependency-complete
+  CI remains the final authority because this Windows checkout cannot provide
+  a reliable full workspace typecheck.
+- NEXT: Continue identity audits only at unprotected owner-facing or exported
+  planning seams. Provider configuration, real household sync, native
+  VoiceOver/TalkBack, store, and Apollo approvals remain separate gates.
+
 ## 2026-11-12 PWA desktop-navigation identity config
 
 - DONE: The live PWA desktop navigation configuration now uses a neutral Home
