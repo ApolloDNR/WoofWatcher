@@ -114,6 +114,10 @@ test("uses the starter identity before a dog is named", () => {
     setupDetail: "Set up Phoenix, then invite your household when providers are live.",
     stageLabel: "Phoenix care starts here",
   });
+  assert.deepEqual(buildAuthGatewayIdentityCopy("  my dog  "), {
+    setupDetail: "Set up Phoenix, then invite your household when providers are live.",
+    stageLabel: "Phoenix care starts here",
+  });
 });
 
 test("names the active dog throughout sign-in and sign-up guidance", () => {

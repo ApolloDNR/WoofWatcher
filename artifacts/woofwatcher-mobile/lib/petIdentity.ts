@@ -15,7 +15,9 @@ export function resolvePetName(
   fallback: string = DEFAULT_PET_DISPLAY_NAME,
 ): string {
   const trimmed = (name ?? "").trim();
-  if (!trimmed || trimmed === DEFAULT_PET_PLACEHOLDER) return fallback;
+  if (!trimmed || trimmed.toLocaleLowerCase() === DEFAULT_PET_PLACEHOLDER.toLocaleLowerCase()) {
+    return fallback;
+  }
   return trimmed;
 }
 

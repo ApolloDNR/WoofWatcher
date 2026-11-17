@@ -3834,3 +3834,15 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   VoiceOver/TalkBack evidence. Add template-specific state strips only after
   production art is reviewed; source fallback does not clear native, store,
   provider, or Apollo gates.
+
+## 2026-11-17 Case-insensitive starter dog identity
+
+- DONE: The shared mobile Dog Profile resolver now treats whitespace-padded,
+  mixed-case `My Dog` as the intentional starter placeholder, so every mobile
+  owner-facing surface keeps the Phoenix fallback until the profile is named.
+- VERIFIED LOCALLY: A red-first gateway identity regression failed on
+  `my dog`, then the zero-dependency mobile/domain focused suite passed
+  `1,153/1,153`.
+- NEXT: Run exact-tip dependency-complete branch CI, then continue native
+  iOS/Android and VoiceOver/TalkBack evidence. This source fix does not clear
+  provider, store, or Apollo approval gates.

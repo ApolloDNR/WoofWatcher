@@ -6899,3 +6899,13 @@ suite passed `1,274/1,274` with localhost fixtures enabled and PixelLab passed
 crop, gait, overlay, touch-target, reduced-motion, and VoiceOver/TalkBack
 evidence remain required; this does not grant native, provider, store, or
 Apollo approval.
+
+## 2026-11-17 Case-insensitive starter dog identity
+
+The mobile `resolvePetName` boundary now normalizes the stored starter label
+case-insensitively after trimming. A legacy value such as `  my dog  ` therefore
+continues to display the intentional Phoenix fallback rather than leaking a
+placeholder through the app's owner-facing copy. The red-first identity test
+now covers that persisted-value variant, and the zero-dependency mobile/domain
+focused suite passed `1,153/1,153`. Dependency-complete CI plus native
+iOS/Android and VoiceOver/TalkBack evidence remain separate required gates.
