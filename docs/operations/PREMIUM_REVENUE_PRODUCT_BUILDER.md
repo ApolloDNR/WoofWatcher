@@ -1,5 +1,23 @@
 # Premium Revenue Product Builder
 
+## 2026-11-18 Provider-bound WoofGuide identity boundary
+
+The authenticated API helper now applies the shared care-domain Dog Profile
+resolver when it builds provider instructions, the compact request context,
+and its no-response safety fallback. This prevents a renamed dog from being
+described as Phoenix after a provider is configured: a padded `Mochi` is
+trimmed consistently, while blank or case-insensitive `My Dog` input remains
+the intentional Phoenix starter identity. The Gemini local fallback receives
+the same context, so it follows the identical owner-facing rule.
+
+The regression initially defined the provider-prompt contract and now passes
+alongside API readiness, PWA identity, and care-domain identity coverage
+(`73/73`). PixelLab verification remains clean at `ok=150 missing=0 invalid=0`.
+The route remains authenticated, rate-limited, owner-reviewed, and
+non-diagnostic; this neither configures a provider nor enables live AI.
+Dependency-complete CI, native accessibility, provider/legal/store review,
+and Apollo approval remain separate gates.
+
 ## 2026-11-17 Shared PWA Dog Profile identity boundary
 
 PWA reports, Care Pass and caregiver access, backend seed drafts, care

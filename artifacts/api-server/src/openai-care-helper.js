@@ -1,3 +1,5 @@
+import { resolvePetName } from "@workspace/care-domain";
+
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_OPENAI_MODEL = "gpt-5.5";
 
@@ -39,7 +41,7 @@ export async function createOpenAICareAnswer({ question, context, env = process.
       model,
       reasoning: { effort: "low" },
       max_output_tokens: 420,
-      instructions: buildCareHelperInstructions(),
+      instructions: buildCareHelperInstructions(context),
       input: buildCareHelperInput({ question, context })
     })
   });
@@ -53,7 +55,7 @@ export async function createOpenAICareAnswer({ question, context, env = process.
     throw error;
   }
 
-  const answer = ensureVeterinaryBoundary(extractOpenAIText(responseBody));
+  const answer = ensureVeterinaryBoundary(extractOpenAIText(responseBody), context);
   return {
     answer,
     mode: "openai",
@@ -62,11 +64,12 @@ export async function createOpenAICareAnswer({ question, context, env = process.
   };
 }
 
-export function buildCareHelperInstructions() {
+export function buildCareHelperInstructions(context = {}) {
+  const petName = resolvePetName(context?.profile?.name);
   return [
-    "You are WoofWatcher Care Helper for Phoenix, an anxious rescued female shepherd mix.",
+    `You are WoofWatcher Care Helper for ${petName}.`,
     "Help Apollo and the other caregiver understand what to track, how to coordinate care, and when to seek veterinarian help.",
-    "Use only the Phoenix context provided in the prompt. Do not invent medical history, vaccines, diagnoses, or treatments.",
+    `Use only the ${petName} context provided in the prompt. Do not invent medical history, vaccines, diagnoses, or treatments.`,
     "Do not diagnose. Do not tell the caregivers to ignore urgent symptoms.",
     "Write in short, calm, practical paragraphs. Lead with what matters next.",
     `Always preserve this boundary: ${CARE_HELPER_BOUNDARY}`
@@ -75,10 +78,11 @@ export function buildCareHelperInstructions() {
 
 export function buildCareHelperInput({ question, context }) {
   const safeContext = compactAssistantContext(context);
+  const petName = safeContext.profile.name;
   return [
-    `Question: ${cleanText(question) || "What should we review for Phoenix today?"}`,
+    `Question: ${cleanText(question) || `What should we review for ${petName} today?`}`,
     "",
-    "Phoenix context:",
+    `${petName} context:`,
     JSON.stringify(safeContext, null, 2)
   ].join("\n");
 }
@@ -114,10 +118,11 @@ export function extractOpenAIText(responseBody = {}) {
   return text.join("\n").trim();
 }
 
-export function ensureVeterinaryBoundary(answer) {
+export function ensureVeterinaryBoundary(answer, context = {}) {
   const clean = cleanText(answer);
+  const petName = resolvePetName(context?.profile?.name);
   const fallback =
-    "I can help summarize Phoenix's logged care context, but I cannot diagnose her. Track meals, timing, appetite, vomit events, stool, energy, and any red flags.";
+    `I can help summarize ${petName}'s logged care context, but I cannot diagnose them. Track meals, timing, appetite, vomit events, stool, energy, and any red flags.`;
   const base = clean || fallback;
   return /veterinarian|urgent care/i.test(base) ? base : `${base} ${CARE_HELPER_BOUNDARY}`;
 }
@@ -149,7 +154,7 @@ function compactDietProfile(diet = {}) {
 
 function compactProfile(profile = {}) {
   return {
-    name: cleanText(profile.name),
+    name: resolvePetName(profile.name),
     breed: cleanText(profile.breed),
     background: cleanText(profile.background),
     careFocus: cleanText(profile.careFocus),

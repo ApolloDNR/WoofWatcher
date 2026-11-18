@@ -3928,6 +3928,23 @@ Pack places generated recovery JSON in the visible field before sharing and repo
 
 ## 2026-09-04 - Fence Pack recovery transfers at the event boundary
 
+## 2026-11-18 - Provider-bound WoofGuide resolves Dog Profile identity
+
+Decision: The API-side WoofGuide helper must resolve Dog Profile identity using
+the shared care-domain resolver before it creates any provider instruction,
+serialized context heading, or no-response safety fallback. A stored blank or
+case-insensitive `My Dog` remains the intentional Phoenix starter identity;
+a selected name remains trimmed.
+
+Reason: The PWA may correctly prepare a renamed household context, but the
+server-side provider prompt is its own owner-facing boundary. Keeping a
+Phoenix literal there could make future Gemini/OpenAI answers or safety
+fallbacks misidentify a real dog.
+
+Consequences: The route remains authenticated, rate-limited, owner-reviewed,
+and non-diagnostic. This does not configure any provider, enable automatic
+writes, or clear provider, veterinary, native, store, legal, or Apollo gates.
+
 Decision: Use a synchronous ref as the authority for recovery export/import admission and mirrored React state for owner-visible disabled/working feedback. State alone is not the lock because two taps can arrive before React commits a render.
 
 ## 2026-09-04 - Make primary navigation and Home density explicit

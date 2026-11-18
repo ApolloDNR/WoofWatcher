@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-11-18 Provider-bound WoofGuide identity boundary
+
+- DONE: The authenticated API WoofGuide helper now resolves Dog Profile identity
+  through the shared care-domain rule before composing Gemini/OpenAI provider
+  instructions, request context, and an empty-response safety fallback. A
+  padded renamed dog stays trimmed throughout the provider-bound prompt, while
+  blank or case-insensitive `My Dog` starter data intentionally remains Phoenix.
+- VERIFIED LOCALLY: The new API regression passes with API readiness, PWA
+  identity, and shared care-domain identity coverage (`73/73`); PixelLab asset
+  verification reports `ok=150 missing=0 invalid=0`.
+- BOUNDARY: The API route remains authenticated, rate-limited, owner-reviewed,
+  and non-diagnostic. Live provider configuration, native accessibility,
+  dependency-complete CI, legal/store, and Apollo approval remain separate.
+- NEXT: Continue identity audits only at unprotected owner-facing or
+  provider-bound seams; do not enable live AI without structured provider and
+  veterinary-safety proof.
+
 ## 2026-11-17 PWA caregiver-role catalog identity boundary
 
 - DONE: The exported PWA caregiver-role catalog is now dog-neutral rather than

@@ -43,6 +43,7 @@ router.post("/care-helper", requireAuth, async (req: Request, res: Response) => 
     res.json({
       answer: ensureVeterinaryBoundary(
         "WoofGuide's AI assistant isn't available right now. In the meantime, keep tracking meals, timing, appetite, vomit events, stool, energy, and any red flags so the next caregiver has full context.",
+        req.body?.context,
       ),
       mode: "local",
       model: MODEL,
@@ -61,14 +62,14 @@ router.post("/care-helper", requireAuth, async (req: Request, res: Response) => 
         },
       ],
       config: {
-        systemInstruction: buildCareHelperInstructions(),
+        systemInstruction: buildCareHelperInstructions(body.context),
         maxOutputTokens: 700,
         temperature: 0.6,
         thinkingConfig: { thinkingBudget: 0 },
       },
     });
 
-    const answer = ensureVeterinaryBoundary(extractGeminiText(response));
+    const answer = ensureVeterinaryBoundary(extractGeminiText(response), body.context);
     res.json({ answer, mode: "gemini", model: MODEL });
   } catch (error: unknown) {
     const err = error as Error;
