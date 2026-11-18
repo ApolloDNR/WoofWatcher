@@ -249,6 +249,24 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
   };
 }
 
+// Shareable artifacts must never silently promote an owner-private log. Keep
+// this boundary separate from backup/transfer state: those are deliberate
+// owner-controlled recovery packages, while reports and Care Passes travel to
+// another person.
+export function buildHouseholdShareState(input = {}, now = new Date().toISOString()) {
+  const state = normalizeState(input, now);
+  const petName = resolvePetName(state.profile?.name);
+  return {
+    ...state,
+    profile: {
+      ...state.profile,
+      name: petName,
+      publicLabel: petName,
+    },
+    entries: state.entries.filter(isHouseholdVisibleEntry),
+  };
+}
+
 export function buildImportReviewMessage(input = {}) {
   const petName = resolvePetName(input.profile?.name);
   return input.packageType === CARE_ROOM_TRANSFER_TYPE
@@ -1482,7 +1500,10 @@ function normalizeImportedEntry(entry = {}) {
   const normalized = createEntry(entry);
   return {
     ...normalized,
-    id: cleanText(entry.id) || normalized.id
+    id: cleanText(entry.id) || normalized.id,
+    // Older local snapshots used this boolean before visibility became the
+    // explicit field. Preserve it so share boundaries remain fail-closed.
+    ...(entry.householdVisible === false ? { householdVisible: false } : {})
   };
 }
 

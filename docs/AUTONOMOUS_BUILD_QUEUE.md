@@ -1,5 +1,20 @@
 # Autonomous Build Queue
 
+## 2026-11-18 PWA shared-export privacy boundary
+
+- DONE: PWA report artifacts and every scoped Care Pass now build from the
+  same household-visible care slice as Household Pulse. Owner-private entries
+  and legacy `householdVisible: false` entries cannot change their summaries,
+  health/training signals, or timelines.
+- VERIFIED LOCALLY: A red-first PWA readiness regression now passes (`51/51`)
+  for private and legacy-hidden health/training entries across report, vet
+  Care Pass, and trainer Care Pass outputs.
+- BOUNDARY: This protects person-to-person exports only. Local backup and
+  Care Room transfer retain full owner-controlled data by design; provider,
+  native accessibility, and recipient review remain separate gates.
+- NEXT: Capture native household/export accessibility evidence, then continue
+  only bounded privacy review where a new explicitly shareable surface exists.
+
 ## 2026-11-18 PWA household privacy boundary
 
 - DONE: Shared PWA routine and caregiver summaries now exclude private care

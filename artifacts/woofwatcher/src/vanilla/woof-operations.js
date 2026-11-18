@@ -1,4 +1,5 @@
 import {
+  buildHouseholdShareState,
   buildReportText,
   createEntry,
   getNotificationCenter,
@@ -228,7 +229,7 @@ export function isHostedNudgeProviderProofReady(evidence = {}) {
 }
 
 export function buildReportArtifact(input = {}, options = {}, now = new Date().toISOString()) {
-  const state = normalizeState(input, now);
+  const state = buildHouseholdShareState(input, now);
   const petName = resolvePetName(state.profile.name);
   const reportState = {
     ...state,
@@ -261,8 +262,8 @@ export function buildReportArtifact(input = {}, options = {}, now = new Date().t
         : "Download as text, or render sourceText in the report view before printing to PDF.",
     privacy: {
       includesRawState: false,
-      containsPrivateCareContext: true,
-      boundary: `Report artifacts contain ${petName} care context. Share only with trusted caregivers or a veterinarian.`
+      containsPrivateCareContext: false,
+      boundary: `Report artifacts exclude owner-private logs and contain ${petName} care context shared with the household. Share only with trusted caregivers or a veterinarian.`
     },
     auditEvent: createAuditEvent(
       {

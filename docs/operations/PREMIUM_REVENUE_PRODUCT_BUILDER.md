@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-11-18 PWA shared-export privacy boundary
+
+Reports and all scoped Care Pass variants now derive their care entries from a
+single household-visible PWA state builder. This keeps owner-private entries
+and legacy `householdVisible: false` data out of shareable monthly counts,
+health/training signals, and recent timelines. The boundary deliberately does
+not alter local backup or Care Room transfer packages, because those remain
+owner-controlled recovery paths rather than person-to-person shares.
+
+The regression first failed against the report timeline and now passes with
+PWA readiness coverage (`51/51`). Provider delivery, recipient review, native
+VoiceOver/TalkBack, store, legal, and Apollo approval remain separate gates.
+
 ## 2026-11-18 Provider-bound WoofGuide identity boundary
 
 The authenticated API helper now applies the shared care-domain Dog Profile

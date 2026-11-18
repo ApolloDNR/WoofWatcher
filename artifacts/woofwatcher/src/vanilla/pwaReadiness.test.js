@@ -111,6 +111,46 @@ test("keeps private care logs out of shared routine, reminder, and household sum
   assert.doesNotMatch(JSON.stringify(pulse), /Private appetite note/);
 });
 
+test("keeps private and legacy-hidden logs out of shared Care Passes and report artifacts", () => {
+  const now = "2026-11-18T08:00:00.000Z";
+  const state = {
+    profile: { name: "Mochi" },
+    entries: [
+      {
+        id: "private_vomit",
+        type: "vomit",
+        title: "Private symptom note",
+        caregiver: "Emma",
+        occurredAt: "2026-11-18T07:40:00.000Z",
+        visibility: "Private",
+        severity: "urgent",
+        note: "Private appetite detail",
+      },
+      {
+        id: "legacy_hidden_training",
+        type: "training",
+        title: "Legacy hidden training",
+        caregiver: "Emma",
+        occurredAt: "2026-11-18T07:20:00.000Z",
+        householdVisible: false,
+        note: "Legacy private behavior detail",
+      },
+    ],
+  };
+
+  const report = buildReportArtifact(state, { format: "text" }, now);
+  const vetPass = buildScopedCarePass(state, { audience: "vet" }, now);
+  const trainerPass = buildScopedCarePass(state, { audience: "trainer" }, now);
+
+  for (const artifact of [report, vetPass, trainerPass]) {
+    assert.doesNotMatch(JSON.stringify(artifact), /Private symptom note|Private appetite detail|Legacy hidden training|Legacy private behavior detail/);
+  }
+  assert.match(report.sourceText, /Vomit incidents: 0/);
+  assert.equal(vetPass.recentHealthTimeline.length, 0);
+  assert.equal(trainerPass.recentTrainingTimeline.length, 0);
+  assert.equal(report.privacy.containsPrivateCareContext, false);
+});
+
 test("keeps Dog Profile identity canonical in owner-reviewed talk-to-log drafts", () => {
   const placeholder = buildTalkToLogDraft(
     "Breakfast was finished",

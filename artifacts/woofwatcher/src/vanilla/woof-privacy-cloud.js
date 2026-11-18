@@ -1,4 +1,5 @@
 import {
+  buildHouseholdShareState,
   buildReportText,
   getBileWatch,
   getCaregiverHandoff,
@@ -86,7 +87,7 @@ export const CARE_PASS_VARIANTS = [
 ];
 
 export function buildScopedCarePass(input = {}, options = {}, now = new Date().toISOString()) {
-  const state = normalizeState(input, now);
+  const state = buildHouseholdShareState(input, now);
   const petName = resolvePetName(state.profile.name);
   const profile = {
     ...state.profile,
