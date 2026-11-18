@@ -35,6 +35,7 @@ import {
   getNotificationCenter,
   getReminderCenter,
   getTodayPlan,
+  resolvePetName,
 } from "./woof-core.js";
 import { buildProductViewModel } from "./woof-product-view-model.js";
 
@@ -45,6 +46,23 @@ const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), 
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
 const index = readFileSync(join(here, "../../index.html"), "utf8");
 const manifest = readFileSync(join(here, "../../public/manifest.webmanifest"), "utf8");
+
+test("keeps PWA Dog Profile resolution behind one shared boundary", () => {
+  const consumers = [
+    "woof-operations.js",
+    "woof-privacy-cloud.js",
+    "woof-backend-schema.js",
+    "openai-care-helper.js",
+  ].map((file) => readFileSync(join(here, file), "utf8"));
+
+  assert.equal(resolvePetName("  MY DOG  "), "Phoenix");
+  assert.equal(resolvePetName("  Mochi  "), "Mochi");
+
+  for (const source of consumers) {
+    assert.match(source, /resolvePetName/);
+    assert.doesNotMatch(source, /function resolvePetName/);
+  }
+});
 
 test("keeps Dog Profile identity canonical in the Today handoff prompt", () => {
   const placeholder = getTodayPlan(

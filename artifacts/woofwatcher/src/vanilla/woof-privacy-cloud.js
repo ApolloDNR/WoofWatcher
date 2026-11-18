@@ -9,7 +9,8 @@ import {
   getReminderCenter,
   getTodayPlan,
   getTrainingProgress,
-  normalizeState
+  normalizeState,
+  resolvePetName
 } from "./woof-core.js";
 
 export const ACCESS_SCOPES = [
@@ -348,11 +349,6 @@ function compactObject(value) {
 
 function cleanText(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
-}
-
-function resolvePetName(value) {
-  const cleaned = cleanText(value);
-  return !cleaned || cleaned.toLowerCase() === "my dog" ? "Phoenix" : cleaned;
 }
 
 function buildCaregiverRoles(petName) {

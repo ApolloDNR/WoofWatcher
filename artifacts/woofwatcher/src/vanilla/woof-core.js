@@ -1419,7 +1419,7 @@ function cleanText(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
-function resolvePetName(value) {
+export function resolvePetName(value) {
   const name = cleanText(value);
   return !name || name.toLowerCase() === "my dog" ? "Phoenix" : name;
 }

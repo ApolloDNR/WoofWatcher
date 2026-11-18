@@ -1,3 +1,5 @@
+import { resolvePetName } from "./woof-core.js";
+
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_OPENAI_MODEL = "gpt-5.5";
 
@@ -206,7 +208,3 @@ function cleanText(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
-function resolvePetName(value) {
-  const name = cleanText(value);
-  return !name || name.toLowerCase() === "my dog" ? "Phoenix" : name;
-}

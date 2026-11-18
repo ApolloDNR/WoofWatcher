@@ -1,4 +1,4 @@
-import { normalizeState } from "./woof-core.js";
+import { normalizeState, resolvePetName } from "./woof-core.js";
 import { createAuditEvent } from "./woof-operations.js";
 
 export const BACKEND_SCHEMA_VERSION = "2026-06-05.v1";
@@ -408,7 +408,3 @@ function cleanText(value, maxLength = 500) {
   return String(value).replace(/\s+/g, " ").trim().slice(0, maxLength);
 }
 
-function resolvePetName(value) {
-  const name = cleanText(value, 120);
-  return !name || name.toLowerCase() === "my dog" ? "Phoenix" : name;
-}

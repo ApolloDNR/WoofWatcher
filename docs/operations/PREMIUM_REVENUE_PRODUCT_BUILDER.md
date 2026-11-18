@@ -1,5 +1,22 @@
 # Premium Revenue Product Builder
 
+## 2026-11-17 Shared PWA Dog Profile identity boundary
+
+PWA reports, Care Pass and caregiver access, backend seed drafts, care
+operations, and owner-reviewed WoofGuide fallback now consume the one exported
+Dog Profile resolver from `woof-core`. Blank or case-insensitive padded `My
+Dog` values retain the intentional Phoenix starter identity, while a renamed
+dog remains trimmed consistently at every producer boundary. This is a
+local-first copy and planning safeguard only: it does not enable live AI,
+provider sync, or external actions.
+
+The new red-first source contract initially failed because the resolver was
+private, then targeted PWA coverage passed `53/53`. The broad focused source
+suite passed `1,262/1,278`; the 16 non-slice API handler failures are the known
+host restriction on localhost (`EACCES`), not behavior regressions.
+Dependency-complete CI, native PWA/mobile VoiceOver/TalkBack, provider, store,
+legal, and Apollo approval remain separate required gates.
+
 ## 2026-11-17 PWA caregiver-role catalog identity boundary
 
 The exported PWA caregiver-role catalog now describes the owner role without a

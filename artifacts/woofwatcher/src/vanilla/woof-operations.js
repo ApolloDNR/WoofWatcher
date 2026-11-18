@@ -3,7 +3,8 @@ import {
   createEntry,
   getNotificationCenter,
   getReminderCenter,
-  normalizeState
+  normalizeState,
+  resolvePetName
 } from "./woof-core.js";
 
 export const AUDIT_ACTIONS = [
@@ -515,11 +516,6 @@ function clampWholeNumber(value, fallback = 0) {
 function cleanText(value, maxLength = 500) {
   if (value === null || value === undefined) return "";
   return String(value).replace(/\s+/g, " ").trim().slice(0, maxLength);
-}
-
-function resolvePetName(value) {
-  const name = cleanText(value, 120);
-  return !name || name.toLowerCase() === "my dog" ? "Phoenix" : name;
 }
 
 function stableFingerprint(value) {

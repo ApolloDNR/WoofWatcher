@@ -3877,3 +3877,18 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Run exact-tip dependency-complete branch CI, then continue native
   iOS/Android and VoiceOver/TalkBack evidence. This source fix does not clear
   provider, store, or Apollo approval gates.
+
+## 2026-11-17 Shared PWA Dog Profile identity boundary
+
+- DONE: Reports, Care Pass/caregiver access, backend planning, operations, and
+  the owner-reviewed WoofGuide helper now use one exported PWA Dog Profile
+  resolver rather than four local copies. Blank or padded case-insensitive
+  `My Dog` remains Phoenix; a padded owner-selected name stays trimmed.
+- VERIFIED LOCALLY: The red-first PWA readiness contract failed before the
+  resolver export, then relevant PWA/backend/privacy coverage passed `53/53`.
+  The broad focused source suite passed `1,262/1,278`; the only 16 failures are
+  known sandbox-denied API localhost fixtures (`EACCES`), unrelated to this
+  PWA source change.
+- NEXT: Run dependency-complete CI against this exact branch tip. Capture
+  native PWA/mobile and VoiceOver/TalkBack evidence when tooling is available;
+  do not treat source proof as provider, store, legal, or Apollo approval.
