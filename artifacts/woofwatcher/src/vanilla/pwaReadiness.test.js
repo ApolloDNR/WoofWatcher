@@ -97,6 +97,23 @@ test("keeps private care logs out of shared routine, reminder, and household sum
       occurredAt: "2026-11-18T07:40:00.000Z",
       visibility: "Private",
       note: "Private appetite note",
+    }, {
+      id: "private_urgent_vomit",
+      type: "vomit",
+      title: "Private urgent symptom",
+      caregiver: "Emma",
+      occurredAt: "2026-11-18T07:35:00.000Z",
+      visibility: "Private",
+      severity: "urgent",
+      note: "Private urgent health detail",
+    }, {
+      id: "legacy_hidden_urgent",
+      type: "health",
+      title: "Legacy hidden urgent symptom",
+      caregiver: "Emma",
+      occurredAt: "2026-11-18T07:30:00.000Z",
+      householdVisible: false,
+      severity: "urgent",
     }],
   };
 
@@ -108,7 +125,8 @@ test("keeps private care logs out of shared routine, reminder, and household sum
   assert.equal(reminders.completedCount, 0);
   assert.notEqual(reminders.items[0].status, "completed");
   assert.equal(pulse.timeline.length, 0);
-  assert.doesNotMatch(JSON.stringify(pulse), /Private appetite note/);
+  assert.equal(pulse.healthStatus, "Steady");
+  assert.doesNotMatch(JSON.stringify(pulse), /Private appetite note|Private urgent symptom|Private urgent health detail|Legacy hidden urgent symptom/);
 });
 
 test("keeps private and legacy-hidden logs out of shared Care Passes and report artifacts", () => {

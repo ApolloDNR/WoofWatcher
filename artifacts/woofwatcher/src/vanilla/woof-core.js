@@ -740,7 +740,14 @@ export function getHouseholdPulse(state, now = new Date().toISOString()) {
   const petName = resolvePetName(state?.profile?.name);
   const plan = getTodayPlan(state, now);
   const handoff = getCaregiverHandoff(state, now);
-  const health = getHealthWatch(state, now);
+  // Household Pulse is a shared-care surface. Its health badge must follow the
+  // same visibility boundary as its timeline, rather than disclosing a private
+  // or legacy-hidden health event through a derived status.
+  const householdState = {
+    ...state,
+    entries: (state.entries || []).filter(isHouseholdVisibleEntry)
+  };
+  const health = getHealthWatch(householdState, now);
   const todayEntries = entriesForLocalDay(state.entries || [], now)
     .filter(isHouseholdVisibleEntry)
     .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));

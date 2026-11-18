@@ -1,5 +1,19 @@
 # Premium Revenue Product Builder
 
+## 2026-11-18 PWA Household Pulse derived-health privacy boundary
+
+Household Pulse now derives its shared health label from the same
+household-visible log boundary as its timeline, routines, reminders, and
+handoff. Explicit `Private` events and legacy `householdVisible: false` rows
+cannot reveal health urgency through the Pulse's derived status, while the
+owner's local Health Watch retains the complete owner-controlled record.
+
+The regression failed red because a private urgent-vomit entry raised the
+shared Pulse label to `Review`; it now passes with the PWA readiness suite
+(`51/51`). This change does not provide veterinary guidance or enable sync;
+native iOS/Android, VoiceOver/TalkBack, provider, store, legal, and Apollo
+approval remain separate release gates.
+
 ## 2026-11-18 PWA report-preview privacy boundary
 
 PWA report text is now fail-closed at its own reusable builder boundary. This
