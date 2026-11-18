@@ -1266,14 +1266,18 @@ export function getAchievementReview(state, now = new Date().toISOString()) {
 }
 
 export function buildReportText(state, now = new Date().toISOString()) {
-  const profile = state.profile || { name: "Phoenix" };
+  // Reports are directly copyable, downloadable, and printable from the PWA.
+  // Keep every caller on the same fail-closed boundary as report artifacts and
+  // scoped Care Passes, including legacy snapshots that used householdVisible.
+  const sharedState = buildHouseholdShareState(state, now);
+  const profile = sharedState.profile || { name: "Phoenix" };
   const petName = resolvePetName(profile.name);
-  const summary = getMonthlySummary(state, now);
-  const healthWatch = getHealthWatch(state, now);
-  const bileWatch = getBileWatch(state, now);
-  const goalReview = getGoalReview(state, now);
-  const trainingProgress = getTrainingProgress(state, now);
-  const latest = [...(state.entries || [])]
+  const summary = getMonthlySummary(sharedState, now);
+  const healthWatch = getHealthWatch(sharedState, now);
+  const bileWatch = getBileWatch(sharedState, now);
+  const goalReview = getGoalReview(sharedState, now);
+  const trainingProgress = getTrainingProgress(sharedState, now);
+  const latest = [...(sharedState.entries || [])]
     .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
     .slice(0, 8);
 

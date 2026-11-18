@@ -1,5 +1,23 @@
 # Autonomous Build Queue
 
+## 2026-11-18 PWA report-preview privacy boundary
+
+- DONE: the report-text builder now always derives from the household-share
+  state, so the PWA's copyable, downloadable, and printable report previews
+  share the same fail-closed visibility rule as generated report artifacts and
+  scoped Care Passes.
+- VERIFIED LOCALLY: a red-first PWA readiness regression proves that both
+  explicit Private entries and legacy `householdVisible: false` entries are
+  absent from direct report text and the product view model. The non-API
+  mobile/PWA/domain/release-tool focused suite passes `1,216/1,216`, and
+  PixelLab asset verification reports `ok=150 missing=0 invalid=0`.
+- BOUNDARY: local backup and intentional Care Room device transfer still retain
+  the owner's complete state. Native accessibility, recipient review, provider,
+  store, legal, and Apollo approvals remain separate release gates.
+- NEXT: capture native household/export accessibility evidence, then audit only
+  a newly introduced person-to-person sharing surface before changing privacy
+  behavior again.
+
 ## 2026-11-18 PWA shared-export privacy boundary
 
 - DONE: PWA report artifacts and every scoped Care Pass now build from the

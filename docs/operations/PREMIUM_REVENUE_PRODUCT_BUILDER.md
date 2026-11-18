@@ -1,5 +1,23 @@
 # Premium Revenue Product Builder
 
+## 2026-11-18 PWA report-preview privacy boundary
+
+PWA report text is now fail-closed at its own reusable builder boundary. This
+protects the visible, copyable, downloadable, and printable report previews in
+addition to generated report artifacts: explicit `Private` logs and legacy
+`householdVisible: false` rows cannot affect report counts, Health/Bile Watch
+signals, training context, or the recent-care timeline. Local backup and
+intentional Care Room device transfer retain the complete owner-controlled
+state by design.
+
+The PWA regression failed red before the change because direct report text
+included a private vomit note and a legacy-hidden training entry. After the
+shared-state boundary was applied, PWA readiness passed `51/51`; the non-API
+mobile/PWA/domain/release-tool focused suite passed `1,216/1,216`; and
+PixelLab verification reports `ok=150 missing=0 invalid=0`. Native
+iOS/Android, VoiceOver/TalkBack, recipient review, dependency-complete exact-tip
+CI, provider, store, legal, and Apollo approval remain separate gates.
+
 ## 2026-11-18 PWA shared-export privacy boundary
 
 Reports and all scoped Care Pass variants now derive their care entries from a

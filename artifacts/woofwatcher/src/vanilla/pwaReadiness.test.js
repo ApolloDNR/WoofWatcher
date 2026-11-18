@@ -139,13 +139,17 @@ test("keeps private and legacy-hidden logs out of shared Care Passes and report 
   };
 
   const report = buildReportArtifact(state, { format: "text" }, now);
+  const reportPreview = buildReportText(state, now);
+  const productView = buildProductViewModel(state, now);
   const vetPass = buildScopedCarePass(state, { audience: "vet" }, now);
   const trainerPass = buildScopedCarePass(state, { audience: "trainer" }, now);
 
-  for (const artifact of [report, vetPass, trainerPass]) {
+  for (const artifact of [report, reportPreview, productView.more.reportText, vetPass, trainerPass]) {
     assert.doesNotMatch(JSON.stringify(artifact), /Private symptom note|Private appetite detail|Legacy hidden training|Legacy private behavior detail/);
   }
   assert.match(report.sourceText, /Vomit incidents: 0/);
+  assert.match(reportPreview, /Vomit incidents: 0/);
+  assert.equal(productView.more.reportText, reportPreview);
   assert.equal(vetPass.recentHealthTimeline.length, 0);
   assert.equal(trainerPass.recentTrainingTimeline.length, 0);
   assert.equal(report.privacy.containsPrivateCareContext, false);
