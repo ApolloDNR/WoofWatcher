@@ -47,7 +47,7 @@ export const CAREGIVER_ROLES = [
   {
     id: "owner",
     label: "Owner",
-    description: "Full control of Phoenix's local state, privacy choices, exports, records, and future cloud sync.",
+    description: "Full control of the dog's local state, privacy choices, exports, records, and future cloud sync.",
     scopes: ACCESS_SCOPES
   },
   {
@@ -358,6 +358,9 @@ function resolvePetName(value) {
 function buildCaregiverRoles(petName) {
   return CAREGIVER_ROLES.map((role) => ({
     ...role,
-    description: role.description.replaceAll("Phoenix", petName)
+    description:
+      role.id === "owner"
+        ? `Full control of ${petName}'s local state, privacy choices, exports, records, and future cloud sync.`
+        : role.description
   }));
 }

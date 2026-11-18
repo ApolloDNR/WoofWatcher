@@ -1,5 +1,19 @@
 # Autonomous Build Queue
 
+## 2026-11-17 PWA caregiver-role catalog identity boundary
+
+- DONE: The exported PWA caregiver-role catalog is now dog-neutral rather than
+  carrying the Phoenix starter identity in its owner description. The rendered
+  access model still resolves the canonical Dog Profile name, so blank or
+  `My Dog` profiles intentionally show Phoenix while a renamed dog is trimmed
+  before owner-facing role copy is produced.
+- VERIFIED LOCALLY: The red-first catalog regression and PWA privacy/readiness
+  checks pass; the zero-dependency mobile/PWA/domain/release-tool suite passes
+  `1,213/1,213`, and PixelLab reports `ok=150 missing=0 invalid=0`.
+- NEXT: Continue identity audits only at unprotected owner-facing or exported
+  planning seams. Provider configuration, real household sync, native
+  VoiceOver/TalkBack, store, and Apollo approvals remain separate gates.
+
 ## 2026-11-17 Shared care-domain starter identity parity
 
 - DONE: Shared care-domain handoff builders now match the mobile identity rule:

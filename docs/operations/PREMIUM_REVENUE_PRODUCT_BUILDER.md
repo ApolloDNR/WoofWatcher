@@ -1,5 +1,20 @@
 # Premium Revenue Product Builder
 
+## 2026-11-17 PWA caregiver-role catalog identity boundary
+
+The exported PWA caregiver-role catalog now describes the owner role without a
+Phoenix starter-name literal. The active access model inserts the canonical Dog
+Profile identity only at presentation time, preserving Phoenix for blank or
+`My Dog` starter data while retaining a trimmed owner-renamed dog. This changes
+only owner-facing planning copy; it does not create an account, enable sync, or
+change care records.
+
+The catalog regression was red first and now passes alongside the PWA
+privacy/readiness checks. The zero-dependency mobile/PWA/domain/release-tool
+suite passes `1,213/1,213`, and PixelLab reports `ok=150 missing=0 invalid=0`.
+Dependency-complete CI, route-named native PWA/mobile VoiceOver/TalkBack,
+provider, store, legal, and Apollo approval remain separate required gates.
+
 ## 2026-11-17 Template care-state pose fidelity
 
 The live room and roaming care twin now prefer a matching PixelLab template
