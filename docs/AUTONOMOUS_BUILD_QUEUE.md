@@ -1,5 +1,20 @@
 # Autonomous Build Queue
 
+## 2026-11-18 PWA household privacy boundary
+
+- DONE: Shared PWA routine and caregiver summaries now exclude private care
+  logs. A private meal can no longer satisfy a household routine, clear its
+  reminder, appear in the caregiver handoff, or enter the Household Pulse
+  timeline. The boundary also honors legacy `householdVisible: false` entries.
+- VERIFIED LOCALLY: The red-first PWA regression passes with the PWA readiness
+  suite (`50/50`) and the prescribed mobile/domain focused suite
+  (`1,155/1,155`). PixelLab asset verification reports `ok=150 missing=0
+  invalid=0`.
+- BOUNDARY: This narrows shared summaries only; it does not alter private-log
+  storage, expose provider sync, or make health or veterinary conclusions.
+- NEXT: Audit only remaining explicitly shared/exported PWA surfaces for the
+  same visibility rule, then capture native household and accessibility proof.
+
 ## 2026-11-18 Provider-bound WoofGuide identity boundary
 
 - DONE: The authenticated API WoofGuide helper now resolves Dog Profile identity

@@ -534,7 +534,7 @@ export function getCareCalendar(state, now = new Date().toISOString()) {
 
 export function getTodayPlan(state, now = new Date().toISOString()) {
   const petName = resolvePetName(state.profile?.name);
-  const todayEntries = entriesForLocalDay(state.entries || [], now);
+  const todayEntries = entriesForLocalDay(state.entries || [], now).filter(isHouseholdVisibleEntry);
   const completedLabels = (state.routines || [])
     .filter((routine) => todayEntries.some((entry) => routineMatchesEntry(routine, entry)))
     .map((routine) => routine.label);
@@ -560,7 +560,7 @@ export function getReminderCenter(state, now = new Date().toISOString()) {
   const petName = resolvePetName(state.profile?.name);
   const target = new Date(now);
   const currentMinutes = target.getHours() * 60 + target.getMinutes();
-  const todayEntries = entriesForLocalDay(state.entries || [], now);
+  const todayEntries = entriesForLocalDay(state.entries || [], now).filter(isHouseholdVisibleEntry);
   const items = (state.routines || []).map((routine) => {
     const normalized = normalizeRoutineInput(routine);
     const completedEntry = todayEntries.find((entry) => routineMatchesEntry(normalized, entry)) || null;
@@ -686,7 +686,9 @@ export function getNotificationCenter(state, now = new Date().toISOString(), opt
 export function getCaregiverHandoff(state, now = new Date().toISOString()) {
   const petName = resolvePetName(state.profile?.name);
   const plan = getTodayPlan(state, now);
-  const todayEntries = entriesForLocalDay(state.entries || [], now).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const todayEntries = entriesForLocalDay(state.entries || [], now)
+    .filter(isHouseholdVisibleEntry)
+    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
   const lastMeal = todayEntries.find((entry) => entry.type === "meal") || null;
   const lastWalk = todayEntries.find((entry) => entry.type === "walk") || null;
   const followUps = todayEntries.filter((entry) => entry.requiresFollowUp || entry.severity === "urgent");
@@ -721,7 +723,9 @@ export function getHouseholdPulse(state, now = new Date().toISOString()) {
   const plan = getTodayPlan(state, now);
   const handoff = getCaregiverHandoff(state, now);
   const health = getHealthWatch(state, now);
-  const todayEntries = entriesForLocalDay(state.entries || [], now).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const todayEntries = entriesForLocalDay(state.entries || [], now)
+    .filter(isHouseholdVisibleEntry)
+    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
   const timeline = todayEntries.slice(0, 6).map((entry) => ({
     id: entry.id,
     type: entry.type,
@@ -1804,6 +1808,10 @@ function entriesForLocalDay(entries, now) {
       date.getDate() === target.getDate()
     );
   });
+}
+
+function isHouseholdVisibleEntry(entry = {}) {
+  return entry.visibility !== "Private" && entry.householdVisible !== false;
 }
 
 function entriesForCalendarMonth(entries, year, month) {

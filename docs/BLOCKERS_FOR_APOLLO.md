@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-11-18 PWA household-summary privacy boundary
+
+Source/test proof now keeps private PWA care logs out of household routine
+completion, reminders, caregiver handoff, and Household Pulse. Browser/native
+household review, VoiceOver/TalkBack traversal, provider-backed sync proof,
+store review, and Apollo approval remain open; no provider, payment, live-AI,
+or veterinary capability was enabled.
+
 ## 2026-09-07 Core mobile polish native proof
 
 The latest Home, Log, Plans, Health, More, and shared purposeful-motion slice is

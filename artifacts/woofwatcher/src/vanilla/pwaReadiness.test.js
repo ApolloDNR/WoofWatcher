@@ -84,6 +84,33 @@ test("keeps Dog Profile identity canonical in the Today handoff prompt", () => {
   );
 });
 
+test("keeps private care logs out of shared routine, reminder, and household summaries", () => {
+  const now = "2026-11-18T08:00:00.000Z";
+  const state = {
+    profile: { name: "Mochi" },
+    routines: [{ id: "breakfast", type: "meal", label: "Breakfast", time: "7:30 AM", owner: "Emma" }],
+    entries: [{
+      id: "private_breakfast",
+      type: "meal",
+      title: "Breakfast",
+      caregiver: "Emma",
+      occurredAt: "2026-11-18T07:40:00.000Z",
+      visibility: "Private",
+      note: "Private appetite note",
+    }],
+  };
+
+  const plan = getTodayPlan(state, now);
+  const reminders = getReminderCenter(state, now);
+  const pulse = getHouseholdPulse(state, now);
+
+  assert.equal(plan.completedCount, 0);
+  assert.equal(reminders.completedCount, 0);
+  assert.notEqual(reminders.items[0].status, "completed");
+  assert.equal(pulse.timeline.length, 0);
+  assert.doesNotMatch(JSON.stringify(pulse), /Private appetite note/);
+});
+
 test("keeps Dog Profile identity canonical in owner-reviewed talk-to-log drafts", () => {
   const placeholder = buildTalkToLogDraft(
     "Breakfast was finished",
