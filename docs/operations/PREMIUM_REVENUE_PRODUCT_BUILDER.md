@@ -7087,3 +7087,16 @@ fixtures enabled, the complete focused API/mobile/PWA/domain/release-tool
 suite passed `1,286/1,286`; and PixelLab passed `ok=150`, `missing=0`,
 `invalid=0`. Fresh exact-tip dependency CI remains required. Native device,
 accessibility, provider, store, legal, and Apollo approval are separate gates.
+
+## 2026-11-19 Hosted nudge identity defense in depth
+
+Hosted caregiver-nudge job copy now resolves Dog Profile identity at its final
+provider-message boundary instead of interpolating a raw profile field. This
+keeps the intentional Phoenix fallback for blank or `My Dog` starter state and
+trims a renamed dog before a future caller can schedule caregiver copy.
+
+The hosted-nudge identity/privacy PWA readiness suite passed `52/52`, including
+the regression that rejects raw profile interpolation in scheduled caregiver
+messages. Aggregate focused verification and fresh dependency-complete branch
+CI remain required. This source-level defense does not configure delivery,
+prove consent, or clear native, provider, store, legal, or Apollo gates.

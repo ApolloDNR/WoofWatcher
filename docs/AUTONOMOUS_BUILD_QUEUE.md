@@ -4041,3 +4041,16 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Push the CI-repair commit and require fresh dependency-complete branch
   CI. Native route, accessibility, provider, store, legal, and Apollo evidence
   remain separate release gates.
+
+## 2026-11-19 Hosted nudge identity defense in depth
+
+- DONE: Hosted caregiver-nudge job copy now resolves Dog Profile identity at
+  the final provider-message boundary. This preserves the Phoenix fallback for
+  blank or `My Dog` starter state and trims an owner-selected name even if a
+  future caller bypasses the normalized provider-state setup.
+- VERIFIED LOCALLY: The hosted-nudge identity/privacy PWA readiness suite
+  passed `52/52`, including source-boundary coverage that rejects raw profile
+  interpolation in scheduled caregiver copy.
+- NEXT: Run the aggregate focused suite and require fresh dependency-complete
+  branch CI. Native delivery, caregiver consent, provider proof, store, legal,
+  and Apollo evidence remain separate release gates.

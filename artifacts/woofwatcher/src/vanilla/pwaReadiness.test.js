@@ -42,6 +42,7 @@ import { buildProductViewModel } from "./woof-product-view-model.js";
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const app = readFileSync(join(here, "app.js"), "utf8");
+const operationsSource = readFileSync(join(here, "woof-operations.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
 const index = readFileSync(join(here, "../../index.html"), "utf8");
@@ -856,6 +857,8 @@ test("keeps Dog Profile identity canonical at the hosted nudge provider boundary
 
   assert.equal(placeholder.petName, "Phoenix");
   assert.equal(renamed.petName, "Mochi");
+  assert.match(operationsSource, /const petName = resolvePetName\(state\.profile\?\.name\);/);
+  assert.doesNotMatch(operationsSource, /const message = `\$\{state\.profile\.name\} needs/);
 });
 
 test("keeps owner-private and legacy-hidden logs out of hosted caregiver nudges", () => {

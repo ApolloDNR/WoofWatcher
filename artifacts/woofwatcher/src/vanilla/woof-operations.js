@@ -314,10 +314,11 @@ export function buildWoofGuideVetNoteDraft(input = {}, context = {}, options = {
 }
 
 function buildNudgeJob(item, state, options, now) {
+  const petName = resolvePetName(state.profile?.name);
   const scheduledFor = typeof item.minutesUntil === "number"
     ? new Date(new Date(now).getTime() + item.minutesUntil * 60000).toISOString()
     : "";
-  const message = `${state.profile.name} needs ${item.label}${item.time ? ` around ${item.time}` : ""}. Log it when handled so the care team stays aligned.`;
+  const message = `${petName} needs ${item.label}${item.time ? ` around ${item.time}` : ""}. Log it when handled so the care team stays aligned.`;
 
   return {
     id: `nudge_${slugify(item.id || item.label)}_${formatDateKey(now)}`,
