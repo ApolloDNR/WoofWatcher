@@ -1,5 +1,21 @@
 # Autonomous Build Queue
 
+## 2026-11-18 PWA hosted-nudge household privacy boundary
+
+- DONE: hosted caregiver-nudge planning now derives routine completion and
+  notification candidates from the same household-visible state as Care Passes,
+  reports, and Household Pulse. Explicit `Private` and legacy
+  `householdVisible: false` meal logs cannot suppress a shared caregiver
+  reminder or leak their notes into a provider-bound delivery plan.
+- VERIFIED LOCALLY: red-first PWA readiness coverage reproduced a private
+  breakfast marking the shared routine covered, then passed `52/52` after the
+  bounded state change.
+- BOUNDARY: delivery remains provider-proof-gated and no push, email, or SMS
+  is sent by this local plan. Native delivery, recipient review, provider,
+  legal, store, and Apollo approval remain separate gates.
+- NEXT: capture native household/export accessibility evidence; do not expand
+  delivery behavior without structured provider and consent proof.
+
 ## 2026-11-18 PWA backend-seed household privacy boundary
 
 - DONE: review-only backend seed drafts now derive household-scoped

@@ -1,5 +1,16 @@
 # Premium Revenue Product Builder
 
+## 2026-11-18 PWA hosted-nudge household privacy boundary
+
+Hosted nudges are a person-to-person provider-bound planning surface, so they
+now receive the fail-closed household-share state before deriving reminders
+and jobs. An owner-private meal, including a legacy `householdVisible: false`
+entry, cannot silently satisfy a shared routine, suppress a caregiver reminder,
+or place its note in the nudge plan. Red-first readiness coverage reproduced
+the false completion, then passed `52/52` after the minimal change. Delivery
+remains proof-gated and local-only: no push provider, recipient delivery,
+native proof, legal review, store approval, or Apollo approval is implied.
+
 ## 2026-11-18 PWA backend-seed household privacy boundary
 
 Backend seed drafts are review-only, but their `care_entries` rows are intended

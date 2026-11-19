@@ -123,7 +123,10 @@ export function buildTalkToLogDraft(text = "", options = {}, now = new Date().to
 }
 
 export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().toISOString()) {
-  const state = normalizeState(input, now);
+  // Hosted nudges are a person-to-person delivery surface. A private local
+  // entry must not silently satisfy a shared routine or affect a caregiver's
+  // notification, including legacy entries that predate the visibility field.
+  const state = buildHouseholdShareState(input, now);
   const petName = resolvePetName(state.profile.name);
   const providerState = {
     ...state,
