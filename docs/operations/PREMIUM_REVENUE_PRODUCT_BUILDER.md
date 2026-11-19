@@ -1,5 +1,21 @@
 # Premium Revenue Product Builder
 
+## 2026-11-18 PWA Achievements legacy-privacy boundary
+
+PWA Achievements now uses the shared household-visible entry rule rather than
+checking only the newer `visibility: "Private"` label. This keeps legacy rows
+with `householdVisible: false` from silently earning a shared care streak or
+altering training, health, bedtime-snack, or alone-time achievement evidence.
+The owner-local record remains intentionally complete outside shared outputs.
+
+The red-first regression initially produced a false seven-day streak from
+legacy-hidden walks; targeted PWA coverage now passes `54/54`, the prescribed
+mobile/domain focused suite passes `1,155/1,155`, and PixelLab verification
+reports `ok=150 missing=0 invalid=0`. This does not enable provider sharing,
+medical guidance, or remote sync; native iOS/Android, VoiceOver/TalkBack,
+recipient review, provider, store, legal, and Apollo approval remain separate
+release gates.
+
 ## 2026-11-18 PWA Household Pulse derived-health privacy boundary
 
 Household Pulse now derives its shared health label from the same

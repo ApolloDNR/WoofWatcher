@@ -102,3 +102,36 @@ test("keeps achievement and training recovery copy behind the Dog Profile identi
   assert.match(training.focusAreas.join(" "), /what helped Mochi recover/);
   assert.doesNotMatch(JSON.stringify({ achievements, training }), /Phoenix|My Dog/);
 });
+
+test("derives shared achievements only from household-visible logs", () => {
+  const now = "2026-06-13T18:00:00.000Z";
+  const state = {
+    ...getDefaultState(now),
+    entries: [
+      ...Array.from({ length: 7 }, (_, index) => ({
+        ...createEntry({
+          type: "walk",
+          title: "Legacy private walk",
+          occurredAt: daysAgo(now, index)
+        }),
+        householdVisible: false
+      })),
+      ...Array.from({ length: 3 }, (_, index) => createEntry({
+        type: "training",
+        title: "Private training note",
+        occurredAt: daysAgo(now, index, 16),
+        visibility: "Private"
+      }))
+    ]
+  };
+
+  const review = getAchievementReview(state, now);
+  const streak = review.achievements.find((achievement) => achievement.id === "routine_streak");
+  const training = review.achievements.find((achievement) => achievement.id === "training_consistency");
+
+  assert.equal(streak.progress, 0);
+  assert.equal(streak.status, "needs_log");
+  assert.equal(training.progress, 0);
+  assert.equal(training.status, "needs_log");
+  assert.equal(review.evidence.weekLogs, 0);
+});

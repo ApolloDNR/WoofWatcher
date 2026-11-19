@@ -1,5 +1,24 @@
 # Autonomous Build Queue
 
+## 2026-11-18 PWA Achievements privacy boundary
+
+- DONE: meaningful care milestones now derive from the same household-visible
+  entry rule as PWA Household Pulse, Care Passes, and report previews. Legacy
+  rows that only carry `householdVisible: false` can no longer earn shared
+  streaks or reveal training, health, or alone-time patterns through badges.
+- VERIFIED LOCALLY: red-first achievement coverage reproduces a false
+  seven-day streak from legacy-hidden walks and now passes. Targeted PWA
+  coverage passes `54/54`; the prescribed mobile/domain focused suite passes
+  `1,155/1,155`; PixelLab asset verification reports `ok=150 missing=0
+  invalid=0`.
+- BOUNDARY: this is a shared-surface safeguard; owner-local backup and Care
+  Room device transfer still retain complete owner-controlled history. Native
+  accessibility, recipient review, provider, store, legal, and Apollo gates
+  remain separate.
+- NEXT: capture native household/export accessibility evidence, then audit
+  only a newly introduced person-to-person sharing surface before changing
+  privacy behavior again.
+
 ## 2026-11-18 PWA report-preview privacy boundary
 
 - DONE: the report-text builder now always derives from the household-share

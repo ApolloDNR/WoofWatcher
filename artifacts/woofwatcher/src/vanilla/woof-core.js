@@ -1168,7 +1168,10 @@ export function getTrainingProgress(state, now = new Date().toISOString()) {
 export function getAchievementReview(state, now = new Date().toISOString()) {
   const normalized = normalizeState(state, now);
   const petName = resolvePetName(normalized.profile?.name);
-  const visibleEntries = (normalized.entries || []).filter((entry) => entry.visibility !== "Private");
+  // Achievements are a shared household surface. Use the same fail-closed
+  // visibility boundary as Care Passes and Household Pulse so legacy records
+  // marked only householdVisible:false cannot earn or reveal a milestone.
+  const visibleEntries = (normalized.entries || []).filter(isHouseholdVisibleEntry);
   const recentEntries = entriesWithinDays(visibleEntries, now, 7);
   const monthEntries = entriesForCurrentMonth(visibleEntries, now);
   const routineStreak = getConsecutiveLoggedDayCount(visibleEntries, now, 7);
