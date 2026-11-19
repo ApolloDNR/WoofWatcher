@@ -7073,3 +7073,17 @@ PixelLab asset verification reports `ok=150`, `missing=0`, `invalid=0`.
 The sandbox prevents the API fixture subset of the root suite from opening
 localhost ports, so dependency-complete CI and native evidence remain the
 release authority.
+
+## 2026-11-19 Hosted nudge privacy CI determinism
+
+The hosted caregiver-nudge privacy test no longer depends on the runner's
+local timezone. Its routine fixture is overdue across developer and GitHub
+Actions time zones, while its private and legacy-hidden logs stay on the same
+local day. This preserves the intended fail-closed guarantee: owner-private
+care cannot complete a shared routine or appear in planned caregiver nudges.
+
+Focused PWA privacy/readiness coverage passed `55/55`; with localhost test
+fixtures enabled, the complete focused API/mobile/PWA/domain/release-tool
+suite passed `1,286/1,286`; and PixelLab passed `ok=150`, `missing=0`,
+`invalid=0`. Fresh exact-tip dependency CI remains required. Native device,
+accessibility, provider, store, legal, and Apollo approval are separate gates.

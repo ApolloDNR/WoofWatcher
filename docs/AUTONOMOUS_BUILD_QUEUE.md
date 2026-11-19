@@ -4027,3 +4027,17 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Run dependency-complete CI against this exact branch tip. Capture
   native PWA/mobile and VoiceOver/TalkBack evidence when tooling is available;
   do not treat source proof as provider, store, legal, or Apollo approval.
+
+## 2026-11-19 Hosted nudge privacy CI determinism
+
+- DONE: The hosted-caregiver-nudge privacy regression now uses an overdue
+  routine fixture that is stable across developer and GitHub Actions time
+  zones. It still proves private and legacy-hidden meal logs cannot satisfy a
+  shared routine or leak into scheduled caregiver job content.
+- VERIFIED LOCALLY: PWA privacy/readiness coverage passed `55/55`; the full
+  API/mobile/PWA/domain/release-tool focused suite passed `1,286/1,286` with
+  localhost fixtures enabled; PixelLab reported `ok=150`, `missing=0`,
+  `invalid=0`.
+- NEXT: Push the CI-repair commit and require fresh dependency-complete branch
+  CI. Native route, accessibility, provider, store, legal, and Apollo evidence
+  remain separate release gates.

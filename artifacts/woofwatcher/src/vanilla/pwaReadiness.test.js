@@ -859,18 +859,21 @@ test("keeps Dog Profile identity canonical at the hosted nudge provider boundary
 });
 
 test("keeps owner-private and legacy-hidden logs out of hosted caregiver nudges", () => {
-  const now = "2026-11-18T16:00:00.000Z";
+  // Keep the routine overdue across developer and CI time zones. The previous
+  // 7:30 AM fixture was due in Pacific time but overdue in UTC, making the
+  // provider-bound privacy assertion flaky on GitHub Actions runners.
+  const now = "2026-11-18T20:00:00.000Z";
   const plan = buildHostedNudgePlan(
     {
       profile: { name: "Mochi" },
-      routines: [{ id: "breakfast", type: "meal", label: "Breakfast", time: "7:30 AM", owner: "Emma" }],
+      routines: [{ id: "breakfast", type: "meal", label: "Breakfast", time: "12:01 AM", owner: "Emma" }],
       entries: [
         {
           id: "private-breakfast",
           type: "meal",
           title: "Breakfast",
           caregiver: "Emma",
-          occurredAt: "2026-11-18T15:40:00.000Z",
+          occurredAt: "2026-11-18T19:40:00.000Z",
           visibility: "Private",
           note: "Owner-only appetite detail",
         },
@@ -879,7 +882,7 @@ test("keeps owner-private and legacy-hidden logs out of hosted caregiver nudges"
           type: "meal",
           title: "Breakfast",
           caregiver: "Emma",
-          occurredAt: "2026-11-18T15:45:00.000Z",
+          occurredAt: "2026-11-18T19:45:00.000Z",
           householdVisible: false,
           note: "Legacy owner-only meal detail",
         },
@@ -914,7 +917,7 @@ test("keeps owner-private and legacy-hidden logs out of hosted caregiver nudges"
     now,
   );
 
-  assert.equal(plan.dueCount, 1);
+  assert.equal(plan.overdueCount, 1);
   assert.deepEqual(plan.jobs.map((job) => job.label), ["Breakfast"]);
   assert.doesNotMatch(JSON.stringify(plan), /Owner-only appetite detail|Legacy owner-only meal detail/);
 });
