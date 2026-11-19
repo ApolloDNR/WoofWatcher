@@ -1,5 +1,23 @@
 # Autonomous Build Queue
 
+## 2026-11-19 PWA cloud-sync household privacy boundary
+
+- DONE: the provider-bound cloud-sync readiness plan now starts from the
+  fail-closed household-share state. Explicit `Private` and legacy
+  `householdVisible: false` entries cannot alter its staged entry count,
+  fingerprint, or serialized planning metadata.
+- VERIFIED LOCALLY: red-first privacy-cloud coverage reproduced three staged
+  entries instead of one shared entry; targeted PWA privacy/readiness/backend
+  coverage passes `58/58`, the complete non-API focused matrix passes
+  `1,220/1,220`, and PixelLab verification reports `ok=150 missing=0
+  invalid=0`.
+- BOUNDARY: this does not send data, configure a backend, or change the
+  intentional full-history behavior of owner-local backup and Care Room device
+  transfer. Provider RLS, native, legal, store, and Apollo approval remain
+  separate gates.
+- NEXT: capture native household/export accessibility evidence; do not expand
+  provider delivery without structured privacy and consent proof.
+
 ## 2026-11-18 PWA hosted-nudge household privacy boundary
 
 - DONE: hosted caregiver-nudge planning now derives routine completion and

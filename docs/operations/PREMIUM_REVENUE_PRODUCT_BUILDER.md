@@ -1,5 +1,22 @@
 # Premium Revenue Product Builder
 
+## 2026-11-19 PWA cloud-sync household privacy boundary
+
+The staged cloud-sync plan is a provider-bound household handoff, rather than
+an owner-device backup. It now derives all planning counts and its local-state
+fingerprint from `buildHouseholdShareState`, matching Care Passes, report
+artifacts, hosted nudges, and backend seed drafts. Explicit `Private` entries
+and legacy rows marked only `householdVisible: false` therefore remain on the
+owner's device and cannot enter serialized sync-planning metadata.
+
+A red-first regression initially counted all three entries; targeted PWA
+privacy/readiness/backend coverage passes `58/58`, the complete non-API
+focused matrix passes `1,220/1,220`, and PixelLab verification reports
+`ok=150 missing=0 invalid=0`. This is an admission boundary only: it does not
+configure a provider, write any remote row, or change owner-local backup and
+intentional Care Room device-transfer behavior. Provider RLS, native
+accessibility, legal, store, and Apollo approval remain separate release gates.
+
 ## 2026-11-18 PWA hosted-nudge household privacy boundary
 
 Hosted nudges are a person-to-person provider-bound planning surface, so they

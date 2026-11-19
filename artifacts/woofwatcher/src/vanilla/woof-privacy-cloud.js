@@ -212,7 +212,11 @@ export function buildCaregiverAccessModel(input = {}, now = new Date().toISOStri
 }
 
 export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().toISOString()) {
-  const state = normalizeState(input, now);
+  // Cloud sync is a household boundary, not a device-backup boundary. Start
+  // from the same fail-closed state used by Care Passes and provider seed
+  // drafts so owner-private (including legacy hidden) entries cannot become
+  // pending provider data through planning metadata or counts.
+  const state = buildHouseholdShareState(input, now);
   const petName = resolvePetName(state.profile.name);
   const householdId = cleanText(options.householdId);
   const backendConfigured = Boolean(options.backendConfigured || cleanText(options.backendUrl));
@@ -269,6 +273,7 @@ export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().to
       "Keep repository private until demo/private split is decided.",
       "Do not store OpenAI keys in client JavaScript.",
       `Use invite-only access before sharing ${petName} data.`,
+      "Keep owner-private logs on this device; do not include them in household sync.",
       "Keep Care Pass scoped unless this is same-household device transfer.",
       "Log destructive changes in audit_events."
     ],

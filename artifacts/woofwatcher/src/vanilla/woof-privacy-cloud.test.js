@@ -5,6 +5,7 @@ import { getDefaultState } from "./woof-core.js";
 import {
   CAREGIVER_ROLES,
   buildCaregiverAccessModel,
+  buildCloudSyncPlan,
   buildScopedCarePass,
 } from "./woof-privacy-cloud.js";
 
@@ -34,4 +35,43 @@ test("keeps Care Pass and household access copy behind the Dog Profile identity 
   assert.match(carePass.privacy.privateData, /Mochi care context/);
   assert.match(accessModel.roles[0].description, /Mochi's local state/);
   assert.doesNotMatch(generatedCopy, /Phoenix|My Dog/);
+});
+
+test("keeps owner-private and legacy-hidden logs out of cloud-sync planning", () => {
+  const now = "2026-11-19T18:00:00.000Z";
+  const sharedEntry = {
+    id: "shared-walk",
+    type: "walk",
+    title: "Neighborhood walk",
+    occurredAt: now,
+    visibility: "Household"
+  };
+  const privateEntry = {
+    id: "private-health",
+    type: "health",
+    title: "Private health detail",
+    occurredAt: now,
+    visibility: "Private",
+    note: "Owner-only context"
+  };
+  const legacyHiddenEntry = {
+    id: "legacy-hidden",
+    type: "training",
+    title: "Legacy hidden training",
+    occurredAt: now,
+    householdVisible: false
+  };
+
+  const plan = buildCloudSyncPlan(
+    {
+      ...getDefaultState(now),
+      entries: [sharedEntry, privateEntry, legacyHiddenEntry]
+    },
+    { householdId: "household_123", backendUrl: "https://api.example.test" },
+    now
+  );
+
+  assert.equal(plan.pendingLocalCounts.entries, 1);
+  assert.doesNotMatch(JSON.stringify(plan), /Private health detail|Owner-only context|Legacy hidden training/);
+  assert.match(plan.privacyChecklist.join(" "), /owner-private logs on this device/);
 });
