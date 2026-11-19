@@ -315,8 +315,14 @@ export function buildWoofGuideVetNoteDraft(input = {}, context = {}, options = {
 
 function buildNudgeJob(item, state, options, now) {
   const petName = resolvePetName(state.profile?.name);
-  const scheduledFor = typeof item.minutesUntil === "number"
-    ? new Date(new Date(now).getTime() + item.minutesUntil * 60000).toISOString()
+  // Delivery providers generally reject timestamps in the past. An overdue
+  // care reminder should therefore queue immediately, while upcoming care
+  // retains its planned delivery time.
+  const minutesUntil = typeof item.minutesUntil === "number" && Number.isFinite(item.minutesUntil)
+    ? Math.max(0, item.minutesUntil)
+    : null;
+  const scheduledFor = minutesUntil !== null
+    ? new Date(new Date(now).getTime() + minutesUntil * 60000).toISOString()
     : "";
   const message = `${petName} needs ${item.label}${item.time ? ` around ${item.time}` : ""}. Log it when handled so the care team stays aligned.`;
 

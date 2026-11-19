@@ -4054,3 +4054,17 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Run the aggregate focused suite and require fresh dependency-complete
   branch CI. Native delivery, caregiver consent, provider proof, store, legal,
   and Apollo evidence remain separate release gates.
+
+## 2026-11-19 Hosted nudge overdue scheduling
+
+- DONE: Provider-bound overdue caregiver nudges now receive the current plan
+  timestamp instead of a past timestamp calculated from the missed routine
+  time. Upcoming nudges retain their future delivery timestamp, so the plan
+  preserves intended timing without asking a provider to accept stale work.
+- VERIFIED LOCALLY: The red-first hosted-nudge privacy/readiness regression
+  passed after requiring an overdue routine's `scheduledFor` value to equal
+  the plan time. The aggregate focused API/mobile/PWA/domain/release-tool
+  suite passed `1286/1286`; PixelLab passed `ok=150 missing=0 invalid=0`.
+- NEXT: Require fresh dependency-complete branch CI. Native delivery,
+  caregiver consent, provider proof, store, legal, and Apollo evidence remain
+  separate release gates.

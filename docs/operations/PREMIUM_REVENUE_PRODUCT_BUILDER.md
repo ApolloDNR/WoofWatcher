@@ -7100,3 +7100,18 @@ the regression that rejects raw profile interpolation in scheduled caregiver
 messages. Aggregate focused verification and fresh dependency-complete branch
 CI remain required. This source-level defense does not configure delivery,
 prove consent, or clear native, provider, store, legal, or Apollo gates.
+
+## 2026-11-19 Hosted nudge overdue scheduling
+
+Hosted caregiver-nudge plans now clamp overdue delivery timing to the plan's
+current timestamp. A missed routine remains high priority, but its provider
+job no longer carries a past `scheduledFor` timestamp that a delivery service
+could reject or silently discard; future routine reminders retain their planned
+time.
+
+Red-first PWA readiness coverage proves the overdue job schedules immediately.
+The complete focused API/mobile/PWA/domain/release-tool suite passed
+`1286/1286`, and PixelLab asset verification passed `ok=150`, `missing=0`,
+`invalid=0`. Fresh dependency-complete branch CI remains required. This does
+not configure delivery, prove consent, or clear native, provider, store, legal,
+or Apollo gates.

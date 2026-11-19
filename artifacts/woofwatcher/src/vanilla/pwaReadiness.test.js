@@ -922,6 +922,11 @@ test("keeps owner-private and legacy-hidden logs out of hosted caregiver nudges"
 
   assert.equal(plan.overdueCount, 1);
   assert.deepEqual(plan.jobs.map((job) => job.label), ["Breakfast"]);
+  assert.equal(
+    plan.jobs[0].scheduledFor,
+    now,
+    "an overdue routine must be queued immediately instead of with a provider-rejected past timestamp",
+  );
   assert.doesNotMatch(JSON.stringify(plan), /Owner-only appetite detail|Legacy owner-only meal detail/);
 });
 
