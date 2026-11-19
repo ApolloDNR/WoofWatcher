@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-11-18 PWA backend-seed household privacy boundary
+
+- DONE: review-only backend seed drafts now derive household-scoped
+  `care_entries` from the shared visibility boundary. Explicit `Private` and
+  legacy `householdVisible: false` logs cannot be staged for a future
+  household/provider migration.
+- VERIFIED LOCALLY: red-first backend-schema coverage reproduced both leaks,
+  then targeted PWA/backend coverage passed `54/54`; the prescribed
+  mobile/domain focused suite passed `1,155/1,155`; PixelLab asset verification
+  reports `ok=150 missing=0 invalid=0`.
+- BOUNDARY: owner-local backups and Care Room device transfer deliberately
+  retain complete owner-controlled history. This does not configure a backend,
+  create provider rows, or clear native, RLS, provider, legal, store, or Apollo
+  approval gates.
+- NEXT: capture native household/export accessibility evidence, then audit only
+  a newly introduced person-to-person or provider-bound sharing surface.
+
 ## 2026-11-18 PWA Achievements privacy boundary
 
 - DONE: meaningful care milestones now derive from the same household-visible

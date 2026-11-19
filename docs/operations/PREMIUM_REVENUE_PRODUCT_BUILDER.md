@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-11-18 PWA backend-seed household privacy boundary
+
+Backend seed drafts are review-only, but their `care_entries` rows are intended
+for a household-scoped provider migration. They now use the same fail-closed
+household-share state as Care Passes, reports, and Household Pulse: explicit
+`Private` entries and legacy `householdVisible: false` entries cannot enter the
+draft. A red-first regression reproduced both leaks; targeted PWA/backend
+coverage passed `54/54`, the prescribed mobile/domain suite passed
+`1,155/1,155`, and PixelLab verification passed `ok=150 missing=0 invalid=0`.
+Local backup and deliberate Care Room transfer still preserve complete
+owner-controlled history. No provider is configured and no rows are written;
+RLS, native, provider, legal, store, and Apollo approval remain external gates.
+
 ## 2026-11-18 PWA Achievements legacy-privacy boundary
 
 PWA Achievements now uses the shared household-visible entry rule rather than

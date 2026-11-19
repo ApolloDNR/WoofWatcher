@@ -57,3 +57,40 @@ test("backend seed drafts resolve the Dog Profile identity before creating durab
   assert.equal(renamedDraft.rows.households[0].privacy_mode, "private_dog");
   assert.doesNotMatch(JSON.stringify(renamedDraft), /private_phoenix/);
 });
+
+test("backend seed drafts exclude owner-private and legacy-hidden logs from household rows", () => {
+  const state = getDefaultState(NOW);
+  const sharedEntry = {
+    id: "shared-walk",
+    type: "walk",
+    title: "Shared morning walk",
+    caregiver: "Avery",
+    occurredAt: NOW,
+  };
+  const privateEntry = {
+    id: "private-health",
+    type: "health",
+    title: "Private health note",
+    note: "Owner-only detail",
+    caregiver: "Avery",
+    occurredAt: NOW,
+    visibility: "Private",
+  };
+  const legacyHiddenEntry = {
+    id: "legacy-hidden-training",
+    type: "training",
+    title: "Legacy hidden training note",
+    caregiver: "Avery",
+    occurredAt: NOW,
+    householdVisible: false,
+  };
+
+  const draft = buildBackendSeedDraft(
+    { ...state, entries: [sharedEntry, privateEntry, legacyHiddenEntry] },
+    { householdId: "household_3" },
+    NOW,
+  );
+
+  assert.deepEqual(draft.rows.care_entries.map((entry) => entry.id), ["shared-walk"]);
+  assert.doesNotMatch(JSON.stringify(draft.rows.care_entries), /Private health note|Owner-only detail|Legacy hidden training note/);
+});

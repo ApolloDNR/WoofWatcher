@@ -1,4 +1,4 @@
-import { normalizeState, resolvePetName } from "./woof-core.js";
+import { buildHouseholdShareState, resolvePetName } from "./woof-core.js";
 import { createAuditEvent } from "./woof-operations.js";
 
 export const BACKEND_SCHEMA_VERSION = "2026-06-05.v1";
@@ -187,7 +187,10 @@ export function buildBackendSchemaPlan(options = {}, now = new Date().toISOStrin
 }
 
 export function buildBackendSeedDraft(input = {}, options = {}, now = new Date().toISOString()) {
-  const state = normalizeState(input, now);
+  // Backend seed rows are household-scoped. Reuse the share-artifact boundary
+  // so an owner-only log can never become durable shared data simply because
+  // this review-only draft is later used to stage a provider migration.
+  const state = buildHouseholdShareState(input, now);
   const petName = resolvePetName(state.profile.name);
   const profile = {
     ...state.profile,
