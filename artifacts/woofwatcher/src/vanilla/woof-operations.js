@@ -494,26 +494,19 @@ function getQuietHoursResumeAt(now, quietHours, timeZone) {
 function getZonedDateParts(value, timeZone) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  // `en-US` can expose a locale-dependent 12-hour part on newer runtimes even
-  // with an hour-cycle request. Use an explicitly 24-hour locale because this
-  // value is arithmetic input for a provider delivery timestamp, not display
-  // copy.
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23"
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+  const offsetMinutes = getTimeZoneOffsetMinutes(date, timeZone);
+  if (offsetMinutes === null) return null;
+  // Calendar arithmetic must not depend on locale hour rendering. Node 24
+  // exposed a 12-hour `hour` part in this path despite the requested cycle,
+  // turning a 7 AM quiet-hours release into 1 PM. Shift by the IANA offset,
+  // then read the resulting wall-clock values with UTC getters.
+  const zonedDate = new Date(date.getTime() + offsetMinutes * 60_000);
   return {
-    year: values.year,
-    month: values.month,
-    day: values.day,
-    hour: values.hour,
-    minute: values.minute
+    year: zonedDate.getUTCFullYear(),
+    month: zonedDate.getUTCMonth() + 1,
+    day: zonedDate.getUTCDate(),
+    hour: zonedDate.getUTCHours(),
+    minute: zonedDate.getUTCMinutes()
   };
 }
 
@@ -521,14 +514,31 @@ function zonedDateTimeToIso(date, hour, minute, timeZone) {
   const desiredUtc = Date.UTC(date.year, date.month - 1, date.day, hour, minute, 0, 0);
   let instant = desiredUtc;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const observed = getZonedDateParts(new Date(instant).toISOString(), timeZone);
-    if (!observed) break;
-    const observedUtc = Date.UTC(observed.year, observed.month - 1, observed.day, observed.hour, observed.minute, 0, 0);
-    const adjustment = desiredUtc - observedUtc;
-    if (adjustment === 0) break;
-    instant += adjustment;
+    const offsetMinutes = getTimeZoneOffsetMinutes(new Date(instant).toISOString(), timeZone);
+    if (offsetMinutes === null) break;
+    const adjustedInstant = desiredUtc - offsetMinutes * 60_000;
+    if (adjustedInstant === instant) break;
+    instant = adjustedInstant;
   }
   return new Date(instant).toISOString();
+}
+
+function getTimeZoneOffsetMinutes(value, timeZone) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  try {
+    const zoneName = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "longOffset"
+    }).formatToParts(date).find((part) => part.type === "timeZoneName")?.value;
+    if (zoneName === "GMT") return 0;
+    const match = String(zoneName || "").match(/^GMT([+-])(\d{2}):(\d{2})$/);
+    if (!match) return null;
+    const minutes = Number(match[2]) * 60 + Number(match[3]);
+    return match[1] === "+" ? minutes : -minutes;
+  } catch {
+    return null;
+  }
 }
 
 function nextCalendarDay(date) {
