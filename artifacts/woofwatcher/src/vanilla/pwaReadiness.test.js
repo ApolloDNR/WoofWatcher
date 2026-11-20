@@ -985,6 +985,51 @@ test("defers hosted caregiver nudges until quiet hours end", () => {
   assert.ok(Date.parse(plan.jobs[0].scheduledFor) > Date.parse(now));
 });
 
+test("uses the household timezone instead of the planner runtime for hosted nudge quiet hours", () => {
+  // This instant is 10:30 PM on Nov 18 in Los Angeles, but 6:30 AM UTC on
+  // Nov 19. A hosted job must honor the household's saved wall clock rather
+  // than the server or caregiver device that happens to build the plan.
+  const now = "2026-11-19T06:30:00.000Z";
+  const plan = buildHostedNudgePlan(
+    {
+      profile: { name: "Mochi" },
+      routines: [{ id: "bedtime", type: "meal", label: "Bedtime snack", time: "9:00 PM", owner: "Emma" }],
+    },
+    {
+      backendUrl: "https://api.example",
+      householdId: "house_123",
+      pushProvider: "expo",
+      timeZone: "America/Los_Angeles",
+      quietHours: { start: "9:00 PM", end: "7:00 AM" },
+      providerEvidence: {
+        proofLocator: "proof/hosted-nudges/expo.json",
+        proofMimeType: "application/json",
+        proofByteSize: 4096,
+        backendJobPolicy: "Hosted jobs are idempotent, rate-limited, and household scoped.",
+        caregiverConsentPolicy: "Caregiver notification consent is recorded and revocable.",
+        providerDeliveryPolicy: "Expo/APNs/FCM delivery provider setup is documented.",
+        caregiverPrivacyPolicy: "Nudges contain only scoped routine labels and no private notes.",
+        quietHoursPolicy: "Quiet hours and daily budget enforcement are tested.",
+        fallbackPolicy: "Missed delivery falls back to in-app Reminder Center review.",
+        nativeDeliveryProof: "iOS and Android delivery proof is attached.",
+        backendJobApproved: true,
+        caregiverConsentApproved: true,
+        providerDeliveryApproved: true,
+        caregiverPrivacyApproved: true,
+        quietHoursApproved: true,
+        fallbackApproved: true,
+        nativeDeliveryApproved: true,
+        apolloApproved: true,
+      },
+    },
+    now,
+  );
+
+  assert.equal(plan.status, "quiet_hold");
+  assert.equal(plan.budget.timeZone, "America/Los_Angeles");
+  assert.equal(plan.jobs[0].scheduledFor, "2026-11-19T15:00:00.000Z");
+});
+
 test("keeps the PWA Home presence label behind the Dog Profile identity boundary", () => {
   assert.match(appEntry, /function getPresenceLabel\(pulse, avatar, caregiverName\) \{/);
   assert.match(appEntry, /const petName = buildHomeIdentityCopy\(state\)\.petName;/);

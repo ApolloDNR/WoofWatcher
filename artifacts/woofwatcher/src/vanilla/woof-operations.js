@@ -147,7 +147,8 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
   const providerEvidence = options.providerEvidence || options.hostedNudgeProviderEvidence || null;
   const providerProofReady = backendConfigured && pushProviderConfigured && isHostedNudgeProviderProofReady(providerEvidence);
   const quietHours = normalizeQuietHours(options.quietHours);
-  const quietNow = isWithinQuietHours(now, quietHours);
+  const timeZone = normalizeTimeZone(options.timeZone || options.householdTimeZone);
+  const quietNow = isWithinQuietHours(now, quietHours, timeZone);
   const maxDailyNudges = clampWholeNumber(options.maxDailyNudges, 4);
   const nudgesSentToday = clampWholeNumber(options.nudgesSentToday, 0);
   const remainingToday = Math.max(0, maxDailyNudges - nudgesSentToday);
@@ -167,7 +168,7 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
     .sort(sortNudgeCandidates);
   const jobs = blockers.length || remainingToday === 0
     ? []
-    : candidates.slice(0, remainingToday).map((item) => buildNudgeJob(item, providerState, { householdId, quietNow, quietHours }, now));
+    : candidates.slice(0, remainingToday).map((item) => buildNudgeJob(item, providerState, { householdId, quietNow, quietHours, timeZone }, now));
 
   return {
     packageType: "woofwatcher.hosted-nudge-plan",
@@ -195,7 +196,8 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
       maxDailyNudges,
       nudgesSentToday,
       remainingToday,
-      quietHours
+      quietHours,
+      timeZone
     },
     localNotificationCenter: notifications,
     dueCount: reminders.dueCount,
@@ -324,7 +326,7 @@ function buildNudgeJob(item, state, options, now) {
   const plannedFor = minutesUntil !== null
     ? new Date(new Date(now).getTime() + minutesUntil * 60000).toISOString()
     : "";
-  const quietResumeAt = options.quietNow ? getQuietHoursResumeAt(now, options.quietHours) : "";
+  const quietResumeAt = options.quietNow ? getQuietHoursResumeAt(now, options.quietHours, options.timeZone) : "";
   const scheduledFor = quietResumeAt && (!plannedFor || Date.parse(quietResumeAt) > Date.parse(plannedFor))
     ? quietResumeAt
     : plannedFor;
@@ -453,9 +455,19 @@ function normalizeQuietHours(input = {}) {
   };
 }
 
-function isWithinQuietHours(now, quietHours) {
-  const date = new Date(now);
-  const current = date.getHours() * 60 + date.getMinutes();
+function normalizeTimeZone(value) {
+  const requested = cleanText(value, 80);
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: requested || undefined }).resolvedOptions().timeZone;
+  } catch {
+    return new Intl.DateTimeFormat("en-US").resolvedOptions().timeZone;
+  }
+}
+
+function isWithinQuietHours(now, quietHours, timeZone) {
+  const date = getZonedDateParts(now, timeZone);
+  if (!date) return false;
+  const current = date.hour * 60 + date.minute;
   const start = parseClockMinutes(quietHours.start);
   const end = parseClockMinutes(quietHours.end);
   if (start === null || end === null) return false;
@@ -464,16 +476,60 @@ function isWithinQuietHours(now, quietHours) {
   return current >= start || current < end;
 }
 
-function getQuietHoursResumeAt(now, quietHours) {
-  const date = new Date(now);
+function getQuietHoursResumeAt(now, quietHours, timeZone) {
+  const date = getZonedDateParts(now, timeZone);
   const start = parseClockMinutes(quietHours?.start);
   const end = parseClockMinutes(quietHours?.end);
-  if (Number.isNaN(date.getTime()) || start === null || end === null || start === end) return "";
+  if (!date || start === null || end === null || start === end) return "";
 
-  const resumeAt = new Date(date);
-  resumeAt.setHours(Math.floor(end / 60), end % 60, 0, 0);
-  if (resumeAt.getTime() <= date.getTime()) resumeAt.setDate(resumeAt.getDate() + 1);
-  return resumeAt.toISOString();
+  let resumeDate = { year: date.year, month: date.month, day: date.day };
+  let resumeAt = zonedDateTimeToIso(resumeDate, Math.floor(end / 60), end % 60, timeZone);
+  if (Date.parse(resumeAt) <= Date.parse(now)) {
+    resumeDate = nextCalendarDay(resumeDate);
+    resumeAt = zonedDateTimeToIso(resumeDate, Math.floor(end / 60), end % 60, timeZone);
+  }
+  return resumeAt;
+}
+
+function getZonedDateParts(value, timeZone) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+  return {
+    year: values.year,
+    month: values.month,
+    day: values.day,
+    hour: values.hour,
+    minute: values.minute
+  };
+}
+
+function zonedDateTimeToIso(date, hour, minute, timeZone) {
+  const desiredUtc = Date.UTC(date.year, date.month - 1, date.day, hour, minute, 0, 0);
+  let instant = desiredUtc;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const observed = getZonedDateParts(new Date(instant).toISOString(), timeZone);
+    if (!observed) break;
+    const observedUtc = Date.UTC(observed.year, observed.month - 1, observed.day, observed.hour, observed.minute, 0, 0);
+    const adjustment = desiredUtc - observedUtc;
+    if (adjustment === 0) break;
+    instant += adjustment;
+  }
+  return new Date(instant).toISOString();
+}
+
+function nextCalendarDay(date) {
+  const next = new Date(Date.UTC(date.year, date.month - 1, date.day + 1));
+  return { year: next.getUTCFullYear(), month: next.getUTCMonth() + 1, day: next.getUTCDate() };
 }
 
 function parseClockMinutes(value) {

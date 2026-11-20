@@ -4083,3 +4083,19 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Run the aggregate focused suite, PixelLab verification, and fresh
   dependency-complete branch CI. Native delivery, caregiver consent, provider
   proof, store, legal, and Apollo evidence remain separate release gates.
+
+## 2026-11-19 Hosted nudge household-timezone scheduling
+
+- DONE: Hosted caregiver nudge planning now accepts the persisted household
+  timezone at its provider boundary. Quiet-window evaluation and the deferred
+  provider timestamp both use that timezone, rather than inheriting the
+  caregiver device or backend runtime clock. A missing timezone retains the
+  existing runtime-local fallback until hosted household settings are wired.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage verifies that a UTC
+  planner respects a Los Angeles household's 9 PM-7 AM quiet window and
+  schedules its release at `2026-11-19T15:00:00.000Z`. The full focused
+  API/mobile/PWA/domain/release-tool suite passed `1288/1288` with loopback
+  fixtures permitted; PixelLab passed `ok=150 missing=0 invalid=0`.
+- NEXT: Require fresh dependency-complete branch CI. Native delivery,
+  caregiver consent, provider proof, store, legal, and Apollo evidence remain
+  separate release gates.

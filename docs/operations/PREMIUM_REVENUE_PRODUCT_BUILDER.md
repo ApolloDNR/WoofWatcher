@@ -7131,3 +7131,22 @@ suite passed `1287/1287`, and PixelLab asset verification passed `ok=150`,
 `missing=0`, `invalid=0`. Fresh dependency-complete branch CI remains
 required. This does not configure delivery, prove consent, or clear native,
 provider, store, legal, or Apollo gates.
+
+## 2026-11-19 Hosted nudge household-timezone scheduling
+
+Hosted caregiver nudge planning now accepts a persisted household timezone at
+the provider boundary. It evaluates quiet hours and computes the provider's
+deferred `scheduledFor` timestamp in that household timezone, so a backend or
+caregiver device in UTC cannot send a Pacific household's quiet-hours nudge at
+the wrong local time. When no household timezone is supplied, the local
+runtime fallback remains in place for backward compatibility until hosted
+household settings are wired.
+
+Red-first PWA readiness coverage verifies that a UTC planner respects a Los
+Angeles household's 9 PM-7 AM quiet window and releases its job at
+`2026-11-19T15:00:00.000Z`. The full focused API/mobile/PWA/domain/release-tool
+suite passed `1288/1288` with loopback fixtures permitted, and PixelLab asset
+verification passed `ok=150`, `missing=0`, `invalid=0`. Fresh
+dependency-complete branch CI remains required. This does not configure
+delivery, prove consent, or clear native, provider, store, legal, or Apollo
+gates.
