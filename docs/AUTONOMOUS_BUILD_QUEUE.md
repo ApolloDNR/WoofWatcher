@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-11-20 Hosted-nudge household-wall-clock parity
+
+- DONE: hosted caregiver nudge candidates now calculate routine status and
+  same-day household-visible completion in the persisted household timezone,
+  matching quiet-hour release timing. A UTC worker therefore treats a Los
+  Angeles household's 9 PM bedtime routine as overdue at 10:30 PM local and
+  holds it until the 7 AM local quiet-hours release, rather than scheduling a
+  false future reminder from the worker clock.
+- VERIFIED LOCALLY: the PWA readiness suite passes `55/55` both in the host
+  timezone and with `TZ=UTC`, which reproduces the prior Ubuntu CI failure.
+- BOUNDARY: this changes only local hosted-plan timing. It does not send a
+  push, configure a provider, expand consent, or clear native, legal, store,
+  or Apollo approval gates.
+- NEXT: run fresh exact-tip dependency-complete CI, then capture native
+  household/export accessibility evidence; do not expand provider delivery
+  without structured privacy and consent proof.
+
 ## 2026-11-19 PWA cloud-sync household privacy boundary
 
 - DONE: the provider-bound cloud-sync readiness plan now starts from the

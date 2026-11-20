@@ -574,14 +574,21 @@ export function getTodayPlan(state, now = new Date().toISOString()) {
   };
 }
 
-export function getReminderCenter(state, now = new Date().toISOString()) {
+export function getReminderCenter(state, now = new Date().toISOString(), options = {}) {
   const petName = resolvePetName(state.profile?.name);
   const target = new Date(now);
-  const currentMinutes = target.getHours() * 60 + target.getMinutes();
-  const todayEntries = entriesForLocalDay(state.entries || [], now).filter(isHouseholdVisibleEntry);
+  const timeZone = normalizeReminderTimeZone(options.timeZone);
+  const zonedNow = timeZone ? getReminderZonedDate(target, timeZone) : null;
+  const currentMinutes = zonedNow
+    ? zonedNow.hour * 60 + zonedNow.minute
+    : target.getHours() * 60 + target.getMinutes();
+  const todayEntries = (timeZone && zonedNow)
+    ? (state.entries || []).filter((entry) => getReminderZonedDateKey(entry?.occurredAt, timeZone) === zonedNow.dateKey)
+    : entriesForLocalDay(state.entries || [], now);
+  const visibleTodayEntries = todayEntries.filter(isHouseholdVisibleEntry);
   const items = (state.routines || []).map((routine) => {
     const normalized = normalizeRoutineInput(routine);
-    const completedEntry = todayEntries.find((entry) => routineMatchesEntry(normalized, entry)) || null;
+    const completedEntry = visibleTodayEntries.find((entry) => routineMatchesEntry(normalized, entry)) || null;
     const routineMinutes = parseRoutineMinutes(normalized.time);
     const minutesUntil = routineMinutes === null ? null : routineMinutes - currentMinutes;
     const status = getReminderStatus({ completedEntry, routineMinutes, minutesUntil });
@@ -602,7 +609,8 @@ export function getReminderCenter(state, now = new Date().toISOString()) {
     dateLabel: target.toLocaleDateString("en-US", {
       weekday: "long",
       month: "short",
-      day: "numeric"
+      day: "numeric",
+      ...(timeZone ? { timeZone } : {})
     }),
     totalCount: items.length,
     completedCount: items.filter((item) => item.status === "completed").length,
@@ -620,7 +628,7 @@ export function getNotificationCenter(state, now = new Date().toISOString(), opt
   const petName = resolvePetName(state.profile?.name);
   const supported = options.supported !== false;
   const permission = cleanText(options.permission || "default") || "default";
-  const reminders = getReminderCenter(state, now);
+  const reminders = getReminderCenter(state, now, { timeZone: options.timeZone });
   const dueReminders = reminders.items
     .filter((item) => item.status === "due" || item.status === "overdue")
     .sort(sortReminderItems);
@@ -1831,6 +1839,55 @@ function buildDaySummary(counts) {
   if (counts.medication) parts.push(`${counts.medication} medication`);
   if (counts.health || counts.vet) parts.push(`${counts.health + counts.vet} health`);
   return parts.length ? parts.join(" | ") : "No logs";
+}
+
+function normalizeReminderTimeZone(value) {
+  const requested = cleanText(value, 80);
+  if (!requested) return "";
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: requested }).resolvedOptions().timeZone;
+  } catch {
+    return "";
+  }
+}
+
+function getReminderZonedDate(value, timeZone) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const offsetMinutes = getReminderTimeZoneOffsetMinutes(date, timeZone);
+  if (offsetMinutes === null) return null;
+  const wallClock = new Date(date.getTime() + offsetMinutes * 60_000);
+  const year = wallClock.getUTCFullYear();
+  const month = wallClock.getUTCMonth() + 1;
+  const day = wallClock.getUTCDate();
+  return {
+    year,
+    month,
+    day,
+    hour: wallClock.getUTCHours(),
+    minute: wallClock.getUTCMinutes(),
+    dateKey: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+  };
+}
+
+function getReminderZonedDateKey(value, timeZone) {
+  return getReminderZonedDate(value, timeZone)?.dateKey || "";
+}
+
+function getReminderTimeZoneOffsetMinutes(date, timeZone) {
+  try {
+    const zoneName = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "longOffset"
+    }).formatToParts(date).find((part) => part.type === "timeZoneName")?.value;
+    if (zoneName === "GMT") return 0;
+    const match = String(zoneName || "").match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
+    if (!match) return null;
+    const minutes = Number(match[2]) * 60 + Number(match[3] || 0);
+    return match[1] === "+" ? minutes : -minutes;
+  } catch {
+    return null;
+  }
 }
 
 function entriesForLocalDay(entries, now) {

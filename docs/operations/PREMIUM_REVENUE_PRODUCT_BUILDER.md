@@ -1,5 +1,19 @@
 # Premium Revenue Product Builder
 
+## 2026-11-20 Hosted-nudge household-wall-clock parity
+
+Hosted caregiver nudges now calculate their routine candidate and same-day
+household-visible completion using the persisted household timezone, the same
+wall clock already used for quiet hours. This removes the cross-platform case
+where a UTC worker classified a Los Angeles 9 PM routine as upcoming at 10:30
+PM local, then preferred that false future time over the valid 7 AM quiet-hours
+release. The provider plan remains proof-gated and local-only.
+
+The PWA readiness regression now asserts that the candidate is overdue and
+repeats cleanly under `TZ=UTC`, the prior GitHub Actions context. This does not
+send a notification, configure provider delivery, or clear native, consent,
+legal, store, or Apollo approval gates.
+
 ## 2026-11-19 PWA cloud-sync household privacy boundary
 
 The staged cloud-sync plan is a provider-bound household handoff, rather than

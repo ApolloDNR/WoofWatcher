@@ -136,18 +136,19 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
       publicLabel: petName
     }
   };
-  const reminders = getReminderCenter(state, now);
+  const quietHours = normalizeQuietHours(options.quietHours);
+  const timeZone = normalizeTimeZone(options.timeZone || options.householdTimeZone);
+  const reminders = getReminderCenter(state, now, { timeZone });
   const notifications = getNotificationCenter(state, now, {
     supported: true,
-    permission: cleanText(options.permission, 40) || "default"
+    permission: cleanText(options.permission, 40) || "default",
+    timeZone
   });
   const backendConfigured = Boolean(options.backendConfigured || cleanText(options.backendUrl));
   const householdId = cleanText(options.householdId, 120);
   const pushProviderConfigured = Boolean(options.pushProviderConfigured || cleanText(options.pushProvider));
   const providerEvidence = options.providerEvidence || options.hostedNudgeProviderEvidence || null;
   const providerProofReady = backendConfigured && pushProviderConfigured && isHostedNudgeProviderProofReady(providerEvidence);
-  const quietHours = normalizeQuietHours(options.quietHours);
-  const timeZone = normalizeTimeZone(options.timeZone || options.householdTimeZone);
   const quietNow = isWithinQuietHours(now, quietHours, timeZone);
   const maxDailyNudges = clampWholeNumber(options.maxDailyNudges, 4);
   const nudgesSentToday = clampWholeNumber(options.nudgesSentToday, 0);
