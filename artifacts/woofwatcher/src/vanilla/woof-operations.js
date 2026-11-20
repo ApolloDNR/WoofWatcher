@@ -532,9 +532,12 @@ function getTimeZoneOffsetMinutes(value, timeZone) {
       timeZoneName: "longOffset"
     }).formatToParts(date).find((part) => part.type === "timeZoneName")?.value;
     if (zoneName === "GMT") return 0;
-    const match = String(zoneName || "").match(/^GMT([+-])(\d{2}):(\d{2})$/);
+    // ICU emits both `GMT-08:00` (Windows) and `GMT-8` (Linux) for the
+    // same IANA offset. Accept either form so quiet-hour delivery remains a
+    // household-wall-clock calculation on every supported runtime.
+    const match = String(zoneName || "").match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
     if (!match) return null;
-    const minutes = Number(match[2]) * 60 + Number(match[3]);
+    const minutes = Number(match[2]) * 60 + Number(match[3] || 0);
     return match[1] === "+" ? minutes : -minutes;
   } catch {
     return null;

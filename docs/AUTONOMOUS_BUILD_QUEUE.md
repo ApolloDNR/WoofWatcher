@@ -4128,3 +4128,14 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Require fresh dependency-complete branch CI. Native delivery,
   caregiver consent, provider proof, store, legal, and Apollo evidence remain
   separate release gates.
+
+## 2026-11-20 Hosted nudge cross-platform IANA offset parsing
+
+- DONE: Exact-tip Ubuntu CI revealed that Node's ICU may render an IANA
+  `longOffset` as `GMT-8`, while the parser only accepted `GMT-08:00`. The
+  parser now accepts one- or two-digit hours plus optional minute segments,
+  retaining the saved household-local quiet-hours release rather than falling
+  back to a routine's later planned timestamp.
+- NEXT: Run the PWA readiness and complete focused matrix locally, then
+  require fresh dependency-complete branch CI. Native delivery, provider
+  evidence, store/legal, and Apollo gates remain separate.

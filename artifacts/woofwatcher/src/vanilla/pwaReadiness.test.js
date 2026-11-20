@@ -1029,6 +1029,7 @@ test("uses the household timezone instead of the planner runtime for hosted nudg
   assert.equal(plan.budget.timeZone, "America/Los_Angeles");
   assert.equal(plan.jobs[0].scheduledFor, "2026-11-19T15:00:00.000Z");
   assert.match(operationsSource, /timeZoneName: "longOffset"/);
+  assert.match(operationsSource, /\\d\{1,2\}/);
   assert.match(operationsSource, /getUTCFullYear\(\)/);
 });
 

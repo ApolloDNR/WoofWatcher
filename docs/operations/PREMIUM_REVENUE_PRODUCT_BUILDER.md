@@ -7101,6 +7101,18 @@ messages. Aggregate focused verification and fresh dependency-complete branch
 CI remain required. This source-level defense does not configure delivery,
 prove consent, or clear native, provider, store, legal, or Apollo gates.
 
+## 2026-11-20 Hosted nudge cross-platform IANA offset parsing
+
+Exact-tip Ubuntu CI exposed a second ICU representation boundary: `longOffset`
+can return `GMT-8` rather than `GMT-08:00`. Hosted-nudge offset parsing now
+accepts both valid forms (and optional minute segments), so a Pacific
+household's quiet-hours release is calculated from its saved wall clock rather
+than falling back to the routine's later planned timestamp. The PWA readiness
+contract now also guards the portable hour-width parser. Fresh local and
+dependency-complete CI proof remains required; this source repair does not
+enable provider delivery or clear native, consent, store/legal, or Apollo
+approvals.
+
 ## 2026-11-19 Hosted nudge overdue scheduling
 
 Hosted caregiver-nudge plans now clamp overdue delivery timing to the plan's
