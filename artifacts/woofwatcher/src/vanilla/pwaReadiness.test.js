@@ -930,6 +930,61 @@ test("keeps owner-private and legacy-hidden logs out of hosted caregiver nudges"
   assert.doesNotMatch(JSON.stringify(plan), /Owner-only appetite detail|Legacy owner-only meal detail/);
 });
 
+test("defers hosted caregiver nudges until quiet hours end", () => {
+  // Use a same-day window that contains the supplied instant in every local
+  // timezone. The expected value is deliberately computed with local Date
+  // semantics because quiet-hour preferences are local household times.
+  const now = "2026-11-18T20:00:00.000Z";
+  const expectedResume = new Date(now);
+  expectedResume.setHours(23, 59, 0, 0);
+  const plan = buildHostedNudgePlan(
+    {
+      profile: { name: "Mochi" },
+      routines: [{ id: "breakfast", type: "meal", label: "Breakfast", time: "12:01 AM", owner: "Emma" }],
+      entries: [{
+        id: "private-breakfast",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-11-18T19:40:00.000Z",
+        visibility: "Private",
+      }],
+    },
+    {
+      backendUrl: "https://api.example",
+      householdId: "house_123",
+      pushProvider: "expo",
+      quietHours: { start: "12:00 AM", end: "11:59 PM" },
+      providerEvidence: {
+        proofLocator: "proof/hosted-nudges/expo.json",
+        proofMimeType: "application/json",
+        proofByteSize: 4096,
+        backendJobPolicy: "Hosted jobs are idempotent, rate-limited, and household scoped.",
+        caregiverConsentPolicy: "Caregiver notification consent is recorded and revocable.",
+        providerDeliveryPolicy: "Expo/APNs/FCM delivery provider setup is documented.",
+        caregiverPrivacyPolicy: "Nudges contain only scoped routine labels and no private notes.",
+        quietHoursPolicy: "Quiet hours and daily budget enforcement are tested.",
+        fallbackPolicy: "Missed delivery falls back to in-app Reminder Center review.",
+        nativeDeliveryProof: "iOS and Android delivery proof is attached.",
+        backendJobApproved: true,
+        caregiverConsentApproved: true,
+        providerDeliveryApproved: true,
+        caregiverPrivacyApproved: true,
+        quietHoursApproved: true,
+        fallbackApproved: true,
+        nativeDeliveryApproved: true,
+        apolloApproved: true,
+      },
+    },
+    now,
+  );
+
+  assert.equal(plan.status, "quiet_hold");
+  assert.equal(plan.jobs[0].deliveryWindow, "quiet_hold");
+  assert.equal(plan.jobs[0].scheduledFor, expectedResume.toISOString());
+  assert.ok(Date.parse(plan.jobs[0].scheduledFor) > Date.parse(now));
+});
+
 test("keeps the PWA Home presence label behind the Dog Profile identity boundary", () => {
   assert.match(appEntry, /function getPresenceLabel\(pulse, avatar, caregiverName\) \{/);
   assert.match(appEntry, /const petName = buildHomeIdentityCopy\(state\)\.petName;/);

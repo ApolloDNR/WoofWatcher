@@ -167,7 +167,7 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
     .sort(sortNudgeCandidates);
   const jobs = blockers.length || remainingToday === 0
     ? []
-    : candidates.slice(0, remainingToday).map((item) => buildNudgeJob(item, providerState, { householdId, quietNow }, now));
+    : candidates.slice(0, remainingToday).map((item) => buildNudgeJob(item, providerState, { householdId, quietNow, quietHours }, now));
 
   return {
     packageType: "woofwatcher.hosted-nudge-plan",
@@ -321,9 +321,13 @@ function buildNudgeJob(item, state, options, now) {
   const minutesUntil = typeof item.minutesUntil === "number" && Number.isFinite(item.minutesUntil)
     ? Math.max(0, item.minutesUntil)
     : null;
-  const scheduledFor = minutesUntil !== null
+  const plannedFor = minutesUntil !== null
     ? new Date(new Date(now).getTime() + minutesUntil * 60000).toISOString()
     : "";
+  const quietResumeAt = options.quietNow ? getQuietHoursResumeAt(now, options.quietHours) : "";
+  const scheduledFor = quietResumeAt && (!plannedFor || Date.parse(quietResumeAt) > Date.parse(plannedFor))
+    ? quietResumeAt
+    : plannedFor;
   const message = `${petName} needs ${item.label}${item.time ? ` around ${item.time}` : ""}. Log it when handled so the care team stays aligned.`;
 
   return {
@@ -458,6 +462,18 @@ function isWithinQuietHours(now, quietHours) {
   if (start === end) return false;
   if (start < end) return current >= start && current < end;
   return current >= start || current < end;
+}
+
+function getQuietHoursResumeAt(now, quietHours) {
+  const date = new Date(now);
+  const start = parseClockMinutes(quietHours?.start);
+  const end = parseClockMinutes(quietHours?.end);
+  if (Number.isNaN(date.getTime()) || start === null || end === null || start === end) return "";
+
+  const resumeAt = new Date(date);
+  resumeAt.setHours(Math.floor(end / 60), end % 60, 0, 0);
+  if (resumeAt.getTime() <= date.getTime()) resumeAt.setDate(resumeAt.getDate() + 1);
+  return resumeAt.toISOString();
 }
 
 function parseClockMinutes(value) {

@@ -7115,3 +7115,19 @@ The complete focused API/mobile/PWA/domain/release-tool suite passed
 `invalid=0`. Fresh dependency-complete branch CI remains required. This does
 not configure delivery, prove consent, or clear native, provider, store, legal,
 or Apollo gates.
+
+## 2026-11-19 Hosted nudge quiet-hours scheduling
+
+Hosted caregiver-nudge jobs now convert their `quiet_hold` delivery boundary
+into an enforceable provider schedule: when the household is inside quiet
+hours, `scheduledFor` is the local quiet-hours end rather than the plan's
+current time. A future reminder remains at its later planned time, so this
+does not send care copy early after quiet hours end.
+
+Red-first PWA readiness coverage passed `53/53`, including a timezone-stable
+regression that proves the deferred provider timestamp is strictly later than
+the plan instant. The aggregate focused API/mobile/PWA/domain/release-tool
+suite passed `1287/1287`, and PixelLab asset verification passed `ok=150`,
+`missing=0`, `invalid=0`. Fresh dependency-complete branch CI remains
+required. This does not configure delivery, prove consent, or clear native,
+provider, store, legal, or Apollo gates.

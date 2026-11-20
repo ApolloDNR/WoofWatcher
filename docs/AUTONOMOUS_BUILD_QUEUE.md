@@ -4068,3 +4068,18 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Require fresh dependency-complete branch CI. Native delivery,
   caregiver consent, provider proof, store, legal, and Apollo evidence remain
   separate release gates.
+
+## 2026-11-19 Hosted nudge quiet-hours scheduling
+
+- DONE: A hosted caregiver job marked `quiet_hold` now defers its provider
+  `scheduledFor` time until the household's local quiet-hours end. It still
+  preserves a later routine's intended schedule, so the planner never brings
+  an upcoming reminder forward merely to leave quiet hours.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage passed `53/53`, including
+  a timezone-stable quiet-hours regression that requires the provider timestamp
+  to be after the plan instant. The aggregate focused API/mobile/PWA/domain/
+  release-tool suite passed `1287/1287`; PixelLab passed `ok=150 missing=0
+  invalid=0`.
+- NEXT: Run the aggregate focused suite, PixelLab verification, and fresh
+  dependency-complete branch CI. Native delivery, caregiver consent, provider
+  proof, store, legal, and Apollo evidence remain separate release gates.
