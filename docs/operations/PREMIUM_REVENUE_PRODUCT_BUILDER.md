@@ -7166,3 +7166,14 @@ loopback fixtures permitted, and PixelLab asset verification passed `ok=150
 missing=0 invalid=0`. Fresh dependency-complete branch CI remains required.
 This does not configure delivery, prove consent, or clear native, provider,
 store, legal, or Apollo gates.
+
+## 2026-11-19 Hosted nudge Node 24 timezone repair
+
+Exact-tip `WoofWatcher Verify` run `44668150971` exposed a cross-runtime
+quiet-hours defect: its Node 24 runner calculated a Los Angeles 7 AM release
+as 1 PM. Zoned timestamp arithmetic now uses an explicitly 24-hour `en-GB`
+locale instead of display-oriented `en-US`; the existing timezone regression
+now asserts that source boundary. Focused PWA readiness coverage passed
+`55/55` locally. Fresh dependency-complete CI is required for this repair and
+is the authority for the Node 24 behavior. This does not configure delivery,
+prove consent, or clear native, provider, store, legal, or Apollo gates.

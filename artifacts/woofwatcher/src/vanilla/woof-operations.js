@@ -494,7 +494,11 @@ function getQuietHoursResumeAt(now, quietHours, timeZone) {
 function getZonedDateParts(value, timeZone) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  const parts = new Intl.DateTimeFormat("en-US", {
+  // `en-US` can expose a locale-dependent 12-hour part on newer runtimes even
+  // with an hour-cycle request. Use an explicitly 24-hour locale because this
+  // value is arithmetic input for a provider delivery timestamp, not display
+  // copy.
+  const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone,
     year: "numeric",
     month: "2-digit",

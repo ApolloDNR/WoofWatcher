@@ -4085,6 +4085,19 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   dependency-complete branch CI. Native delivery, caregiver consent, provider
   proof, store, legal, and Apollo evidence remain separate release gates.
 
+## 2026-11-19 Hosted nudge Node 24 timezone repair
+
+- DONE: Exact-tip CI exposed locale-sensitive zoned time arithmetic: the
+  Los Angeles 7 AM quiet-hours release was incorrectly calculated as 1 PM on
+  the Node 24 runner. Provider timestamp parts now use an explicitly 24-hour
+  locale (`en-GB`) rather than display-oriented `en-US`, with source coverage
+  preserving that arithmetic boundary.
+- VERIFIED LOCALLY: PWA readiness coverage passed `55/55`.
+- NEXT: Require fresh dependency-complete branch CI for this repair; CI is the
+  cross-runtime authority for this Node 24 regression. Native delivery,
+  caregiver consent, provider proof, store, legal, and Apollo evidence remain
+  separate release gates.
+
 ## 2026-11-19 Hosted nudge quiet-hours scheduling
 
 - DONE: A hosted caregiver job marked `quiet_hold` now defers its provider
