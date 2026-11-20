@@ -7203,3 +7203,17 @@ regression asserts that source boundary. Focused PWA readiness coverage passed
 `55/55` locally. Fresh dependency-complete CI is required for this repair and
 is the authority for the Node 24 behavior. This does not configure delivery,
 prove consent, or clear native, provider, store, legal, or Apollo gates.
+
+## 2026-11-20 Hosted nudge household-timezone CI proof
+
+Exact-tip `WoofWatcher Verify` run `44765289856` completed successfully for
+`a7ed96d2` (`Align hosted nudge household timezones`). This is the
+dependency-complete Linux/Node 24 proof for the repair that gives the saved
+household timezone to both routine-status derivation and quiet-hours provider
+scheduling. It confirms that a UTC runner no longer treats a Pacific
+household's local bedtime routine as future care or uses the wrong release
+instant.
+
+This CI proof does not configure or prove real provider delivery, caregiver
+consent, native notification/accessibility behavior, store/legal readiness, or
+Apollo approval; those remain separate release gates.

@@ -4156,3 +4156,16 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
 - NEXT: Run the PWA readiness and complete focused matrix locally, then
   require fresh dependency-complete branch CI. Native delivery, provider
   evidence, store/legal, and Apollo gates remain separate.
+
+## 2026-11-20 Hosted nudge household-timezone CI proof
+
+- VERIFIED: Exact-tip `WoofWatcher Verify` run `44765289856` completed
+  successfully for `a7ed96d2` (`Align hosted nudge household timezones`). This
+  is the dependency-complete Linux/Node 24 authority for the saved-household
+  timezone repair: routine candidate status, same-day visible-log filtering,
+  quiet-hours evaluation, and provider scheduling now agree on the household
+  wall clock.
+- NEXT: Preserve this verified behavior while collecting the remaining
+  route-named native delivery, accessibility, caregiver-consent, provider,
+  store/legal, and Apollo evidence. Those external gates are not cleared by
+  this CI result.
