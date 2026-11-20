@@ -1030,6 +1030,19 @@ test("uses the household timezone instead of the planner runtime for hosted nudg
   assert.equal(plan.jobs[0].scheduledFor, "2026-11-19T15:00:00.000Z");
 });
 
+test("forwards a persisted household timezone into the hosted nudge product contract", () => {
+  const view = buildProductViewModel(
+    {
+      profile: { name: "Mochi" },
+      household: { timezone: "America/Los_Angeles" },
+    },
+    "2026-11-19T06:30:00.000Z",
+  );
+
+  assert.equal(view.operations.hostedNudges.budget.timeZone, "America/Los_Angeles");
+  assert.match(productViewModel, /household\?\.(?:timeZone|timezone)/);
+});
+
 test("keeps the PWA Home presence label behind the Dog Profile identity boundary", () => {
   assert.match(appEntry, /function getPresenceLabel\(pulse, avatar, caregiverName\) \{/);
   assert.match(appEntry, /const petName = buildHomeIdentityCopy\(state\)\.petName;/);

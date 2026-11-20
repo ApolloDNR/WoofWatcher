@@ -137,7 +137,15 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
   const access = buildCaregiverAccessModel(state, now);
   const cloud = buildCloudSyncPlan(state, {}, now);
   const reportArtifact = buildReportArtifact(state, { format: "text" }, now);
-  const hostedNudges = buildHostedNudgePlan(state, {}, now);
+  // A hosted scheduler may run in a different zone than the household. Keep
+  // the persisted household wall clock with the plan so quiet-hours holds do
+  // not inherit a backend or caregiver device timezone.
+  const householdTimeZone = state.household?.timeZone || state.household?.timezone || state.householdTimeZone || state.timeZone;
+  const hostedNudges = buildHostedNudgePlan(
+    state,
+    householdTimeZone ? { householdTimeZone } : {},
+    now,
+  );
   const backendSchema = buildBackendSchemaPlan({}, now);
   const backendSeedDraft = buildBackendSeedDraft(state, {}, now);
 

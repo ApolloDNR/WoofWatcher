@@ -7150,3 +7150,19 @@ verification passed `ok=150`, `missing=0`, `invalid=0`. Fresh
 dependency-complete branch CI remains required. This does not configure
 delivery, prove consent, or clear native, provider, store, legal, or Apollo
 gates.
+
+## 2026-11-19 Hosted nudge persisted-household timezone wiring
+
+The exported PWA product contract now forwards a persisted household timezone
+to `buildHostedNudgePlan`. This makes the persisted household wall clock the
+planner input for quiet-hours calculation instead of silently inheriting a
+backend or caregiver-device timezone. Older local state without a saved zone
+continues using the planner's runtime-local fallback.
+
+A red-first PWA readiness contract proves `household.timezone` reaches the
+hosted-nudge plan; focused PWA readiness coverage passed `55/55`, the complete
+focused API/mobile/PWA/domain/release-tool suite passed `1289/1289` with
+loopback fixtures permitted, and PixelLab asset verification passed `ok=150
+missing=0 invalid=0`. Fresh dependency-complete branch CI remains required.
+This does not configure delivery, prove consent, or clear native, provider,
+store, legal, or Apollo gates.

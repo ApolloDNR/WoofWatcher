@@ -4069,6 +4069,22 @@ diff --check`. The broad partial-checkout suite passed `664/665` and failed
   caregiver consent, provider proof, store, legal, and Apollo evidence remain
   separate release gates.
 
+## 2026-11-19 Hosted nudge persisted-household timezone wiring
+
+- DONE: The exported PWA product contract now forwards a saved household
+  timezone to hosted-nudge planning. This closes the caller seam so a backend
+  or caregiver device cannot silently replace a persisted household wall clock
+  while evaluating quiet hours. Legacy state without a timezone retains the
+  planner's runtime-local fallback.
+- VERIFIED LOCALLY: A red-first PWA readiness contract proves a persisted
+  `household.timezone` reaches the hosted-nudge plan. Focused PWA readiness
+  coverage passed `55/55`; the complete focused API/mobile/PWA/domain/release-
+  tool suite passed `1289/1289` with loopback fixtures permitted; PixelLab
+  passed `ok=150 missing=0 invalid=0`.
+- NEXT: Run the aggregate focused suite, PixelLab verification, and fresh
+  dependency-complete branch CI. Native delivery, caregiver consent, provider
+  proof, store, legal, and Apollo evidence remain separate release gates.
+
 ## 2026-11-19 Hosted nudge quiet-hours scheduling
 
 - DONE: A hosted caregiver job marked `quiet_hold` now defers its provider
